@@ -1,35 +1,46 @@
 [
   {
-    "slug": "ledger-classic",
-    "name": "Ledger Classic",
-    "description": "The flagship newspaper theme with a bold masthead, serif headlines, and a two-column front page.",
-    "version": "1.3.0",
-    "author": "Ledger Labs",
-    "authorUrl": "https://ledgerlabs.example",
-    "themeUrl": "https://ledgerlabs.example/themes/ledger-classic",
+    "slug": "pressforge-broadsheet",
+    "name": "PressForge Broadsheet",
+    "description": "The flagship newspaper of record layout with a distinguished masthead, classic serif headlines, and a multi-column front page.",
+    "version": "2.0.0",
+    "author": "PressForge Community",
+    "authorUrl": "https://github.com/pressforge/pressforge",
+    "themeUrl": "https://github.com/pressforge/pressforge",
     "screenshot": "/themes/ledger-classic/screenshot.png",
-    "tags": "news, blog, two-columns, custom-header"
+    "tags": "news, newspaper, two-columns, custom-header, editorial"
   },
   {
-    "slug": "ledger-reader",
-    "name": "Ledger Reader",
-    "description": "A distraction-free reading theme with generous margins and large type.",
-    "version": "1.0.2",
-    "author": "Ledger Labs",
-    "authorUrl": "https://ledgerlabs.example",
-    "themeUrl": "https://ledgerlabs.example/themes/ledger-reader",
-    "screenshot": "/themes/ledger-reader/screenshot.png",
-    "tags": "news, one-column, accessibility-ready"
+    "slug": "pressforge-magazine",
+    "name": "PressForge Magazine",
+    "description": "A high-impact digital magazine layout featuring bento grid hero cards, trending story grids, and multimedia highlights.",
+    "version": "2.1.0",
+    "author": "PressForge Community",
+    "authorUrl": "https://github.com/pressforge/pressforge",
+    "themeUrl": "https://github.com/pressforge/pressforge",
+    "screenshot": "/themes/ledger-magazine/screenshot.png",
+    "tags": "magazine, visual, grid-layout, trending-widgets"
   },
   {
-    "slug": "ledger-dark",
-    "name": "Ledger Dark",
-    "description": "A high-contrast dark theme built for late-night readers and low-light kiosks.",
-    "version": "0.9.1",
-    "author": "Ledger Labs",
-    "authorUrl": "https://ledgerlabs.example",
-    "themeUrl": "https://ledgerlabs.example/themes/ledger-dark",
+    "slug": "pressforge-midnight",
+    "name": "PressForge Midnight",
+    "description": "A sleek high-contrast dark theme designed for night-time digital journalism, financial terminals, and tech publications.",
+    "version": "1.0.0",
+    "author": "PressForge Community",
+    "authorUrl": "https://github.com/pressforge/pressforge",
+    "themeUrl": "https://github.com/pressforge/pressforge",
     "screenshot": "/themes/ledger-dark/screenshot.png",
-    "tags": "dark, news, block-editor-styles"
+    "tags": "dark-mode, news, modern, high-contrast"
+  },
+  {
+    "slug": "pressforge-longform",
+    "name": "PressForge Longform",
+    "description": "A distraction-free reading theme with generous white-space, elegant typography, and focused single-column storytelling.",
+    "version": "1.0.2",
+    "author": "PressForge Community",
+    "authorUrl": "https://github.com/pressforge/pressforge",
+    "themeUrl": "https://github.com/pressforge/pressforge",
+    "screenshot": "/themes/ledger-reader/screenshot.png",
+    "tags": "news, clean, one-column, longform, accessibility-ready"
   }
 ]

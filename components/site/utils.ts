@@ -20,15 +20,29 @@ export function getExcerpt(item: ContentItem, maxChars = 140) {
   );
 }
 
+export function isSerifHeading(theme?: FrontEndThemeContext): boolean {
+  if (!theme) return true;
+  if (theme.headingFont) return theme.headingFont === "serif";
+  const slug = theme.themeSlug || "";
+  return slug.includes("classic") || slug.includes("broadsheet") || slug.includes("reader") || slug.includes("longform");
+}
+
+export function isDarkTheme(theme?: FrontEndThemeContext): boolean {
+  if (!theme) return false;
+  if (theme.darkMode !== undefined) return Boolean(theme.darkMode);
+  const slug = theme.themeSlug || "";
+  return slug.includes("dark") || slug.includes("midnight");
+}
+
 export const DEFAULT_THEME: FrontEndThemeContext = {
-  themeSlug: "ledger-classic",
-  siteTitle: "Signal News",
-  siteTagline: "The Independent News Journal",
+  themeSlug: "pressforge-broadsheet",
+  siteTitle: "PressForge News",
+  siteTagline: "Open-Source Editorial Engine & Newsroom",
   primaryColor: "#2271b1",
   headerLayout: "classic",
   headingFont: "serif",
   darkMode: false,
-  footerCopyright: "© 2026 Signal News. All rights reserved.",
+  footerCopyright: "© 2026 PressForge. Open Source Editorial Engine.",
   mods: {},
   primaryNav: [
     { id: "1", title: "Home", url: "/", order: 1 },

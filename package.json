@@ -1,6 +1,7 @@
 {
-  "name": "news",
-  "version": "0.0.1",
+  "name": "pressforge",
+  "version": "1.0.0",
+  "description": "Open-Source Editorial Engine & Newsroom CMS built with Next.js 16, PostgreSQL, Drizzle ORM, and WordPress database architecture compatibility.",
   "type": "module",
   "private": true,
   "scripts": {

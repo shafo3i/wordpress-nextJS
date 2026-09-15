@@ -5,7 +5,7 @@ import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
 import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
-import { DEFAULT_THEME } from "@/components/site/utils";
+import { DEFAULT_THEME, isDarkTheme, isSerifHeading } from "@/components/site/utils";
 
 /**
  * Standard page template
@@ -18,11 +18,8 @@ export function PageTemplate({
   relatedPosts?: ContentItem[];
   theme?: FrontEndThemeContext;
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   return (
     <div

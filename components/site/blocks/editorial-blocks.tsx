@@ -14,7 +14,7 @@ import {
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme } from "@/components/site/utils";
 
 /**
  * 1. BENTO MEGA-GRID BLOCK (1 Hero Left + 4 Cards Right)
@@ -36,10 +36,7 @@ export function MagazineBentoBlock({
   showDate?: boolean;
   showCategory?: boolean;
 }) {
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -186,11 +183,8 @@ export function Broadsheet3ColBlock({
   showDate?: boolean;
   showCategory?: boolean;
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -387,10 +381,7 @@ export function HeroSliderBlock({
   showCategory?: boolean;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -528,11 +519,8 @@ export function BigLeadSideListBlock({
   showDate?: boolean;
   showCategory?: boolean;
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -676,11 +664,8 @@ export function NewsListViewBlock({
   showDate?: boolean;
   showCategory?: boolean;
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -792,11 +777,8 @@ export function CardsGridBlock({
   showDate?: boolean;
   showCategory?: boolean;
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -878,10 +860,7 @@ export function VisualGridBlock({
   showDate?: boolean;
   showCategory?: boolean;
 }) {
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -955,11 +934,8 @@ export function MinimalTextWireBlock({
   showDate?: boolean;
   showCategory?: boolean;
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 
@@ -1018,11 +994,8 @@ export function TabbedBlock({
   theme?: FrontEndThemeContext;
 }) {
   const [activeTab, setActiveTab] = useState<string>("all");
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   if (!posts.length) return null;
 

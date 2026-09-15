@@ -5,52 +5,52 @@ import { Theme } from "./types";
 
 export const AVAILABLE_THEMES: Theme[] = [
   {
-    slug: "ledger-classic",
-    name: "Ledger Classic",
-    description: "The flagship newspaper theme with a bold editorial masthead, classic serif headlines, and a multi-column front page.",
-    version: "1.3.0",
-    author: "Ledger Labs",
-    authorUrl: "https://ledgerlabs.example",
-    themeUrl: "https://ledgerlabs.example/themes/ledger-classic",
+    slug: "pressforge-broadsheet",
+    name: "PressForge Broadsheet",
+    description: "The flagship newspaper of record layout with a distinguished masthead, classic serif headlines, and a multi-column front page.",
+    version: "2.0.0",
+    author: "PressForge Community",
+    authorUrl: "https://github.com/pressforge/pressforge",
+    themeUrl: "https://github.com/pressforge/pressforge",
     screenshot: "/themes/ledger-classic/screenshot.png",
     tags: "news, newspaper, two-columns, custom-header, editorial",
   },
   {
-    slug: "ledger-reader",
-    name: "Ledger Reader",
-    description: "A distraction-free reading theme with generous white-space, elegant typography, and focused single-column storytelling.",
-    version: "1.0.2",
-    author: "Ledger Labs",
-    authorUrl: "https://ledgerlabs.example",
-    themeUrl: "https://ledgerlabs.example/themes/ledger-reader",
-    screenshot: "/themes/ledger-reader/screenshot.png",
-    tags: "news, clean, one-column, longform, accessibility-ready",
+    slug: "pressforge-magazine",
+    name: "PressForge Magazine",
+    description: "A high-impact digital magazine layout featuring bento grid hero cards, trending story grids, and multimedia highlights.",
+    version: "2.1.0",
+    author: "PressForge Community",
+    authorUrl: "https://github.com/pressforge/pressforge",
+    themeUrl: "https://github.com/pressforge/pressforge",
+    screenshot: "/themes/ledger-magazine/screenshot.png",
+    tags: "magazine, visual, grid-layout, trending-widgets",
   },
   {
-    slug: "ledger-dark",
-    name: "Ledger Dark",
+    slug: "pressforge-midnight",
+    name: "PressForge Midnight",
     description: "A sleek high-contrast dark theme designed for night-time digital journalism, financial terminals, and tech publications.",
-    version: "0.9.5",
-    author: "Ledger Labs",
-    authorUrl: "https://ledgerlabs.example",
-    themeUrl: "https://ledgerlabs.example/themes/ledger-dark",
+    version: "1.0.0",
+    author: "PressForge Community",
+    authorUrl: "https://github.com/pressforge/pressforge",
+    themeUrl: "https://github.com/pressforge/pressforge",
     screenshot: "/themes/ledger-dark/screenshot.png",
     tags: "dark-mode, news, modern, high-contrast",
   },
   {
-    slug: "ledger-magazine",
-    name: "Ledger Magazine",
-    description: "A high-impact magazine layout featuring prominent visual hero banners, trending story grids, and multimedia highlights.",
-    version: "2.1.0",
-    author: "Ledger Labs",
-    authorUrl: "https://ledgerlabs.example",
-    themeUrl: "https://ledgerlabs.example/themes/ledger-magazine",
-    screenshot: "/themes/ledger-magazine/screenshot.png",
-    tags: "magazine, visual, grid-layout, trending-widgets",
+    slug: "pressforge-longform",
+    name: "PressForge Longform",
+    description: "A distraction-free reading theme with generous white-space, elegant typography, and focused single-column storytelling.",
+    version: "1.0.2",
+    author: "PressForge Community",
+    authorUrl: "https://github.com/pressforge/pressforge",
+    themeUrl: "https://github.com/pressforge/pressforge",
+    screenshot: "/themes/ledger-reader/screenshot.png",
+    tags: "news, clean, one-column, longform, accessibility-ready",
   },
 ];
 
-const DEFAULT_THEME_SLUG = "ledger-classic";
+const DEFAULT_THEME_SLUG = "pressforge-broadsheet";
 
 /**
  * Get the active stylesheet slug from wp_options
@@ -63,7 +63,12 @@ export async function getActiveThemeSlug(): Promise<string> {
       .where(eq(wpOptions.optionName, "stylesheet"))
       .limit(1);
 
-    return row[0]?.value || DEFAULT_THEME_SLUG;
+    const val = row[0]?.value;
+    if (val === "ledger-classic") return "pressforge-broadsheet";
+    if (val === "ledger-magazine") return "pressforge-magazine";
+    if (val === "ledger-dark") return "pressforge-midnight";
+    if (val === "ledger-reader") return "pressforge-longform";
+    return val ?? DEFAULT_THEME_SLUG;
   } catch (err) {
     console.error("Failed to read active theme slug:", err);
     return DEFAULT_THEME_SLUG;

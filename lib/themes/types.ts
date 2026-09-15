@@ -109,7 +109,7 @@ export type CustomizerPayload = {
 };
 
 export const DEFAULT_MODS: Record<string, ThemeMods> = {
-  "ledger-classic": {
+  "pressforge-broadsheet": {
     showSiteTitle: true,
     showTagline: true,
     logoWidth: 180,
@@ -164,7 +164,7 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     showFooterSocials: true,
     darkMode: false,
   },
-  "ledger-reader": {
+  "pressforge-longform": {
     showSiteTitle: true,
     showTagline: true,
     logoWidth: 160,
@@ -213,12 +213,12 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     singleShowShareButtons: false,
     singleContentWidth: "narrow",
     footerColumns: 3,
-    footerCopyright: "© 2026 The Reader Review. Dedicated to longform journalism.",
+    footerCopyright: "© 2026 PressForge Longform. Dedicated to investigative storytelling.",
     showBackToTop: true,
     showFooterSocials: false,
     darkMode: false,
   },
-  "ledger-dark": {
+  "pressforge-midnight": {
     showSiteTitle: true,
     showTagline: true,
     logoWidth: 170,
@@ -233,9 +233,9 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     headerBg: "#0a0f1d",
     headerTextColor: "#f8fafc",
     topBarBg: "#030712",
-    topBarTextColor: "#10b981",
-    navBarBg: "#0d1326",
-    navLinkColor: "#cbd5e1",
+    topBarTextColor: "#34d399",
+    navBarBg: "#0f172a",
+    navLinkColor: "#e2e8f0",
     navLinkHoverColor: "#10b981",
     footerBg: "#030712",
     footerTextColor: "#64748b",
@@ -244,36 +244,18 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     headingFontFamily: "oswald",
     bodyFontFamily: "inter",
     baseFontSize: 15,
-    headingFontWeight: "600",
+    headingFontWeight: "700",
     headingTransform: "uppercase",
     headingFont: "sans",
-    headerLayout: "minimal",
-    stickyHeader: true,
-    showTopBar: true,
-    topBarTickerText: "LIVE INTELLIGENCE STREAM • ZERO-DAY EXPLOIT DISCLOSED IN CLOUD RUNTIMES",
-    showDateInHeader: true,
-    showSearchInNav: true,
-    showSocialIconsInHeader: true,
-    headerBorderStyle: "solid",
-    navAlignment: "left",
-    navStyle: "pill-badge",
-    navUppercase: true,
-    containerWidth: "1440",
-    borderRadius: "8",
-    cardStyle: "lifted-shadow",
-    singleShowFeaturedImage: true,
-    singleShowAuthorAvatar: true,
-    singleShowDate: true,
-    singleShowReadingTime: true,
     singleShowShareButtons: true,
     singleContentWidth: "wide",
     footerColumns: 4,
-    footerCopyright: "© 2026 Ledger Dark. Cyber Intelligence & Digital Reporting.",
+    footerCopyright: "© 2026 PressForge Midnight. High-velocity terminal intelligence.",
     showBackToTop: true,
     showFooterSocials: true,
     darkMode: true,
   },
-  "ledger-magazine": {
+  "pressforge-magazine": {
     showSiteTitle: true,
     showTagline: true,
     logoWidth: 200,
@@ -323,9 +305,16 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     singleShowShareButtons: true,
     singleContentWidth: "standard",
     footerColumns: 4,
-    footerCopyright: "© 2026 Magazine 24/7. High Impact Digital Publishing.",
+    footerCopyright: "© 2026 PressForge Magazine. High-impact digital publishing.",
     showBackToTop: true,
     showFooterSocials: true,
     darkMode: false,
   },
 };
+
+// Aliases for legacy stored option keys
+DEFAULT_MODS["ledger-classic"] = DEFAULT_MODS["pressforge-broadsheet"];
+DEFAULT_MODS["ledger-magazine"] = DEFAULT_MODS["pressforge-magazine"];
+DEFAULT_MODS["ledger-dark"] = DEFAULT_MODS["pressforge-midnight"];
+DEFAULT_MODS["ledger-reader"] = DEFAULT_MODS["pressforge-longform"];
+

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Search, Clock, Share2, ArrowRight } from "lucide-react";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { getFontFamilyCss } from "@/components/site/theme-dynamic-styles";
+import { isDarkTheme } from "@/components/site/utils";
 
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -15,11 +16,14 @@ function formatDate(value: Date) {
 
 export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const mods = theme.mods || {};
-  const isDark = theme.darkMode;
+  const slug = theme.themeSlug || "";
+  const isDark = isDarkTheme(theme);
   const isSerif =
     (mods.headingFont || theme.headingFont) === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+    slug.includes("classic") ||
+    slug.includes("broadsheet") ||
+    slug.includes("reader") ||
+    slug.includes("longform");
 
   const headingFont = getFontFamilyCss(
     mods.headingFontFamily,
@@ -28,7 +32,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
 
   const headerLayout = mods.headerLayout || theme.headerLayout || "classic";
   const primaryColor = mods.primaryColor || theme.primaryColor || "#2271b1";
-  const borderStyle = mods.headerBorderStyle || (theme.themeSlug === "ledger-magazine" ? "none" : "double");
+  const borderStyle = mods.headerBorderStyle || (slug.includes("magazine") ? "none" : "double");
 
   const borderBottomCss =
     borderStyle === "double"

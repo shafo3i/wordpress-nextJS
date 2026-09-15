@@ -18,13 +18,16 @@ export function ThemeSectionHeader({
   linkHref?: string;
   theme?: FrontEndThemeContext;
 }) {
-  const isMag = theme.themeSlug === "ledger-magazine";
-  const isClassic = theme.themeSlug === "ledger-classic";
-  const isDark = theme.themeSlug === "ledger-dark" || theme.darkMode;
+  const slug = theme.themeSlug || "";
+  const isMag = slug.includes("magazine");
+  const isClassic = slug.includes("classic") || slug.includes("broadsheet");
+  const isDark = slug.includes("dark") || slug.includes("midnight") || theme.darkMode;
   const isSerif =
     theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+    slug.includes("classic") ||
+    slug.includes("broadsheet") ||
+    slug.includes("reader") ||
+    slug.includes("longform");
 
   if (isClassic) {
     return (

@@ -23,7 +23,7 @@ import {
   TabbedBlock,
   MultimediaBlock,
 } from "@/components/site/blocks/editorial-blocks";
-import { DEFAULT_THEME } from "@/components/site/utils";
+import { DEFAULT_THEME, isSerifHeading, isDarkTheme } from "@/components/site/utils";
 
 /**
  * Main Front-page News Layout Component
@@ -43,11 +43,8 @@ export function NewsHome({
   primarySidebar?: WidgetItem[];
   secondarySidebar?: WidgetItem[];
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   const activeLayout = settings?.layout || "right_sidebar";
   const rawBlocks = settings?.blocks || blocks || [];
@@ -448,7 +445,7 @@ export function NewsHome({
       className={`min-h-screen transition-colors ${
         isDark
           ? "bg-[#0a0f1d] text-slate-100"
-          : theme.themeSlug === "ledger-reader"
+          : (theme.themeSlug?.includes("reader") || theme.themeSlug?.includes("longform"))
           ? "bg-[#fbf9f5] text-stone-900"
           : "bg-[#f8f7f4] text-slate-900"
       }`}

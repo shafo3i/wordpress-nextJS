@@ -6,7 +6,7 @@ import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
 import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
-import { DEFAULT_THEME, formatDate } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, isDarkTheme, isSerifHeading } from "@/components/site/utils";
 
 /**
  * Single post article template
@@ -20,11 +20,8 @@ export function PostTemplate({
   relatedPosts: ContentItem[];
   theme?: FrontEndThemeContext;
 }) {
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
   const sidebarCategories = Array.from(
     new Set(article.categories.concat(...relatedPosts.map((post) => post.categories)))
   );
@@ -32,7 +29,7 @@ export function PostTemplate({
   return (
     <div
       className={`min-h-screen transition-colors ${
-        isDark ? "bg-[#0a0f1d] text-slate-100" : theme.themeSlug === "ledger-reader" ? "bg-[#fbf9f5] text-stone-900" : "bg-[#f8f7f4] text-slate-900"
+        isDark ? "bg-[#0a0f1d] text-slate-100" : (theme.themeSlug?.includes("reader") || theme.themeSlug?.includes("longform")) ? "bg-[#fbf9f5] text-stone-900" : "bg-[#f8f7f4] text-slate-900"
       }`}
     >
       {theme.mods && <ThemeDynamicStyles mods={theme.mods} />}

@@ -15,7 +15,7 @@ import {
 import type { WidgetItem } from "@/lib/widgets/db";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import type { ContentItem } from "@/lib/site-content";
-import { DEFAULT_THEME, formatDate, getExcerpt } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme } from "@/components/site/utils";
 
 export function SidebarWidgetRenderer({
   item,
@@ -29,11 +29,8 @@ export function SidebarWidgetRenderer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [email, setEmail] = useState("");
-  const isDark = theme.darkMode || theme.themeSlug === "ledger-dark";
-  const isSerif =
-    theme.headingFont === "serif" ||
-    theme.themeSlug === "ledger-classic" ||
-    theme.themeSlug === "ledger-reader";
+  const isDark = isDarkTheme(theme);
+  const isSerif = isSerifHeading(theme);
 
   switch (item.type) {
     case "search":

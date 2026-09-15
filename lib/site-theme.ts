@@ -64,21 +64,22 @@ export async function getFrontEndThemeContext(): Promise<FrontEndThemeContext> {
   // Let mods take precedence over theme defaults
   const isDark = mods.darkMode !== undefined 
     ? Boolean(mods.darkMode) 
-    : themeSlug === "ledger-dark";
+    : themeSlug.includes("dark") || themeSlug.includes("midnight");
 
-  const font = mods.headingFont || (themeSlug === "ledger-reader" || themeSlug === "ledger-classic" ? "serif" : "sans");
+  const isSerifTheme = themeSlug.includes("reader") || themeSlug.includes("longform") || themeSlug.includes("classic") || themeSlug.includes("broadsheet");
+  const font = mods.headingFont || (isSerifTheme ? "serif" : "sans");
 
-  const layout = mods.headerLayout || (themeSlug === "ledger-magazine" ? "magazine" : themeSlug === "ledger-reader" ? "minimal" : "classic");
+  const layout = mods.headerLayout || (themeSlug.includes("magazine") ? "magazine" : (themeSlug.includes("reader") || themeSlug.includes("longform")) ? "minimal" : "classic");
 
   return {
     themeSlug,
-    siteTitle: customizer.siteTitle || "Signal News",
-    siteTagline: customizer.siteTagline || "The Independent News Journal",
-    primaryColor: mods.primaryColor || (themeSlug === "ledger-dark" ? "#10b981" : "#2271b1"),
+    siteTitle: customizer.siteTitle || "PressForge News",
+    siteTagline: customizer.siteTagline || "Open-Source Editorial Engine & Newsroom",
+    primaryColor: mods.primaryColor || (isDark ? "#10b981" : "#2271b1"),
     headerLayout: layout,
     headingFont: font,
     darkMode: isDark,
-    footerCopyright: mods.footerCopyright || "© 2026 Signal News. All rights reserved.",
+    footerCopyright: mods.footerCopyright || "© 2026 PressForge. All rights reserved.",
     primaryNav,
     footerNav,
     mods,
