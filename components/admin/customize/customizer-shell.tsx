@@ -45,6 +45,46 @@ type CustomizerSection =
   | "footer"
   | "css";
 
+// Reusable granular color control row
+function ColorField({
+  label,
+  value,
+  defaultValue,
+  onChange,
+  description,
+}: {
+  label: string;
+  value?: string;
+  defaultValue: string;
+  onChange: (val: string) => void;
+  description?: string;
+}) {
+  const current = value || defaultValue;
+  return (
+    <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5e7] last:border-b-0">
+      <div className="pr-2 min-w-0 flex-1">
+        <span className="text-[12px] font-medium text-[#2c3338] block">{label}</span>
+        {description && <span className="text-[10px] text-[#646970] block leading-tight mt-0.5 truncate">{description}</span>}
+      </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <input
+          type="color"
+          value={current.startsWith("#") && current.length === 7 ? current : defaultValue}
+          onChange={(e) => onChange(e.target.value)}
+          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white shadow-xs"
+          title={`Pick color for ${label}`}
+        />
+        <input
+          type="text"
+          value={current}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-[28px] w-20 rounded border border-[#8c8f94] bg-white px-1.5 font-mono text-[11px] text-[#2c3338] uppercase focus:border-[#2271b1] focus:outline-none"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function CustomizerShell({ initialData }: { initialData: CustomizerPayload }) {
   const [selectedThemeSlug, setSelectedThemeSlug] = useState(initialData.themeSlug);
   const [siteTitle, setSiteTitle] = useState(initialData.siteTitle);
@@ -68,7 +108,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
   };
 
   const handleResetDefaults = () => {
-    const defaultMods = DEFAULT_MODS[selectedThemeSlug] || DEFAULT_MODS["ledger-classic"];
+    const defaultMods = DEFAULT_MODS[selectedThemeSlug] || DEFAULT_MODS["pressforge-broadsheet"];
     setMods({ ...defaultMods });
     setIsDirty(true);
     setNotice("Reset to theme defaults (Click Publish to save).");
@@ -77,7 +117,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
 
   const handleSwitchTheme = (slug: string) => {
     setSelectedThemeSlug(slug);
-    const themeDefaultMods = DEFAULT_MODS[slug] || DEFAULT_MODS["ledger-classic"];
+    const themeDefaultMods = DEFAULT_MODS[slug] || DEFAULT_MODS["pressforge-broadsheet"];
     setMods({ ...themeDefaultMods });
     setIsDirty(false);
     router.push(`/admincp/customize?theme=${slug}`);
@@ -106,15 +146,190 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
     });
   };
 
-  // Color Presets for Quick Picking
+  // Color Presets for Quick Picking (Applies complete harmonious coordinated palette)
   const QUICK_PALETTES = [
-    { name: "Broadsheet Blue", hex: "#2271b1" },
-    { name: "Crimson Magazine", hex: "#e11d48" },
-    { name: "Cyber Emerald", hex: "#10b981" },
-    { name: "Financial Amber", hex: "#d97706" },
-    { name: "Editorial Stone", hex: "#292524" },
-    { name: "Oxford Navy", hex: "#1e3a8a" },
-    { name: "Violet Tech", hex: "#7c3aed" },
+    {
+      name: "Crimson Magazine",
+      hex: "#e11d48",
+      palette: {
+        primaryColor: "#e11d48",
+        secondaryColor: "#be123c",
+        backgroundColor: "#f8fafc",
+        surfaceColor: "#ffffff",
+        textColor: "#0f172a",
+        headingColor: "#020617",
+        mutedTextColor: "#475569",
+        borderColor: "#e2e8f0",
+        headerBg: "#ffffff",
+        headerTextColor: "#020617",
+        topBarBg: "#e11d48",
+        topBarTextColor: "#ffffff",
+        navBarBg: "#0f172a",
+        navLinkColor: "#f8fafc",
+        navLinkHoverColor: "#f43f5e",
+        footerBg: "#020617",
+        footerTextColor: "#94a3b8",
+        footerHeadingColor: "#ffffff",
+        footerLinkColor: "#f43f5e",
+        darkMode: false,
+      },
+    },
+    {
+      name: "Broadsheet Blue",
+      hex: "#2271b1",
+      palette: {
+        primaryColor: "#2271b1",
+        secondaryColor: "#135e96",
+        backgroundColor: "#f8f7f4",
+        surfaceColor: "#ffffff",
+        textColor: "#1d2327",
+        headingColor: "#0f172a",
+        mutedTextColor: "#64748b",
+        borderColor: "#e2e8f0",
+        headerBg: "#ffffff",
+        headerTextColor: "#0f172a",
+        topBarBg: "#0f172a",
+        topBarTextColor: "#f8fafc",
+        navBarBg: "#ffffff",
+        navLinkColor: "#1d2327",
+        navLinkHoverColor: "#2271b1",
+        footerBg: "#0f172a",
+        footerTextColor: "#94a3b8",
+        footerHeadingColor: "#ffffff",
+        footerLinkColor: "#cbd5e1",
+        darkMode: false,
+      },
+    },
+    {
+      name: "Cyber Emerald",
+      hex: "#10b981",
+      palette: {
+        primaryColor: "#10b981",
+        secondaryColor: "#059669",
+        backgroundColor: "#0a0f1d",
+        surfaceColor: "#111827",
+        textColor: "#e2e8f0",
+        headingColor: "#f8fafc",
+        mutedTextColor: "#94a3b8",
+        borderColor: "#1f2937",
+        headerBg: "#0a0f1d",
+        headerTextColor: "#f8fafc",
+        topBarBg: "#030712",
+        topBarTextColor: "#34d399",
+        navBarBg: "#0f172a",
+        navLinkColor: "#e2e8f0",
+        navLinkHoverColor: "#10b981",
+        footerBg: "#030712",
+        footerTextColor: "#64748b",
+        footerHeadingColor: "#f8fafc",
+        footerLinkColor: "#10b981",
+        darkMode: true,
+      },
+    },
+    {
+      name: "Financial Amber",
+      hex: "#d97706",
+      palette: {
+        primaryColor: "#d97706",
+        secondaryColor: "#b45309",
+        backgroundColor: "#fffbeb",
+        surfaceColor: "#ffffff",
+        textColor: "#1e293b",
+        headingColor: "#0f172a",
+        mutedTextColor: "#78716c",
+        borderColor: "#fde68a",
+        headerBg: "#ffffff",
+        headerTextColor: "#0f172a",
+        topBarBg: "#1e293b",
+        topBarTextColor: "#fbbf24",
+        navBarBg: "#1e293b",
+        navLinkColor: "#f8fafc",
+        navLinkHoverColor: "#fbbf24",
+        footerBg: "#0f172a",
+        footerTextColor: "#94a3b8",
+        footerHeadingColor: "#ffffff",
+        footerLinkColor: "#fbbf24",
+        darkMode: false,
+      },
+    },
+    {
+      name: "Editorial Stone",
+      hex: "#292524",
+      palette: {
+        primaryColor: "#292524",
+        secondaryColor: "#44403c",
+        backgroundColor: "#fbf9f5",
+        surfaceColor: "#ffffff",
+        textColor: "#292524",
+        headingColor: "#1c1917",
+        mutedTextColor: "#78716c",
+        borderColor: "#e7e5e4",
+        headerBg: "#fbf9f5",
+        headerTextColor: "#1c1917",
+        topBarBg: "#292524",
+        topBarTextColor: "#f5f5f4",
+        navBarBg: "#fbf9f5",
+        navLinkColor: "#292524",
+        navLinkHoverColor: "#0c0a09",
+        footerBg: "#1c1917",
+        footerTextColor: "#a8a29e",
+        footerHeadingColor: "#fafaf9",
+        footerLinkColor: "#d6d3d1",
+        darkMode: false,
+      },
+    },
+    {
+      name: "Oxford Navy",
+      hex: "#1e3a8a",
+      palette: {
+        primaryColor: "#1e3a8a",
+        secondaryColor: "#1d4ed8",
+        backgroundColor: "#f8fafc",
+        surfaceColor: "#ffffff",
+        textColor: "#0f172a",
+        headingColor: "#020617",
+        mutedTextColor: "#64748b",
+        borderColor: "#cbd5e1",
+        headerBg: "#ffffff",
+        headerTextColor: "#0f172a",
+        topBarBg: "#1e3a8a",
+        topBarTextColor: "#ffffff",
+        navBarBg: "#1e3a8a",
+        navLinkColor: "#ffffff",
+        navLinkHoverColor: "#93c5fd",
+        footerBg: "#0f172a",
+        footerTextColor: "#94a3b8",
+        footerHeadingColor: "#ffffff",
+        footerLinkColor: "#93c5fd",
+        darkMode: false,
+      },
+    },
+    {
+      name: "Violet Tech",
+      hex: "#7c3aed",
+      palette: {
+        primaryColor: "#7c3aed",
+        secondaryColor: "#6d28d9",
+        backgroundColor: "#faf5ff",
+        surfaceColor: "#ffffff",
+        textColor: "#1e1b4b",
+        headingColor: "#0f172a",
+        mutedTextColor: "#6b7280",
+        borderColor: "#e9d5ff",
+        headerBg: "#ffffff",
+        headerTextColor: "#0f172a",
+        topBarBg: "#4c1d95",
+        topBarTextColor: "#ffffff",
+        navBarBg: "#4c1d95",
+        navLinkColor: "#ffffff",
+        navLinkHoverColor: "#c084fc",
+        footerBg: "#1e1b4b",
+        footerTextColor: "#c4b5fd",
+        footerHeadingColor: "#ffffff",
+        footerLinkColor: "#c084fc",
+        darkMode: false,
+      },
+    },
   ];
 
   // Font Family Options
@@ -445,9 +660,9 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                         <button
                           key={pal.hex}
                           type="button"
-                          onClick={() => updateMods({ primaryColor: pal.hex })}
+                          onClick={() => updateMods({ ...pal.palette })}
                           className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] border transition-all ${
-                            mods.primaryColor === pal.hex
+                            mods.primaryColor === pal.palette.primaryColor
                               ? "border-[#2271b1] bg-[#f0f6fc] font-bold text-[#2271b1]"
                               : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                           }`}
@@ -462,155 +677,213 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                     </div>
                   </div>
 
-                  {/* Primary & Secondary Color Pickers */}
-                  <div className="space-y-3 border-t border-[#dcdcde] pt-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-medium text-[#50575e]">Primary Brand Accent</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={mods.primaryColor || "#2271b1"}
-                          onChange={(e) => updateMods({ primaryColor: e.target.value })}
-                          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={mods.primaryColor || "#2271b1"}
-                          onChange={(e) => updateMods({ primaryColor: e.target.value })}
-                          className="h-[28px] w-24 rounded border border-[#8c8f94] bg-white px-2 font-mono text-[11px] text-[#2c3338]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-medium text-[#50575e]">Secondary Accent / Hover</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={mods.secondaryColor || "#135e96"}
-                          onChange={(e) => updateMods({ secondaryColor: e.target.value })}
-                          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={mods.secondaryColor || "#135e96"}
-                          onChange={(e) => updateMods({ secondaryColor: e.target.value })}
-                          className="h-[28px] w-24 rounded border border-[#8c8f94] bg-white px-2 font-mono text-[11px] text-[#2c3338]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Page Canvas & Card Surfaces */}
-                  <div className="space-y-3 border-t border-[#dcdcde] pt-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Surfaces & Backgrounds
+                  {/* 1. Navigation Menu Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#2271b1] block mb-2">
+                      Navigation Menu Colors
                     </span>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-medium text-[#50575e]">Canvas Background</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={mods.backgroundColor || "#f8f7f4"}
-                          onChange={(e) => updateMods({ backgroundColor: e.target.value })}
-                          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={mods.backgroundColor || "#f8f7f4"}
-                          onChange={(e) => updateMods({ backgroundColor: e.target.value })}
-                          className="h-[28px] w-24 rounded border border-[#8c8f94] bg-white px-2 font-mono text-[11px] text-[#2c3338]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-medium text-[#50575e]">Card Surface Background</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={mods.surfaceColor || "#ffffff"}
-                          onChange={(e) => updateMods({ surfaceColor: e.target.value })}
-                          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={mods.surfaceColor || "#ffffff"}
-                          onChange={(e) => updateMods({ surfaceColor: e.target.value })}
-                          className="h-[28px] w-24 rounded border border-[#8c8f94] bg-white px-2 font-mono text-[11px] text-[#2c3338]"
-                        />
-                      </div>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Nav Menu Background"
+                        description="Background color for the primary navigation container"
+                        value={mods.navBarBg}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ navBarBg: val })}
+                      />
+                      <ColorField
+                        label="Nav Links Text"
+                        description="Color of standard navigation menu link items"
+                        value={mods.navLinkColor}
+                        defaultValue="#f8fafc"
+                        onChange={(val) => updateMods({ navLinkColor: val })}
+                      />
+                      <ColorField
+                        label="Nav Links Hover / Active"
+                        description="Accent color on link hover or active page item"
+                        value={mods.navLinkHoverColor}
+                        defaultValue="#f43f5e"
+                        onChange={(val) => updateMods({ navLinkHoverColor: val })}
+                      />
                     </div>
                   </div>
 
-                  {/* Text & Headlines Colors */}
-                  <div className="space-y-3 border-t border-[#dcdcde] pt-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                  {/* 2. Primary & Secondary Brand Accent Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      Brand Accents & Highlights
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Primary Brand Accent"
+                        description="Main editorial color, buttons, active pill badges"
+                        value={mods.primaryColor}
+                        defaultValue="#2271b1"
+                        onChange={(val) => updateMods({ primaryColor: val })}
+                      />
+                      <ColorField
+                        label="Secondary Accent / Hover"
+                        description="Secondary hover states, subtle category highlights"
+                        value={mods.secondaryColor}
+                        defaultValue="#135e96"
+                        onChange={(val) => updateMods({ secondaryColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Header & Masthead Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      Header & Masthead
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Header Background"
+                        description="Background color of main logo & publication title section"
+                        value={mods.headerBg}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ headerBg: val })}
+                      />
+                      <ColorField
+                        label="Masthead Title & Tagline"
+                        description="Color of the site nameplate & publication motto"
+                        value={mods.headerTextColor}
+                        defaultValue="#020617"
+                        onChange={(val) => updateMods({ headerTextColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4. Breaking News & Top Bar */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      Top Utility & Breaking News Bar
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Top Bar Background"
+                        description="Background color for top breaking ticker & utility bar"
+                        value={mods.topBarBg}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ topBarBg: val })}
+                      />
+                      <ColorField
+                        label="Top Bar Text & Ticker"
+                        description="Color for breaking news headline text & date"
+                        value={mods.topBarTextColor}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ topBarTextColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 5. Page Surfaces & Backgrounds */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      Page Surfaces & Backgrounds
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Canvas Background"
+                        description="Overall page wallpaper/canvas background"
+                        value={mods.backgroundColor}
+                        defaultValue="#f8f7f4"
+                        onChange={(val) => updateMods({ backgroundColor: val })}
+                      />
+                      <ColorField
+                        label="Card Surface Background"
+                        description="Background of individual article and content cards"
+                        value={mods.surfaceColor}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ surfaceColor: val })}
+                      />
+                      <ColorField
+                        label="Card Borders & Rules"
+                        description="Border stroke lines and editorial divider rules"
+                        value={mods.borderColor}
+                        defaultValue="#e2e8f0"
+                        onChange={(val) => updateMods({ borderColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 6. Typography & Text Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
                       Text & Typography Colors
                     </span>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-medium text-[#50575e]">Headlines / Title Color</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={mods.headingColor || "#0f172a"}
-                          onChange={(e) => updateMods({ headingColor: e.target.value })}
-                          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={mods.headingColor || "#0f172a"}
-                          onChange={(e) => updateMods({ headingColor: e.target.value })}
-                          className="h-[28px] w-24 rounded border border-[#8c8f94] bg-white px-2 font-mono text-[11px] text-[#2c3338]"
-                        />
-                      </div>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Headlines / Title Color"
+                        description="Primary color for article headings & titles"
+                        value={mods.headingColor}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ headingColor: val })}
+                      />
+                      <ColorField
+                        label="Body Paragraph Color"
+                        description="Color for article summaries and narrative body copy"
+                        value={mods.textColor}
+                        defaultValue="#1d2327"
+                        onChange={(val) => updateMods({ textColor: val })}
+                      />
+                      <ColorField
+                        label="Muted Meta & Bylines"
+                        description="Secondary timestamps, author bylines, and categories"
+                        value={mods.mutedTextColor}
+                        defaultValue="#64748b"
+                        onChange={(val) => updateMods({ mutedTextColor: val })}
+                      />
                     </div>
+                  </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-medium text-[#50575e]">Body Paragraph Color</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={mods.textColor || "#1d2327"}
-                          onChange={(e) => updateMods({ textColor: e.target.value })}
-                          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={mods.textColor || "#1d2327"}
-                          onChange={(e) => updateMods({ textColor: e.target.value })}
-                          className="h-[28px] w-24 rounded border border-[#8c8f94] bg-white px-2 font-mono text-[11px] text-[#2c3338]"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-medium text-[#50575e]">Borders & Rules Color</span>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={mods.borderColor || "#e2e8f0"}
-                          onChange={(e) => updateMods({ borderColor: e.target.value })}
-                          className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={mods.borderColor || "#e2e8f0"}
-                          onChange={(e) => updateMods({ borderColor: e.target.value })}
-                          className="h-[28px] w-24 rounded border border-[#8c8f94] bg-white px-2 font-mono text-[11px] text-[#2c3338]"
-                        />
-                      </div>
+                  {/* 7. Footer Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      Footer Colors
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Footer Background"
+                        description="Background color of bottom newspaper footer"
+                        value={mods.footerBg}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ footerBg: val })}
+                      />
+                      <ColorField
+                        label="Footer Headings"
+                        description="Column title color in footer sections"
+                        value={mods.footerHeadingColor}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ footerHeadingColor: val })}
+                      />
+                      <ColorField
+                        label="Footer Body Text"
+                        description="Color for footer paragraphs and copyright text"
+                        value={mods.footerTextColor}
+                        defaultValue="#94a3b8"
+                        onChange={(val) => updateMods({ footerTextColor: val })}
+                      />
+                      <ColorField
+                        label="Footer Links"
+                        description="Color of links inside footer navigation and columns"
+                        value={mods.footerLinkColor}
+                        defaultValue="#cbd5e1"
+                        onChange={(val) => updateMods({ footerLinkColor: val })}
+                      />
                     </div>
                   </div>
 
                   {/* Dark Mode Switcher */}
                   <div className="border-t border-[#dcdcde] pt-3">
-                    <label className="flex items-center justify-between cursor-pointer">
-                      <span className="text-[12px] font-medium text-[#50575e]">
-                        Dark Mode Overrides
-                      </span>
+                    <label className="flex items-center justify-between cursor-pointer p-2 bg-white rounded border border-[#dcdcde]">
+                      <div>
+                        <span className="text-[12px] font-medium text-[#2c3338] block">
+                          Dark Mode Overrides
+                        </span>
+                        <span className="text-[10px] text-[#646970] block">
+                          Switch preview and layout to dark mode palette
+                        </span>
+                      </div>
                       <input
                         type="checkbox"
                         checked={Boolean(mods.darkMode)}
@@ -896,6 +1169,43 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                       ))}
                     </div>
                   </div>
+
+                  {/* Header & Top Bar Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <label className="block text-[12px] font-medium text-[#50575e] mb-1.5">
+                      Header Colors
+                    </label>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Header Background"
+                        description="Background color for publication nameplate section"
+                        value={mods.headerBg}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ headerBg: val })}
+                      />
+                      <ColorField
+                        label="Masthead Title & Tagline"
+                        description="Color for publication title and slogan"
+                        value={mods.headerTextColor}
+                        defaultValue="#020617"
+                        onChange={(val) => updateMods({ headerTextColor: val })}
+                      />
+                      <ColorField
+                        label="Top Bar Background"
+                        description="Background for breaking news utility strip"
+                        value={mods.topBarBg}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ topBarBg: val })}
+                      />
+                      <ColorField
+                        label="Top Bar Text"
+                        description="Color for breaking headline text"
+                        value={mods.topBarTextColor}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ topBarTextColor: val })}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -968,6 +1278,36 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                           {styleOpt.label}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* Navigation Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <label className="block text-[12px] font-medium text-[#50575e] mb-1.5">
+                      Navigation Color Scheme
+                    </label>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Nav Bar Background"
+                        description="Color of the full-bleed or centered navigation bar"
+                        value={mods.navBarBg}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ navBarBg: val })}
+                      />
+                      <ColorField
+                        label="Nav Links Text"
+                        description="Standard link color (and inactive pill text)"
+                        value={mods.navLinkColor}
+                        defaultValue="#f8fafc"
+                        onChange={(val) => updateMods({ navLinkColor: val })}
+                      />
+                      <ColorField
+                        label="Nav Links Hover / Active"
+                        description="Accent color on link hover or active page item"
+                        value={mods.navLinkHoverColor}
+                        defaultValue="#f43f5e"
+                        onChange={(val) => updateMods({ navLinkHoverColor: val })}
+                      />
                     </div>
                   </div>
 
@@ -1264,6 +1604,43 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                         className="rounded border-[#8c8f94] text-[#2271b1]"
                       />
                     </label>
+                  </div>
+
+                  {/* Footer Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <label className="block text-[12px] font-medium text-[#50575e] mb-1.5">
+                      Footer Color Palette
+                    </label>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label="Footer Background"
+                        description="Background color for newspaper footer"
+                        value={mods.footerBg}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ footerBg: val })}
+                      />
+                      <ColorField
+                        label="Footer Headings"
+                        description="Color of desk & section titles"
+                        value={mods.footerHeadingColor}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ footerHeadingColor: val })}
+                      />
+                      <ColorField
+                        label="Footer Text"
+                        description="Color for descriptions and copyright text"
+                        value={mods.footerTextColor}
+                        defaultValue="#94a3b8"
+                        onChange={(val) => updateMods({ footerTextColor: val })}
+                      />
+                      <ColorField
+                        label="Footer Links"
+                        description="Color of navigation links in footer"
+                        value={mods.footerLinkColor}
+                        defaultValue="#cbd5e1"
+                        onChange={(val) => updateMods({ footerLinkColor: val })}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
