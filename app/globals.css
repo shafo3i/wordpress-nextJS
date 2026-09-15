@@ -119,14 +119,98 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
+
+  html {
+    @apply font-sans antialiased;
+  }
+
   body {
-    @apply bg-background text-foreground;
-    }
+    @apply bg-[#f0f0f1] text-[#3c434a];
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    min-width: 600px;
+  }
+
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
-    }
-  html {
-    @apply font-sans;
-    }
+  }
+
+  a {
+    @apply transition-colors;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-[#1d2327];
+  }
+}
+
+@layer components {
+  .wp-admin-shell {
+    @apply min-h-svh bg-[#f0f0f1] text-[#23282d];
+  }
+
+  .wp-admin-topbar {
+    @apply flex min-h-8 items-center justify-between bg-[#23282d] px-2 text-xs text-white;
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,0.08);
+  }
+
+  .wp-admin-topbar-left,
+  .wp-admin-topbar-right {
+    @apply flex min-h-8 items-center;
+  }
+
+  .wp-admin-brand {
+    @apply flex h-8 w-8 items-center justify-center bg-[#0073aa] text-base font-bold text-white hover:bg-[#135e96];
+  }
+
+  .wp-admin-top-link,
+  .wp-admin-user-link {
+    @apply flex h-8 items-center gap-2 px-3 text-white/80 hover:bg-[#32373c] hover:text-white;
+  }
+
+  .wp-admin-user {
+    @apply px-3 text-white/80;
+  }
+
+  .wp-admin-layout {
+    @apply flex min-h-[calc(100vh-2rem)];
+  }
+
+  .wp-admin-sidebar {
+    @apply w-40 shrink-0 bg-[#23282d] text-white;
+  }
+
+  .wp-admin-nav {
+    @apply py-3;
+  }
+
+  .wp-admin-nav-item {
+    @apply flex items-center gap-2 border-l-4 border-transparent px-3 py-2.5 text-xs text-white/85 hover:border-[#72aee6] hover:bg-[#323b40] hover:text-white;
+  }
+
+  .wp-admin-sidebar-footer {
+    @apply border-t border-white/10 px-4 py-3 text-xs text-white/55;
+  }
+
+  .wp-admin-main {
+    @apply min-w-0 flex-1 p-4 md:p-5;
+  }
+
+  .wp-admin-header {
+    @apply mb-5 flex items-center justify-between border-b border-[#c3c4c7] pb-3;
+  }
+
+  .wp-admin-header h1 {
+    @apply mt-1 text-[23px] font-normal leading-tight;
+  }
+
+  .wp-admin-kicker {
+    @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-[#646970];
+  }
+
+  .wp-admin-button {
+    @apply inline-flex h-8 items-center justify-center border border-[#2271b1] bg-transparent px-3 text-[13px] text-[#2271b1] hover:bg-[#f0f6fc];
+  }
 }

@@ -1,0 +1,8 @@
+[
+  { "id": "usr-maya-chen", "name": "Maya Chen", "email": "maya.chen@example.com", "role": "editor" },
+  { "id": "usr-tom-okafor", "name": "Tom Okafor", "email": "tom.okafor@example.com", "role": "author" },
+  { "id": "usr-sara-lindqvist", "name": "Sara Lindqvist", "email": "sara.lindqvist@example.com", "role": "author" },
+  { "id": "usr-elena-moretti", "name": "Elena Moretti", "email": "elena.moretti@example.com", "role": "author" },
+  { "id": "usr-ravi-patel", "name": "Ravi Patel", "email": "ravi.patel@example.com", "role": "contributor" },
+  { "id": "usr-liam-nguyen", "name": "Liam Nguyen", "email": "liam.nguyen@example.com", "role": "subscriber" }
+]

@@ -1,0 +1,18 @@
+[
+  { "name": "blogname", "value": "The Daily Ledger" },
+  { "name": "blogdescription", "value": "Independent local reporting for the metro area." },
+  { "name": "admin_email", "value": "newsroom@dailyledger.example" },
+  { "name": "siteurl", "value": "https://dailyledger.example" },
+  { "name": "home", "value": "https://dailyledger.example" },
+  { "name": "users_can_register", "value": "0" },
+  { "name": "default_role", "value": "subscriber" },
+  { "name": "date_format", "value": "Y/m/d" },
+  { "name": "time_format", "value": "g:i a" },
+  { "name": "start_of_week", "value": "1" },
+  { "name": "timezone_string", "value": "America/New_York" },
+  { "name": "posts_per_page", "value": "10" },
+  { "name": "default_category", "value": "news" },
+  { "name": "default_comment_status", "value": "open" },
+  { "name": "comment_moderation", "value": "1" },
+  { "name": "permalink_structure", "value": "/%postname%/" }
+]

@@ -1,19 +1,29 @@
-import { Button } from "@/components/ui/button"
+import { NewsHome } from "@/components/site/news-patterns";
+import { getPublishedPosts } from "@/lib/site-content";
+import { getFrontEndThemeContext } from "@/lib/site-theme";
+import { getHomepageSettings } from "@/lib/themes/homepage-blocks";
+import { getAllWidgetAreas } from "@/lib/widgets/db";
 
-export default function Page() {
+export const dynamic = "force-dynamic";
+
+export default async function Page() {
+  const [posts, theme, settings, widgetAreas] = await Promise.all([
+    getPublishedPosts(20),
+    getFrontEndThemeContext(),
+    getHomepageSettings(),
+    getAllWidgetAreas(),
+  ]);
+
+  const primarySidebar = widgetAreas.find((a) => a.id === "sidebar_primary")?.items || [];
+  const secondarySidebar = widgetAreas.find((a) => a.id === "sidebar_secondary")?.items || [];
+
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
-  )
+    <NewsHome
+      posts={posts}
+      theme={theme}
+      settings={settings}
+      primarySidebar={primarySidebar}
+      secondarySidebar={secondarySidebar}
+    />
+  );
 }

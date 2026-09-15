@@ -1,0 +1,10 @@
+{
+  "slug": "reading-time",
+  "name": "Reading Time & Word Count",
+  "version": "1.1.0",
+  "description": "Calculates and displays an estimated reading time and article word count at the top of every story.",
+  "author": "Newsroom Core",
+  "authorUrl": "https://example.com",
+  "pluginUrl": "https://example.com/plugins/reading-time",
+  "isActive": true
+}

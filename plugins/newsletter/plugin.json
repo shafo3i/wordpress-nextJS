@@ -1,0 +1,10 @@
+{
+  "slug": "newsletter",
+  "name": "Morning Briefing Newsletter",
+  "version": "2.4.0",
+  "description": "Collect email subscribers directly below published articles with an editorial newsletter callout card.",
+  "author": "Ledger Labs",
+  "authorUrl": "https://ledgerlabs.example",
+  "pluginUrl": "https://ledgerlabs.example/plugins/newsletter",
+  "isActive": true
+}

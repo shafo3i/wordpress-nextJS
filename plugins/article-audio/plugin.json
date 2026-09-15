@@ -1,0 +1,14 @@
+{
+  "slug": "article-audio",
+  "name": "Listen to Article (Audio Bar)",
+  "version": "1.0.8",
+  "description": "Adds an editorial audio player widget above articles so busy readers can listen on the go.",
+  "author": "Ledger Labs",
+  "authorUrl": "https://ledgerlabs.example",
+  "pluginUrl": "https://ledgerlabs.example/plugins/article-audio",
+  "rating": 4.7,
+  "reviewsCount": 65,
+  "activeInstalls": "35,000+",
+  "icon": "🎧",
+  "category": "Recommended"
+}

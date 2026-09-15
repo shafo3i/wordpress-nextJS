@@ -1,0 +1,42 @@
+[
+  {
+    "slug": "seo-press",
+    "name": "SEO Press",
+    "description": "Sitemaps, metadata, and readability checks for every post.",
+    "version": "3.1.0",
+    "author": "Ledger Labs",
+    "authorUrl": "https://ledgerlabs.example",
+    "pluginUrl": "https://ledgerlabs.example/plugins/seo-press",
+    "isActive": true
+  },
+  {
+    "slug": "newsletter",
+    "name": "Newsletter",
+    "description": "Collect subscribers and send the morning briefing.",
+    "version": "2.4.1",
+    "author": "Ledger Labs",
+    "authorUrl": "https://ledgerlabs.example",
+    "pluginUrl": "https://ledgerlabs.example/plugins/newsletter",
+    "isActive": true
+  },
+  {
+    "slug": "ad-manager",
+    "name": "Ad Manager",
+    "description": "Place and schedule display advertising across the site.",
+    "version": "1.8.0",
+    "author": "Ledger Labs",
+    "authorUrl": "https://ledgerlabs.example",
+    "pluginUrl": "https://ledgerlabs.example/plugins/ad-manager",
+    "isActive": false
+  },
+  {
+    "slug": "related-posts",
+    "name": "Related Posts",
+    "description": "Surface related stories by tag and category at the end of each article.",
+    "version": "0.7.2",
+    "author": "Ledger Labs",
+    "authorUrl": "https://ledgerlabs.example",
+    "pluginUrl": "https://ledgerlabs.example/plugins/related-posts",
+    "isActive": false
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Primary",
+    "slug": "primary",
+    "location": "primary",
+    "items": [
+      { "title": "Home", "url": "/", "position": 1 },
+      { "title": "News", "url": "/category/news", "position": 2 },
+      { "title": "Business", "url": "/category/business", "position": 3 },
+      { "title": "Technology", "url": "/category/technology", "position": 4 },
+      { "title": "Culture", "url": "/category/culture", "position": 5 },
+      { "title": "Opinion", "url": "/category/opinion", "position": 6 },
+      { "title": "About", "postSlug": "about", "position": 7 }
+    ]
+  },
+  {
+    "name": "Footer",
+    "slug": "footer",
+    "location": "footer",
+    "items": [
+      { "title": "About", "postSlug": "about", "position": 1 },
+      { "title": "Contact", "postSlug": "contact", "position": 2 },
+      { "title": "Editorial Standards", "postSlug": "editorial-standards", "position": 3 },
+      { "title": "Privacy", "url": "/privacy", "position": 4 }
+    ]
+  }
+]

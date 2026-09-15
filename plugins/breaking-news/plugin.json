@@ -1,0 +1,14 @@
+{
+  "slug": "breaking-news",
+  "name": "Breaking News Alert Ticker",
+  "version": "1.3.0",
+  "description": "Broadcast urgent editorial alerts and real-time flash headlines at the top of the newsroom.",
+  "author": "Newsroom Core",
+  "authorUrl": "https://example.com",
+  "pluginUrl": "https://example.com/plugins/breaking-news",
+  "rating": 4.9,
+  "reviewsCount": 84,
+  "activeInstalls": "45,000+",
+  "icon": "🚨",
+  "category": "Featured"
+}

@@ -1,0 +1,14 @@
+{
+  "slug": "table-of-contents",
+  "name": "Quick Table of Contents",
+  "version": "2.0.1",
+  "description": "Automatically generates a clean, interactive outline for long-form reporting and investigative journalism.",
+  "author": "Ledger Labs",
+  "authorUrl": "https://ledgerlabs.example",
+  "pluginUrl": "https://ledgerlabs.example/plugins/table-of-contents",
+  "rating": 4.8,
+  "reviewsCount": 112,
+  "activeInstalls": "80,000+",
+  "icon": "📑",
+  "category": "Popular"
+}

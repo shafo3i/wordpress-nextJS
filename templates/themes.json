@@ -1,0 +1,35 @@
+[
+  {
+    "slug": "ledger-classic",
+    "name": "Ledger Classic",
+    "description": "The flagship newspaper theme with a bold masthead, serif headlines, and a two-column front page.",
+    "version": "1.3.0",
+    "author": "Ledger Labs",
+    "authorUrl": "https://ledgerlabs.example",
+    "themeUrl": "https://ledgerlabs.example/themes/ledger-classic",
+    "screenshot": "/themes/ledger-classic/screenshot.png",
+    "tags": "news, blog, two-columns, custom-header"
+  },
+  {
+    "slug": "ledger-reader",
+    "name": "Ledger Reader",
+    "description": "A distraction-free reading theme with generous margins and large type.",
+    "version": "1.0.2",
+    "author": "Ledger Labs",
+    "authorUrl": "https://ledgerlabs.example",
+    "themeUrl": "https://ledgerlabs.example/themes/ledger-reader",
+    "screenshot": "/themes/ledger-reader/screenshot.png",
+    "tags": "news, one-column, accessibility-ready"
+  },
+  {
+    "slug": "ledger-dark",
+    "name": "Ledger Dark",
+    "description": "A high-contrast dark theme built for late-night readers and low-light kiosks.",
+    "version": "0.9.1",
+    "author": "Ledger Labs",
+    "authorUrl": "https://ledgerlabs.example",
+    "themeUrl": "https://ledgerlabs.example/themes/ledger-dark",
+    "screenshot": "/themes/ledger-dark/screenshot.png",
+    "tags": "dark, news, block-editor-styles"
+  }
+]

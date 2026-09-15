@@ -1,0 +1,15 @@
+[
+  { "name": "News", "slug": "news", "description": "Breaking news and top stories from around the metro area." },
+  { "name": "Local", "slug": "local", "description": "City hall, neighborhoods, and community reporting.", "parent": "news" },
+  { "name": "Politics", "slug": "politics", "description": "Elections, policy, and government accountability.", "parent": "news" },
+  { "name": "World", "slug": "world", "description": "International news and analysis.", "parent": "news" },
+  { "name": "Business", "slug": "business", "description": "Companies, markets, and the local economy." },
+  { "name": "Technology", "slug": "technology", "description": "Startups, gadgets, and the people shaping the future." },
+  { "name": "Sports", "slug": "sports", "description": "Scores, analysis, and profiles from the local sports scene." },
+  { "name": "Culture", "slug": "culture", "description": "Arts, books, film, music, and things to do." },
+  { "name": "Opinion", "slug": "opinion", "description": "Editorials, columns, and letters from our readers." },
+  { "name": "Lifestyle", "slug": "lifestyle", "description": "Food, health, travel, and how we live." },
+  { "name": "Health", "slug": "health", "description": "Wellness, fitness, and public health.", "parent": "lifestyle" },
+  { "name": "Travel", "slug": "travel", "description": "Destinations, guides, and trip ideas.", "parent": "lifestyle" },
+  { "name": "Uncategorized", "slug": "uncategorized", "description": "Posts without another category." }
+]

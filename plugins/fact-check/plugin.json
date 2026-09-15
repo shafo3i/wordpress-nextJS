@@ -1,0 +1,14 @@
+{
+  "slug": "fact-check",
+  "name": "Fact-Check & Trust Indicator",
+  "version": "1.2.0",
+  "description": "Displays editorial standards verification, fact-checking credentials, and audit logs for enhanced reader trust.",
+  "author": "Ledger Labs",
+  "authorUrl": "https://ledgerlabs.example",
+  "pluginUrl": "https://ledgerlabs.example/plugins/fact-check",
+  "rating": 4.9,
+  "reviewsCount": 178,
+  "activeInstalls": "95,000+",
+  "icon": "✅",
+  "category": "Featured"
+}

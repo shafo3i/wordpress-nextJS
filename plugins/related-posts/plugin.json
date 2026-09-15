@@ -1,0 +1,10 @@
+{
+  "slug": "related-posts",
+  "name": "Related Stories Widget",
+  "version": "1.0.4",
+  "description": "Automatically surfaces contextual related stories and category highlights at the footer of each article.",
+  "author": "Ledger Labs",
+  "authorUrl": "https://ledgerlabs.example",
+  "pluginUrl": "https://ledgerlabs.example/plugins/related-posts",
+  "isActive": false
+}

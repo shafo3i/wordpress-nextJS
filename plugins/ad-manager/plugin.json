@@ -1,0 +1,10 @@
+{
+  "slug": "ad-manager",
+  "name": "Ad Manager & Sponsor Slots",
+  "version": "1.8.0",
+  "description": "Place and schedule display advertising placements and sponsored disclosure labels across the site.",
+  "author": "Ledger Labs",
+  "authorUrl": "https://ledgerlabs.example",
+  "pluginUrl": "https://ledgerlabs.example/plugins/ad-manager",
+  "isActive": false
+}

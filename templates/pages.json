@@ -1,0 +1,29 @@
+[
+  {
+    "title": "About",
+    "slug": "about",
+    "type": "page",
+    "status": "publish",
+    "author": "maya.chen@example.com",
+    "date": "2025-10-01T09:00:00",
+    "content": "<p>The Daily Ledger is an independent local newsroom covering the metro area with reporting you can act on.</p><p>We are reader-funded and editorially independent. Our newsroom does not accept payment for coverage.</p><h2>Contact the newsroom</h2><p>Tips and corrections can be sent to newsroom@dailyledger.example.</p>"
+  },
+  {
+    "title": "Contact",
+    "slug": "contact",
+    "type": "page",
+    "status": "publish",
+    "author": "maya.chen@example.com",
+    "date": "2025-10-01T09:15:00",
+    "content": "<p>We want to hear from you. Here is how to reach every part of the newsroom.</p><h2>News tips</h2><p>Email tips@dailyledger.example or use the secure tip line.</p><h2>Customer support</h2><p>For subscriptions and delivery, email support@dailyledger.example or call 555-0100.</p>"
+  },
+  {
+    "title": "Editorial Standards",
+    "slug": "editorial-standards",
+    "type": "page",
+    "status": "publish",
+    "author": "maya.chen@example.com",
+    "date": "2025-10-02T10:00:00",
+    "content": "<p>Our reporting is built on accuracy, fairness, and independence.</p><p>We correct errors promptly and transparently. Sources are named whenever possible, and anonymous sourcing requires an editor's approval.</p><p>We do not let advertisers, donors, or public officials dictate what we cover or how.</p>"
+  }
+]
