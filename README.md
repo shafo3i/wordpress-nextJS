@@ -16,6 +16,40 @@ PressForge is **100% free, public, and open-source**. Anyone is welcome to contr
 
 ---
 
+## 🚀 Live Demo & Access Info
+
+| Property | Details |
+| :--- | :--- |
+| **Public Site** | [https://wordpressnextjs-ten.vercel.app](https://wordpressnextjs-ten.vercel.app) |
+| **Admin Sign-In** | [https://wordpressnextjs-ten.vercel.app/cms-admin](https://wordpressnextjs-ten.vercel.app/cms-admin) |
+| **Admin Dashboard** | [https://wordpressnextjs-ten.vercel.app/admincp](https://wordpressnextjs-ten.vercel.app/admincp) |
+| **Demo Email** | `admin@pressforge.local` |
+| **Demo Password** | `Admin123456!` |
+| **Role** | `Administrator` |
+
+> 💡 **Quick Login Tip**: The `/cms-admin` sign-in page features a 1-click **"Fill Administrator Credentials"** button for immediate access during evaluations.
+
+### 📊 Feature Status: What Works vs. Known In-Progress Links
+
+| Feature / Area | Status | Details / Notes |
+| :--- | :---: | :--- |
+| **Newsroom Homepage** | 🟢 Functional | Full reactive layouts, 10+ modular blocks, dynamic mastheads, responsive grids. |
+| **Single Article Reader** | 🟢 Functional | Reads dynamic posts from PostgreSQL at `/posts/[slug]`, formatted with author and metadata. |
+| **Single Page Template** | 🟢 Functional | Serves authored custom pages at `/[slug]` with published status checks. |
+| **Admin Dashboard** | 🟢 Functional | Metrics at a glance (post/page/comment counts), recent activity log, site health status. |
+| **Posts Management** | 🟢 Functional | Full CRUD at `/admincp/posts`: create, edit, draft/publish, TinyMCE WYSIWYG, categories, tags, featured images. |
+| **Pages Management** | 🟢 Functional | Full CRUD at `/admincp/pages`: create custom pages, edit slugs, publish content. |
+| **Appearance & Themes** | 🟢 Functional | Switch seamlessly between 4 themes (*Broadsheet*, *Magazine*, *Midnight*, *Longform*) at `/admincp/themes`. |
+| **Live Theme Customizer** | 🟢 Functional | Real-time dual-pane customizer at `/admincp/customize`: live preview, color palettes, fonts, header styles. |
+| **Widgets & Sidebars** | 🟢 Functional | Widget management board at `/admincp/widgets`: drag-and-drop into primary/secondary sidebars. |
+| **Plugin Architecture** | 🟢 Functional | Dynamic plugin system at `/admincp/plugins`: activate/deactivate plugins and register dynamic widgets. |
+| **Categories & Tags** | 🟢 Functional | Taxonomy managers at `/admincp/categories` and `/admincp/tags`. |
+| **Category/Tag Archive Pages** | 🟡 In Progress | Tag and category links on posts (`/category/[slug]`, `/tag/[slug]`) currently lack dedicated archive listing templates. |
+| **Footer Governance Links** | 🟡 Placeholders | Footer links (*Editorial Standards*, *Privacy*, *Terms*, *Corrections*) return 404 until authored in Pages. |
+| **Media Library / Comments Tab** | 🟡 Placeholders | `/admincp/media`, `/admincp/comments`, `/admincp/users`, `/admincp/settings` in the admin menu are UI stubs. |
+
+---
+
 ## ✨ Key Highlights
 
 - 🎨 **Live Theme Customizer Engine**: Two-pane customizer with instant reactive preview across Desktop, Tablet, and Mobile viewports without iframe reloads.

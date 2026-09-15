@@ -50,7 +50,7 @@ async function setOption(name: string, value: string): Promise<void> {
 export async function getCustomizerData(targetThemeSlug?: string): Promise<CustomizerPayload> {
   const [activeSlug, siteTitle, siteTagline, locations] = await Promise.all([
     getActiveThemeSlug(),
-    getOption("blogname", "The Daily Ledger"),
+    getOption("blogname", "PressForge News"),
     getOption("blogdescription", "The Independent News Journal"),
     getNavMenuLocations(),
   ]);
@@ -61,7 +61,7 @@ export async function getCustomizerData(targetThemeSlug?: string): Promise<Custo
 
   const modsRaw = await getOption(`theme_mods_${slug}`, "");
 
-  const defaultThemeMods = DEFAULT_MODS[slug] || DEFAULT_MODS["ledger-classic"];
+  const defaultThemeMods = DEFAULT_MODS[slug] || DEFAULT_MODS["pressforge-broadsheet"];
   let mods: ThemeMods = { ...defaultThemeMods };
 
   if (modsRaw) {
