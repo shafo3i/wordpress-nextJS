@@ -10,7 +10,7 @@ export const auth = betterAuth({
         schema,
     }),
 
-    emailAndPassword:{
+    emailAndPassword: {
         enabled: true,
     },
     // user: {
@@ -25,6 +25,6 @@ export const auth = betterAuth({
     // },
 
     plugins: [
-        admin() 
+        admin()
     ]
 });
