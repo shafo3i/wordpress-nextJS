@@ -16,6 +16,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
+    "db:admin": "tsx scripts/create-admin.ts",
     "auth:generate": "pnpm dlx @better-auth/cli@latest generate --output ./db/schema/auth-schema.ts"
   },
   "dependencies": {
