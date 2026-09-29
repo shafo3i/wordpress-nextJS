@@ -1,6 +1,10 @@
 import { pgTable, bigserial, text, varchar, integer, timestamp, index } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
+
+
+
+
 // ---------------------------------------------------------------------------
 // wp_options — site-wide key/value configuration store (wp_options).
 // Stores site name, active plugins, theme settings, widgets, transients.
@@ -43,4 +47,6 @@ export const wpLinks = pgTable(
     index("wp_links_visible_idx").on(table.linkVisible),
   ],
 );
+
+
 

@@ -5,12 +5,14 @@ export function PostListHeader({
   addNewHref = "/admincp/posts/new",
   addNewLabel = "Add New",
   notice,
+  dict = {},
   onDismissNotice,
 }: {
   title?: string;
   addNewHref?: string;
   addNewLabel?: string;
   notice?: { type?: "success" | "warning" | "error"; message: string } | null;
+  dict?: Record<string, string>;
   onDismissNotice?: () => void;
 }) {
   return (
@@ -30,20 +32,20 @@ export function PostListHeader({
             className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             type="button"
           >
-            Screen Options <span className="text-[9px]">▼</span>
+            {dict["admin.common.screen_options"] || "Screen Options"} <span className="text-[9px]">▼</span>
           </button>
           <button
             className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             type="button"
           >
-            Help <span className="text-[9px]">▼</span>
+            {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
           </button>
         </div>
       </div>
 
       {notice && (
         <div
-          className={`relative my-3 flex items-center justify-between border-l-4 bg-white px-3 py-2 text-[13px] shadow-[0_1px_1px_0_rgba(0,0,0,0.04)] ${
+          className={`relative my-3 flex items-center justify-between border-s-4 bg-white px-3 py-2 text-[13px] shadow-[0_1px_1px_0_rgba(0,0,0,0.04)] ${
             notice.type === "error"
               ? "border-[#d63638] text-[#d63638]"
               : notice.type === "warning"

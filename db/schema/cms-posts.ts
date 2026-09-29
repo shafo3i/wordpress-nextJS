@@ -9,6 +9,9 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
+import { createInsertSchema, createUpdateSchema } from "drizzle-orm/zod";
+import z from "zod";
+import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
 // ---------------------------------------------------------------------------
 // wp_usermeta — arbitrary key/value metadata per user (wp_usermeta).
@@ -94,4 +97,16 @@ export const wpPostmeta = pgTable(
     index("wp_postmeta_key_idx").on(table.metaKey),
   ],
 );
+
+
+export const wpPostSchema = createInsertSchema(wpPosts);
+export type WpPostSchema = z.infer<typeof wpPostSchema>;
+
+
+export const wpPostUpdateSchema = createUpdateSchema(wpPosts);
+export type WpPostUpdateSchema = z.infer<typeof wpPostUpdateSchema>;
+
+export type selectWpPostModel = InferSelectModel<typeof wpPosts>;
+
+
 

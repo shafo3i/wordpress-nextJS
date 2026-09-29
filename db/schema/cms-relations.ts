@@ -9,6 +9,7 @@ import {
 } from "./cms-taxonomy";
 import { wpComments, wpCommentmeta } from "./cms-comments";
 import { wpLinks, wpOptions } from "./cms-options";
+import { languagesTable, translationsTable, postTranslationsTable } from "./cms-languages";
 
 const schema = {
   user,
@@ -25,6 +26,9 @@ const schema = {
   wpComments,
   wpCommentmeta,
   wpLinks,
+  languagesTable,
+  translationsTable,
+  postTranslationsTable,
 } as const;
 
 export const cmsRelations = defineRelations(schema);

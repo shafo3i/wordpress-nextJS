@@ -93,17 +93,38 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
             <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider animate-pulse flex-shrink-0">
-              Breaking
+              {theme.dict?.["site.breaking"] || "Breaking"}
             </span>
             <span className="text-xs font-medium truncate max-w-xl">
               {mods.topBarTickerText || "Editorial dispatch: Global supply chains adjust to new infrastructure corridors"}
             </span>
           </div>
-          {mods.showDateInHeader !== false && (
-            <span className="text-[11px] opacity-75 font-mono hidden sm:inline flex-shrink-0">
-              {formatDate(new Date())}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {mods.showDateInHeader !== false && (
+              <span className="text-[11px] opacity-75 font-mono hidden sm:inline flex-shrink-0">
+                {formatDate(new Date())}
+              </span>
+            )}
+            {/* Language Switcher */}
+            {theme.languages && theme.languages.length > 1 && (
+              <div className="flex items-center gap-1.5 text-[11px] font-medium border-l border-white/20 pl-3">
+                {theme.languages.map((lang, idx) => (
+                  <span key={lang.code} className="inline-flex items-center gap-1.5">
+                    {idx > 0 && <span className="opacity-40">|</span>}
+                    <Link
+                      href={lang.url}
+                      className={`hover:underline transition-opacity ${
+                        lang.isActive ? "font-bold underline text-white" : "opacity-80 hover:opacity-100"
+                      }`}
+                      title={lang.name}
+                    >
+                      {lang.nativeName || lang.name}
+                    </Link>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

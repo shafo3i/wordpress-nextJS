@@ -4,6 +4,21 @@ import { getMenuWithItems, getNavMenuLocations } from "@/lib/menus/db";
 import { MenuItem } from "@/lib/menus/types";
 
 import { ThemeMods } from "@/lib/themes/types";
+import {
+  getActiveLanguages,
+  getDefaultLanguage,
+  getTranslations,
+  type LinkedPostTranslation,
+} from "@/services/language.service";
+
+export type LanguageLink = {
+  code: string;
+  name: string;
+  nativeName: string;
+  url: string;
+  isActive: boolean;
+  direction: string;
+};
 
 export type FrontEndThemeContext = {
   themeSlug: string;
@@ -17,6 +32,10 @@ export type FrontEndThemeContext = {
   primaryNav: MenuItem[];
   footerNav: MenuItem[];
   mods: ThemeMods;
+  locale?: string;
+  direction?: "ltr" | "rtl";
+  languages?: LanguageLink[];
+  dict?: Record<string, string>;
 };
 
 const DEFAULT_PRIMARY_NAV: MenuItem[] = [
@@ -35,12 +54,51 @@ const DEFAULT_FOOTER_NAV: MenuItem[] = [
   { id: "f-4", title: "Privacy Policy", url: "/privacy", order: 4 },
 ];
 
-export async function getFrontEndThemeContext(): Promise<FrontEndThemeContext> {
-  const [themeSlug, customizer, locations] = await Promise.all([
+export async function getFrontEndThemeContext(options?: {
+  locale?: string;
+  postTranslations?: LinkedPostTranslation[];
+  currentPath?: string;
+}): Promise<FrontEndThemeContext> {
+  const [themeSlug, customizer, locations, activeLanguages, defaultLang] = await Promise.all([
     getActiveThemeSlug(),
     getCustomizerData(),
     getNavMenuLocations(),
+    getActiveLanguages().catch(() => []),
+    getDefaultLanguage().catch(() => null),
   ]);
+
+  const defaultLocale = defaultLang?.code || "en";
+  const activeLocale = options?.locale || defaultLocale;
+  const currentLangObj = activeLanguages.find((l) => l.code === activeLocale) || defaultLang;
+  const direction = (currentLangObj?.direction as "ltr" | "rtl") || "ltr";
+
+  // Build language links for the switcher
+  const languages: LanguageLink[] = activeLanguages.map((l) => {
+    let url = "/";
+    const isThisDefault = l.isDefault || l.code === defaultLocale;
+
+    if (options?.postTranslations && options.postTranslations.length > 0) {
+      const match = options.postTranslations.find((t) => t.languageCode === l.code);
+      if (match) {
+        url = isThisDefault ? `/posts/${match.slug}` : `/${l.code}/posts/${match.slug}`;
+      } else {
+        url = isThisDefault ? "/" : `/${l.code}`;
+      }
+    } else {
+      url = isThisDefault ? "/" : `/${l.code}`;
+    }
+
+    return {
+      code: l.code,
+      name: l.name,
+      nativeName: l.nativeName || l.name,
+      url,
+      isActive: l.code === activeLocale,
+      direction: (l.direction as "ltr" | "rtl") || "ltr",
+    };
+  });
+
+  const dict = await getTranslations(activeLocale).catch(() => ({}));
 
   let primaryNav = DEFAULT_PRIMARY_NAV;
   let footerNav = DEFAULT_FOOTER_NAV;
@@ -83,5 +141,9 @@ export async function getFrontEndThemeContext(): Promise<FrontEndThemeContext> {
     primaryNav,
     footerNav,
     mods,
+    locale: activeLocale,
+    direction,
+    languages,
+    dict,
   };
 }

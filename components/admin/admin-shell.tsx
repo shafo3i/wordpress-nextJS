@@ -1,11 +1,18 @@
 import Link from "next/link";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { count, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { wpComments, wpOptions } from "@/db/schema";
-import { Home, MessageSquare, Plus, ShieldCheck } from "lucide-react";
+import { Home, MessageSquare, Plus, ShieldCheck, Globe } from "lucide-react";
 import { AdminNav } from "./admin-nav";
+import {
+  getLanguageByCode,
+  getDefaultLanguage,
+  getActiveLanguages,
+  getTranslations,
+} from "@/services/language.service";
+import { switchAdminLanguageAction } from "@/app/(admin)/admincp/languages/action";
 
 export async function getAdminContext() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -25,10 +32,42 @@ export async function getAdminContext() {
   };
 }
 
+export async function getAdminLanguageContext() {
+  const cookieStore = await cookies();
+  const requestedCode = cookieStore.get("admin_lang")?.value;
+
+  let currentLang = requestedCode ? await getLanguageByCode(requestedCode) : null;
+  if (!currentLang) {
+    currentLang = await getDefaultLanguage();
+  }
+
+  const code = currentLang?.code || "en";
+  const direction = currentLang?.direction || "ltr";
+
+  const [dict, allLanguages] = await Promise.all([
+    getTranslations(code),
+    getActiveLanguages(),
+  ]);
+
+  return {
+    currentLang,
+    code,
+    direction,
+    dict,
+    allLanguages,
+  };
+}
+
 export async function AdminShell({ children }: { children: React.ReactNode }) {
-  const context = await getAdminContext();
+  const [context, langContext] = await Promise.all([
+    getAdminContext(),
+    getAdminLanguageContext(),
+  ]);
+
+  const dict = langContext.dict;
+
   return (
-    <div className="wp-admin-shell">
+    <div className="wp-admin-shell" dir={langContext.direction}>
       <header className="wp-admin-topbar">
         <div className="wp-admin-topbar-left">
           <Link
@@ -57,23 +96,57 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
             href="/admincp/posts/new"
           >
             <Plus aria-hidden="true" className="size-4" />
-            <span>New</span>
+            <span>{dict["admin.menu.add_new"] || "New"}</span>
           </Link>
         </div>
-        <div className="wp-admin-topbar-right">
-          <span className="wp-admin-user">Howdy, {context.userName || "—"}</span>
+
+        <div className="wp-admin-topbar-right flex items-center gap-3">
+          {/* Admin Language Switcher */}
+          {langContext.allLanguages.length > 1 && (
+            <div className="flex items-center gap-1.5 text-xs text-[#c3c4c7] border-e border-[#3c434a] pe-3">
+              <Globe className="size-3.5 text-[#a7aaad]" />
+              <form action={switchAdminLanguageAction} className="flex items-center gap-1">
+                {langContext.allLanguages.map((lang, idx) => {
+                  const isCurrent = lang.code === langContext.code;
+                  return (
+                    <span key={lang.code} className="flex items-center">
+                      {idx > 0 && <span className="mx-1 text-[#50575e]">|</span>}
+                      {isCurrent ? (
+                        <span className="font-semibold text-white">
+                          {lang.nativeName || lang.name}
+                        </span>
+                      ) : (
+                        <button
+                          className="text-[#72aee6] hover:text-white cursor-pointer transition-colors"
+                          name="code"
+                          type="submit"
+                          value={lang.code}
+                        >
+                          {lang.nativeName || lang.name}
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
+              </form>
+            </div>
+          )}
+
+          <span className="wp-admin-user">
+            {dict["admin.menu.howdy"] || "Howdy"}, {context.userName || "—"}
+          </span>
           <Link className="wp-admin-user-link" href="/cms-login">
-            Log Out
+            {dict["admin.menu.logout"] || "Log Out"}
           </Link>
         </div>
       </header>
 
       <div className="wp-admin-layout">
         <aside className="wp-admin-sidebar">
-          <AdminNav />
+          <AdminNav dict={dict} />
           <div className="wp-admin-sidebar-footer">
             <ShieldCheck aria-hidden="true" className="mb-2 size-4" />
-            Site administration
+            {dict["admin.menu.site_administration"] || "Site administration"}
           </div>
         </aside>
 
@@ -99,4 +172,3 @@ export function DashboardPanel({
     </section>
   );
 }
-

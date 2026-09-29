@@ -10,6 +10,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { wpPosts } from "./cms-posts";
 import { user } from "./auth-schema";
+import { createInsertSchema } from "drizzle-orm/zod";
+import { InferSelectModel } from "drizzle-orm";
+import { z } from "zod";
 
 // ---------------------------------------------------------------------------
 // wp_comments — comment threads on posts (wp_comments).
@@ -64,4 +67,68 @@ export const wpCommentmeta = pgTable(
     index("wp_commentmeta_key_idx").on(table.metaKey),
   ],
 );
+
+
+
+export const createCommentSchema = createInsertSchema(wpComments, {
+  commentPostId: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? null : val),
+      z.coerce.bigint({ message: "Post ID must be a valid ID" }).positive()
+    ),
+  commentAuthor: (schema) => schema.min(1, "Comment author is required").max(255),
+  commentAuthorEmail: (schema) => schema.email("Invalid email address").max(100),
+  commentAuthorUrl: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? "" : val),
+      z.string().url("Invalid URL").or(z.literal("")).default("")
+    ),
+  commentAuthorIp: () => z.string().max(100).default(""),
+  commentContent: (schema) => schema.min(1, "Comment content is required"),
+  commentKarma: () => z.coerce.number().default(0),
+  commentApproved: () =>
+    z.enum(["0", "1", "spam", "trash", "pending"]).default("1"),
+  commentAgent: () => z.string().max(255).default(""),
+  commentType: () => z.string().max(20).default("comment"),
+  commentParent: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? BigInt(0) : val),
+      z.coerce.bigint().default(BigInt(0))
+    ),
+  userId: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? null : val),
+      z.string().nullable().optional()
+    ),
+}).omit({
+  commentId: true,
+  commentDate: true,
+  commentDateGmt: true,
+});
+
+export const createCommentMetaSchema = createInsertSchema(wpCommentmeta, {
+  commentId: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? null : val),
+      z.coerce.bigint({ message: "Comment ID must be a valid ID" }).positive()
+    ),
+  metaKey: (schema) => schema.max(255).optional(),
+  metaValue: () => z.string().nullable().optional(),
+}).omit({
+  metaId: true,
+});
+
+// Type definitions
+export type SelectComment = InferSelectModel<typeof wpComments>;
+export type InsertComment = z.input<typeof createCommentSchema>;
+export type InsertCommentOutput = z.output<typeof createCommentSchema>;
+
+export type SelectCommentMeta = InferSelectModel<typeof wpCommentmeta>;
+export type InsertCommentMeta = z.input<typeof createCommentMetaSchema>;
+export type InsertCommentMetaOutput = z.output<typeof createCommentMetaSchema>;
+
+// Aliases for compatibility
+export const insertCommentSchema = createCommentSchema;
+export type InsertCommentSchema = InsertComment;
+export type SelectCommentSchema = SelectComment;
 

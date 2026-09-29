@@ -12,6 +12,7 @@ import {
   wpTermTaxonomy,
   wpTerms,
   user,
+  languagesTable,
 } from "@/db/schema";
 
 const templatesDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "../templates");
@@ -378,13 +379,49 @@ async function seed() {
   await seedThemes(themes);
   await seedPlugins(plugins);
   await seedMenus(menus, postIdBySlug, fallbackAuthorId);
+  await seedLanguages();
   await refreshCounts();
 
   console.log(
     `Seed complete: ${users.length} users, ${categories.length} categories, ${tags.length} tags, ` +
-      `${posts.length + pages.length} posts and pages, ${comments.length} comments, ` +
-      `${themes.length} themes, ${plugins.length} plugins, ${menus.length} menus.`,
+    `${posts.length + pages.length} posts and pages, ${comments.length} comments, ` +
+    `${themes.length} themes, ${plugins.length} plugins, ${menus.length} menus.`,
   );
+}
+
+async function seedLanguages() {
+  const defaultLanguages = [
+    {
+      code: "en",
+      name: "English",
+      nativeName: "English",
+      direction: "ltr",
+      isDefault: true,
+      isActive: true,
+      displayOrder: 0,
+    },
+    {
+      code: "ar",
+      name: "Arabic",
+      nativeName: "العربية",
+      direction: "rtl",
+      isDefault: false,
+      isActive: true,
+      displayOrder: 1,
+    },
+  ];
+
+  for (const lang of defaultLanguages) {
+    const existing = await db
+      .select({ code: languagesTable.code })
+      .from(languagesTable)
+      .where(eq(languagesTable.code, lang.code))
+      .limit(1);
+
+    if (existing.length === 0) {
+      await db.insert(languagesTable).values(lang);
+    }
+  }
 }
 
 seed().catch((error) => {

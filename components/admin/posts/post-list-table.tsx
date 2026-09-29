@@ -137,7 +137,7 @@ export function PostListTable({
 
       {/* WordPress Widefat Fixed Striped Posts Table */}
       <div className="overflow-x-auto border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
-        <table className="w-full min-w-[760px] border-collapse text-left text-[13px]">
+        <table className="w-full min-w-[760px] border-collapse text-start text-[13px]">
           <thead className="border-b border-[#c3c4c7] bg-white text-[13px] text-[#2c3338]">
             <tr>
               <th className="w-8 px-3 py-2 text-center">
