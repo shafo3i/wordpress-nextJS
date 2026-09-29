@@ -147,6 +147,12 @@
 }
 
 @layer components {
+  .theme-container,
+  .site-container {
+    max-width: var(--theme-container-width, 1280px);
+    width: 100%;
+  }
+
   .wp-admin-shell {
     @apply min-h-svh bg-[#f0f0f1] text-[#23282d];
   }

@@ -453,7 +453,10 @@ export function NewsHome({
       {theme.mods && <ThemeDynamicStyles mods={theme.mods} />}
       <SiteHeader theme={theme} />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
+      <main
+        style={{ maxWidth: "var(--theme-container-width, 1280px)" }}
+        className="mx-auto w-full theme-container px-4 py-8 md:px-6 md:py-10"
+      >
         {activeLayout === "full_width" && (
           <div className="space-y-12">
             {activeBlocks.length > 0

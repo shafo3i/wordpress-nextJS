@@ -90,7 +90,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         }}
         className="px-4 sm:px-6 py-1.5 text-xs border-b border-black/10"
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="mx-auto flex theme-container items-center justify-between">
           <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
             <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider animate-pulse flex-shrink-0">
               {theme.dict?.["site.breaking"] || "Breaking"}
@@ -219,7 +219,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         className={`transition-colors backdrop-blur-sm z-40 ${mods.stickyHeader ? "sticky top-0" : ""}`}
       >
         {renderTopBar()}
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex theme-container items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             {mods.logoUrl ? (
               <img
@@ -283,7 +283,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
       >
         {renderTopBar()}
 
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+        <div className="mx-auto flex theme-container items-center justify-between px-6 py-6">
           <div>
             {mods.logoUrl ? (
               <img
@@ -334,7 +334,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           }}
           className={`border-t ${isNavDark ? "border-slate-800" : "border-slate-200"}`}
         >
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
+          <div className="mx-auto flex theme-container items-center justify-between px-6 py-3">
             {renderNavLinks()}
             {mods.showSearchInNav !== false && (
               <div className={`pl-4 hidden sm:block ${isNavDark ? "text-slate-400" : "text-slate-500"}`}>
@@ -359,7 +359,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
       >
         {renderTopBar()}
 
-        <div className="mx-auto max-w-7xl px-6 py-8 text-center space-y-2">
+        <div className="mx-auto theme-container px-6 py-8 text-center space-y-2">
           {mods.logoUrl ? (
             <img
               src={mods.logoUrl}
@@ -397,7 +397,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           }}
           className="px-6 py-2.5"
         >
-          <div className="mx-auto max-w-7xl flex items-center justify-center">
+          <div className="mx-auto theme-container flex items-center justify-center">
             {renderNavLinks()}
           </div>
         </nav>
@@ -421,7 +421,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           style={{ borderColor: mods.borderColor || (isDark ? "#1f2937" : "#e2e8f0") }}
           className="border-b px-6 py-1.5 text-[11px] uppercase tracking-widest text-slate-500"
         >
-          <div className="mx-auto max-w-7xl flex items-center justify-between">
+          <div className="mx-auto theme-container flex items-center justify-between">
             <span>The Daily Record</span>
             <span>{formatDate(new Date())}</span>
             <span>Independent Bureau</span>
@@ -429,7 +429,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         </div>
       )}
 
-      <div className="mx-auto max-w-7xl px-6 py-8 text-center">
+      <div className="mx-auto theme-container px-6 py-8 text-center">
         {mods.logoUrl ? (
           <img
             src={mods.logoUrl}
@@ -467,7 +467,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         }}
         className="px-6 py-2.5"
       >
-        <div className="mx-auto max-w-7xl flex items-center justify-between">
+        <div className="mx-auto theme-container flex items-center justify-between">
           {renderNavLinks()}
           {mods.showSearchInNav !== false && (
             <div className={`pl-4 hidden sm:block ${isNavDark ? "text-slate-400" : "text-slate-500"}`}>

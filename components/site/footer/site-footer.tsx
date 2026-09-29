@@ -30,7 +30,7 @@ export function SiteFooter({ theme }: { theme: FrontEndThemeContext }) {
       }}
       className="border-t mt-16 transition-colors"
     >
-      <div className="mx-auto max-w-7xl px-6 py-12">
+      <div className="mx-auto theme-container px-6 py-12">
         {/* Top Header inside Footer */}
         <div
           style={{ borderColor: isDark ? "#1f2937" : "rgba(255,255,255,0.1)" }}

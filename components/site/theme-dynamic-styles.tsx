@@ -77,6 +77,15 @@ export function ThemeDynamicStyles({ mods }: { mods: ThemeMods }) {
       ${mods.headingFontWeight ? `font-weight: ${mods.headingFontWeight};` : ""}
     }
 
+    .theme-container, .site-container {
+      max-width: var(--theme-container-width, 1280px) !important;
+      width: 100%;
+    }
+
+    .theme-rounded, [data-theme-rounded] {
+      border-radius: var(--theme-radius, 4px) !important;
+    }
+
     ${mods.customCss || ""}
   `;
 
