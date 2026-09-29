@@ -44,9 +44,11 @@ PressForge is **100% free, public, and open-source**. Anyone is welcome to contr
 | **Widgets & Sidebars** | 🟢 Functional | Widget management board at `/admincp/widgets`: drag-and-drop into primary/secondary sidebars. |
 | **Plugin Architecture** | 🟢 Functional | Dynamic plugin system at `/admincp/plugins`: activate/deactivate plugins and register dynamic widgets. |
 | **Categories & Tags** | 🟢 Functional | Taxonomy managers at `/admincp/categories` and `/admincp/tags`. |
+| **Comments Management** | 🟢 Functional | Full moderation suite at `/admincp/comments`: bulk actions, approve/unapprove, spam, trash/restore, comment type and language filtering. |
+| **Multi-Language & i18n** | 🟢 Functional | Multi-language engine at `/admincp/languages` and `/admincp/translations`: LTR/RTL support (Arabic & English), topbar & header switchers, translation management. |
 | **Category/Tag Archive Pages** | 🟡 In Progress | Tag and category links on posts (`/category/[slug]`, `/tag/[slug]`) currently lack dedicated archive listing templates. |
 | **Footer Governance Links** | 🟡 Placeholders | Footer links (*Editorial Standards*, *Privacy*, *Terms*, *Corrections*) return 404 until authored in Pages. |
-| **Media Library / Comments Tab** | 🟡 Placeholders | `/admincp/media`, `/admincp/comments`, `/admincp/users`, `/admincp/settings` in the admin menu are UI stubs. |
+| **Media Library / Users Tab** | 🟡 Placeholders | `/admincp/media`, `/admincp/users`, `/admincp/settings` in the admin menu are UI stubs. |
 
 ---
 
@@ -76,6 +78,12 @@ PressForge is **100% free, public, and open-source**. Anyone is welcome to contr
 - 🗄️ **WordPress Architecture Compatibility**:
   - Backwards-compatible schema integration with WordPress option trees (`theme_mods_*`, `sidebars_widgets`, `active_plugins`).
   - Seamless migration path for existing WordPress content, taxonomies, and options.
+- 🌍 **Multi-Language & RTL Publishing Engine**:
+  - Full native Right-to-Left (RTL) support with dynamic bidirectional layout switching (`dir="rtl"` / `dir="ltr"`).
+  - Database-driven language manager at `/admincp/languages` (active/inactive states, default language selection, ISO codes).
+  - In-browser translation string editor at `/admincp/translations` for quick dictionary updates without code deployments.
+  - Multi-language filtering across editorial lists (Posts, Comments) allowing editors to isolate and curate content per locale.
+  - 1-click live language switchers in both public reader header ticker and admin dashboard topbar.
 - 🔐 **Role-Based Access Control (RBAC)**:
   - Granular roles: `Administrator`, `Editor`, `Author`, `Contributor`, `Subscriber`.
   - Next.js server-side route middleware protection.
@@ -93,6 +101,7 @@ PressForge is **100% free, public, and open-source**. Anyone is welcome to contr
 | **ORM** | [Drizzle ORM](https://orm.drizzle.team/) | High-performance, lightweight database queries and migrations |
 | **Auth** | [Better-Auth](https://www.better-auth.com/) | Secure session management, password hashing, and user roles |
 | **Styling** | [Tailwind CSS](https://tailwindcss.com/) + CSS Variables | Dynamic palette switching and Google Fonts integration |
+| **Localization (i18n)** | Custom RTL/LTR Engine + Drizzle | Multi-language routing, translation dictionaries, bidirectional layouts |
 | **Editor** | [TinyMCE React](https://www.tiny.cloud/) | WYSIWYG editorial authoring experience |
 | **Icons** | [Lucide React](https://lucide.dev/) | Clean, accessible vector icons |
 
@@ -189,7 +198,9 @@ pressforge/
 │   └── site-theme.ts             # Theme context builder
 ├── plugins/                      # Dynamic plugin bundles (audio, newsletter, fact-check)
 ├── scripts/                      # Database seeders and maintenance scripts
-└── templates/                    # JSON seeds for posts, pages, taxonomies, and options
+├── services/                     # Business logic & language / translation services
+└── templates/                    # JSON seeds (posts, pages, options, taxonomies)
+    └── language/                 # Translation dictionaries (en.json, ar.json)
 ```
 
 ---
