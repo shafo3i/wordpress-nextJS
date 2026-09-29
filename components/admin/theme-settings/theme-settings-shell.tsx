@@ -26,6 +26,7 @@ import {
 } from "@/lib/themes/homepage-types";
 import { Theme } from "@/lib/themes/types";
 import { saveHomepageSettingsAction } from "@/app/(admin)/admincp/theme-settings/actions";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
   BlockWireframeIcon,
   BentoWireframe,
@@ -60,6 +61,7 @@ export function ThemeSettingsShell({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -128,13 +130,15 @@ export function ThemeSettingsShell({
   };
 
   const loadThemeDefaults = () => {
+    setConfirmResetOpen(true);
+  };
+
+  const executeLoadThemeDefaults = () => {
     const defaults = THEME_DEFAULT_SETTINGS[themeSlug] || THEME_DEFAULT_SETTINGS["ledger-classic"];
-    if (confirm(`Reset homepage blocks to signature defaults for "${themeName}"?`)) {
-      setLayout(defaults.layout);
-      setBlocks(defaults.blocks);
-      setNotice(`Loaded signature layout for ${themeName}`);
-      setTimeout(() => setNotice(null), 3000);
-    }
+    setLayout(defaults.layout);
+    setBlocks(defaults.blocks);
+    setNotice(`Loaded signature layout for ${themeName}`);
+    setTimeout(() => setNotice(null), 3000);
   };
 
   const addBlock = (type: HomepageBlockType) => {
@@ -179,11 +183,11 @@ export function ThemeSettingsShell({
       categorySlug: categories[0]?.slug || "all",
       postCount:
         type === "magazine_bento" ? 5 :
-        type === "broadsheet_3col" ? 6 :
-        type === "hero_slider" ? 5 :
-        type === "big_lead_side_list" ? 4 :
-        type === "visual_grid" ? 3 :
-        type === "news_list" ? 4 : 4,
+          type === "broadsheet_3col" ? 6 :
+            type === "hero_slider" ? 5 :
+              type === "big_lead_side_list" ? 4 :
+                type === "visual_grid" ? 3 :
+                  type === "news_list" ? 4 : 4,
       order: blocks.length + 1,
     };
 
@@ -283,62 +287,62 @@ export function ThemeSettingsShell({
     label: string;
     renderIcon: (active: boolean) => React.ReactNode;
   }[] = [
-    {
-      id: "bento",
-      label: "Bento (1+4)",
-      renderIcon: (active) => <BentoWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "lead_side_list",
-      label: "Lead Left + List",
-      renderIcon: (active) => <LeadSideListWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "lead_right_side_list",
-      label: "List + Lead Right",
-      renderIcon: (active) => <LeadRightSideListWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "grid_3",
-      label: "3 Columns",
-      renderIcon: (active) => <Grid3Wireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "grid_4",
-      label: "4 Columns",
-      renderIcon: (active) => <Grid4Wireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "list_thumb_left",
-      label: "Thumb Left",
-      renderIcon: (active) => <ListThumbLeftWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "list_thumb_right",
-      label: "Thumb Right",
-      renderIcon: (active) => <ListThumbRightWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "broadsheet_wire",
-      label: "3-Col Broadsheet",
-      renderIcon: (active) => <Broadsheet3ColWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "hero_slider",
-      label: "Slider Carousel",
-      renderIcon: (active) => <HeroSliderWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "overlay_cards",
-      label: "Overlay Cards",
-      renderIcon: (active) => <OverlayCardsWireframe active={active} className="w-8 h-5" />,
-    },
-    {
-      id: "minimal_text",
-      label: "Text Only Wire",
-      renderIcon: (active) => <MinimalTextWireframe active={active} className="w-8 h-5" />,
-    },
-  ];
+      {
+        id: "bento",
+        label: "Bento (1+4)",
+        renderIcon: (active) => <BentoWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "lead_side_list",
+        label: "Lead Left + List",
+        renderIcon: (active) => <LeadSideListWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "lead_right_side_list",
+        label: "List + Lead Right",
+        renderIcon: (active) => <LeadRightSideListWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "grid_3",
+        label: "3 Columns",
+        renderIcon: (active) => <Grid3Wireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "grid_4",
+        label: "4 Columns",
+        renderIcon: (active) => <Grid4Wireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "list_thumb_left",
+        label: "Thumb Left",
+        renderIcon: (active) => <ListThumbLeftWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "list_thumb_right",
+        label: "Thumb Right",
+        renderIcon: (active) => <ListThumbRightWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "broadsheet_wire",
+        label: "3-Col Broadsheet",
+        renderIcon: (active) => <Broadsheet3ColWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "hero_slider",
+        label: "Slider Carousel",
+        renderIcon: (active) => <HeroSliderWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "overlay_cards",
+        label: "Overlay Cards",
+        renderIcon: (active) => <OverlayCardsWireframe active={active} className="w-8 h-5" />,
+      },
+      {
+        id: "minimal_text",
+        label: "Text Only Wire",
+        renderIcon: (active) => <MinimalTextWireframe active={active} className="w-8 h-5" />,
+      },
+    ];
 
   const LAYOUT_OPTIONS: {
     id: HomepageLayout;
@@ -346,31 +350,31 @@ export function ThemeSettingsShell({
     description: string;
     icon: React.ReactNode;
   }[] = [
-    {
-      id: "full_width",
-      name: "Full Width",
-      description: "Immersive single-column magazine flow without sidebars",
-      icon: <LayoutTemplate className="size-6 text-slate-700" />,
-    },
-    {
-      id: "right_sidebar",
-      name: "Right Sidebar",
-      description: "Editorial stories with main widget sidebar on the right",
-      icon: <SidebarClose className="size-6 text-slate-700" />,
-    },
-    {
-      id: "left_sidebar",
-      name: "Left Sidebar",
-      description: "Main widget sidebar on the left with editorial stories",
-      icon: <SidebarOpen className="size-6 text-slate-700" />,
-    },
-    {
-      id: "dual_sidebar",
-      name: "Dual Sidebars (3 Columns)",
-      description: "Left Sidebar + Center Editorial Stream + Right Sidebar",
-      icon: <Columns3 className="size-6 text-indigo-700" />,
-    },
-  ];
+      {
+        id: "full_width",
+        name: "Full Width",
+        description: "Immersive single-column magazine flow without sidebars",
+        icon: <LayoutTemplate className="size-6 text-slate-700" />,
+      },
+      {
+        id: "right_sidebar",
+        name: "Right Sidebar",
+        description: "Editorial stories with main widget sidebar on the right",
+        icon: <SidebarClose className="size-6 text-slate-700" />,
+      },
+      {
+        id: "left_sidebar",
+        name: "Left Sidebar",
+        description: "Main widget sidebar on the left with editorial stories",
+        icon: <SidebarOpen className="size-6 text-slate-700" />,
+      },
+      {
+        id: "dual_sidebar",
+        name: "Dual Sidebars (3 Columns)",
+        description: "Left Sidebar + Center Editorial Stream + Right Sidebar",
+        icon: <Columns3 className="size-6 text-indigo-700" />,
+      },
+    ];
 
   return (
     <div className="space-y-6 text-[13px]">
@@ -460,11 +464,10 @@ export function ThemeSettingsShell({
                 key={opt.id}
                 type="button"
                 onClick={() => setLayout(opt.id)}
-                className={`flex flex-col items-start p-3.5 rounded-lg border text-left transition-all ${
-                  isSelected
+                className={`flex flex-col items-start p-3.5 rounded-lg border text-left transition-all ${isSelected
                     ? "border-[#2271b1] bg-[#f0f6fc] ring-2 ring-[#2271b1]"
                     : "border-[#dcdcde] bg-white hover:border-[#8c8f94] hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between w-full mb-2">
                   <div className="p-2 rounded bg-white shadow-sm border border-slate-200">
@@ -577,15 +580,14 @@ export function ThemeSettingsShell({
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
-                    className={`rounded-[3px] border transition-all ${
-                      !block.enabled
+                    className={`rounded-[3px] border transition-all ${!block.enabled
                         ? "border-[#dcdcde] bg-slate-50 opacity-60"
                         : isDragging
-                        ? "opacity-30 border-dashed border-[#2271b1] bg-blue-50"
-                        : isDragOver
-                        ? "border-t-4 border-t-[#2271b1] border-[#c3c4c7] bg-[#f0f6fc]"
-                        : "border-[#c3c4c7] bg-white hover:border-[#8c8f94]"
-                    }`}
+                          ? "opacity-30 border-dashed border-[#2271b1] bg-blue-50"
+                          : isDragOver
+                            ? "border-t-4 border-t-[#2271b1] border-[#c3c4c7] bg-[#f0f6fc]"
+                            : "border-[#c3c4c7] bg-white hover:border-[#8c8f94]"
+                      }`}
                   >
                     {/* Header Strip with Layout Wireframe Icon */}
                     <div className="flex items-center justify-between px-3.5 py-2.5">
@@ -642,11 +644,10 @@ export function ThemeSettingsShell({
                         <button
                           type="button"
                           onClick={() => toggleEnabled(block.id)}
-                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase transition-colors ${
-                            block.enabled
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase transition-colors ${block.enabled
                               ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
                               : "bg-slate-200 text-slate-600 hover:bg-slate-300"
-                          }`}
+                            }`}
                         >
                           {block.enabled ? "Active" : "Hidden"}
                         </button>
@@ -687,26 +688,26 @@ export function ThemeSettingsShell({
                             block.type === "news_list" ||
                             block.type === "opinion" ||
                             block.type === "hero") && (
-                            <div>
-                              <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                Filter by Category
-                              </label>
-                              <select
-                                value={block.categorySlug || "all"}
-                                onChange={(e) =>
-                                  updateBlock(block.id, { categorySlug: e.target.value })
-                                }
-                                className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
-                              >
-                                <option value="all">All Categories</option>
-                                {categories.map((c) => (
-                                  <option key={c.slug} value={c.slug}>
-                                    {c.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
+                              <div>
+                                <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+                                  Filter by Category
+                                </label>
+                                <select
+                                  value={block.categorySlug || "all"}
+                                  onChange={(e) =>
+                                    updateBlock(block.id, { categorySlug: e.target.value })
+                                  }
+                                  className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
+                                >
+                                  <option value="all">All Categories</option>
+                                  {categories.map((c) => (
+                                    <option key={c.slug} value={c.slug}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
                         </div>
 
                         {/* 2. NEWS DISPLAY LAYOUT SELECTOR (Module Style) */}
@@ -723,17 +724,15 @@ export function ThemeSettingsShell({
                                     key={opt.id}
                                     type="button"
                                     onClick={() => updateBlock(block.id, { displayStyle: opt.id })}
-                                    className={`flex flex-col items-center p-2 rounded border text-center transition-all ${
-                                      isSelected
+                                    className={`flex flex-col items-center p-2 rounded border text-center transition-all ${isSelected
                                         ? "border-[#2271b1] bg-white ring-2 ring-[#2271b1] shadow-sm"
                                         : "border-[#dcdcde] bg-white hover:border-[#8c8f94] hover:bg-slate-50"
-                                    }`}
+                                      }`}
                                   >
                                     <div className="mb-1.5">{opt.renderIcon(isSelected)}</div>
                                     <span
-                                      className={`text-[11px] leading-tight ${
-                                        isSelected ? "font-bold text-[#2271b1]" : "text-[#50575e]"
-                                      }`}
+                                      className={`text-[11px] leading-tight ${isSelected ? "font-bold text-[#2271b1]" : "text-[#50575e]"
+                                        }`}
                                     >
                                       {opt.label}
                                     </span>
@@ -755,28 +754,27 @@ export function ThemeSettingsShell({
                             block.type === "news_list" ||
                             block.type === "trending" ||
                             block.type === "hero") && (
-                            <div>
-                              <label className="block text-[12px] font-medium text-[#50575e] mb-1.5">
-                                Number of Stories to Show
-                              </label>
-                              <div className="flex gap-1.5">
-                                {[3, 4, 5, 6, 8].map((num) => (
-                                  <button
-                                    key={num}
-                                    type="button"
-                                    onClick={() => updateBlock(block.id, { postCount: num })}
-                                    className={`rounded border px-2.5 py-1 text-xs font-semibold ${
-                                      (block.postCount || 4) === num
-                                        ? "border-[#2271b1] bg-[#2271b1] text-white"
-                                        : "border-[#dcdcde] bg-white text-[#2c3338] hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    {num} posts
-                                  </button>
-                                ))}
+                              <div>
+                                <label className="block text-[12px] font-medium text-[#50575e] mb-1.5">
+                                  Number of Stories to Show
+                                </label>
+                                <div className="flex gap-1.5">
+                                  {[3, 4, 5, 6, 8].map((num) => (
+                                    <button
+                                      key={num}
+                                      type="button"
+                                      onClick={() => updateBlock(block.id, { postCount: num })}
+                                      className={`rounded border px-2.5 py-1 text-xs font-semibold ${(block.postCount || 4) === num
+                                          ? "border-[#2271b1] bg-[#2271b1] text-white"
+                                          : "border-[#dcdcde] bg-white text-[#2c3338] hover:bg-slate-50"
+                                        }`}
+                                    >
+                                      {num} posts
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
                           <div>
                             <label className="block text-[12px] font-medium text-[#50575e] mb-1.5">
@@ -875,6 +873,17 @@ export function ThemeSettingsShell({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmResetOpen}
+        onOpenChange={setConfirmResetOpen}
+        title="Reset Homepage Blocks"
+        description={`Reset homepage blocks to signature defaults for "${themeName}"?`}
+        confirmText="Reset Defaults"
+        cancelText="Cancel"
+        variant="default"
+        onConfirm={executeLoadThemeDefaults}
+      />
     </div>
   );
 }

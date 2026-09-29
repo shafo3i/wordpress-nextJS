@@ -103,15 +103,25 @@ export async function getFrontEndThemeContext(options?: {
   let primaryNav = DEFAULT_PRIMARY_NAV;
   let footerNav = DEFAULT_FOOTER_NAV;
 
-  if (locations.primary) {
-    const pMenu = await getMenuWithItems(locations.primary);
+  const primaryMenuId =
+    locations[`primary_${activeLocale}`] ||
+    (activeLocale === defaultLocale ? locations.primary : undefined) ||
+    locations.primary;
+
+  const footerMenuId =
+    locations[`footer_${activeLocale}`] ||
+    (activeLocale === defaultLocale ? locations.footer : undefined) ||
+    locations.footer;
+
+  if (primaryMenuId) {
+    const pMenu = await getMenuWithItems(primaryMenuId);
     if (pMenu && pMenu.items.length > 0) {
       primaryNav = pMenu.items;
     }
   }
 
-  if (locations.footer) {
-    const fMenu = await getMenuWithItems(locations.footer);
+  if (footerMenuId) {
+    const fMenu = await getMenuWithItems(footerMenuId);
     if (fMenu && fMenu.items.length > 0) {
       footerNav = fMenu.items;
     }
@@ -120,8 +130,8 @@ export async function getFrontEndThemeContext(options?: {
   const mods = customizer.mods;
 
   // Let mods take precedence over theme defaults
-  const isDark = mods.darkMode !== undefined 
-    ? Boolean(mods.darkMode) 
+  const isDark = mods.darkMode !== undefined
+    ? Boolean(mods.darkMode)
     : themeSlug.includes("dark") || themeSlug.includes("midnight");
 
   const isSerifTheme = themeSlug.includes("reader") || themeSlug.includes("longform") || themeSlug.includes("classic") || themeSlug.includes("broadsheet");

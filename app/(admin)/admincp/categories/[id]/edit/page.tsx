@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { and, eq, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { AdminShell } from "@/components/admin/admin-shell";
-import { db } from "@/db";
-import { wpTermTaxonomy, wpTerms } from "@/db/schema";
-import { updateCategory } from "../../actions";
+import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getCategoryById, getParentCategories } from "../../query";
+import { updateCategory } from "../../action";
 
 export const dynamic = "force-dynamic";
 
@@ -13,45 +12,33 @@ export default async function EditCategoryPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await verifyAdminOrEditor();
+
   const { id } = await params;
   const termId = BigInt(id);
 
-  const [categoryRows, allOtherCategories] = await Promise.all([
-    db
-      .select({
-        termId: wpTerms.termId,
-        name: wpTerms.name,
-        slug: wpTerms.slug,
-        description: wpTermTaxonomy.description,
-        parent: wpTermTaxonomy.parent,
-      })
-      .from(wpTerms)
-      .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
-      .where(and(eq(wpTerms.termId, termId), eq(wpTermTaxonomy.taxonomy, "category")))
-      .limit(1),
-    db
-      .select({
-        termId: wpTerms.termId,
-        name: wpTerms.name,
-      })
-      .from(wpTerms)
-      .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
-      .where(and(eq(wpTermTaxonomy.taxonomy, "category"), ne(wpTerms.termId, termId))),
+  const langContext = await getAdminLanguageContext();
+  const dict = langContext.dict;
+
+  const [category, allOtherCategories] = await Promise.all([
+    getCategoryById(termId),
+    getParentCategories(termId),
   ]);
 
-  if (!categoryRows[0]) notFound();
-  const category = categoryRows[0];
+  if (!category) notFound();
 
   return (
     <AdminShell>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#c3c4c7] pb-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-[23px] font-normal text-[#1d2327]">Edit Category</h1>
+          <h1 className="text-[23px] font-normal text-[#1d2327]">
+            {dict["admin.categories.edit_title"] || "Edit Category"}
+          </h1>
           <Link
             className="text-xs text-[#2271b1] hover:underline"
             href="/admincp/categories"
           >
-            Back to Categories
+            {dict["admin.categories.back_to_categories"] || "← Go to Categories"}
           </Link>
         </div>
         <div className="flex items-center gap-1 text-[13px]">
@@ -59,24 +46,24 @@ export default async function EditCategoryPage({
             className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             type="button"
           >
-            Screen Options <span className="text-[9px]">▼</span>
+            {dict["admin.common.screen_options"] || "Screen Options"} <span className="text-[9px]">▼</span>
           </button>
           <button
             className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             type="button"
           >
-            Help <span className="text-[9px]">▼</span>
+            {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
           </button>
         </div>
       </div>
 
       <div className="max-w-2xl text-[13px] text-[#2c3338]">
         <form action={updateCategory} className="space-y-5">
-          <input name="termId" type="hidden" value={category.termId.toString()} />
+          <input name="termId" type="hidden" value={category.id} />
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-              Name
+              {dict["admin.categories.form.name"] || "Name"}
             </label>
             <input
               className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -86,13 +73,14 @@ export default async function EditCategoryPage({
               type="text"
             />
             <p className="mt-1 text-[11px] text-[#646970]">
-              The name is how it appears on your site.
+              {dict["admin.categories.form.name_desc"] ||
+                "The name is how it appears on your site."}
             </p>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-              Slug
+              {dict["admin.categories.form.slug"] || "Slug"}
             </label>
             <input
               className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -101,60 +89,63 @@ export default async function EditCategoryPage({
               type="text"
             />
             <p className="mt-1 text-[11px] text-[#646970]">
-              The “slug” is the URL-friendly version of the name. It is usually all
-              lowercase and contains only letters, numbers, and hyphens.
+              {dict["admin.categories.form.slug_desc"] ||
+                "The “slug” is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens."}
             </p>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-              Parent Category
+              {dict["admin.categories.form.parent"] || "Parent Category"}
             </label>
             <select
               className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1]"
-              defaultValue={category.parent?.toString() || "0"}
+              defaultValue={category.parent || "0"}
               name="parent"
             >
-              <option value="0">None</option>
+              <option value="0">
+                {dict["admin.categories.form.parent_none"] || "None"}
+              </option>
               {allOtherCategories.map((c) => (
-                <option key={c.termId} value={c.termId.toString()}>
+                <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
             <p className="mt-1 text-[11px] text-[#646970]">
-              Assign a parent term to create a hierarchy.
+              {dict["admin.categories.form.parent_desc"] ||
+                "Assign a parent term to create a hierarchy."}
             </p>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-              Description
+              {dict["admin.categories.form.description"] || "Description"}
             </label>
             <textarea
-              className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1]"
+              className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] resize-y"
               defaultValue={category.description || ""}
               name="description"
               rows={5}
             />
             <p className="mt-1 text-[11px] text-[#646970]">
-              The description is not prominent by default; however, some themes may show
-              it.
+              {dict["admin.categories.form.description_desc"] ||
+                "The description is not prominent by default; however, some themes may show it."}
             </p>
           </div>
 
           <div className="flex items-center gap-3 pt-2">
             <button
-              className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-5 py-1.5 text-[13px] font-medium text-white shadow-[0_1px_0_#135e96] hover:border-[#135e96] hover:bg-[#135e96]"
+              className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-5 py-1.5 text-[13px] font-medium text-white shadow-[0_1px_0_#135e96] hover:border-[#135e96] hover:bg-[#135e96] cursor-pointer"
               type="submit"
             >
-              Update
+              {dict["admin.categories.update"] || "Update"}
             </button>
             <Link
               className="rounded-[3px] border border-[#8c8f94] bg-[#f6f7f7] px-3 py-1.5 text-[13px] text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
               href="/admincp/categories"
             >
-              Cancel
+              {dict["admin.categories.cancel"] || "Cancel"}
             </Link>
           </div>
         </form>

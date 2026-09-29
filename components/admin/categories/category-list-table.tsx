@@ -3,9 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpDown } from "lucide-react";
-import { deleteCategories } from "@/app/(admin)/admincp/categories/actions";
+import { deleteCategories } from "@/app/(admin)/admincp/categories";
 import { CategoryRowItem, type CategoryRowData } from "./category-row-item";
 import { CategoryQuickEditRow } from "./category-quick-edit-row";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 export function CategoryListTable({
   categories: initialCategories,
@@ -20,6 +21,17 @@ export function CategoryListTable({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState("Bulk actions");
   const [quickEditId, setQuickEditId] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    action: () => void | Promise<void>;
+  }>({
+    open: false,
+    title: "",
+    description: "",
+    action: () => {},
+  });
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -42,32 +54,45 @@ export function CategoryListTable({
   const handleApplyBulkAction = () => {
     if (!selectedIds.length || bulkAction !== "Delete") return;
 
-    startTransition(async () => {
-      const res = await deleteCategories(selectedIds);
-      if (res?.error) {
-        onNotice?.({ type: "error", message: res.error });
-      } else {
-        onNotice?.({
-          type: "success",
-          message: `${selectedIds.length} categories deleted.`,
+    setConfirmDialog({
+      open: true,
+      title: "Delete Categories",
+      description: "Are you sure you want to delete the selected categories?",
+      action: () => {
+        startTransition(async () => {
+          const res = await deleteCategories(selectedIds);
+          if (res?.error) {
+            onNotice?.({ type: "error", message: res.error });
+          } else {
+            onNotice?.({
+              type: "success",
+              message: `${selectedIds.length} categories deleted.`,
+            });
+          }
+          setSelectedIds([]);
+          setBulkAction("Bulk actions");
+          router.refresh();
         });
-      }
-      setSelectedIds([]);
-      setBulkAction("Bulk actions");
-      router.refresh();
+      },
     });
   };
 
   const handleDeleteOne = (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
-    startTransition(async () => {
-      const res = await deleteCategories([id]);
-      if (res?.error) {
-        onNotice?.({ type: "error", message: res.error });
-      } else {
-        onNotice?.({ type: "success", message: "Category deleted." });
-      }
-      router.refresh();
+    setConfirmDialog({
+      open: true,
+      title: "Delete Category",
+      description: "Are you sure you want to delete this category?",
+      action: () => {
+        startTransition(async () => {
+          const res = await deleteCategories([id]);
+          if (res?.error) {
+            onNotice?.({ type: "error", message: res.error });
+          } else {
+            onNotice?.({ type: "success", message: "Category deleted." });
+          }
+          router.refresh();
+        });
+      },
     });
   };
 
@@ -192,6 +217,19 @@ export function CategoryListTable({
           {categories.length} item{categories.length === 1 ? "" : "s"}
         </span>
       </div>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) =>
+          setConfirmDialog((prev) => ({ ...prev, open }))
+        }
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDialog.action}
+        isLoading={isPending}
+      />
     </div>
   );
 }

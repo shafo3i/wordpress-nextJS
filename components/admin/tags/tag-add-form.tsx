@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createTag } from "@/app/(admin)/admincp/tags/actions";
+import { createTag } from "@/app/(admin)/admincp/tags";
 
 export function TagAddForm({ onCreated }: { onCreated?: () => void }) {
   const [name, setName] = useState("");

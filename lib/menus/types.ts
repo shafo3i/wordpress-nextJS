@@ -4,7 +4,7 @@ export type MenuItem = {
   url: string;
   order: number;
   target?: string;
-  type?: "page" | "category" | "custom";
+  type?: "page" | "category" | "custom" | "post";
 };
 
 export type Menu = {
@@ -13,6 +13,7 @@ export type Menu = {
   slug: string;
   items: MenuItem[];
   locations: string[];
+  language?: string;
 };
 
 export type MenuLocation = {

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createCategory } from "@/app/(admin)/admincp/categories/actions";
+import { createCategory } from "@/app/(admin)/admincp/categories";
 
 export type CategoryParentOption = {
   id: string;

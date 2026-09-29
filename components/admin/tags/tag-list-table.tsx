@@ -3,9 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpDown } from "lucide-react";
-import { deleteTags } from "@/app/(admin)/admincp/tags/actions";
+import { deleteTags } from "@/app/(admin)/admincp/tags";
 import { TagRowItem, type TagRowData } from "./tag-row-item";
 import { TagQuickEditRow } from "./tag-quick-edit-row";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 export function TagListTable({
   tags: initialTags,
@@ -20,6 +21,17 @@ export function TagListTable({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState("Bulk actions");
   const [quickEditId, setQuickEditId] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    action: () => void | Promise<void>;
+  }>({
+    open: false,
+    title: "",
+    description: "",
+    action: () => {},
+  });
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -40,32 +52,45 @@ export function TagListTable({
   const handleApplyBulkAction = () => {
     if (!selectedIds.length || bulkAction !== "Delete") return;
 
-    startTransition(async () => {
-      const res = await deleteTags(selectedIds);
-      if (res?.error) {
-        onNotice?.({ type: "error", message: res.error });
-      } else {
-        onNotice?.({
-          type: "success",
-          message: `${selectedIds.length} tags deleted.`,
+    setConfirmDialog({
+      open: true,
+      title: "Delete Tags",
+      description: "Are you sure you want to delete the selected tags?",
+      action: () => {
+        startTransition(async () => {
+          const res = await deleteTags(selectedIds);
+          if (res?.error) {
+            onNotice?.({ type: "error", message: res.error });
+          } else {
+            onNotice?.({
+              type: "success",
+              message: `${selectedIds.length} tags deleted.`,
+            });
+          }
+          setSelectedIds([]);
+          setBulkAction("Bulk actions");
+          router.refresh();
         });
-      }
-      setSelectedIds([]);
-      setBulkAction("Bulk actions");
-      router.refresh();
+      },
     });
   };
 
   const handleDeleteOne = (id: string) => {
-    if (!confirm("Are you sure you want to delete this tag?")) return;
-    startTransition(async () => {
-      const res = await deleteTags([id]);
-      if (res?.error) {
-        onNotice?.({ type: "error", message: res.error });
-      } else {
-        onNotice?.({ type: "success", message: "Tag deleted." });
-      }
-      router.refresh();
+    setConfirmDialog({
+      open: true,
+      title: "Delete Tag",
+      description: "Are you sure you want to delete this tag?",
+      action: () => {
+        startTransition(async () => {
+          const res = await deleteTags([id]);
+          if (res?.error) {
+            onNotice?.({ type: "error", message: res.error });
+          } else {
+            onNotice?.({ type: "success", message: "Tag deleted." });
+          }
+          router.refresh();
+        });
+      },
     });
   };
 
@@ -190,6 +215,19 @@ export function TagListTable({
           {tags.length} item{tags.length === 1 ? "" : "s"}
         </span>
       </div>
+
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) =>
+          setConfirmDialog((prev) => ({ ...prev, open }))
+        }
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDialog.action}
+        isLoading={isPending}
+      />
     </div>
   );
 }

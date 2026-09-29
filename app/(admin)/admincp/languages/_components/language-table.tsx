@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { SelectLanguage } from "@/db/schema/cms-languages";
 import { LanguagePagination } from "./language-pagination";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
     deleteLanguageAction,
     setDefaultLanguageAction,
@@ -17,6 +19,7 @@ type Props = {
     pageSize: number;
     currentStatus: string;
     searchQuery: string;
+    direction?: string;
     dict?: Record<string, string>;
 };
 
@@ -27,8 +30,12 @@ export function LanguageTable({
     totalItems,
     currentStatus,
     searchQuery,
+    direction = "ltr",
     dict = {},
 }: Props) {
+    const [deleteTarget, setDeleteTarget] = useState<SelectLanguage | null>(null);
+    const [isPending, startTransition] = useTransition();
+
     return (
         <div className="space-y-2">
             {/* Top Pagination */}
@@ -134,24 +141,13 @@ export function LanguageTable({
                                             {!lang.isDefault && (
                                                 <>
                                                     <span className="text-[#c3c4c7]">|</span>
-                                                    <form action={deleteLanguageAction} className="inline">
-                                                        <input name="code" type="hidden" value={lang.code} />
-                                                        <button
-                                                            className="text-[#b32d2e] hover:text-[#a00] hover:underline cursor-pointer"
-                                                            onClick={(e) => {
-                                                                if (
-                                                                    !confirm(
-                                                                        `Are you sure you want to delete the "${lang.name}" language? All associated custom translations will also be removed.`
-                                                                    )
-                                                                ) {
-                                                                    e.preventDefault();
-                                                                }
-                                                            }}
-                                                            type="submit"
-                                                        >
-                                                            {dict["admin.languages.table.delete"] || "Delete"}
-                                                        </button>
-                                                    </form>
+                                                    <button
+                                                        className="text-[#b32d2e] hover:text-[#a00] hover:underline cursor-pointer"
+                                                        onClick={() => setDeleteTarget(lang)}
+                                                        type="button"
+                                                    >
+                                                        {dict["admin.languages.table.delete"] || "Delete"}
+                                                    </button>
                                                 </>
                                             )}
                                         </div>
@@ -189,8 +185,8 @@ export function LanguageTable({
                                             />
                                             <button
                                                 className={`cursor-pointer rounded-[3px] px-2 py-0.5 text-[11px] font-medium transition-colors ${lang.isActive
-                                                        ? "border border-[#00a32a] bg-[#edfaef] text-[#007017] hover:bg-[#d8f5dc]"
-                                                        : "border border-[#8c8f94] bg-[#f0f0f1] text-[#646970] hover:bg-[#dcdcde]"
+                                                    ? "border border-[#00a32a] bg-[#edfaef] text-[#007017] hover:bg-[#d8f5dc]"
+                                                    : "border border-[#8c8f94] bg-[#f0f0f1] text-[#646970] hover:bg-[#dcdcde]"
                                                     }`}
                                                 disabled={lang.isDefault && lang.isActive}
                                                 title={
@@ -230,6 +226,33 @@ export function LanguageTable({
                 searchQuery={searchQuery}
                 totalItems={totalItems}
                 totalPages={totalPages}
+            />
+
+            <ConfirmDialog
+                open={!!deleteTarget}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteTarget(null);
+                }}
+                title={dict["admin.languages.delete_title"] || "Delete Language"}
+                description={
+                    deleteTarget
+                        ? `Are you sure you want to delete the "${deleteTarget.name}" language? All associated custom translations will also be removed.`
+                        : ""
+                }
+                direction={direction}
+                dict={dict}
+                confirmText={dict["admin.common.delete"] || "Delete"}
+                cancelText={dict["admin.common.cancel"] || "Cancel"}
+                isLoading={isPending}
+                onConfirm={() => {
+                    if (!deleteTarget) return;
+                    startTransition(async () => {
+                        const formData = new FormData();
+                        formData.append("code", deleteTarget.code);
+                        await deleteLanguageAction(formData);
+                        setDeleteTarget(null);
+                    });
+                }}
             />
         </div>
     );

@@ -1,4 +1,7 @@
 import { pgTable, bigserial, text, varchar, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-orm/zod";
+import { InferSelectModel } from "drizzle-orm";
+import { z } from "zod";
 import { user } from "./auth-schema";
 
 
@@ -47,6 +50,56 @@ export const wpLinks = pgTable(
     index("wp_links_visible_idx").on(table.linkVisible),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Schemas and Type Definitions 
+// ---------------------------------------------------------------------------
+export const createOptionSchema = createInsertSchema(wpOptions, {
+  optionName: (schema) => schema.min(1, "Option name is required").max(191),
+  optionValue: () => z.string().default(""),
+  autoload: () => z.string().max(20).default("yes"),
+}).omit({
+  optionId: true,
+});
+
+export const createLinkSchema = createInsertSchema(wpLinks, {
+  linkUrl: (schema) => schema.min(1, "Link URL is required").max(255),
+  linkName: (schema) => schema.min(1, "Link name is required").max(255),
+  linkImage: () => z.string().max(255).default(""),
+  linkTarget: () => z.string().max(25).default(""),
+  linkDescription: () => z.string().max(255).default(""),
+  linkVisible: () => z.string().max(20).default("Y"),
+  linkRating: () => z.coerce.number().default(0),
+  linkRel: () => z.string().max(255).default(""),
+  linkNotes: () => z.string().default(""),
+  linkRss: () => z.string().max(255).default(""),
+}).omit({
+  linkId: true,
+  linkUpdated: true,
+});
+
+// Type definitions for wp_options
+export type SelectOption = InferSelectModel<typeof wpOptions>;
+export type InsertOption = z.input<typeof createOptionSchema>;
+export type InsertOptionOutput = z.output<typeof createOptionSchema>;
+
+export const insertOptionSchema = createOptionSchema;
+export type InsertOptionSchema = InsertOption;
+export type SelectOptionSchema = SelectOption;
+
+// Type definitions for wp_links
+export type SelectLink = InferSelectModel<typeof wpLinks>;
+export type InsertLink = z.input<typeof createLinkSchema>;
+export type InsertLinkOutput = z.output<typeof createLinkSchema>;
+
+export const insertLinkSchema = createLinkSchema;
+export type InsertLinkSchema = InsertLink;
+export type SelectLinkSchema = SelectLink;
+
+// Specialized schemas for serialized arrays stored in wp_options
+export const pluginSlugsSchema = z.array(z.string());
+export type PluginSlugs = z.infer<typeof pluginSlugsSchema>;
+
 
 
 

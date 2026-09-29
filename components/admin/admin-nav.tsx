@@ -90,8 +90,8 @@ const navItems: NavItem[] = [
     key: "admin.menu.plugins",
     icon: Plug,
     subItems: [
-      { href: "/admincp/plugins", label: "Installed Plugins" },
-      { href: "/admincp/plugins?tab=add-new", label: "Add New Plugin" },
+      { href: "/admincp/plugins", label: "Installed Plugins", key: "admin.menu.installed_plugins" },
+      { href: "/admincp/plugins?tab=add-new", label: "Add New Plugin", key: "admin.menu.add_new_plugin" },
     ],
   },
   {

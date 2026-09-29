@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { quickUpdateTag } from "@/app/(admin)/admincp/tags/actions";
+import { quickUpdateTag } from "@/app/(admin)/admincp/tags";
 
 export type TagQuickEditProps = {
   tag: {

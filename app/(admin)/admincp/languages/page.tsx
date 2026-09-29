@@ -79,6 +79,7 @@ export default async function LanguagesPage({ searchParams }: PageProps) {
                     currentPage={currentPage}
                     currentStatus={currentStatus}
                     dict={dict}
+                    direction={langContext.direction}
                     pageSize={pageSize}
                     rows={languages}
                     searchQuery={searchQuery}

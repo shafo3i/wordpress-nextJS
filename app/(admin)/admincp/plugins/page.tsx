@@ -1,20 +1,34 @@
-import { AdminShell } from "@/components/admin/admin-shell";
-import { getAllPlugins, getCatalogPlugins } from "@/lib/plugins/loader";
-import { PluginListHeader } from "@/components/admin/plugins/plugin-list-header";
-import { PluginViewsNav } from "@/components/admin/plugins/plugin-views-nav";
-import { PluginListTable } from "@/components/admin/plugins/plugin-list-table";
+import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { PostListHeader } from "@/components/admin/posts/post-list-header";
+import { getPlugins, getPluginCounts, getCatalogPlugins } from "./query";
+import { PluginTable, PluginFilter } from "./_components";
 import { PluginInstallHeader } from "@/components/admin/plugins/add-new/plugin-install-header";
 import { PluginDirectoryGrid } from "@/components/admin/plugins/add-new/plugin-directory-grid";
 
 export const dynamic = "force-dynamic";
 
-export default async function PluginsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ s?: string; status?: string; tab?: string; category?: string }>;
-}) {
-  const { s, status, tab, category } = await searchParams;
-  const search = s?.trim().toLowerCase() ?? "";
+type PageProps = {
+  searchParams: Promise<{
+    s?: string;
+    status?: string;
+    page?: string;
+    tab?: string;
+    category?: string;
+  }>;
+};
+
+export default async function PluginsPage({ searchParams }: PageProps) {
+  await verifyAdminOrEditor();
+
+  const { s, status, page, tab, category } = await searchParams;
+  const searchQuery = s?.trim() ?? "";
+  const currentStatus = status ?? "all";
+  const currentPage = Number(page) > 0 ? Number(page) : 1;
+  const pageSize = 20;
+
+  const langContext = await getAdminLanguageContext();
+  const dict = langContext.dict;
 
   // 1. ADD NEW PLUGINS DIRECTORY VIEW
   if (tab === "add-new") {
@@ -22,65 +36,64 @@ export default async function PluginsPage({
       ? category
       : "Featured";
 
-    const catalogPlugins = await getCatalogPlugins();
-
-    const filteredCatalog = catalogPlugins.filter((plugin) => {
-      // Category filter (if not searching)
-      if (!search && plugin.category && plugin.category !== activeCategory) {
-        return false;
-      }
-
-      // Search filter
-      if (search) {
-        const matchName = plugin.name.toLowerCase().includes(search);
-        const matchDesc = plugin.description.toLowerCase().includes(search);
-        const matchAuthor = plugin.author.toLowerCase().includes(search);
-        return matchName || matchDesc || matchAuthor;
-      }
-
-      return true;
+    const catalogPlugins = await getCatalogPlugins({
+      category: activeCategory,
+      search: searchQuery,
     });
 
     return (
       <AdminShell>
         <div className="space-y-4">
-          <PluginInstallHeader search={s} activeCategory={activeCategory} />
-          <PluginDirectoryGrid plugins={filteredCatalog} />
+          <PluginInstallHeader activeCategory={activeCategory} dict={dict} search={s} />
+          <PluginDirectoryGrid dict={dict} plugins={catalogPlugins} />
         </div>
       </AdminShell>
     );
   }
 
-  // 2. INSTALLED PLUGINS LIST VIEW
-  const currentStatus = status && ["all", "active", "inactive"].includes(status) ? status : "all";
-  const installedPlugins = await getAllPlugins();
+  // 2. INSTALLED PLUGINS LIST VIEW (Matching Comments Structure)
+  const [{ plugins, total }, counts] = await Promise.all([
+    getPlugins({
+      status: currentStatus,
+      search: searchQuery,
+      page: currentPage,
+      limit: pageSize,
+    }),
+    getPluginCounts(),
+  ]);
 
-  const counts = {
-    all: installedPlugins.length,
-    active: installedPlugins.filter((p) => p.isActive).length,
-    inactive: installedPlugins.filter((p) => !p.isActive).length,
-  };
-
-  const filteredInstalled = installedPlugins.filter((plugin) => {
-    if (currentStatus === "active" && !plugin.isActive) return false;
-    if (currentStatus === "inactive" && plugin.isActive) return false;
-
-    if (search) {
-      const matchName = plugin.name.toLowerCase().includes(search);
-      const matchDesc = plugin.description.toLowerCase().includes(search);
-      const matchAuthor = plugin.author.toLowerCase().includes(search);
-      return matchName || matchDesc || matchAuthor;
-    }
-
-    return true;
-  });
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <AdminShell>
       <div className="space-y-4">
-        <PluginListHeader search={s} />
-        <PluginViewsNav counts={counts} currentStatus={currentStatus} search={s} />
-        <PluginListTable plugins={filteredInstalled} />
+        <PostListHeader
+          addNewHref="/admincp/plugins?tab=add-new"
+          addNewLabel={dict["admin.plugins.add_new"] || "Add New Plugin"}
+          dict={dict}
+          title={dict["admin.plugins.title"] || "Plugins"}
+        />
+
+        {/* Filter and Search Bar */}
+        <PluginFilter
+          counts={counts}
+          currentStatus={currentStatus}
+          dict={dict}
+          searchQuery={searchQuery}
+        />
+
+        {/* Plugins Table with Integrated Top & Bottom Tablenav */}
+        <PluginTable
+          currentPage={currentPage}
+          currentStatus={currentStatus}
+          dict={dict}
+          direction={langContext.direction}
+          pageSize={pageSize}
+          plugins={plugins}
+          searchQuery={searchQuery}
+          totalItems={total}
+          totalPages={totalPages}
+        />
       </div>
     </AdminShell>
   );

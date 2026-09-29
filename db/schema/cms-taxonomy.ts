@@ -9,6 +9,9 @@ import {
   unique,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-orm/zod";
+import { InferSelectModel } from "drizzle-orm";
+import { z } from "zod";
 
 // ---------------------------------------------------------------------------
 // wp_terms — taxonomy entries: categories, tags, nav menus, custom taxonomies
@@ -79,9 +82,91 @@ export const wpTermRelationships = pgTable(
       .references(() => wpTermTaxonomy.termTaxonomyId, { onDelete: "cascade" }),
     termOrder: integer("term_order").notNull().default(0),
   },
-  (table) => [
-    primaryKey({ columns: [table.objectId, table.termTaxonomyId] }),
-    index("wp_term_relationships_tax_idx").on(table.termTaxonomyId),
-  ],
 );
+
+// ---------------------------------------------------------------------------
+// Zod Schemas & Types
+// ---------------------------------------------------------------------------
+export const createTermSchema = createInsertSchema(wpTerms, {
+  name: (schema) => schema.min(1, "Term name is required").max(200),
+  slug: (schema) => schema.max(200).default(""),
+  termGroup: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? BigInt(0) : val),
+      z.coerce.bigint().default(BigInt(0))
+    ),
+}).omit({
+  termId: true,
+});
+
+export const createTermTaxonomySchema = createInsertSchema(wpTermTaxonomy, {
+  termId: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? null : val),
+      z.coerce.bigint({ message: "Term ID must be a valid ID" }).positive()
+    ),
+  taxonomy: (schema) => schema.max(32).default("category"),
+  description: () => z.string().default(""),
+  parent: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? BigInt(0) : val),
+      z.coerce.bigint().default(BigInt(0))
+    ),
+  count: () =>
+    z.preprocess(
+      (val) => (val === "" || val === null || val === undefined ? BigInt(0) : val),
+      z.coerce.bigint().default(BigInt(0))
+    ),
+}).omit({
+  termTaxonomyId: true,
+});
+
+export const createCategorySchema = z.object({
+  name: z.string().min(1, "Category name is required").max(200),
+  slug: z.string().max(200).optional().default(""),
+  parent: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? BigInt(0) : val),
+    z.coerce.bigint().default(BigInt(0))
+  ),
+  description: z.string().optional().default(""),
+});
+
+export const updateCategorySchema = createCategorySchema.partial().extend({
+  termId: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? null : val),
+    z.coerce.bigint({ message: "Term ID is required" }).positive()
+  ),
+});
+
+// Type definitions
+export type SelectTerm = InferSelectModel<typeof wpTerms>;
+export type InsertTerm = z.input<typeof createTermSchema>;
+export type InsertTermOutput = z.output<typeof createTermSchema>;
+
+export type SelectTermTaxonomy = InferSelectModel<typeof wpTermTaxonomy>;
+export type InsertTermTaxonomy = z.input<typeof createTermTaxonomySchema>;
+export type InsertTermTaxonomyOutput = z.output<typeof createTermTaxonomySchema>;
+
+export type CategoryInput = z.input<typeof createCategorySchema>;
+export type CategoryInputOutput = z.output<typeof createCategorySchema>;
+export type UpdateCategoryInput = z.input<typeof updateCategorySchema>;
+
+export const createTagSchema = z.object({
+  name: z.string().min(1, "Tag name is required").max(200),
+  slug: z.string().max(200).optional().default(""),
+  description: z.string().optional().default(""),
+});
+
+export const updateTagSchema = createTagSchema.partial().extend({
+  termId: z.preprocess(
+    (val) => (val === "" || val === null || val === undefined ? null : val),
+    z.coerce.bigint({ message: "Term ID is required" }).positive()
+  ),
+});
+
+export type TagInput = z.input<typeof createTagSchema>;
+export type TagInputOutput = z.output<typeof createTagSchema>;
+export type UpdateTagInput = z.input<typeof updateTagSchema>;
+
+export type SelectTermRelationship = InferSelectModel<typeof wpTermRelationships>;
 

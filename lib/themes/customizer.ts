@@ -84,8 +84,9 @@ export async function getCustomizerData(targetThemeSlug?: string): Promise<Custo
     { id: "7", title: "About", url: "/about", order: 7 },
   ];
 
-  if (locations.primary) {
-    const pMenu = await getMenuWithItems(locations.primary);
+  const primaryMenuId = locations.primary_en || locations.primary;
+  if (primaryMenuId) {
+    const pMenu = await getMenuWithItems(primaryMenuId);
     if (pMenu && pMenu.items.length > 0) {
       primaryNav = pMenu.items;
     }
@@ -98,8 +99,9 @@ export async function getCustomizerData(targetThemeSlug?: string): Promise<Custo
     { id: "f4", title: "Privacy Policy", url: "/privacy", order: 4 },
   ];
 
-  if (locations.footer) {
-    const fMenu = await getMenuWithItems(locations.footer);
+  const footerMenuId = locations.footer_en || locations.footer;
+  if (footerMenuId) {
+    const fMenu = await getMenuWithItems(footerMenuId);
     if (fMenu && fMenu.items.length > 0) {
       footerNav = fMenu.items;
     }

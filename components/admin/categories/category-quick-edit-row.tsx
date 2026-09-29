@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { quickUpdateCategory } from "@/app/(admin)/admincp/categories/actions";
+import { quickUpdateCategory } from "@/app/(admin)/admincp/categories";
 
 export type CategoryQuickEditProps = {
   category: {

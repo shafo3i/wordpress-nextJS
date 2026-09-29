@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { PluginManifest } from "@/lib/plugins/types";
 import { installPluginAction, togglePluginAction } from "@/app/(admin)/admincp/plugins/actions";
 
-export function PluginCard({ plugin }: { plugin: PluginManifest }) {
+export function PluginCard({
+  plugin,
+  dict = {},
+}: {
+  plugin: PluginManifest;
+  dict?: Record<string, string>;
+}) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -37,7 +43,7 @@ export function PluginCard({ plugin }: { plugin: PluginManifest }) {
                 {plugin.name}
               </h3>
               <p className="text-[12px] text-[#646970]">
-                By{" "}
+                {dict["admin.plugins.add_new.by"] || "By"}{" "}
                 <span className="text-[#2271b1]">
                   {plugin.author}
                 </span>
@@ -53,25 +59,29 @@ export function PluginCard({ plugin }: { plugin: PluginManifest }) {
                 disabled
                 className="flex items-center gap-1 rounded-[3px] border border-[#c3c4c7] bg-[#f0f0f1] px-3 py-1 text-[13px] font-medium text-[#2c3338] opacity-90 cursor-default"
               >
-                <span>✓</span> Active
+                <span>✓</span> {dict["admin.plugins.add_new.active"] || "Active"}
               </button>
             ) : plugin.isInstalled ? (
               <button
                 type="button"
                 disabled={isPending}
                 onClick={handleActivate}
-                className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3 py-1 text-[13px] font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
+                className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3 py-1 text-[13px] font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {isPending ? "Activating..." : "Activate"}
+                {isPending
+                  ? dict["admin.plugins.add_new.activating"] || "Activating..."
+                  : dict["admin.plugins.add_new.activate"] || "Activate"}
               </button>
             ) : (
               <button
                 type="button"
                 disabled={isPending}
                 onClick={handleInstall}
-                className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[13px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] transition-colors disabled:opacity-50"
+                className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[13px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {isPending ? "Installing..." : "Install Now"}
+                {isPending
+                  ? dict["admin.plugins.add_new.installing"] || "Installing..."
+                  : dict["admin.plugins.add_new.install_now"] || "Install Now"}
               </button>
             )}
           </div>
@@ -95,15 +105,17 @@ export function PluginCard({ plugin }: { plugin: PluginManifest }) {
           </div>
 
           <div className="font-medium text-slate-600">
-            {plugin.activeInstalls ?? "10,000+"} Active Installations
+            {plugin.activeInstalls ?? "10,000+"} {dict["admin.plugins.add_new.active_installations"] || "Active Installations"}
           </div>
         </div>
 
         <div className="mt-2 flex items-center justify-between text-[#646970]">
           <span className="text-emerald-700">
-            ✓ Compatible with your version of WordPress
+            ✓ {dict["admin.plugins.add_new.compatible"] || "Compatible with your version of WordPress"}
           </span>
-          <span>Version {plugin.version}</span>
+          <span>
+            {dict["admin.plugins.add_new.version"] || "Version"} {plugin.version}
+          </span>
         </div>
       </div>
     </div>
