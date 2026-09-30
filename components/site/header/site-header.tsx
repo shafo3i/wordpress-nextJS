@@ -68,11 +68,12 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
 
   const isHeaderDark = isColorDark(effectiveHeaderBg) || isDark;
 
+  const effectiveBorderColor = mods.headerBorderColor || mods.borderColor || (isDark ? "#1f2937" : "#e2e8f0");
   const borderBottomCss =
     borderStyle === "double"
-      ? `4px double ${mods.borderColor || (isDark ? "#1f2937" : "#e2e8f0")}`
+      ? `4px double ${effectiveBorderColor}`
       : borderStyle === "solid"
-      ? `1px solid ${mods.borderColor || (isDark ? "#1f2937" : "#e2e8f0")}`
+      ? `1px solid ${effectiveBorderColor}`
       : "none";
 
   // Top Bar Ticker & Utility
@@ -81,6 +82,8 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
 
     const topBarBg = mods.topBarBg || (headerLayout === "magazine" ? primaryColor : isDark ? "#030712" : "#0f172a");
     const topBarTextColor = mods.topBarTextColor || "#ffffff";
+    const tickerBadgeBg = mods.topBarTickerBg || "#e11d48";
+    const tickerBadgeTextColor = mods.topBarTickerTextColor || "#ffffff";
 
     return (
       <div
@@ -92,7 +95,13 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
       >
         <div className="mx-auto flex theme-container items-center justify-between">
           <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-            <span className="rounded bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider animate-pulse flex-shrink-0">
+            <span
+              style={{
+                backgroundColor: tickerBadgeBg,
+                color: tickerBadgeTextColor,
+              }}
+              className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider animate-pulse flex-shrink-0"
+            >
               {theme.dict?.["site.breaking"] || "Breaking"}
             </span>
             <span className="text-xs font-medium truncate max-w-xl">

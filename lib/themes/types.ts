@@ -32,17 +32,37 @@ export type ThemeMods = {
   // Header & Masthead Colors
   headerBg?: string;
   headerTextColor?: string;
+  headerBorderColor?: string;
   topBarBg?: string;
   topBarTextColor?: string;
+  topBarTickerBg?: string;
+  topBarTickerTextColor?: string;
   navBarBg?: string;
   navLinkColor?: string;
   navLinkHoverColor?: string;
+  navDropdownBg?: string;
+  navDropdownLinkColor?: string;
+
+  // Sidebar & Widget Colors
+  widgetBg?: string;
+  widgetTitleColor?: string;
+  widgetTitleBg?: string;
+  widgetTextColor?: string;
+  widgetLinkColor?: string;
+  widgetBorderColor?: string;
+
+  // Badges & Tag Colors
+  badgeBg?: string;
+  badgeTextColor?: string;
 
   // Footer Colors
   footerBg?: string;
   footerTextColor?: string;
   footerHeadingColor?: string;
   footerLinkColor?: string;
+  footerBorderColor?: string;
+  subFooterBg?: string;
+  subFooterTextColor?: string;
 
   // Typography Engine
   headingFontFamily?: "playfair" | "merriweather" | "inter" | "roboto" | "oswald" | "montserrat" | "georgia";
@@ -73,12 +93,13 @@ export type ThemeMods = {
   cardStyle?: "flat-bordered" | "lifted-shadow" | "clean-minimal";
 
   // Article / Single Post Display Options
+  singleLayout?: "sidebar-right" | "sidebar-left" | "full-container" | "centered";
   singleShowFeaturedImage?: boolean;
   singleShowAuthorAvatar?: boolean;
   singleShowDate?: boolean;
   singleShowReadingTime?: boolean;
   singleShowShareButtons?: boolean;
-  singleContentWidth?: "narrow" | "standard" | "wide"; // 680px vs 760px vs 880px
+  singleContentWidth?: "narrow" | "standard" | "wide"; // narrow (720px), standard (860px), wide (full container)
 
   // Footer Options
   footerColumns?: 1 | 2 | 3 | 4;
@@ -123,15 +144,31 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     borderColor: "#e2e8f0",
     headerBg: "#ffffff",
     headerTextColor: "#0f172a",
+    headerBorderColor: "#e2e8f0",
     topBarBg: "#0f172a",
     topBarTextColor: "#f8fafc",
+    topBarTickerBg: "#e11d48",
+    topBarTickerTextColor: "#ffffff",
     navBarBg: "#ffffff",
     navLinkColor: "#1d2327",
     navLinkHoverColor: "#2271b1",
+    navDropdownBg: "#ffffff",
+    navDropdownLinkColor: "#1d2327",
+    widgetBg: "#ffffff",
+    widgetTitleColor: "#0f172a",
+    widgetTitleBg: "transparent",
+    widgetTextColor: "#475569",
+    widgetLinkColor: "#2271b1",
+    widgetBorderColor: "#e2e8f0",
+    badgeBg: "#2271b1",
+    badgeTextColor: "#ffffff",
     footerBg: "#0f172a",
     footerTextColor: "#94a3b8",
     footerHeadingColor: "#ffffff",
     footerLinkColor: "#cbd5e1",
+    footerBorderColor: "#334155",
+    subFooterBg: "#030712",
+    subFooterTextColor: "#94a3b8",
     headingFontFamily: "playfair",
     bodyFontFamily: "inter",
     baseFontSize: 16,
@@ -152,6 +189,7 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     containerWidth: "1280",
     borderRadius: "4",
     cardStyle: "flat-bordered",
+    singleLayout: "sidebar-right",
     singleShowFeaturedImage: true,
     singleShowAuthorAvatar: true,
     singleShowDate: true,
@@ -206,6 +244,7 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     containerWidth: "1140",
     borderRadius: "0",
     cardStyle: "clean-minimal",
+    singleLayout: "centered",
     singleShowFeaturedImage: true,
     singleShowAuthorAvatar: true,
     singleShowDate: true,
@@ -247,6 +286,7 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     headingFontWeight: "700",
     headingTransform: "uppercase",
     headingFont: "sans",
+    singleLayout: "full-container",
     singleShowShareButtons: true,
     singleContentWidth: "wide",
     footerColumns: 4,
@@ -298,6 +338,7 @@ export const DEFAULT_MODS: Record<string, ThemeMods> = {
     containerWidth: "1280",
     borderRadius: "8",
     cardStyle: "lifted-shadow",
+    singleLayout: "sidebar-right",
     singleShowFeaturedImage: true,
     singleShowAuthorAvatar: true,
     singleShowDate: true,

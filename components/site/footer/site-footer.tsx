@@ -20,13 +20,15 @@ export function SiteFooter({ theme }: { theme: FrontEndThemeContext }) {
   const footerTextColor = mods.footerTextColor || "#94a3b8";
   const footerHeadingColor = mods.footerHeadingColor || "#ffffff";
   const footerLinkColor = mods.footerLinkColor || footerTextColor;
+  const footerBorder = mods.footerBorderColor || mods.borderColor || (isDark ? "#1f2937" : "#e2e8f0");
+  const subFooterText = mods.subFooterTextColor || footerTextColor;
 
   return (
     <footer
       style={{
         backgroundColor: footerBg,
         color: footerTextColor,
-        borderColor: mods.borderColor || (isDark ? "#1f2937" : "#e2e8f0"),
+        borderColor: footerBorder,
       }}
       className="border-t mt-16 transition-colors"
     >
@@ -101,10 +103,15 @@ export function SiteFooter({ theme }: { theme: FrontEndThemeContext }) {
 
         {/* Bottom Bar with Copyright & Back-to-Top */}
         <div
-          style={{ borderColor: isDark ? "#1f2937" : "rgba(255,255,255,0.1)" }}
-          className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
+          style={{
+            borderColor: footerBorder,
+            backgroundColor: mods.subFooterBg || undefined,
+          }}
+          className={`border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs ${
+            mods.subFooterBg ? "-mx-6 px-6 pb-6 mt-6 rounded-b" : ""
+          }`}
         >
-          <p style={{ color: footerTextColor }} className="opacity-80">
+          <p style={{ color: subFooterText }} className="opacity-90">
             {mods.footerCopyright || theme.footerCopyright || "© 2026 PressForge. All rights reserved."}
           </p>
 
@@ -113,7 +120,7 @@ export function SiteFooter({ theme }: { theme: FrontEndThemeContext }) {
               <button
                 type="button"
                 onClick={scrollToTop}
-                style={{ color: footerTextColor }}
+                style={{ color: subFooterText }}
                 className="flex items-center gap-1.5 text-xs hover:opacity-100 opacity-80 transition-opacity"
               >
                 <ArrowUp className="size-3.5" /> Back to Top

@@ -26,6 +26,9 @@ import {
   ArrowRight,
   Sparkles,
   ExternalLink,
+  Home,
+  LayoutDashboard,
+  Copy,
 } from "lucide-react";
 import { CustomizerPayload, DEFAULT_MODS, ThemeMods } from "@/lib/themes/types";
 import { saveCustomizerAction } from "@/app/(admin)/admincp/customize/actions";
@@ -60,6 +63,13 @@ function ColorField({
   description?: string;
 }) {
   const current = value || defaultValue;
+  const pickerValue =
+    current.startsWith("#") && current.length === 7
+      ? current
+      : defaultValue.startsWith("#") && defaultValue.length === 7
+      ? defaultValue
+      : "#ffffff";
+
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5e7] last:border-b-0">
       <div className="pr-2 min-w-0 flex-1">
@@ -69,7 +79,7 @@ function ColorField({
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <input
           type="color"
-          value={current.startsWith("#") && current.length === 7 ? current : defaultValue}
+          value={pickerValue}
           onChange={(e) => onChange(e.target.value)}
           className="size-7 cursor-pointer rounded border border-[#8c8f94] p-0.5 bg-white shadow-xs"
           title={`Pick color for ${label}`}
@@ -85,7 +95,15 @@ function ColorField({
   );
 }
 
-export function CustomizerShell({ initialData }: { initialData: CustomizerPayload }) {
+export function CustomizerShell({
+  initialData,
+  dict,
+  direction = "ltr",
+}: {
+  initialData: CustomizerPayload;
+  dict?: Record<string, string>;
+  direction?: "rtl" | "ltr";
+}) {
   const [selectedThemeSlug, setSelectedThemeSlug] = useState(initialData.themeSlug);
   const [siteTitle, setSiteTitle] = useState(initialData.siteTitle);
   const [siteTagline, setSiteTagline] = useState(initialData.siteTagline);
@@ -93,8 +111,10 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
 
   const [activeSection, setActiveSection] = useState<CustomizerSection | null>("colors");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [previewPage, setPreviewPage] = useState<"home" | "single">("home");
+  const [copiedLink, setCopiedLink] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -111,7 +131,10 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
     const defaultMods = DEFAULT_MODS[selectedThemeSlug] || DEFAULT_MODS["pressforge-broadsheet"];
     setMods({ ...defaultMods });
     setIsDirty(true);
-    setNotice("Reset to theme defaults (Click Publish to save).");
+    setNotice({
+      type: "success",
+      message: dict?.["admin.customizer.notice.reset"] || "Reset to theme defaults (Click Publish to save).",
+    });
     setTimeout(() => setNotice(null), 3500);
   };
 
@@ -135,11 +158,19 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
         activate
       );
 
-      if (res.error) {
-        alert(res.error);
+      if (!res.success || res.error) {
+        setNotice({
+          type: "error",
+          message: res.error || dict?.["admin.customizer.notice.failed"] || "Failed to publish customizer settings.",
+        });
       } else {
         setIsDirty(false);
-        setNotice(activate ? "Theme activated and published!" : "Customizations published successfully!");
+        setNotice({
+          type: "success",
+          message: activate
+            ? dict?.["admin.customizer.notice.activated"] || "Theme activated and published!"
+            : dict?.["admin.customizer.notice.published"] || "Customizations published successfully!",
+        });
         setTimeout(() => setNotice(null), 3500);
         router.refresh();
       }
@@ -162,15 +193,31 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
         borderColor: "#e2e8f0",
         headerBg: "#ffffff",
         headerTextColor: "#020617",
+        headerBorderColor: "#e2e8f0",
         topBarBg: "#e11d48",
         topBarTextColor: "#ffffff",
+        topBarTickerBg: "#9f1239",
+        topBarTickerTextColor: "#ffffff",
         navBarBg: "#0f172a",
         navLinkColor: "#f8fafc",
         navLinkHoverColor: "#f43f5e",
+        navDropdownBg: "#0f172a",
+        navDropdownLinkColor: "#f8fafc",
+        widgetBg: "#ffffff",
+        widgetTitleColor: "#020617",
+        widgetTitleBg: "transparent",
+        widgetTextColor: "#334155",
+        widgetLinkColor: "#e11d48",
+        widgetBorderColor: "#e2e8f0",
+        badgeBg: "#e11d48",
+        badgeTextColor: "#ffffff",
         footerBg: "#020617",
         footerTextColor: "#94a3b8",
         footerHeadingColor: "#ffffff",
         footerLinkColor: "#f43f5e",
+        footerBorderColor: "#1e293b",
+        subFooterBg: "#000000",
+        subFooterTextColor: "#64748b",
         darkMode: false,
       },
     },
@@ -188,15 +235,31 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
         borderColor: "#e2e8f0",
         headerBg: "#ffffff",
         headerTextColor: "#0f172a",
+        headerBorderColor: "#e2e8f0",
         topBarBg: "#0f172a",
         topBarTextColor: "#f8fafc",
+        topBarTickerBg: "#e11d48",
+        topBarTickerTextColor: "#ffffff",
         navBarBg: "#ffffff",
         navLinkColor: "#1d2327",
         navLinkHoverColor: "#2271b1",
+        navDropdownBg: "#ffffff",
+        navDropdownLinkColor: "#1d2327",
+        widgetBg: "#ffffff",
+        widgetTitleColor: "#0f172a",
+        widgetTitleBg: "transparent",
+        widgetTextColor: "#475569",
+        widgetLinkColor: "#2271b1",
+        widgetBorderColor: "#e2e8f0",
+        badgeBg: "#2271b1",
+        badgeTextColor: "#ffffff",
         footerBg: "#0f172a",
         footerTextColor: "#94a3b8",
         footerHeadingColor: "#ffffff",
         footerLinkColor: "#cbd5e1",
+        footerBorderColor: "#334155",
+        subFooterBg: "#030712",
+        subFooterTextColor: "#94a3b8",
         darkMode: false,
       },
     },
@@ -214,15 +277,31 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
         borderColor: "#1f2937",
         headerBg: "#0a0f1d",
         headerTextColor: "#f8fafc",
+        headerBorderColor: "#1f2937",
         topBarBg: "#030712",
         topBarTextColor: "#34d399",
+        topBarTickerBg: "#059669",
+        topBarTickerTextColor: "#ffffff",
         navBarBg: "#0f172a",
         navLinkColor: "#e2e8f0",
         navLinkHoverColor: "#10b981",
+        navDropdownBg: "#111827",
+        navDropdownLinkColor: "#e2e8f0",
+        widgetBg: "#111827",
+        widgetTitleColor: "#f8fafc",
+        widgetTitleBg: "transparent",
+        widgetTextColor: "#94a3b8",
+        widgetLinkColor: "#10b981",
+        widgetBorderColor: "#1f2937",
+        badgeBg: "#10b981",
+        badgeTextColor: "#ffffff",
         footerBg: "#030712",
         footerTextColor: "#64748b",
         footerHeadingColor: "#f8fafc",
         footerLinkColor: "#10b981",
+        footerBorderColor: "#1f2937",
+        subFooterBg: "#02040a",
+        subFooterTextColor: "#475569",
         darkMode: true,
       },
     },
@@ -389,8 +468,220 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
     mods,
   };
 
+  const renderLiveSidebar = () => (
+    <div className="space-y-6">
+      {/* Widget 1: Search Desk */}
+      <div
+        style={{
+          backgroundColor: mods.widgetBg || previewSurface,
+          borderColor: mods.widgetBorderColor || previewBorder,
+          borderRadius: previewRadius,
+        }}
+        className="p-4 border shadow-sm theme-widget"
+      >
+        <div
+          style={{
+            backgroundColor: mods.widgetTitleBg || "transparent",
+            padding: mods.widgetTitleBg && mods.widgetTitleBg !== "transparent" ? "4px 8px" : undefined,
+            borderRadius: mods.widgetTitleBg && mods.widgetTitleBg !== "transparent" ? previewRadius : undefined,
+          }}
+          className="mb-2"
+        >
+          <h4
+            style={{ color: mods.widgetTitleColor || previewHeading }}
+            className="text-xs font-bold uppercase tracking-wider theme-widget-title"
+          >
+            Editorial Archive Search
+          </h4>
+        </div>
+        <div className="flex gap-1.5 mt-2">
+          <input
+            type="text"
+            placeholder="Search wire reports..."
+            readOnly
+            style={{
+              backgroundColor: previewSurface,
+              borderColor: mods.widgetBorderColor || previewBorder,
+              color: mods.widgetTextColor || previewText,
+              borderRadius: previewRadius,
+            }}
+            className="w-full border px-3 py-1.5 text-xs focus:outline-none"
+          />
+          <button
+            type="button"
+            style={{
+              backgroundColor: previewPrimary,
+              borderRadius: previewRadius,
+            }}
+            className="px-3 py-1.5 text-white hover:opacity-90 flex items-center justify-center"
+          >
+            <Search className="size-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Widget 2: Trending Desks & Topics */}
+      <div
+        style={{
+          backgroundColor: mods.widgetBg || previewSurface,
+          borderColor: mods.widgetBorderColor || previewBorder,
+          borderRadius: previewRadius,
+        }}
+        className="p-4 border shadow-sm theme-widget space-y-3"
+      >
+        <div
+          style={{
+            backgroundColor: mods.widgetTitleBg || "transparent",
+            padding: mods.widgetTitleBg && mods.widgetTitleBg !== "transparent" ? "4px 8px" : undefined,
+            borderRadius: mods.widgetTitleBg && mods.widgetTitleBg !== "transparent" ? previewRadius : undefined,
+          }}
+        >
+          <h4
+            style={{ color: mods.widgetTitleColor || previewHeading }}
+            className="text-xs font-bold uppercase tracking-wider theme-widget-title"
+          >
+            Trending Desks & Topics
+          </h4>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {["Markets", "Silicon", "Economy", "Energy", "Policy"].map((topic) => (
+            <span
+              key={topic}
+              style={{
+                backgroundColor: mods.badgeBg || previewPrimary,
+                color: mods.badgeTextColor || "#ffffff",
+                borderRadius: previewRadius,
+              }}
+              className="px-2 py-0.5 text-[10px] font-semibold uppercase theme-badge"
+            >
+              {topic}
+            </span>
+          ))}
+        </div>
+
+        <div
+          className="pt-3 border-t space-y-2.5"
+          style={{ borderColor: mods.widgetBorderColor || previewBorder }}
+        >
+          {[
+            { title: "Sovereign Debt Issuance Reaches Record Volume", date: "12 mins ago" },
+            { title: "Autonomous Grid Upgrades Greenlit by Regulators", date: "40 mins ago" },
+            { title: "Global Central Banks Clarify Liquidity Benchmarks", date: "1 hour ago" },
+          ].map((story, idx) => (
+            <div key={idx} className="text-xs">
+              <span
+                style={{ color: mods.widgetLinkColor || previewPrimary }}
+                className="font-semibold block hover:underline cursor-pointer"
+              >
+                • {story.title}
+              </span>
+              <span
+                style={{ color: mods.widgetTextColor || previewMuted }}
+                className="text-[10px] font-mono mt-0.5 block opacity-75"
+              >
+                {story.date}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderLiveArticleContent = () => (
+    <article
+      style={{
+        backgroundColor: previewSurface,
+        borderColor: previewBorder,
+        borderRadius: previewRadius,
+        color: previewText,
+      }}
+      className={`p-6 sm:p-10 border transition-all space-y-6 ${
+        mods.cardStyle === "lifted-shadow"
+          ? "shadow-md hover:shadow-lg"
+          : mods.cardStyle === "clean-minimal"
+          ? "border-none shadow-none"
+          : "shadow-sm"
+      }`}
+    >
+      <p className="text-base sm:text-lg leading-relaxed font-medium">
+        <span
+          style={{
+            color: previewPrimary,
+            fontFamily: `${previewHeadingFont}, serif`,
+          }}
+          className="float-left text-4xl sm:text-5xl font-bold leading-none pr-3 pt-1"
+        >
+          I
+        </span>
+        ndustrial policymakers across three continents today formalized bilateral agreements aimed at securing critical mineral reserves, reinforcing battery grid infrastructure, and creating counter-cyclical buffers against volatile raw material markets.
+      </p>
+
+      <p className="text-sm sm:text-base leading-relaxed opacity-90">
+        Under the newly announced charter, member states will coordinate minimum physical inventory targets for lithium, nickel, and rare-earth components. The joint mechanism includes synchronized release protocols designed to prevent downstream manufacturing disruptions during speculative price spikes.
+      </p>
+
+      <div className="pt-4 border-t" style={{ borderColor: previewBorder }}>
+        <h2
+          style={{
+            fontFamily: `${previewHeadingFont}, serif`,
+            color: previewHeading,
+            fontWeight: mods.headingFontWeight || "700",
+          }}
+          className="text-xl sm:text-2xl font-bold mb-3"
+        >
+          Sovereign Allocations and Strategic Stockpiling
+        </h2>
+        <p className="text-sm sm:text-base leading-relaxed opacity-90">
+          Rather than relying solely on spot procurement markets, the framework incentivizes long-term off-take contracts co-guaranteed by sovereign export facilities. Economists project this will provide miners with bankable balance sheets to invest in advanced refining capacity.
+        </p>
+      </div>
+
+      <blockquote
+        className="border-s-4 ps-4 sm:ps-6 py-2 my-6 italic text-sm sm:text-base rounded-r"
+        style={{
+          borderColor: previewPrimary,
+          color: previewHeading,
+          backgroundColor: mods.darkMode ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
+        }}
+      >
+        &ldquo;Resilient industrial supply chains are the foundational anchor of energy transition economics. Sovereign buffers turn market uncertainty into planned operational continuity.&rdquo;
+      </blockquote>
+
+      <p className="text-sm sm:text-base leading-relaxed opacity-90">
+        Financial markets responded positively to the announcement, with yields stabilizing across sovereign bond tranches tied to national infrastructure funds. Initial audits of storage hubs in Rotterdam and Singapore are scheduled to conclude prior to the upcoming quarter.
+      </p>
+
+      <div
+        className="pt-6 mt-8 border-t flex flex-wrap items-center justify-between gap-4"
+        style={{ borderColor: previewBorder }}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold" style={{ color: previewMuted }}>Filed under:</span>
+          {["Energy", "Trade", "Policy", "Infrastructure"].map((tag) => (
+            <span
+              key={tag}
+              style={{
+                backgroundColor: mods.badgeBg || previewPrimary,
+                color: mods.badgeTextColor || "#ffffff",
+                borderRadius: previewRadius,
+              }}
+              className="px-2 py-0.5 text-[10px] font-semibold uppercase theme-badge"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+        <span className="text-xs font-mono opacity-70" style={{ color: previewMuted }}>
+          Ref: EN-2026-9941
+        </span>
+      </div>
+    </article>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#f0f0f1] text-[13px] font-sans">
+    <div dir={direction} className="fixed inset-0 z-50 flex flex-col bg-[#f0f0f1] text-[13px] font-sans text-start">
       {/* External Google Fonts for Real-time Typography Preview */}
       <link
         rel="stylesheet"
@@ -403,16 +694,16 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
           <Link
             href="/admincp/themes"
             className="flex size-7 items-center justify-center rounded text-white/70 hover:bg-white/10 hover:text-white transition-colors"
-            title="Close Customizer"
+            title={dict?.["admin.customizer.close"] || "Close Customizer"}
           >
             <X className="size-5" />
           </Link>
 
           {/* Theme Switcher Selector */}
-          <div className="flex items-center gap-2 border-l border-white/20 pl-3">
+          <div className="flex items-center gap-2 border-s border-white/20 ps-3">
             <div className="flex flex-col">
               <span className="text-[10px] uppercase tracking-wider text-slate-400">
-                Customizing Theme:
+                {dict?.["admin.customizer.customizing"] || "Customizing Theme:"}
               </span>
               <select
                 value={selectedThemeSlug}
@@ -421,18 +712,18 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 {initialData.allThemes.map((theme) => (
                   <option key={theme.slug} value={theme.slug}>
-                    {theme.name} {theme.slug === initialData.activeThemeSlug ? "(Active)" : ""}
+                    {theme.name} {theme.slug === initialData.activeThemeSlug ? ` ${dict?.["admin.customizer.active_badge"] || "(Active)"}` : ""}
                   </option>
                 ))}
               </select>
             </div>
             {isSelectedActive ? (
               <span className="rounded bg-emerald-600/80 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider hidden sm:inline">
-                Active
+                {dict?.["admin.customizer.active"] || "Active"}
               </span>
             ) : (
               <span className="rounded bg-amber-600/80 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider hidden sm:inline">
-                Previewing
+                {dict?.["admin.customizer.previewing"] || "Previewing"}
               </span>
             )}
           </div>
@@ -440,10 +731,40 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
 
         <div className="flex items-center gap-3">
           {notice && (
-            <span className="text-[12px] font-medium text-emerald-400 animate-fade-in flex items-center gap-1">
-              <Check className="size-3.5" /> {notice}
+            <span
+              className={`text-[12px] font-medium animate-fade-in flex items-center gap-1 ${
+                notice.type === "error" ? "text-rose-400" : "text-emerald-400"
+              }`}
+            >
+              {notice.type === "error" ? "⚠ " : <Check className="size-3.5" />} {notice.message}
             </span>
           )}
+
+          {/* Page View Switcher (Homepage vs Single Article) */}
+          <div className="flex items-center rounded bg-slate-800 p-0.5 text-[11px] font-semibold border border-slate-700">
+            <button
+              type="button"
+              onClick={() => setPreviewPage("home")}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded transition-colors ${
+                previewPage === "home" ? "bg-[#2271b1] text-white shadow-xs" : "text-slate-400 hover:text-white"
+              }`}
+              title="Preview Homepage"
+            >
+              <Home className="size-3.5" />
+              <span className="hidden md:inline">{dict?.["admin.customizer.view.home"] || "Homepage"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPreviewPage("single")}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded transition-colors ${
+                previewPage === "single" ? "bg-[#2271b1] text-white shadow-xs" : "text-slate-400 hover:text-white"
+              }`}
+              title="Preview Single Article Page"
+            >
+              <FileText className="size-3.5" />
+              <span className="hidden md:inline">{dict?.["admin.customizer.view.single"] || "Single Article"}</span>
+            </button>
+          </div>
 
           {/* Device Preview Icons */}
           <div className="hidden sm:flex items-center gap-1 rounded bg-slate-800 p-1">
@@ -453,7 +774,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               className={`p-1 rounded ${
                 deviceMode === "desktop" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"
               }`}
-              title="Desktop Preview"
+              title={dict?.["admin.customizer.device_desktop"] || "Desktop Preview"}
             >
               <Laptop className="size-4" />
             </button>
@@ -463,7 +784,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               className={`p-1 rounded ${
                 deviceMode === "tablet" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"
               }`}
-              title="Tablet Preview"
+              title={dict?.["admin.customizer.device_tablet"] || "Tablet Preview"}
             >
               <Tablet className="size-4" />
             </button>
@@ -473,7 +794,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               className={`p-1 rounded ${
                 deviceMode === "mobile" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"
               }`}
-              title="Mobile Preview"
+              title={dict?.["admin.customizer.device_mobile"] || "Mobile Preview"}
             >
               <Smartphone className="size-4" />
             </button>
@@ -487,7 +808,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               className="rounded-[3px] border border-slate-700 bg-slate-800 px-2.5 py-1 text-xs text-slate-300 hover:text-white hover:bg-slate-700 transition-colors flex items-center gap-1"
               title="Reset this theme to signature default styling"
             >
-              <RotateCcw className="size-3" /> Reset Defaults
+              <RotateCcw className="size-3" /> {dict?.["admin.customizer.reset_defaults"] || "Reset Defaults"}
             </button>
 
             {!isSelectedActive && (
@@ -497,7 +818,9 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                 onClick={() => handlePublish(true)}
                 className="rounded-[3px] border border-emerald-600 bg-emerald-600 px-3 py-1 font-semibold text-white shadow hover:bg-emerald-700 transition-colors disabled:opacity-50"
               >
-                {isPending ? "Activating..." : "Activate & Publish"}
+                {isPending
+                  ? dict?.["admin.customizer.activating"] || "Activating..."
+                  : dict?.["admin.customizer.activate_publish"] || "Activate & Publish"}
               </button>
             )}
 
@@ -507,7 +830,11 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               onClick={() => handlePublish(false)}
               className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1 font-semibold text-white shadow hover:bg-[#135e96] transition-colors disabled:opacity-50"
             >
-              {isPending ? "Publishing..." : isDirty ? "Publish" : "Published"}
+              {isPending
+                ? dict?.["admin.customizer.publishing"] || "Publishing..."
+                : isDirty
+                ? dict?.["admin.customizer.publish"] || "Publish"
+                : dict?.["admin.customizer.published"] || "Published"}
             </button>
           </div>
         </div>
@@ -515,11 +842,12 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
 
       {/* Split-Screen Workspace */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Controls Sidebar */}
-        <aside className="w-80 sm:w-[360px] flex-shrink-0 border-r border-[#c3c4c7] bg-[#f0f0f1] overflow-y-auto">
+        {/* Controls Sidebar */}
+        <aside className="w-80 sm:w-[360px] flex-shrink-0 border-e border-[#c3c4c7] bg-[#f0f0f1] overflow-y-auto">
           <div className="p-3 border-b border-[#dcdcde] bg-white">
             <p className="text-[12px] text-[#646970]">
-              Customizing <strong className="text-[#1d2327]">{currentTheme.name}</strong>. Adjust styling below and see live changes in the preview pane.
+              {dict?.["admin.customizer.customizing_desc"] ||
+                `Customizing ${currentTheme.name}. Adjust styling below and see live changes in the preview pane.`}
             </p>
           </div>
 
@@ -533,10 +861,11 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Sparkles className="size-4 text-[#2271b1]" />
-                  <span>Site Identity & Branding</span>
+                  <span>{dict?.["admin.customizer.section.identity"] || "Site Identity & Branding"}</span>
                 </div>
                 {activeSection === "identity" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
+
 
               {activeSection === "identity" && (
                 <div className="p-4 space-y-4 bg-[#f6f7f7]">
@@ -643,7 +972,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Palette className="size-4 text-[#2271b1]" />
-                  <span>Color Palette & Scheme</span>
+                  <span>{dict?.["admin.customizer.section.colors"] || "Color Palette & Scheme"}</span>
                 </div>
                 {activeSection === "colors" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
@@ -677,52 +1006,22 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                     </div>
                   </div>
 
-                  {/* 1. Navigation Menu Colors */}
+                  {/* 1. Brand Accents & Highlights */}
                   <div className="border-t border-[#dcdcde] pt-3">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-[#2271b1] block mb-2">
-                      Navigation Menu Colors
+                      {dict?.["admin.customizer.colors.brand_accents"] || "Brand Accents & Highlights"}
                     </span>
                     <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
                       <ColorField
-                        label="Nav Menu Background"
-                        description="Background color for the primary navigation container"
-                        value={mods.navBarBg}
-                        defaultValue="#0f172a"
-                        onChange={(val) => updateMods({ navBarBg: val })}
-                      />
-                      <ColorField
-                        label="Nav Links Text"
-                        description="Color of standard navigation menu link items"
-                        value={mods.navLinkColor}
-                        defaultValue="#f8fafc"
-                        onChange={(val) => updateMods({ navLinkColor: val })}
-                      />
-                      <ColorField
-                        label="Nav Links Hover / Active"
-                        description="Accent color on link hover or active page item"
-                        value={mods.navLinkHoverColor}
-                        defaultValue="#f43f5e"
-                        onChange={(val) => updateMods({ navLinkHoverColor: val })}
-                      />
-                    </div>
-                  </div>
-
-                  {/* 2. Primary & Secondary Brand Accent Colors */}
-                  <div className="border-t border-[#dcdcde] pt-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                      Brand Accents & Highlights
-                    </span>
-                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
-                      <ColorField
-                        label="Primary Brand Accent"
-                        description="Main editorial color, buttons, active pill badges"
+                        label={dict?.["admin.customizer.colors.brand_primary"] || "Primary Brand Accent"}
+                        description={dict?.["admin.customizer.colors.brand_primary_desc"] || "Main editorial color, buttons, active pill badges"}
                         value={mods.primaryColor}
                         defaultValue="#2271b1"
                         onChange={(val) => updateMods({ primaryColor: val })}
                       />
                       <ColorField
-                        label="Secondary Accent / Hover"
-                        description="Secondary hover states, subtle category highlights"
+                        label={dict?.["admin.customizer.colors.brand_secondary"] || "Secondary Accent / Hover"}
+                        description={dict?.["admin.customizer.colors.brand_secondary_desc"] || "Secondary hover states, subtle category highlights"}
                         value={mods.secondaryColor}
                         defaultValue="#135e96"
                         onChange={(val) => updateMods({ secondaryColor: val })}
@@ -730,48 +1029,113 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                     </div>
                   </div>
 
-                  {/* 3. Header & Masthead Colors */}
+                  {/* 2. Top Utility & Breaking News Bar */}
                   <div className="border-t border-[#dcdcde] pt-3">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                      Header & Masthead
+                      {dict?.["admin.customizer.colors.topbar"] || "Top Utility & Breaking News Bar"}
                     </span>
                     <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
                       <ColorField
-                        label="Header Background"
-                        description="Background color of main logo & publication title section"
-                        value={mods.headerBg}
-                        defaultValue="#ffffff"
-                        onChange={(val) => updateMods({ headerBg: val })}
-                      />
-                      <ColorField
-                        label="Masthead Title & Tagline"
-                        description="Color of the site nameplate & publication motto"
-                        value={mods.headerTextColor}
-                        defaultValue="#020617"
-                        onChange={(val) => updateMods({ headerTextColor: val })}
-                      />
-                    </div>
-                  </div>
-
-                  {/* 4. Breaking News & Top Bar */}
-                  <div className="border-t border-[#dcdcde] pt-3">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                      Top Utility & Breaking News Bar
-                    </span>
-                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
-                      <ColorField
-                        label="Top Bar Background"
-                        description="Background color for top breaking ticker & utility bar"
+                        label={dict?.["admin.customizer.colors.topbar_bg"] || "Top Bar Background"}
+                        description={dict?.["admin.customizer.colors.topbar_bg_desc"] || "Background color for top breaking ticker & utility bar"}
                         value={mods.topBarBg}
                         defaultValue="#0f172a"
                         onChange={(val) => updateMods({ topBarBg: val })}
                       />
                       <ColorField
-                        label="Top Bar Text & Ticker"
-                        description="Color for breaking news headline text & date"
+                        label={dict?.["admin.customizer.colors.topbar_text"] || "Top Bar Text & Date"}
+                        description={dict?.["admin.customizer.colors.topbar_text_desc"] || "Color for breaking news headline text & date"}
                         value={mods.topBarTextColor}
                         defaultValue="#ffffff"
                         onChange={(val) => updateMods({ topBarTextColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.topbar_ticker_bg"] || "Breaking Ticker Badge Background"}
+                        description={dict?.["admin.customizer.colors.topbar_ticker_bg_desc"] || "Highlight pill background for breaking alert badge"}
+                        value={mods.topBarTickerBg}
+                        defaultValue="#e11d48"
+                        onChange={(val) => updateMods({ topBarTickerBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.topbar_ticker_text"] || "Breaking Ticker Badge Text"}
+                        description={dict?.["admin.customizer.colors.topbar_ticker_text_desc"] || "Text color inside the breaking news badge"}
+                        value={mods.topBarTickerTextColor}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ topBarTickerTextColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Header & Masthead */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      {dict?.["admin.customizer.colors.header"] || "Header & Masthead"}
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.header_bg"] || "Header Background"}
+                        description={dict?.["admin.customizer.colors.header_bg_desc"] || "Background color of main logo & publication title section"}
+                        value={mods.headerBg}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ headerBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.header_text"] || "Masthead Title & Tagline"}
+                        description={dict?.["admin.customizer.colors.header_text_desc"] || "Color of the site nameplate & publication motto"}
+                        value={mods.headerTextColor}
+                        defaultValue="#020617"
+                        onChange={(val) => updateMods({ headerTextColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.header_border"] || "Header Divider / Border"}
+                        description={dict?.["admin.customizer.colors.header_border_desc"] || "Bottom boundary stroke separating header from page"}
+                        value={mods.headerBorderColor}
+                        defaultValue="#e2e8f0"
+                        onChange={(val) => updateMods({ headerBorderColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4. Navigation Menu Colors */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      {dict?.["admin.customizer.colors.navigation"] || "Navigation Menu Colors"}
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.nav_bg"] || "Nav Menu Background"}
+                        description={dict?.["admin.customizer.colors.nav_bg_desc"] || "Background color for the primary navigation container"}
+                        value={mods.navBarBg}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ navBarBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.nav_link"] || "Nav Links Text"}
+                        description={dict?.["admin.customizer.colors.nav_link_desc"] || "Color of standard navigation menu link items"}
+                        value={mods.navLinkColor}
+                        defaultValue="#f8fafc"
+                        onChange={(val) => updateMods({ navLinkColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.nav_link_hover"] || "Nav Links Hover / Active"}
+                        description={dict?.["admin.customizer.colors.nav_link_hover_desc"] || "Accent color on link hover or active page item"}
+                        value={mods.navLinkHoverColor}
+                        defaultValue="#f43f5e"
+                        onChange={(val) => updateMods({ navLinkHoverColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.nav_dropdown_bg"] || "Dropdown / Submenu Background"}
+                        description={dict?.["admin.customizer.colors.nav_dropdown_bg_desc"] || "Surface background for nested dropdown menus"}
+                        value={mods.navDropdownBg}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ navDropdownBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.nav_dropdown_link"] || "Dropdown Menu Link Text"}
+                        description={dict?.["admin.customizer.colors.nav_dropdown_link_desc"] || "Color of link items inside dropdown menus"}
+                        value={mods.navDropdownLinkColor}
+                        defaultValue="#1d2327"
+                        onChange={(val) => updateMods({ navDropdownLinkColor: val })}
                       />
                     </div>
                   </div>
@@ -779,26 +1143,26 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                   {/* 5. Page Surfaces & Backgrounds */}
                   <div className="border-t border-[#dcdcde] pt-3">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                      Page Surfaces & Backgrounds
+                      {dict?.["admin.customizer.colors.surfaces"] || "Page Surfaces & Backgrounds"}
                     </span>
                     <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
                       <ColorField
-                        label="Canvas Background"
-                        description="Overall page wallpaper/canvas background"
+                        label={dict?.["admin.customizer.colors.canvas_bg"] || "Canvas Background"}
+                        description={dict?.["admin.customizer.colors.canvas_bg_desc"] || "Overall page wallpaper/canvas background"}
                         value={mods.backgroundColor}
                         defaultValue="#f8f7f4"
                         onChange={(val) => updateMods({ backgroundColor: val })}
                       />
                       <ColorField
-                        label="Card Surface Background"
-                        description="Background of individual article and content cards"
+                        label={dict?.["admin.customizer.colors.card_surface"] || "Card Surface Background"}
+                        description={dict?.["admin.customizer.colors.card_surface_desc"] || "Background of individual article and content cards"}
                         value={mods.surfaceColor}
                         defaultValue="#ffffff"
                         onChange={(val) => updateMods({ surfaceColor: val })}
                       />
                       <ColorField
-                        label="Card Borders & Rules"
-                        description="Border stroke lines and editorial divider rules"
+                        label={dict?.["admin.customizer.colors.card_border"] || "Card Borders & Rules"}
+                        description={dict?.["admin.customizer.colors.card_border_desc"] || "Border stroke lines and editorial divider rules"}
                         value={mods.borderColor}
                         defaultValue="#e2e8f0"
                         onChange={(val) => updateMods({ borderColor: val })}
@@ -806,29 +1170,29 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                     </div>
                   </div>
 
-                  {/* 6. Typography & Text Colors */}
+                  {/* 6. Text & Typography Colors */}
                   <div className="border-t border-[#dcdcde] pt-3">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                      Text & Typography Colors
+                      {dict?.["admin.customizer.colors.typography"] || "Text & Typography Colors"}
                     </span>
                     <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
                       <ColorField
-                        label="Headlines / Title Color"
-                        description="Primary color for article headings & titles"
+                        label={dict?.["admin.customizer.colors.heading"] || "Headlines / Title Color"}
+                        description={dict?.["admin.customizer.colors.heading_desc"] || "Primary color for article headings & titles"}
                         value={mods.headingColor}
                         defaultValue="#0f172a"
                         onChange={(val) => updateMods({ headingColor: val })}
                       />
                       <ColorField
-                        label="Body Paragraph Color"
-                        description="Color for article summaries and narrative body copy"
+                        label={dict?.["admin.customizer.colors.body_text"] || "Body Paragraph Color"}
+                        description={dict?.["admin.customizer.colors.body_text_desc"] || "Color for article summaries and narrative body copy"}
                         value={mods.textColor}
                         defaultValue="#1d2327"
                         onChange={(val) => updateMods({ textColor: val })}
                       />
                       <ColorField
-                        label="Muted Meta & Bylines"
-                        description="Secondary timestamps, author bylines, and categories"
+                        label={dict?.["admin.customizer.colors.muted_text"] || "Muted Meta & Bylines"}
+                        description={dict?.["admin.customizer.colors.muted_text_desc"] || "Secondary timestamps, author bylines, and categories"}
                         value={mods.mutedTextColor}
                         defaultValue="#64748b"
                         onChange={(val) => updateMods({ mutedTextColor: val })}
@@ -836,52 +1200,147 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
                     </div>
                   </div>
 
-                  {/* 7. Footer Colors */}
+                  {/* 7. Sidebar & Widgets */}
                   <div className="border-t border-[#dcdcde] pt-3">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                      Footer Colors
+                      {dict?.["admin.customizer.colors.widgets"] || "Sidebar & Widgets"}
                     </span>
                     <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
                       <ColorField
-                        label="Footer Background"
-                        description="Background color of bottom newspaper footer"
+                        label={dict?.["admin.customizer.colors.widget_bg"] || "Widget Background"}
+                        description={dict?.["admin.customizer.colors.widget_bg_desc"] || "Container surface background for sidebar widget boxes"}
+                        value={mods.widgetBg}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ widgetBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.widget_title"] || "Widget Title Text"}
+                        description={dict?.["admin.customizer.colors.widget_title_desc"] || "Headings and section titles inside sidebar widgets"}
+                        value={mods.widgetTitleColor}
+                        defaultValue="#0f172a"
+                        onChange={(val) => updateMods({ widgetTitleColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.widget_title_bg"] || "Widget Title Accent / Banner"}
+                        description={dict?.["admin.customizer.colors.widget_title_bg_desc"] || "Background fill or accent bar for widget headings"}
+                        value={mods.widgetTitleBg}
+                        defaultValue="transparent"
+                        onChange={(val) => updateMods({ widgetTitleBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.widget_text"] || "Widget Content Text"}
+                        description={dict?.["admin.customizer.colors.widget_text_desc"] || "Narrative body text and summaries within widgets"}
+                        value={mods.widgetTextColor}
+                        defaultValue="#475569"
+                        onChange={(val) => updateMods({ widgetTextColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.widget_link"] || "Widget Links Color"}
+                        description={dict?.["admin.customizer.colors.widget_link_desc"] || "Hyperlinks, recent post titles, and category links"}
+                        value={mods.widgetLinkColor}
+                        defaultValue="#2271b1"
+                        onChange={(val) => updateMods({ widgetLinkColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.widget_border"] || "Widget Border & Dividers"}
+                        description={dict?.["admin.customizer.colors.widget_border_desc"] || "Outlines and dividing rules surrounding widget cards"}
+                        value={mods.widgetBorderColor}
+                        defaultValue="#e2e8f0"
+                        onChange={(val) => updateMods({ widgetBorderColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 8. Badges & Category Tags */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      {dict?.["admin.customizer.colors.badges"] || "Badges & Category Tags"}
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.badge_bg"] || "Badge Background"}
+                        description={dict?.["admin.customizer.colors.badge_bg_desc"] || "Background color for category pills and editorial tags"}
+                        value={mods.badgeBg}
+                        defaultValue="#2271b1"
+                        onChange={(val) => updateMods({ badgeBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.badge_text"] || "Badge Text Color"}
+                        description={dict?.["admin.customizer.colors.badge_text_desc"] || "Color of text inside category pills and badges"}
+                        value={mods.badgeTextColor}
+                        defaultValue="#ffffff"
+                        onChange={(val) => updateMods({ badgeTextColor: val })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 9. Footer & Sub-Footer */}
+                  <div className="border-t border-[#dcdcde] pt-3">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                      {dict?.["admin.customizer.colors.footer"] || "Footer Architecture"}
+                    </span>
+                    <div className="bg-white rounded border border-[#dcdcde] p-2 space-y-1">
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.footer_bg"] || "Footer Background"}
+                        description={dict?.["admin.customizer.colors.footer_bg_desc"] || "Background color of bottom newspaper footer"}
                         value={mods.footerBg}
                         defaultValue="#0f172a"
                         onChange={(val) => updateMods({ footerBg: val })}
                       />
                       <ColorField
-                        label="Footer Headings"
-                        description="Column title color in footer sections"
+                        label={dict?.["admin.customizer.colors.footer_heading"] || "Footer Headings"}
+                        description={dict?.["admin.customizer.colors.footer_heading_desc"] || "Column title color in footer sections"}
                         value={mods.footerHeadingColor}
                         defaultValue="#ffffff"
                         onChange={(val) => updateMods({ footerHeadingColor: val })}
                       />
                       <ColorField
-                        label="Footer Body Text"
-                        description="Color for footer paragraphs and copyright text"
+                        label={dict?.["admin.customizer.colors.footer_text"] || "Footer Body Text"}
+                        description={dict?.["admin.customizer.colors.footer_text_desc"] || "Color for footer paragraphs and copyright text"}
                         value={mods.footerTextColor}
                         defaultValue="#94a3b8"
                         onChange={(val) => updateMods({ footerTextColor: val })}
                       />
                       <ColorField
-                        label="Footer Links"
-                        description="Color of links inside footer navigation and columns"
+                        label={dict?.["admin.customizer.colors.footer_link"] || "Footer Links"}
+                        description={dict?.["admin.customizer.colors.footer_link_desc"] || "Color of links inside footer navigation and columns"}
                         value={mods.footerLinkColor}
                         defaultValue="#cbd5e1"
                         onChange={(val) => updateMods({ footerLinkColor: val })}
                       />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.footer_border"] || "Footer Divider Border"}
+                        description={dict?.["admin.customizer.colors.footer_border_desc"] || "Top border and divider lines separating footer areas"}
+                        value={mods.footerBorderColor}
+                        defaultValue="#334155"
+                        onChange={(val) => updateMods({ footerBorderColor: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.subfooter_bg"] || "Sub-Footer / Copyright Background"}
+                        description={dict?.["admin.customizer.colors.subfooter_bg_desc"] || "Background color for the lowest copyright strip"}
+                        value={mods.subFooterBg}
+                        defaultValue="#030712"
+                        onChange={(val) => updateMods({ subFooterBg: val })}
+                      />
+                      <ColorField
+                        label={dict?.["admin.customizer.colors.subfooter_text"] || "Sub-Footer / Copyright Text"}
+                        description={dict?.["admin.customizer.colors.subfooter_text_desc"] || "Color of copyright notice and back-to-top link"}
+                        value={mods.subFooterTextColor}
+                        defaultValue="#94a3b8"
+                        onChange={(val) => updateMods({ subFooterTextColor: val })}
+                      />
                     </div>
                   </div>
 
-                  {/* Dark Mode Switcher */}
+                  {/* 10. Dark Mode Switcher */}
                   <div className="border-t border-[#dcdcde] pt-3">
                     <label className="flex items-center justify-between cursor-pointer p-2 bg-white rounded border border-[#dcdcde]">
                       <div>
                         <span className="text-[12px] font-medium text-[#2c3338] block">
-                          Dark Mode Overrides
+                          {dict?.["admin.customizer.colors.dark_mode"] || "Dark Mode Overrides"}
                         </span>
                         <span className="text-[10px] text-[#646970] block">
-                          Switch preview and layout to dark mode palette
+                          {dict?.["admin.customizer.colors.dark_mode_desc"] || "Switch preview and layout to dark mode palette"}
                         </span>
                       </div>
                       <input
@@ -905,7 +1364,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Type className="size-4 text-[#2271b1]" />
-                  <span>Typography Engine</span>
+                  <span>{dict?.["admin.customizer.section.typography"] || "Typography & Fonts"}</span>
                 </div>
                 {activeSection === "typography" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
@@ -1038,7 +1497,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Layout className="size-4 text-[#2271b1]" />
-                  <span>Header & Masthead</span>
+                  <span>{dict?.["admin.customizer.section.header"] || "Header Layout & Topbar"}</span>
                 </div>
                 {activeSection === "header" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
@@ -1219,7 +1678,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Menu className="size-4 text-[#2271b1]" />
-                  <span>Navigation Bar</span>
+                  <span>{dict?.["admin.customizer.section.navigation"] || "Navigation & Menus"}</span>
                 </div>
                 {activeSection === "navigation" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
@@ -1346,7 +1805,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Sliders className="size-4 text-[#2271b1]" />
-                  <span>Layout & Container Geometry</span>
+                  <span>{dict?.["admin.customizer.section.layout"] || "Content Layout & Grid"}</span>
                 </div>
                 {activeSection === "layout" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
@@ -1443,92 +1902,187 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
             <div>
               <button
                 type="button"
-                onClick={() => setActiveSection(activeSection === "single" ? null : "single")}
+                onClick={() => {
+                  const next = activeSection === "single" ? null : "single";
+                  setActiveSection(next);
+                  if (next === "single") {
+                    setPreviewPage("single");
+                  }
+                }}
                 className="flex w-full items-center justify-between bg-white px-4 py-3 font-semibold text-[#2c3338] hover:bg-[#f6f7f7] transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <FileText className="size-4 text-[#2271b1]" />
-                  <span>Single Post & Article Meta</span>
+                  <span>{dict?.["admin.customizer.section.single"] || "Single Article Page"}</span>
                 </div>
                 {activeSection === "single" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
 
               {activeSection === "single" && (
-                <div className="p-4 space-y-3 bg-[#f6f7f7]">
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-[12px] font-medium text-[#50575e]">Show Featured Header Image</span>
-                    <input
-                      type="checkbox"
-                      checked={mods.singleShowFeaturedImage !== false}
-                      onChange={(e) => updateMods({ singleShowFeaturedImage: e.target.checked })}
-                      className="rounded border-[#8c8f94] text-[#2271b1]"
-                    />
-                  </label>
+                <div className="p-4 space-y-4 bg-[#f6f7f7]">
+                  {/* Article Page Layout */}
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Article Page Layout Architecture
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        {
+                          id: "sidebar-right",
+                          label: "Right Sidebar",
+                          desc: "Main story (8 cols) + Sidebar (4 cols)",
+                          icon: "📰",
+                        },
+                        {
+                          id: "sidebar-left",
+                          label: "Left Sidebar",
+                          desc: "Sidebar (4 cols) + Main story (8 cols)",
+                          icon: "📑",
+                        },
+                        {
+                          id: "full-container",
+                          label: "Full Container",
+                          desc: "Full container width, no sidebar",
+                          icon: "📐",
+                        },
+                        {
+                          id: "centered",
+                          label: "Centered Column",
+                          desc: "Centered distraction-free column",
+                          icon: "📖",
+                        },
+                      ].map((layout) => (
+                        <button
+                          key={layout.id}
+                          type="button"
+                          onClick={() => updateMods({ singleLayout: layout.id as any })}
+                          className={`p-2.5 rounded border text-left transition-all ${
+                            (mods.singleLayout || "sidebar-right") === layout.id
+                              ? "border-[#2271b1] bg-[#f0f6fc] ring-1 ring-[#2271b1]"
+                              : "border-[#dcdcde] bg-white hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-base">{layout.icon}</span>
+                            <span
+                              className={`text-[12px] font-semibold ${
+                                (mods.singleLayout || "sidebar-right") === layout.id
+                                  ? "text-[#2271b1]"
+                                  : "text-slate-800"
+                              }`}
+                            >
+                              {layout.label}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-500 block leading-tight">
+                            {layout.desc}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-[12px] font-medium text-[#50575e]">Show Author Avatar & Byline</span>
-                    <input
-                      type="checkbox"
-                      checked={mods.singleShowAuthorAvatar !== false}
-                      onChange={(e) => updateMods({ singleShowAuthorAvatar: e.target.checked })}
-                      className="rounded border-[#8c8f94] text-[#2271b1]"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-[12px] font-medium text-[#50575e]">Show Publication Date</span>
-                    <input
-                      type="checkbox"
-                      checked={mods.singleShowDate !== false}
-                      onChange={(e) => updateMods({ singleShowDate: e.target.checked })}
-                      className="rounded border-[#8c8f94] text-[#2271b1]"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-[12px] font-medium text-[#50575e]">Show Reading Time Badge</span>
-                    <input
-                      type="checkbox"
-                      checked={mods.singleShowReadingTime !== false}
-                      onChange={(e) => updateMods({ singleShowReadingTime: e.target.checked })}
-                      className="rounded border-[#8c8f94] text-[#2271b1]"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <span className="text-[12px] font-medium text-[#50575e]">Show Social Share Bar</span>
-                    <input
-                      type="checkbox"
-                      checked={mods.singleShowShareButtons !== false}
-                      onChange={(e) => updateMods({ singleShowShareButtons: e.target.checked })}
-                      className="rounded border-[#8c8f94] text-[#2271b1]"
-                    />
-                  </label>
-
+                  {/* Reading Column Width (Applied to Centered Column or Article Body) */}
                   <div className="border-t border-[#dcdcde] pt-3">
-                    <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                       Reading Column Width
                     </label>
+                    <p className="text-[10px] text-slate-500 mb-2">
+                      Controls text width for centered layouts or full container content.
+                    </p>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: "narrow", label: "Narrow (680px)" },
-                        { id: "standard", label: "Standard (760px)" },
-                        { id: "wide", label: "Wide (880px)" },
+                        { id: "narrow", label: "Narrow (720px)", sub: "Focused" },
+                        { id: "standard", label: "Standard (900px)", sub: "Editorial" },
+                        { id: "wide", label: "Container (Full)", sub: "100% Width" },
                       ].map((opt) => (
                         <button
                           key={opt.id}
                           type="button"
                           onClick={() => updateMods({ singleContentWidth: opt.id as any })}
-                          className={`p-1.5 rounded border text-[11px] text-center transition-colors ${
+                          className={`p-2 rounded border text-center transition-colors ${
                             (mods.singleContentWidth || "standard") === opt.id
-                              ? "border-[#2271b1] bg-[#f0f6fc] font-bold text-[#2271b1]"
-                              : "border-[#dcdcde] bg-white text-slate-700"
+                              ? "border-[#2271b1] bg-[#f0f6fc] font-bold text-[#2271b1] ring-1 ring-[#2271b1]"
+                              : "border-[#dcdcde] bg-white text-slate-700 hover:border-slate-300"
                           }`}
                         >
-                          {opt.label}
+                          <span className="block text-[11px]">{opt.label}</span>
+                          <span className="block text-[9px] text-slate-400 font-normal">{opt.sub}</span>
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Display Elements Toggles */}
+                  <div className="border-t border-[#dcdcde] pt-3 space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                      Display Elements
+                    </span>
+
+                    <label className="flex items-center justify-between cursor-pointer p-1.5 bg-white rounded border border-[#e5e5e7]">
+                      <div>
+                        <span className="text-[12px] font-medium text-slate-800 block">Featured Header Image</span>
+                        <span className="text-[10px] text-slate-400 block">Display the primary hero visual below the headline</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={mods.singleShowFeaturedImage !== false}
+                        onChange={(e) => updateMods({ singleShowFeaturedImage: e.target.checked })}
+                        className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer p-1.5 bg-white rounded border border-[#e5e5e7]">
+                      <div>
+                        <span className="text-[12px] font-medium text-slate-800 block">Author Avatar & Byline</span>
+                        <span className="text-[10px] text-slate-400 block">Show author circle badge and journalist attribution</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={mods.singleShowAuthorAvatar !== false}
+                        onChange={(e) => updateMods({ singleShowAuthorAvatar: e.target.checked })}
+                        className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer p-1.5 bg-white rounded border border-[#e5e5e7]">
+                      <div>
+                        <span className="text-[12px] font-medium text-slate-800 block">Publication Date</span>
+                        <span className="text-[10px] text-slate-400 block">Show publication timestamp in article header</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={mods.singleShowDate !== false}
+                        onChange={(e) => updateMods({ singleShowDate: e.target.checked })}
+                        className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer p-1.5 bg-white rounded border border-[#e5e5e7]">
+                      <div>
+                        <span className="text-[12px] font-medium text-slate-800 block">Reading Time Velocity</span>
+                        <span className="text-[10px] text-slate-400 block">Show estimated minutes to read badge</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={mods.singleShowReadingTime !== false}
+                        onChange={(e) => updateMods({ singleShowReadingTime: e.target.checked })}
+                        className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between cursor-pointer p-1.5 bg-white rounded border border-[#e5e5e7]">
+                      <div>
+                        <span className="text-[12px] font-medium text-slate-800 block">Social Share Bar</span>
+                        <span className="text-[10px] text-slate-400 block">Floating/inline social share buttons</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={mods.singleShowShareButtons !== false}
+                        onChange={(e) => updateMods({ singleShowShareButtons: e.target.checked })}
+                        className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                      />
+                    </label>
                   </div>
                 </div>
               )}
@@ -1543,7 +2097,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Footprints className="size-4 text-[#2271b1]" />
-                  <span>Footer & Copyright</span>
+                  <span>{dict?.["admin.customizer.section.footer"] || "Footer Architecture"}</span>
                 </div>
                 {activeSection === "footer" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
@@ -1655,7 +2209,7 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               >
                 <div className="flex items-center gap-2">
                   <Code2 className="size-4 text-[#2271b1]" />
-                  <span>Additional CSS</span>
+                  <span>{dict?.["admin.customizer.section.css"] || "Additional Custom CSS"}</span>
                 </div>
                 {activeSection === "css" ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               </button>
@@ -1695,130 +2249,430 @@ export function CustomizerShell({ initialData }: { initialData: CustomizerPayloa
               fontSize: `${mods.baseFontSize || 16}px`,
             }}
           >
-            {/* Embedded Live Custom CSS */}
-            {mods.customCss && <style dangerouslySetInnerHTML={{ __html: mods.customCss }} />}
+            {/* Embedded Live CSS variables for real-time reactivity */}
+            <style
+              dangerouslySetInnerHTML={{
+                __html: `
+                  :root {
+                    --theme-primary: ${previewPrimary};
+                    --theme-secondary: ${mods.secondaryColor || "#135e96"};
+                    --theme-bg: ${previewBg};
+                    --theme-surface: ${previewSurface};
+                    --theme-text: ${previewText};
+                    --theme-heading: ${previewHeading};
+                    --theme-muted: ${previewMuted};
+                    --theme-border: ${previewBorder};
+                    --theme-radius: ${previewRadius};
+                    --theme-container-width: ${mods.containerWidth ? `${mods.containerWidth}px` : "1280px"};
+                    --theme-base-font-size: ${mods.baseFontSize ? `${mods.baseFontSize}px` : "16px"};
+
+                    --theme-header-bg: ${mods.headerBg || previewSurface};
+                    --theme-header-text: ${mods.headerTextColor || previewHeading};
+                    --theme-header-border: ${mods.headerBorderColor || previewBorder};
+
+                    --theme-topbar-bg: ${mods.topBarBg || (mods.darkMode ? "#030712" : "#0f172a")};
+                    --theme-topbar-text: ${mods.topBarTextColor || "#ffffff"};
+                    --theme-topbar-ticker-bg: ${mods.topBarTickerBg || previewPrimary};
+                    --theme-topbar-ticker-text: ${mods.topBarTickerTextColor || "#ffffff"};
+
+                    --theme-nav-bg: ${mods.navBarBg || previewSurface};
+                    --theme-nav-link: ${mods.navLinkColor || previewHeading};
+                    --theme-nav-link-hover: ${mods.navLinkHoverColor || previewPrimary};
+                    --theme-nav-dropdown-bg: ${mods.navDropdownBg || previewSurface};
+                    --theme-nav-dropdown-link: ${mods.navDropdownLinkColor || previewText};
+
+                    --theme-widget-bg: ${mods.widgetBg || previewSurface};
+                    --theme-widget-title-color: ${mods.widgetTitleColor || previewHeading};
+                    --theme-widget-title-bg: ${mods.widgetTitleBg || "transparent"};
+                    --theme-widget-text: ${mods.widgetTextColor || previewText};
+                    --theme-widget-link: ${mods.widgetLinkColor || previewPrimary};
+                    --theme-widget-border: ${mods.widgetBorderColor || previewBorder};
+
+                    --theme-badge-bg: ${mods.badgeBg || previewPrimary};
+                    --theme-badge-text: ${mods.badgeTextColor || "#ffffff"};
+
+                    --theme-footer-bg: ${mods.footerBg || (mods.darkMode ? "#030712" : "#0f172a")};
+                    --theme-footer-heading: ${mods.footerHeadingColor || "#ffffff"};
+                    --theme-footer-text: ${mods.footerTextColor || "#94a3b8"};
+                    --theme-footer-link: ${mods.footerLinkColor || "#cbd5e1"};
+                    --theme-footer-border: ${mods.footerBorderColor || previewBorder};
+                    --theme-subfooter-bg: ${mods.subFooterBg || (mods.footerBg || (mods.darkMode ? "#030712" : "#0f172a"))};
+                    --theme-subfooter-text: ${mods.subFooterTextColor || (mods.footerTextColor || "#94a3b8")};
+                  }
+
+                  .theme-widget {
+                    background-color: var(--theme-widget-bg) !important;
+                    border-color: var(--theme-widget-border) !important;
+                    color: var(--theme-widget-text) !important;
+                  }
+                  .theme-widget-title {
+                    color: var(--theme-widget-title-color) !important;
+                    background-color: var(--theme-widget-title-bg, transparent);
+                  }
+                  .theme-widget a {
+                    color: var(--theme-widget-link);
+                  }
+                  .theme-badge {
+                    background-color: var(--theme-badge-bg) !important;
+                    color: var(--theme-badge-text) !important;
+                  }
+                  ${mods.customCss || ""}
+                `,
+              }}
+            />
 
             {/* 1. LIVE SITE HEADER & MASTHEAD (Modular SiteHeader) */}
             <SiteHeader theme={liveThemeContext} />
 
-
-            {/* 4. LIVE CONTENT SAMPLE PREVIEW */}
-            <div
-              className="p-4 sm:p-8 space-y-8"
-              style={{
-                maxWidth: mods.containerWidth ? `${mods.containerWidth}px` : "1280px",
-                margin: "0 auto",
-              }}
-            >
-              {/* Lead Article Card */}
+            {/* 2. LIVE CONTENT & SIDEBAR PREVIEW */}
+            {previewPage === "home" ? (
               <div
+                className="p-4 sm:p-8"
                 style={{
-                  backgroundColor: previewSurface,
-                  borderColor: previewBorder,
-                  borderRadius: previewRadius,
+                  maxWidth: mods.containerWidth ? `${mods.containerWidth}px` : "1280px",
+                  margin: "0 auto",
                 }}
-                className={`p-6 border transition-all ${
-                  mods.cardStyle === "lifted-shadow"
-                    ? "shadow-md hover:shadow-lg"
-                    : mods.cardStyle === "clean-minimal"
-                    ? "border-none shadow-none"
-                    : "shadow-sm"
-                }`}
               >
-                <div className="flex items-center gap-2 mb-2 text-[11px] font-mono text-slate-500">
-                  <span
-                    style={{ backgroundColor: previewPrimary, borderRadius: previewRadius }}
-                    className="text-white px-2 py-0.5 font-bold uppercase text-[10px]"
-                  >
-                    Breaking Lead
-                  </span>
-                  <span>Financial Intelligence Desk</span>
-                  <span>• 15 mins ago</span>
-                </div>
-
-                <h2
-                  style={{
-                    fontFamily: `${previewHeadingFont}, serif`,
-                    color: previewHeading,
-                    textTransform: mods.headingTransform || "none",
-                    fontWeight: mods.headingFontWeight || "700",
-                  }}
-                  className="text-2xl sm:text-4xl font-bold tracking-tight mb-3"
-                >
-                  Global Central Banks Synchronize Policy Measures Amid Resilient Digital Market Expansion
-                </h2>
-
-                <p
-                  style={{ color: previewText }}
-                  className="text-sm leading-relaxed mb-4"
-                >
-                  Monetary authorities outlined coordinated fiscal benchmarks during today’s opening briefing, signaling stability in regional bond volumes and accelerating commercial investments across infrastructure projects.
-                </p>
-
-                <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t" style={{ borderColor: previewBorder }}>
-                  <div className="flex items-center gap-2">
-                    <div className="size-6 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center font-bold text-[10px]">
-                      ED
-                    </div>
-                    <span>By Editorial Staff</span>
-                  </div>
-                  <span style={{ color: previewPrimary }} className="font-semibold flex items-center gap-1">
-                    Read Full Story <ArrowRight className="size-3" />
-                  </span>
-                </div>
-              </div>
-
-              {/* 3-Column Story Wire Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  {
-                    cat: "Technology",
-                    title: "Next-Generation Silicon Processors Enter High-Volume Commercial Runs",
-                    desc: "Semiconductor foundries report 25% efficiency gains in low-latency mobile inference platforms.",
-                  },
-                  {
-                    cat: "Markets",
-                    title: "Energy Transition Commodities Surge as Renewable Deployment Accelerates",
-                    desc: "Critical minerals see sustained institutional inflows following quarterly production reports.",
-                  },
-                  {
-                    cat: "Opinion",
-                    title: "The Editorial Board on Navigating the New Era of Autonomous Cloud Systems",
-                    desc: "Why modern architectural discipline and database integrity will define the decade.",
-                  },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      backgroundColor: previewSurface,
-                      borderColor: previewBorder,
-                      borderRadius: previewRadius,
-                    }}
-                    className="p-5 border shadow-sm space-y-2"
-                  >
-                    <span
-                      style={{ color: previewPrimary }}
-                      className="text-[10px] font-bold uppercase tracking-wider block"
-                    >
-                      {item.cat}
-                    </span>
-                    <h3
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Main Content Area (8 Cols) */}
+                  <div className="lg:col-span-8 space-y-8">
+                    {/* Lead Article Card */}
+                    <div
                       style={{
-                        fontFamily: `${previewHeadingFont}, serif`,
-                        color: previewHeading,
-                        fontWeight: mods.headingFontWeight || "700",
+                        backgroundColor: previewSurface,
+                        borderColor: previewBorder,
+                        borderRadius: previewRadius,
                       }}
-                      className="text-base font-bold leading-snug"
+                      className={`p-6 border transition-all ${
+                        mods.cardStyle === "lifted-shadow"
+                          ? "shadow-md hover:shadow-lg"
+                          : mods.cardStyle === "clean-minimal"
+                          ? "border-none shadow-none"
+                          : "shadow-sm"
+                      }`}
                     >
-                      {item.title}
-                    </h3>
-                    <p style={{ color: previewMuted }} className="text-xs line-clamp-3">
-                      {item.desc}
-                    </p>
+                      <div className="flex items-center gap-2 mb-2 text-[11px] font-mono" style={{ color: previewMuted }}>
+                        <span
+                          style={{
+                            backgroundColor: mods.badgeBg || previewPrimary,
+                            color: mods.badgeTextColor || "#ffffff",
+                            borderRadius: previewRadius,
+                          }}
+                          className="px-2 py-0.5 font-bold uppercase text-[10px] theme-badge"
+                        >
+                          Breaking Lead
+                        </span>
+                        <span>Financial Intelligence Desk</span>
+                        <span>• 15 mins ago</span>
+                      </div>
+
+                      <h2
+                        style={{
+                          fontFamily: `${previewHeadingFont}, serif`,
+                          color: previewHeading,
+                          textTransform: mods.headingTransform || "none",
+                          fontWeight: mods.headingFontWeight || "700",
+                        }}
+                        className="text-2xl sm:text-4xl font-bold tracking-tight mb-3"
+                      >
+                        Global Central Banks Synchronize Policy Measures Amid Resilient Digital Market Expansion
+                      </h2>
+
+                      <p
+                        style={{ color: previewText }}
+                        className="text-sm leading-relaxed mb-4"
+                      >
+                        Monetary authorities outlined coordinated fiscal benchmarks during today’s opening briefing, signaling stability in regional bond volumes and accelerating commercial investments across infrastructure projects.
+                      </p>
+
+                      <div className="flex items-center justify-between text-xs pt-3 border-t" style={{ borderColor: previewBorder, color: previewMuted }}>
+                        <div className="flex items-center gap-2">
+                          <div className="size-6 rounded-full bg-slate-300 dark:bg-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-800 dark:text-slate-200">
+                            ED
+                          </div>
+                          <span>By Editorial Staff</span>
+                        </div>
+                        <span style={{ color: previewPrimary }} className="font-semibold flex items-center gap-1">
+                          Read Full Story <ArrowRight className="size-3" />
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2-Column Wire Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {[
+                        {
+                          cat: "Technology",
+                          title: "Next-Generation Silicon Processors Enter High-Volume Commercial Runs",
+                          desc: "Semiconductor foundries report 25% efficiency gains in low-latency inference platforms.",
+                        },
+                        {
+                          cat: "Markets",
+                          title: "Energy Transition Commodities Surge as Renewable Deployment Accelerates",
+                          desc: "Critical minerals see sustained institutional inflows following quarterly production reports.",
+                        },
+                      ].map((item, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            backgroundColor: previewSurface,
+                            borderColor: previewBorder,
+                            borderRadius: previewRadius,
+                          }}
+                          className="p-5 border shadow-sm space-y-2"
+                        >
+                          <span
+                            style={{
+                              backgroundColor: mods.badgeBg || previewPrimary,
+                              color: mods.badgeTextColor || "#ffffff",
+                              borderRadius: previewRadius,
+                            }}
+                            className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 inline-block theme-badge"
+                          >
+                            {item.cat}
+                          </span>
+                          <h3
+                            style={{
+                              fontFamily: `${previewHeadingFont}, serif`,
+                              color: previewHeading,
+                              fontWeight: mods.headingFontWeight || "700",
+                            }}
+                            className="text-base font-bold leading-snug"
+                          >
+                            {item.title}
+                          </h3>
+                          <p style={{ color: previewMuted }} className="text-xs line-clamp-3">
+                            {item.desc}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+
+                  {/* Sidebar Widget Area (4 Cols) */}
+                  <div className="lg:col-span-4 space-y-6">
+                    {renderLiveSidebar()}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* SINGLE ARTICLE LIVE PREVIEW */
+              <div
+                className="p-4 sm:p-8"
+                style={{
+                  maxWidth:
+                    mods.singleLayout === "centered"
+                      ? mods.singleContentWidth === "narrow"
+                        ? "720px"
+                        : mods.singleContentWidth === "standard"
+                        ? "900px"
+                        : mods.containerWidth ? `${mods.containerWidth}px` : "1280px"
+                      : mods.containerWidth ? `${mods.containerWidth}px` : "1280px",
+                  margin: "0 auto",
+                }}
+              >
+                {/* Single Article Masthead */}
+                <div
+                  className="mb-8 pb-6 border-b"
+                  style={{ borderColor: previewBorder }}
+                >
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span
+                      style={{
+                        backgroundColor: mods.badgeBg || previewPrimary,
+                        color: mods.badgeTextColor || "#ffffff",
+                        borderRadius: previewRadius,
+                      }}
+                      className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider theme-badge"
+                    >
+                      Economic Strategy & Infrastructure
+                    </span>
+                    {mods.singleShowReadingTime !== false && (
+                      <span
+                        className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded border"
+                        style={{
+                          backgroundColor: previewSurface,
+                          borderColor: previewBorder,
+                          color: previewMuted,
+                        }}
+                      >
+                        <Clock className="size-3" /> 4 min read
+                      </span>
+                    )}
+                  </div>
+
+                  <h1
+                    style={{
+                      fontFamily: `${previewHeadingFont}, serif`,
+                      color: previewHeading,
+                      textTransform: mods.headingTransform || "none",
+                      fontWeight: mods.headingFontWeight || "700",
+                    }}
+                    className="text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight mb-4"
+                  >
+                    Strategic Mineral Reserves and Energy Infrastructure: The Next Decade of Resilient Industrial Production
+                  </h1>
+
+                  <p
+                    style={{ color: previewMuted }}
+                    className="text-sm sm:text-base leading-relaxed mb-6 font-normal max-w-3xl"
+                  >
+                    An in-depth analysis of supply-chain security, national reserve mandates, and emerging sovereign funding frameworks transforming resource diplomacy across major trade corridors.
+                  </p>
+
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t text-xs"
+                    style={{ borderColor: previewBorder }}
+                  >
+                    <div className="flex items-center gap-3">
+                      {mods.singleShowAuthorAvatar !== false && (
+                        <div
+                          className="size-8 rounded-full flex items-center justify-center font-bold text-xs uppercase text-white shadow-xs flex-shrink-0"
+                          style={{ backgroundColor: previewPrimary }}
+                        >
+                          ER
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-semibold block" style={{ color: previewHeading }}>
+                          Elena Rostova
+                        </span>
+                        {mods.singleShowDate !== false && (
+                          <span className="text-[11px] font-mono block opacity-75" style={{ color: previewMuted }}>
+                            September 30, 2026 • 09:45 AM GMT
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Social Share Buttons */}
+                    {mods.singleShowShareButtons !== false && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium hidden sm:inline" style={{ color: previewMuted }}>
+                          Share:
+                        </span>
+                        <button
+                          type="button"
+                          className="p-1.5 rounded border text-xs font-bold transition-colors hover:opacity-80"
+                          style={{
+                            backgroundColor: previewSurface,
+                            borderColor: previewBorder,
+                            color: previewText,
+                          }}
+                          title="Share on X"
+                        >
+                          𝕏
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCopiedLink(true);
+                            setTimeout(() => setCopiedLink(false), 2000);
+                          }}
+                          className="p-1.5 rounded border text-xs flex items-center gap-1 transition-colors hover:opacity-80"
+                          style={{
+                            backgroundColor: previewSurface,
+                            borderColor: previewBorder,
+                            color: previewText,
+                          }}
+                          title="Copy Article URL"
+                        >
+                          {copiedLink ? (
+                            <>
+                              <Check className="size-3.5 text-emerald-500" />
+                              <span className="text-[10px] text-emerald-500 font-medium">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="size-3.5" />
+                              <span className="text-[10px] font-medium">Copy</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Featured Header Hero Image */}
+                {mods.singleShowFeaturedImage !== false && (
+                  <div
+                    className="mb-8 overflow-hidden border shadow-sm"
+                    style={{
+                      borderRadius: previewRadius,
+                      borderColor: previewBorder,
+                    }}
+                  >
+                    <img
+                      src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80"
+                      alt="Featured Industrial Facility"
+                      className="w-full h-64 sm:h-96 object-cover"
+                    />
+                    <div
+                      className="px-4 py-2 text-[11px] border-t italic flex justify-between"
+                      style={{
+                        backgroundColor: previewSurface,
+                        borderColor: previewBorder,
+                        color: previewMuted,
+                      }}
+                    >
+                      <span>Global infrastructure and sovereign commodities distribution terminal.</span>
+                      <span className="font-mono text-[10px]">Photo: Editorial Wire Services</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Layout Grid Architecture */}
+                {mods.singleLayout === "sidebar-left" ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-4 order-2 lg:order-1 space-y-6">
+                      {renderLiveSidebar()}
+                    </div>
+                    <div className="lg:col-span-8 order-1 lg:order-2 space-y-8">
+                      {renderLiveArticleContent()}
+                    </div>
+                  </div>
+                ) : mods.singleLayout === "full-container" ? (
+                  <div className="w-full">
+                    <div
+                      className={`w-full ${
+                        mods.singleContentWidth === "narrow"
+                          ? "max-w-[720px] mx-auto"
+                          : mods.singleContentWidth === "standard"
+                          ? "max-w-[900px] mx-auto"
+                          : "w-full"
+                      }`}
+                    >
+                      {renderLiveArticleContent()}
+                    </div>
+                  </div>
+                ) : mods.singleLayout === "centered" ? (
+                  <div className="w-full flex justify-center">
+                    <div
+                      className={`w-full ${
+                        mods.singleContentWidth === "narrow"
+                          ? "max-w-[720px]"
+                          : mods.singleContentWidth === "standard"
+                          ? "max-w-[900px]"
+                          : "w-full"
+                      }`}
+                    >
+                      {renderLiveArticleContent()}
+                    </div>
+                  </div>
+                ) : (
+                  /* Default: sidebar-right */
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-8 space-y-8">
+                      {renderLiveArticleContent()}
+                    </div>
+                    <div className="lg:col-span-4 space-y-6">
+                      {renderLiveSidebar()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 3. LIVE SITE FOOTER (Modular SiteFooter) */}
             <SiteFooter theme={liveThemeContext} />

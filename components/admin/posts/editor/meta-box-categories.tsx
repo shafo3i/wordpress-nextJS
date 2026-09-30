@@ -12,10 +12,14 @@ export function MetaBoxCategories({
   categories,
   selectedCategories,
   onToggleCategory,
+  dict,
+  direction = "ltr",
 }: {
   categories: CategoryItem[];
   selectedCategories: string[];
   onToggleCategory: (slug: string, checked: boolean) => void;
+  dict?: Record<string, string>;
+  direction?: "rtl" | "ltr";
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "popular">("all");
@@ -36,12 +40,12 @@ export function MetaBoxCategories({
   };
 
   return (
-    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
+    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-start" dir={direction}>
       <div
         className="flex cursor-pointer select-none items-center justify-between border-b border-[#c3c4c7] px-3 py-2 text-[14px] font-semibold text-[#1d2327]"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>Categories</span>
+        <span>{dict?.["admin.posts.categories.title"] || dict?.["admin.posts.table.categories"] || "Categories"}</span>
         <button className="text-[#50575e] hover:text-[#1d2327]" type="button">
           {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
         </button>
@@ -60,7 +64,7 @@ export function MetaBoxCategories({
               onClick={() => setActiveTab("all")}
               type="button"
             >
-              All Categories
+              {dict?.["admin.posts.categories.all"] || "All Categories"}
             </button>
             <button
               className={`px-3 py-1 font-medium ${
@@ -71,7 +75,7 @@ export function MetaBoxCategories({
               onClick={() => setActiveTab("popular")}
               type="button"
             >
-              Most Used
+              {dict?.["admin.posts.categories.most_used"] || "Most Used"}
             </button>
           </div>
 
@@ -93,7 +97,9 @@ export function MetaBoxCategories({
                 </label>
               ))
             ) : (
-              <span className="text-[#646970]">No categories available.</span>
+              <span className="text-[#646970]">
+                {dict?.["admin.posts.categories.no_categories"] || "No categories available."}
+              </span>
             )}
           </div>
 
@@ -105,13 +111,13 @@ export function MetaBoxCategories({
                 onClick={() => setIsAddingNew(true)}
                 type="button"
               >
-                + Add New Category
+                {dict?.["admin.posts.categories.add_new"] || "+ Add New Category"}
               </button>
             ) : (
               <div className="mt-2 space-y-2 rounded border border-[#dcdcde] bg-[#f6f7f7] p-2">
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold text-[#50575e]">
-                    New Category Name
+                    {dict?.["admin.posts.categories.new_name"] || "New Category Name"}
                   </label>
                   <input
                     className="h-[28px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1]"
@@ -126,14 +132,14 @@ export function MetaBoxCategories({
                     onClick={handleAddNew}
                     type="button"
                   >
-                    Add New Category
+                    {dict?.["admin.posts.categories.add_btn"] || "Add New Category"}
                   </button>
                   <button
                     className="text-xs text-[#2271b1] underline"
                     onClick={() => setIsAddingNew(false)}
                     type="button"
                   >
-                    Cancel
+                    {dict?.["admin.common.cancel"] || "Cancel"}
                   </button>
                 </div>
               </div>

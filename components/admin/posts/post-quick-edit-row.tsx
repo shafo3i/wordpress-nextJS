@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { quickUpdatePost } from "@/app/(admin)/admincp/posts/actions";
+import { quickUpdatePost } from "@/app/(admin)/admincp/posts";
 import type { CategoryOption } from "./post-tablenav";
 
 const MONTH_NAMES = [
@@ -35,6 +35,8 @@ export type PostQuickEditProps = {
   categories: CategoryOption[];
   onCancel: () => void;
   onSuccess: (updated: { id: string; title: string; slug: string; status: string; date: string }) => void;
+  dict?: Record<string, string>;
+  direction?: "rtl" | "ltr";
 };
 
 export function PostQuickEditRow({
@@ -42,6 +44,8 @@ export function PostQuickEditRow({
   categories,
   onCancel,
   onSuccess,
+  dict = {},
+  direction = "ltr",
 }: PostQuickEditProps) {
   const [title, setTitle] = useState(post.title || "");
   const [slug, setSlug] = useState(post.slug || "");
@@ -108,11 +112,11 @@ export function PostQuickEditRow({
   };
 
   return (
-    <tr className="border-y-2 border-[#2271b1] bg-[#f6f7f7]">
+    <tr className="border-y-2 border-[#2271b1] bg-[#f6f7f7]" dir={direction}>
       <td className="p-3" colSpan={7}>
-        <div className="space-y-3 text-[13px] text-[#2c3338]">
+        <div className="space-y-3 text-[13px] text-[#2c3338] text-start">
           <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#1d2327]">
-            QUICK EDIT
+            {dict["admin.common.quick_edit"] || "QUICK EDIT"}
           </h4>
 
           {errorMessage && (
@@ -125,7 +129,9 @@ export function PostQuickEditRow({
             {/* Left Column: Title, Slug, Date, Password */}
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#50575e]">Title</label>
+                <label className="mb-1 block text-xs font-semibold text-[#50575e]">
+                  {dict["admin.posts.table.title"] || "Title"}
+                </label>
                 <input
                   className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                   onChange={(e) => setTitle(e.target.value)}
@@ -135,7 +141,9 @@ export function PostQuickEditRow({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#50575e]">Slug</label>
+                <label className="mb-1 block text-xs font-semibold text-[#50575e]">
+                  {dict["admin.posts.form.slug"] || "Slug"}
+                </label>
                 <input
                   className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                   onChange={(e) => setSlug(e.target.value)}
@@ -201,13 +209,13 @@ export function PostQuickEditRow({
               <div className="flex items-center gap-4 pt-1">
                 <div className="flex-1">
                   <label className="mb-1 block text-xs font-semibold text-[#50575e]">
-                    Password
+                    {dict["admin.posts.form.password"] || "Password"}
                   </label>
                   <input
                     className="h-[28px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338] disabled:opacity-50"
                     disabled={isPrivate}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
+                    placeholder={dict["admin.posts.form.password"] || "Password"}
                     type="text"
                     value={password}
                   />
@@ -220,7 +228,7 @@ export function PostQuickEditRow({
                       onChange={(e) => setIsPrivate(e.target.checked)}
                       type="checkbox"
                     />
-                    <span>Private</span>
+                    <span>{dict["admin.common.private"] || "Private"}</span>
                   </label>
                 </div>
               </div>
@@ -229,7 +237,7 @@ export function PostQuickEditRow({
             {/* Center Column: Categories checklist */}
             <div>
               <label className="mb-1 block text-xs font-semibold text-[#50575e]">
-                Categories
+                {dict["admin.posts.table.categories"] || "Categories"}
               </label>
               <div className="max-h-44 overflow-y-auto rounded-[3px] border border-[#8c8f94] bg-white p-2 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset]">
                 {categories.length ? (
@@ -247,7 +255,9 @@ export function PostQuickEditRow({
                     </label>
                   ))
                 ) : (
-                  <span className="text-[#646970]">No categories found.</span>
+                  <span className="text-[#646970]">
+                    {dict["admin.categories.no_categories"] || "No categories found."}
+                  </span>
                 )}
               </div>
             </div>
@@ -256,12 +266,12 @@ export function PostQuickEditRow({
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[#50575e]">
-                  Tags
+                  {dict["admin.posts.table.tags"] || "Tags"}
                 </label>
                 <textarea
                   className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-1.5 text-xs text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                   onChange={(e) => setTags(e.target.value)}
-                  placeholder="Separate tags with commas"
+                  placeholder={dict["admin.posts.form.tags_placeholder"] || "Separate tags with commas"}
                   rows={2}
                   value={tags}
                 />
@@ -274,7 +284,7 @@ export function PostQuickEditRow({
                     onChange={(e) => setAllowComments(e.target.checked)}
                     type="checkbox"
                   />
-                  <span>Allow Comments</span>
+                  <span>{dict["admin.posts.form.allow_comments"] || "Allow Comments"}</span>
                 </label>
                 <label className="flex items-center gap-1.5 text-xs">
                   <input
@@ -282,13 +292,13 @@ export function PostQuickEditRow({
                     onChange={(e) => setAllowPings(e.target.checked)}
                     type="checkbox"
                   />
-                  <span>Allow Pings</span>
+                  <span>{dict["admin.posts.form.allow_pings"] || "Allow Pings"}</span>
                 </label>
               </div>
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[#50575e]">
-                  Status
+                  {dict["admin.posts.table.status"] || "Status"}
                 </label>
                 <select
                   className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] disabled:opacity-50"
@@ -296,9 +306,9 @@ export function PostQuickEditRow({
                   onChange={(e) => setStatus(e.target.value)}
                   value={isPrivate ? "private" : status}
                 >
-                  <option value="publish">Published</option>
-                  <option value="pending">Pending Review</option>
-                  <option value="draft">Draft</option>
+                  <option value="publish">{dict["admin.common.published"] || "Published"}</option>
+                  <option value="pending">{dict["admin.common.pending"] || "Pending Review"}</option>
+                  <option value="draft">{dict["admin.common.draft"] || "Draft"}</option>
                 </select>
               </div>
             </div>
@@ -311,7 +321,7 @@ export function PostQuickEditRow({
               onClick={onCancel}
               type="button"
             >
-              Cancel
+              {dict["admin.common.cancel"] || "Cancel"}
             </button>
             <button
               className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1 text-[13px] font-medium text-white hover:border-[#135e96] hover:bg-[#135e96] disabled:opacity-50"
@@ -319,7 +329,9 @@ export function PostQuickEditRow({
               onClick={handleUpdate}
               type="button"
             >
-              {isPending ? "Updating..." : "Update"}
+              {isPending
+                ? dict["admin.common.updating"] || "Updating..."
+                : dict["admin.posts.form.update"] || "Update"}
             </button>
           </div>
         </div>

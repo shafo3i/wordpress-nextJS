@@ -20,16 +20,46 @@ import {
   WidgetDisplayStyle,
   createDefaultWidgetItem,
 } from "@/lib/widgets/types";
-import { saveWidgetAreaAction } from "@/app/(admin)/admincp/widgets/actions";
+import { saveWidgetAreaAction } from "../actions";
 import { WidgetWireframeIcon } from "./widget-wireframes";
+import { WidgetsHeader } from "./widgets-header";
+
+interface WidgetsManagerShellProps {
+  initialAreas: WidgetArea[];
+  availableWidgets: AvailableWidgetDescriptor[];
+  dict?: Record<string, string>;
+  direction?: "rtl" | "ltr";
+}
+
+const DEFAULT_ITEM_TITLE_ARABIC: Record<string, string> = {
+  "About Signal News": "عن سيجنال نيوز",
+  "Search News": "البحث في الأخبار",
+  "Search Articles": "البحث في المقالات",
+  "Recent Stories": "أحدث القصص",
+  "Recent Posts": "أحدث المقالات",
+  "Morning Dispatch": "الموجز الصباحي",
+  "Morning Dispatch Newsletter": "نشرة الموجز الصباحي",
+  "Explore Topics": "استكشاف الموضوعات",
+  "Categories": "التصنيفات",
+  "About the Newsroom": "نبذة عن غرفة الأخبار",
+  "Newsroom Daily Audio": "صوتيات غرفة الأخبار اليومية",
+  "Daily Audio Stream": "البث الصوتي اليومي",
+  "Quick Sections": "أقسام سريعة",
+  "Claim Verification": "التحقق من الادعاءات",
+  "Verified Claim Check": "فحص الادعاءات الموثقة",
+  "Urgent News Flash": "خبر عاجل",
+  "Follow Our Newsroom": "تابع غرفة أخبارنا",
+  "Monetized Partner Banner": "بانر إعلاني للشركاء",
+  "Reading Time Indicator": "مؤشر وقت القراءة",
+  "Recommended Follow-ups": "متابعات مقترحة",
+};
 
 export function WidgetsManagerShell({
   initialAreas,
   availableWidgets,
-}: {
-  initialAreas: WidgetArea[];
-  availableWidgets: AvailableWidgetDescriptor[];
-}) {
+  dict,
+  direction = "ltr",
+}: WidgetsManagerShellProps) {
   const [areas, setAreas] = useState<WidgetArea[]>(initialAreas);
   const [openAreaId, setOpenAreaId] = useState<string>(initialAreas[0]?.id || "sidebar_primary");
   const [expandedWidgetId, setExpandedWidgetId] = useState<string | null>(null);
@@ -37,9 +67,81 @@ export function WidgetsManagerShell({
   const [draggedSource, setDraggedSource] = useState<{ areaId: string; index: number } | null>(null);
   const [dragOverAreaId, setDragOverAreaId] = useState<string | null>(null);
   const [dragOverItemIndex, setDragOverItemIndex] = useState<number | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  const getAreaTitle = (area: WidgetArea) => {
+    return dict?.[`admin.widgets.area.${area.id}.title`] || area.title;
+  };
+
+  const getAreaDesc = (area: WidgetArea) => {
+    return dict?.[`admin.widgets.area.${area.id}.desc`] || area.description;
+  };
+
+  const getWidgetName = (w: AvailableWidgetDescriptor) => {
+    return dict?.[`admin.widgets.descriptor.${w.type}.name`] || w.name;
+  };
+
+  const getWidgetDesc = (w: AvailableWidgetDescriptor) => {
+    return dict?.[`admin.widgets.descriptor.${w.type}.desc`] || w.desc;
+  };
+
+  const getItemDisplayTitle = (item: WidgetItem) => {
+    if (direction === "rtl" && DEFAULT_ITEM_TITLE_ARABIC[item.title]) {
+      return DEFAULT_ITEM_TITLE_ARABIC[item.title];
+    }
+    return item.title;
+  };
+
+  const getWidgetTypeBadge = (type: string) => {
+    if (direction === "rtl") {
+      switch (type) {
+        case "search": return "بحث";
+        case "recent_posts": return "أحدث المقالات";
+        case "categories": return "تصنيفات";
+        case "author_bio": return "نبذة الكاتب";
+        case "custom_html": return "HTML مخصص";
+        case "plugin_reading_time": return "وقت القراءة";
+        case "plugin_related_posts": return "مقالات ذات صلة";
+        case "plugin_newsletter": return "نشرة بريدية";
+        case "plugin_audio": return "بث صوتي";
+        case "plugin_breaking": return "عاجل";
+        case "plugin_social": return "تواصل";
+        case "plugin_factcheck": return "تدقيق حقائق";
+        case "plugin_ad": return "إعلان";
+        default: return type;
+      }
+    }
+    return type;
+  };
+
+  const getTextareaLabel = (type: string) => {
+    if (direction === "rtl") {
+      switch (type) {
+        case "custom_html": return "كود HTML / محتوى مخصص";
+        case "plugin_newsletter": return "رسالة دعوة الاشتراك في النشرة";
+        case "plugin_audio": return "وصف البث الصوتي";
+        case "plugin_breaking": return "نص الخبر العاجل";
+        case "plugin_factcheck": return "نص الادعاء والتقييم";
+        case "plugin_ad": return "شعار الراعي الإعلاني";
+        case "plugin_reading_time": return "وصف وقت القراءة";
+        case "plugin_related_posts": return "العنوان الفرعي للمقالات ذات الصلة";
+        default: return "محتوى النبذة التحريرية";
+      }
+    }
+    switch (type) {
+      case "custom_html": return "HTML Code";
+      case "plugin_newsletter": return "Subscription Prompt Message";
+      case "plugin_audio": return "Podcast Stream Description";
+      case "plugin_breaking": return "Breaking Dispatch Text";
+      case "plugin_factcheck": return "Claim & Rating Text";
+      case "plugin_ad": return "Sponsor Tagline";
+      case "plugin_reading_time": return "Reading Time Description";
+      case "plugin_related_posts": return "Related Stories Subtitle";
+      default: return "Bio Content";
+    }
+  };
 
   const currentArea = areas.find((a) => a.id === openAreaId) || areas[0];
 
@@ -83,6 +185,11 @@ export function WidgetsManagerShell({
     // Case 1: Dropping new widget from palette into area
     if (draggedPaletteWidget) {
       const newWidget = createDefaultWidgetItem(draggedPaletteWidget);
+      // Localize default title if in Arabic
+      if (direction === "rtl" && DEFAULT_ITEM_TITLE_ARABIC[newWidget.title]) {
+        newWidget.title = DEFAULT_ITEM_TITLE_ARABIC[newWidget.title];
+      }
+
       setAreas((curr) =>
         curr.map((area) => {
           if (area.id !== targetAreaId) return area;
@@ -131,6 +238,7 @@ export function WidgetsManagerShell({
         });
       });
 
+      setOpenAreaId(targetAreaId);
       setDraggedSource(null);
       setDragOverAreaId(null);
       setDragOverItemIndex(null);
@@ -144,70 +252,26 @@ export function WidgetsManagerShell({
     setDragOverItemIndex(null);
   };
 
-  const moveWidget = (index: number, direction: "up" | "down") => {
+  const moveWidget = (index: number, moveDirection: "up" | "down") => {
     if (!currentArea) return;
-    const target = direction === "up" ? index - 1 : index + 1;
-    if (target < 0 || target >= currentArea.items.length) return;
+    const targetIdx = moveDirection === "up" ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= currentArea.items.length) return;
 
-    const updatedItems = [...currentArea.items];
-    const temp = updatedItems[index];
-    updatedItems[index] = updatedItems[target];
-    updatedItems[target] = temp;
+    const updated = [...currentArea.items];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(targetIdx, 0, moved);
 
     setAreas((curr) =>
-      curr.map((a) => (a.id === currentArea.id ? { ...a, items: updatedItems } : a))
+      curr.map((a) => (a.id === currentArea.id ? { ...a, items: updated } : a))
     );
   };
 
   const addWidget = (desc: AvailableWidgetDescriptor) => {
     if (!currentArea) return;
-
-    const defaultTitles: Record<WidgetType, string> = {
-      search: "Search Articles",
-      recent_posts: "Recent Stories",
-      categories: "Categories",
-      author_bio: "About the Newsroom",
-      custom_html: "Sponsor Advertisement",
-      plugin_newsletter: "Morning Dispatch Newsletter",
-      plugin_audio: "Daily Audio Stream",
-      plugin_breaking: "Urgent News Flash",
-      plugin_social: "Follow Our Newsroom",
-      plugin_factcheck: "Verified Claim Check",
-      plugin_ad: "Monetized Partner Banner",
-      plugin_reading_time: "Reading Time Indicator",
-      plugin_related_posts: "Recommended Follow-ups",
-    };
-
-    const newWidget: WidgetItem = {
-      id: `w-${Date.now()}`,
-      type: desc.type,
-      title: defaultTitles[desc.type] || desc.name,
-      pluginSlug: desc.pluginSlug,
-      displayStyle: desc.type === "recent_posts" ? "list" : undefined,
-      showThumbnail: true,
-      showDate: true,
-      showExcerpt: false,
-      count: desc.type === "recent_posts" ? 5 : undefined,
-      content:
-        desc.type === "custom_html"
-          ? '<div class="ad-banner p-4 bg-slate-100 rounded text-center">Featured Editorial Partner</div>'
-          : desc.type === "plugin_newsletter"
-          ? "Receive top investigative stories and digital market briefings directly in your inbox."
-          : desc.type === "plugin_audio"
-          ? "Daily 5-minute newsroom podcast covering breaking market stories."
-          : desc.type === "plugin_breaking"
-          ? "Emergency market circuit breaker triggered across secondary commodities."
-          : desc.type === "plugin_factcheck"
-          ? "Claim: Global shipping rates decline 40% in Q3. Verdict: TRUE (Verified by Bureau Desk)."
-          : desc.type === "plugin_ad"
-          ? "Premium enterprise sponsor of Signal News Digital Edition."
-          : desc.type === "plugin_reading_time"
-          ? "Calculates estimated read speed (~200 wpm) and word counts dynamically."
-          : desc.type === "plugin_related_posts"
-          ? "Surfaces contextual stories and editorial follow-ups based on category."
-          : undefined,
-    };
-
+    const newWidget = createDefaultWidgetItem(desc);
+    if (direction === "rtl" && DEFAULT_ITEM_TITLE_ARABIC[newWidget.title]) {
+      newWidget.title = DEFAULT_ITEM_TITLE_ARABIC[newWidget.title];
+    }
     const updatedItems = [...currentArea.items, newWidget];
     setAreas((curr) =>
       curr.map((a) => (a.id === currentArea.id ? { ...a, items: updatedItems } : a))
@@ -236,25 +300,61 @@ export function WidgetsManagerShell({
 
     startTransition(async () => {
       const res = await saveWidgetAreaAction(currentArea.id, currentArea.items);
-      if (res.error) {
-        alert(res.error);
+      if (!res.success || res.error) {
+        setFeedback({
+          type: "error",
+          message: res.error || dict?.["admin.widgets.save_failed"] || "Failed to save widget area.",
+        });
       } else {
-        setNotice(`Widget area "${currentArea.title}" saved successfully!`);
-        setTimeout(() => setNotice(null), 3000);
+        const areaTitle = getAreaTitle(currentArea);
+        const successMsg =
+          direction === "rtl"
+            ? `تم حفظ منطقة "${areaTitle}" بنجاح!`
+            : `Widget area "${areaTitle}" saved successfully!`;
+        setFeedback({
+          type: "success",
+          message: dict?.["admin.widgets.save_success"] || successMsg,
+        });
+        setTimeout(() => setFeedback(null), 4000);
         router.refresh();
       }
     });
   };
 
+  const styleOptions = [
+    {
+      id: "list",
+      label: direction === "rtl" ? "قائمة مصغرات" : "Thumbnail List",
+      desc: direction === "rtl" ? "صورة + عنوان" : "Left thumb + title",
+    },
+    {
+      id: "compact",
+      label: direction === "rtl" ? "موجز نقطي" : "Compact Wire",
+      desc: direction === "rtl" ? "خطوط العناوين" : "Bullet headline wire",
+    },
+    {
+      id: "card",
+      label: direction === "rtl" ? "بطاقات صغيرة" : "Mini Cards",
+      desc: direction === "rtl" ? "بطاقات صور مكدسة" : "Stacked photo cards",
+    },
+    {
+      id: "numbered",
+      label: direction === "rtl" ? "قائمة مرقمة" : "Leaderboard",
+      desc: direction === "rtl" ? "ترقيم 01-05" : "Numbered 01-05",
+    },
+  ];
+
   return (
-    <div className="space-y-4 text-[13px]">
-      <div className="flex items-center justify-between border-b border-[#c3c4c7] pb-3">
-        <div>
-          <h1 className="text-[23px] font-normal leading-[1.3] text-[#1d2327]">Widgets</h1>
-          <p className="text-[12px] text-[#646970]">
-            Manage sidebars, dual-sidebar columns, and footer widget areas. Active plugins automatically provide widgets below.
-          </p>
-        </div>
+    <div dir={direction} className="space-y-4 text-[13px] text-start">
+      <WidgetsHeader dict={dict} direction={direction} />
+
+      {/* Save Button Row */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[#646970]">
+          {direction === "rtl"
+            ? `المنطقة النشطة: ${currentArea ? getAreaTitle(currentArea) : ""}`
+            : `Active Area: ${currentArea ? getAreaTitle(currentArea) : ""}`}
+        </span>
 
         <button
           type="button"
@@ -262,14 +362,30 @@ export function WidgetsManagerShell({
           onClick={handleSaveArea}
           className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
         >
-          {isPending ? "Saving..." : "Save Widget Area"}
+          {isPending
+            ? dict?.["admin.widgets.saving"] || "Saving..."
+            : dict?.["admin.widgets.save_area"] || "Save Widget Area"}
         </button>
       </div>
 
-      {notice && (
-        <div className="flex items-center justify-between border-l-4 border-[#00a32a] bg-[#f0f6fc] p-3 text-[13px] text-[#1d2327]">
-          <span>✓ {notice}</span>
-          <button type="button" onClick={() => setNotice(null)} className="text-lg leading-none text-slate-400">
+      {/* Inline Feedback Banner (Clean WP notice replacing browser alert) */}
+      {feedback && (
+        <div
+          className={`flex items-center justify-between border-s-4 bg-white p-3 text-[13px] shadow-[0_1px_1px_rgba(0,0,0,0.04)] ${
+            feedback.type === "error"
+              ? "border-[#d63638] text-[#d63638]"
+              : "border-[#00a32a] text-[#1d2327]"
+          }`}
+        >
+          <span>
+            {feedback.type === "error" ? "⚠ " : "✓ "}
+            {feedback.message}
+          </span>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-lg leading-none text-slate-400 hover:text-slate-600"
+          >
             ×
           </button>
         </div>
@@ -277,19 +393,22 @@ export function WidgetsManagerShell({
 
       {/* 2-Column WordPress Widgets Layout */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[320px_1fr] items-start">
-        {/* Left Available Widgets Palette */}
+        {/* Available Widgets Palette */}
         <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-4 shadow-[0_1px_1px_rgba(0,0,0,0.04)] space-y-4">
           <div>
-            <h3 className="font-semibold text-[#1d2327] text-sm">Available Widgets</h3>
+            <h3 className="font-semibold text-[#1d2327] text-sm">
+              {dict?.["admin.widgets.available_widgets"] || "Available Widgets"}
+            </h3>
             <p className="text-[12px] text-[#646970]">
-              Drag widgets onto any area on the right, or click to append to <strong>{currentArea?.title}</strong>:
+              {dict?.["admin.widgets.available_desc"] ||
+                "Drag widgets onto any area on the right, or click to add:"}
             </p>
           </div>
 
           {/* Core Widgets */}
           <div className="space-y-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block border-b pb-1">
-              Core Newsroom Widgets
+              {dict?.["admin.widgets.core_widgets"] || "Core Newsroom Widgets"}
             </span>
             {availableWidgets
               .filter((w) => !w.isPlugin)
@@ -302,8 +421,8 @@ export function WidgetsManagerShell({
                   onDragStart={(e) => handlePaletteDragStart(e, w)}
                   onDragEnd={handleDragEnd}
                   onClick={() => addWidget(w)}
-                  className="flex w-full items-start gap-2.5 rounded border border-[#dcdcde] bg-white p-2.5 text-left hover:border-[#2271b1] hover:bg-[#f0f6fc] transition-colors group cursor-grab active:cursor-grabbing select-none"
-                  title="Drag onto an area or click to add"
+                  className="flex w-full items-start gap-2.5 rounded border border-[#dcdcde] bg-white p-2.5 text-start hover:border-[#2271b1] hover:bg-[#f0f6fc] transition-colors group cursor-grab active:cursor-grabbing select-none"
+                  title={direction === "rtl" ? "اسحب للإضافة أو انقر" : "Drag onto an area or click to add"}
                 >
                   <div className="flex-shrink-0 pt-0.5">
                     <WidgetWireframeIcon type={w.type} className="w-8 h-6" />
@@ -311,12 +430,12 @@ export function WidgetsManagerShell({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-[#1d2327] group-hover:text-[#2271b1] block text-[12px]">
-                        + {w.name}
+                        + {getWidgetName(w)}
                       </span>
                       <GripVertical className="size-3.5 text-slate-400 group-hover:text-[#2271b1] opacity-60" />
                     </div>
                     <span className="text-[11px] text-[#646970] leading-tight block mt-0.5">
-                      {w.desc}
+                      {getWidgetDesc(w)}
                     </span>
                   </div>
                 </div>
@@ -327,7 +446,8 @@ export function WidgetsManagerShell({
           <div className="space-y-2 pt-2">
             <div className="flex items-center justify-between border-b pb-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1">
-                <Sparkles className="size-3" /> Installed Plugin Widgets
+                <Sparkles className="size-3" />{" "}
+                {dict?.["admin.widgets.plugin_widgets"] || "Installed Plugin Widgets"}
               </span>
             </div>
 
@@ -343,8 +463,8 @@ export function WidgetsManagerShell({
                     onDragStart={(e) => handlePaletteDragStart(e, w)}
                     onDragEnd={handleDragEnd}
                     onClick={() => addWidget(w)}
-                    className="flex w-full items-start gap-2.5 rounded border border-purple-200 bg-purple-50/40 p-2.5 text-left hover:border-purple-500 hover:bg-purple-100/50 transition-colors group cursor-grab active:cursor-grabbing select-none"
-                    title="Drag onto an area or click to add"
+                    className="flex w-full items-start gap-2.5 rounded border border-purple-200 bg-purple-50/40 p-2.5 text-start hover:border-purple-500 hover:bg-purple-100/50 transition-colors group cursor-grab active:cursor-grabbing select-none"
+                    title={direction === "rtl" ? "اسحب للإضافة أو انقر" : "Drag onto an area or click to add"}
                   >
                     <div className="flex-shrink-0 pt-0.5">
                       <WidgetWireframeIcon type={w.type} className="w-8 h-6" />
@@ -352,29 +472,33 @@ export function WidgetsManagerShell({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-purple-950 group-hover:text-purple-700 text-[12px]">
-                          + {w.name}
+                          + {getWidgetName(w)}
                         </span>
                         <GripVertical className="size-3.5 text-purple-400 group-hover:text-purple-600 opacity-60" />
                       </div>
                       <span className="text-[11px] text-purple-800/80 leading-tight block mt-0.5">
-                        {w.desc}
+                        {getWidgetDesc(w)}
                       </span>
                     </div>
                   </div>
                 ))
             ) : (
               <p className="text-[11px] text-slate-500 italic p-2 bg-slate-50 border rounded">
-                No plugin widgets available. Activate plugins in <em>Plugins → Installed Plugins</em> to enable widgets here.
+                {dict?.["admin.widgets.no_plugin_widgets"] ||
+                  "No plugin widgets available. Activate plugins in Plugins → Installed Plugins to enable widgets here."}
               </p>
             )}
           </div>
         </div>
 
-        {/* Right Widget Areas Accordion */}
+        {/* Widget Areas Accordion */}
         <div className="space-y-3">
           {areas.map((area) => {
             const isOpen = openAreaId === area.id;
             const isAreaDragOver = dragOverAreaId === area.id;
+            const isSecondarySidebar = area.id === "sidebar_secondary";
+            const areaTitle = getAreaTitle(area);
+            const areaDescription = getAreaDesc(area);
 
             return (
               <div
@@ -396,24 +520,27 @@ export function WidgetsManagerShell({
                 <button
                   type="button"
                   onClick={() => setOpenAreaId(isOpen ? "" : area.id)}
-                  className={`flex w-full items-center justify-between border-b border-[#c3c4c7] px-4 py-3 text-left font-semibold text-[#2c3338] transition-colors ${
+                  className={`flex w-full items-center justify-between border-b border-[#c3c4c7] px-4 py-3 text-start font-semibold text-[#2c3338] transition-colors ${
                     isOpen ? "bg-[#f0f0f1]" : "bg-[#f6f7f7] hover:bg-[#f0f0f1]"
                   }`}
                 >
-                  <div>
-                    <span className="text-sm text-[#1d2327]">{area.title}</span>
-                    {area.id === "sidebar_secondary" && (
-                      <span className="ml-2 rounded bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0.5 font-bold uppercase">
-                        Dual Sidebar
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className="text-sm text-[#1d2327]">{areaTitle}</span>
+                    {isSecondarySidebar && (
+                      <span className="rounded bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0.5 font-bold uppercase">
+                        {dict?.["admin.widgets.dual_sidebar"] || "Dual Sidebar"}
                       </span>
                     )}
-                    <span className="text-[11px] font-normal text-[#646970] ml-2 block sm:inline">
-                      {area.description}
+                    <span className="text-[11px] font-normal text-[#646970] block sm:inline">
+                      {areaDescription}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-[#646970] font-normal">
-                      {area.items.length} widget{area.items.length === 1 ? "" : "s"}
+                      {area.items.length}{" "}
+                      {area.items.length === 1
+                        ? dict?.["admin.widgets.widget_count_single"] || "widget"
+                        : dict?.["admin.widgets.widgets_count"] || "widgets"}
                     </span>
                     {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                   </div>
@@ -433,6 +560,8 @@ export function WidgetsManagerShell({
                           const isDragging = draggedSource?.areaId === area.id && draggedSource?.index === index;
                           const isDragOver = dragOverAreaId === area.id && dragOverItemIndex === index;
                           const isPlugin = item.type.startsWith("plugin_");
+                          const itemTitle = getItemDisplayTitle(item);
+                          const typeBadge = getWidgetTypeBadge(item.type);
 
                           return (
                             <div
@@ -456,7 +585,7 @@ export function WidgetsManagerShell({
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="cursor-grab active:cursor-grabbing text-[#8c8f94] hover:text-[#1d2327] p-0.5"
-                                    title="Drag to reorder"
+                                    title={direction === "rtl" ? "اسحب لإعادة الترتيب" : "Drag to reorder"}
                                   >
                                     <GripVertical className="size-4" />
                                   </div>
@@ -467,6 +596,7 @@ export function WidgetsManagerShell({
                                       disabled={index === 0}
                                       onClick={() => moveWidget(index, "up")}
                                       className="text-[#646970] hover:text-[#2271b1] disabled:opacity-20"
+                                      title={direction === "rtl" ? "تحريك لأعلى" : "Move up"}
                                     >
                                       <ArrowUp className="size-3" />
                                     </button>
@@ -475,6 +605,7 @@ export function WidgetsManagerShell({
                                       disabled={index === area.items.length - 1}
                                       onClick={() => moveWidget(index, "down")}
                                       className="text-[#646970] hover:text-[#2271b1] disabled:opacity-20"
+                                      title={direction === "rtl" ? "تحريك لأسفل" : "Move down"}
                                     >
                                       <ArrowDown className="size-3" />
                                     </button>
@@ -489,13 +620,15 @@ export function WidgetsManagerShell({
                                     />
                                   </div>
 
-                                  <span className="font-semibold text-[#1d2327]">{item.title}</span>
+                                  <span className="font-semibold text-[#1d2327]">{itemTitle}</span>
                                   {isPlugin ? (
                                     <span className="rounded bg-purple-100 text-purple-800 text-[9px] px-1.5 py-0.2 font-bold uppercase">
-                                      Plugin
+                                      {direction === "rtl" ? "إضافة" : "Plugin"}
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] text-[#646970] font-mono">({item.type})</span>
+                                    <span className="text-[10px] text-[#646970] font-mono">
+                                      ({typeBadge})
+                                    </span>
                                   )}
                                 </div>
 
@@ -515,7 +648,7 @@ export function WidgetsManagerShell({
                                 <div className="border-t border-[#dcdcde] bg-white p-3.5 space-y-3">
                                   <div>
                                     <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                      Widget Title
+                                      {dict?.["admin.widgets.widget_title"] || "Widget Title"}
                                     </label>
                                     <input
                                       type="text"
@@ -529,15 +662,10 @@ export function WidgetsManagerShell({
                                     <div className="space-y-3">
                                       <div className="border-t border-[#f0f0f1] pt-2 space-y-2">
                                         <label className="block text-[12px] font-medium text-[#50575e]">
-                                          Display Layout Style:
+                                          {dict?.["admin.widgets.display_style"] || "Display Style:"}
                                         </label>
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                          {[
-                                            { id: "list", label: "Thumbnail List", desc: "Left thumb + title" },
-                                            { id: "compact", label: "Compact Wire", desc: "Bullet headline wire" },
-                                            { id: "card", label: "Mini Cards", desc: "Stacked photo cards" },
-                                            { id: "numbered", label: "Leaderboard", desc: "Numbered 01-05" },
-                                          ].map((styleOpt) => {
+                                          {styleOptions.map((styleOpt) => {
                                             const isSel = (item.displayStyle || "list") === styleOpt.id;
                                             return (
                                               <button
@@ -548,7 +676,7 @@ export function WidgetsManagerShell({
                                                     displayStyle: styleOpt.id as WidgetDisplayStyle,
                                                   })
                                                 }
-                                                className={`p-2 rounded border text-left transition-all ${
+                                                className={`p-2 rounded border text-start transition-all ${
                                                   isSel
                                                     ? "border-[#2271b1] bg-[#f0f6fc] ring-1 ring-[#2271b1]"
                                                     : "border-[#dcdcde] bg-white hover:border-[#8c8f94]"
@@ -579,7 +707,7 @@ export function WidgetsManagerShell({
                                               }
                                               className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                                             />
-                                            Show Thumbnail
+                                            {dict?.["admin.widgets.show_thumbnails"] || "Show Thumbnail"}
                                           </label>
                                           <label className="flex items-center gap-1.5 text-[11px] text-[#50575e] cursor-pointer">
                                             <input
@@ -590,7 +718,7 @@ export function WidgetsManagerShell({
                                               }
                                               className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                                             />
-                                            Show Date
+                                            {dict?.["admin.widgets.show_date"] || "Show Date"}
                                           </label>
                                           <label className="flex items-center gap-1.5 text-[11px] text-[#50575e] cursor-pointer">
                                             <input
@@ -601,14 +729,14 @@ export function WidgetsManagerShell({
                                               }
                                               className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                                             />
-                                            Show Excerpt
+                                            {dict?.["admin.widgets.show_excerpt"] || "Show Excerpt"}
                                           </label>
                                         </div>
                                       </div>
 
                                       <div>
                                         <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                          Number of posts to show
+                                          {dict?.["admin.widgets.number_of_posts"] || "Number of posts to show:"}
                                         </label>
                                         <input
                                           type="number"
@@ -635,23 +763,7 @@ export function WidgetsManagerShell({
                                     item.type === "plugin_related_posts") && (
                                     <div>
                                       <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                        {item.type === "custom_html"
-                                          ? "HTML Code"
-                                          : item.type === "plugin_newsletter"
-                                          ? "Subscription Prompt Message"
-                                          : item.type === "plugin_audio"
-                                          ? "Podcast Stream Description"
-                                          : item.type === "plugin_breaking"
-                                          ? "Breaking Dispatch Text"
-                                          : item.type === "plugin_factcheck"
-                                          ? "Claim & Rating Text"
-                                          : item.type === "plugin_ad"
-                                          ? "Sponsor Tagline"
-                                          : item.type === "plugin_reading_time"
-                                          ? "Reading Time Description"
-                                          : item.type === "plugin_related_posts"
-                                          ? "Related Stories Subtitle"
-                                          : "Bio Content"}
+                                        {getTextareaLabel(item.type)}
                                       </label>
                                       <textarea
                                         rows={3}
@@ -668,14 +780,15 @@ export function WidgetsManagerShell({
                                       onClick={() => removeWidget(item.id)}
                                       className="text-[12px] text-[#b32d2e] hover:underline flex items-center gap-1"
                                     >
-                                      <Trash2 className="size-3" /> Delete
+                                      <Trash2 className="size-3" />{" "}
+                                      {dict?.["admin.widgets.delete"] || "Delete"}
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => setExpandedWidgetId(null)}
                                       className="text-[12px] text-[#2271b1] hover:underline"
                                     >
-                                      Close
+                                      {dict?.["admin.widgets.close"] || "Close"}
                                     </button>
                                   </div>
                                 </div>
@@ -700,7 +813,9 @@ export function WidgetsManagerShell({
                                 : "border-slate-300 bg-slate-50/80 text-slate-500"
                             }`}
                           >
-                            + Drop here to place at bottom of {area.title}
+                            + {direction === "rtl"
+                              ? `أفلت هنا للوضع في أسفل ${areaTitle}`
+                              : `Drop here to place at bottom of ${areaTitle}`}
                           </div>
                         )}
                       </div>
@@ -715,8 +830,9 @@ export function WidgetsManagerShell({
                         }`}
                       >
                         {draggedPaletteWidget || draggedSource
-                          ? "Drop widget here to add to " + area.title
-                          : "No widgets in this area yet. Drag any widget from the left or click to add."}
+                          ? (direction === "rtl" ? `أفلت الودجت هنا لإضافته إلى ${areaTitle}` : `Drop widget here to add to ${areaTitle}`)
+                          : dict?.["admin.widgets.no_widgets_in_area"] ||
+                            "No widgets in this area yet. Drag any widget from the left or click to add."}
                       </div>
                     )}
 
@@ -727,7 +843,9 @@ export function WidgetsManagerShell({
                         onClick={handleSaveArea}
                         className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3.5 py-1 text-xs font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
                       >
-                        Save {area.title}
+                        {isPending
+                          ? dict?.["admin.widgets.saving"] || "Saving..."
+                          : `${dict?.["admin.widgets.save_area"] || "Save"} (${areaTitle})`}
                       </button>
                     </div>
                   </div>

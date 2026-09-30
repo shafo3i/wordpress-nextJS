@@ -61,6 +61,41 @@ export function ThemeDynamicStyles({ mods }: { mods: ThemeMods }) {
       --theme-base-font-size: ${fontSize};
       --font-theme-heading: ${headingFont};
       --font-theme-body: ${bodyFont};
+
+      /* Header & Navigation Variables */
+      --theme-header-bg: ${mods.headerBg || surface};
+      --theme-header-text: ${mods.headerTextColor || heading};
+      --theme-header-border: ${mods.headerBorderColor || border};
+      --theme-topbar-bg: ${mods.topBarBg || (mods.darkMode ? '#030712' : '#0f172a')};
+      --theme-topbar-text: ${mods.topBarTextColor || '#f8fafc'};
+      --theme-topbar-ticker-bg: ${mods.topBarTickerBg || primary};
+      --theme-topbar-ticker-text: ${mods.topBarTickerTextColor || '#ffffff'};
+      --theme-nav-bg: ${mods.navBarBg || surface};
+      --theme-nav-link: ${mods.navLinkColor || heading};
+      --theme-nav-link-hover: ${mods.navLinkHoverColor || primary};
+      --theme-nav-dropdown-bg: ${mods.navDropdownBg || surface};
+      --theme-nav-dropdown-link: ${mods.navDropdownLinkColor || text};
+
+      /* Sidebar & Widget Variables */
+      --theme-widget-bg: ${mods.widgetBg || surface};
+      --theme-widget-title-color: ${mods.widgetTitleColor || heading};
+      --theme-widget-title-bg: ${mods.widgetTitleBg || 'transparent'};
+      --theme-widget-text: ${mods.widgetTextColor || text};
+      --theme-widget-link: ${mods.widgetLinkColor || primary};
+      --theme-widget-border: ${mods.widgetBorderColor || border};
+
+      /* Badge & Tag Variables */
+      --theme-badge-bg: ${mods.badgeBg || primary};
+      --theme-badge-text: ${mods.badgeTextColor || '#ffffff'};
+
+      /* Footer Variables */
+      --theme-footer-bg: ${mods.footerBg || (mods.darkMode ? '#030712' : '#0f172a')};
+      --theme-footer-heading: ${mods.footerHeadingColor || '#ffffff'};
+      --theme-footer-text: ${mods.footerTextColor || '#94a3b8'};
+      --theme-footer-link: ${mods.footerLinkColor || '#cbd5e1'};
+      --theme-footer-border: ${mods.footerBorderColor || border};
+      --theme-subfooter-bg: ${mods.subFooterBg || (mods.footerBg || (mods.darkMode ? '#030712' : '#0f172a'))};
+      --theme-subfooter-text: ${mods.subFooterTextColor || (mods.footerTextColor || '#94a3b8')};
     }
 
     body {
@@ -84,6 +119,26 @@ export function ThemeDynamicStyles({ mods }: { mods: ThemeMods }) {
 
     .theme-rounded, [data-theme-rounded] {
       border-radius: var(--theme-radius, 4px) !important;
+    }
+
+    /* Granular Theme Widget Styling */
+    .theme-widget, [data-theme-widget] {
+      background-color: var(--theme-widget-bg) !important;
+      border-color: var(--theme-widget-border) !important;
+      color: var(--theme-widget-text) !important;
+    }
+    .theme-widget-title, [data-theme-widget-title] {
+      color: var(--theme-widget-title-color) !important;
+      background-color: var(--theme-widget-title-bg, transparent);
+    }
+    .theme-widget a, [data-theme-widget] a {
+      color: var(--theme-widget-link);
+    }
+
+    /* Granular Badge Styling */
+    .theme-badge, [data-theme-badge] {
+      background-color: var(--theme-badge-bg) !important;
+      color: var(--theme-badge-text) !important;
     }
 
     ${mods.customCss || ""}

@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { Clock, Share2, Check, Copy } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
@@ -9,7 +11,7 @@ import { SiteFooter } from "@/components/site/footer/site-footer";
 import { DEFAULT_THEME, formatDate, isDarkTheme, isSerifHeading } from "@/components/site/utils";
 
 /**
- * Single post article template
+ * Single post article template with configurable layout architectures
  */
 export function PostTemplate({
   article,
@@ -20,121 +22,252 @@ export function PostTemplate({
   relatedPosts: ContentItem[];
   theme?: FrontEndThemeContext;
 }) {
+  const [copied, setCopied] = useState(false);
   const isDark = isDarkTheme(theme);
   const isSerif = isSerifHeading(theme);
+  const mods = theme.mods || {};
+
+  const singleLayout = mods.singleLayout || "sidebar-right";
+  const singleContentWidth = mods.singleContentWidth || "standard";
+  const showFeaturedImage = mods.singleShowFeaturedImage !== false;
+  const showAuthorAvatar = mods.singleShowAuthorAvatar !== false;
+  const showDate = mods.singleShowDate !== false;
+  const showReadingTime = mods.singleShowReadingTime !== false;
+  const showShareButtons = mods.singleShowShareButtons !== false;
+
   const sidebarCategories = Array.from(
     new Set(article.categories.concat(...relatedPosts.map((post) => post.categories)))
+  );
+
+  const wordCount = article.content
+    ? article.content.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length
+    : 250;
+  const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
+
+  const handleCopy = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard?.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Determine container width based on layout
+  const containerClass =
+    singleLayout === "centered"
+      ? singleContentWidth === "narrow"
+        ? "max-w-[720px] mx-auto px-4"
+        : singleContentWidth === "standard"
+        ? "max-w-[900px] mx-auto px-4"
+        : "theme-container mx-auto px-4 sm:px-6" // Wide: full container
+      : "theme-container mx-auto px-4 sm:px-6"; // sidebar-right, sidebar-left, full-container
+
+  const renderSidebar = () => (
+    <aside className="space-y-6">
+      {/* Topics Widget */}
+      <div className="theme-widget rounded-2xl border p-5 shadow-sm">
+        <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
+          Topics & Categories
+        </h2>
+        <div className="flex flex-wrap gap-1.5">
+          {sidebarCategories.map((topic) => (
+            <Link
+              key={topic}
+              href={`/category/${topic.toLowerCase()}`}
+              className="theme-badge rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase transition-opacity hover:opacity-85"
+            >
+              {topic}
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Related Stories Widget */}
+      <div className="theme-widget rounded-2xl border p-5 shadow-sm">
+        <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
+          More from Newsroom
+        </h2>
+        <div className="space-y-3">
+          {relatedPosts.map((story) => (
+            <Link
+              key={story.id}
+              href={`/posts/${story.slug}`}
+              className="flex gap-2.5 rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+            >
+              {story.imageUrl && (
+                <img
+                  src={story.imageUrl}
+                  alt={story.title}
+                  className="w-14 h-14 object-cover rounded flex-shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <span className="text-[10px] font-semibold uppercase text-slate-400 block truncate">
+                  {story.categories[0] ?? "Dispatch"}
+                </span>
+                <h3 className="mt-0.5 text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[var(--theme-primary)] transition-colors">
+                  {story.title}
+                </h3>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </aside>
   );
 
   return (
     <div
       className={`min-h-screen transition-colors ${
-        isDark ? "bg-[#0a0f1d] text-slate-100" : (theme.themeSlug?.includes("reader") || theme.themeSlug?.includes("longform")) ? "bg-[#fbf9f5] text-stone-900" : "bg-[#f8f7f4] text-slate-900"
+        isDark
+          ? "bg-[#0a0f1d] text-slate-100"
+          : theme.themeSlug?.includes("reader") || theme.themeSlug?.includes("longform")
+          ? "bg-[#fbf9f5] text-stone-900"
+          : "bg-[#f8f7f4] text-slate-900"
       }`}
     >
       {theme.mods && <ThemeDynamicStyles mods={theme.mods} />}
       <SiteHeader theme={theme} />
 
-      <main className="mx-auto max-w-5xl px-4 py-10 md:px-6">
+      <main className={`${containerClass} py-10`}>
+        {/* Article Masthead */}
         <div className="mb-8 border-b border-slate-200/70 dark:border-slate-800 pb-8">
-          <div className="mb-4 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             {article.categories.map((category) => (
               <span
                 key={`${article.id}-${category}`}
-                className="rounded bg-slate-200/70 dark:bg-slate-800 px-2 py-1"
+                className="theme-badge rounded px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider"
               >
                 {category}
               </span>
             ))}
+            {showReadingTime && (
+              <span className="flex items-center gap-1 text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">
+                <Clock className="size-3" /> {readingMinutes} min read
+              </span>
+            )}
           </div>
 
           <h1
-            className={`text-3xl sm:text-5xl font-bold tracking-tight leading-tight ${
+            className={`text-3xl sm:text-5xl font-bold tracking-tight leading-tight mb-4 ${
               isSerif ? "font-serif" : "font-sans"
             }`}
           >
             {article.title}
           </h1>
 
-          <div className="mt-4 flex items-center gap-3 text-xs text-slate-400">
-            <span className="font-semibold text-slate-600 dark:text-slate-300">
-              {article.authorName}
-            </span>
-            <span>•</span>
-            <time dateTime={article.date.toISOString()}>{formatDate(article.date)}</time>
+          {article.excerpt && (
+            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mb-4 font-normal">
+              {article.excerpt}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200/40 dark:border-slate-800/60 text-xs text-slate-500">
+            <div className="flex items-center gap-3">
+              {showAuthorAvatar && (
+                <div className="size-8 rounded-full bg-[var(--theme-primary,#2271b1)] text-white flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
+                  {article.authorName ? article.authorName.slice(0, 2) : "ED"}
+                </div>
+              )}
+              <div>
+                <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+                  {article.authorName || "Editorial Staff"}
+                </span>
+                {showDate && (
+                  <time dateTime={article.date.toISOString()} className="text-[11px] text-slate-400 block font-mono">
+                    {formatDate(article.date)}
+                  </time>
+                )}
+              </div>
+            </div>
+
+            {/* Social Share Buttons */}
+            {showShareButtons && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium mr-1 text-slate-400 hidden sm:inline">Share:</span>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${typeof window !== "undefined" ? encodeURIComponent(window.location.href) : ""}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                  title="Share on X (Twitter)"
+                >
+                  <span className="text-xs font-bold px-0.5">𝕏</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1"
+                  title="Copy Link"
+                >
+                  {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid gap-10 lg:grid-cols-[1.7fr_0.7fr]">
-          <article
-            className={`prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm ${
-              isDark
-                ? "prose-invert border-slate-800 bg-slate-900/60"
-                : "prose-slate border-slate-200 bg-white"
-            } prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8`}
-          >
-            {article.imageUrl && (
-              <div className="mb-6 rounded-xl overflow-hidden not-prose">
-                <img
-                  src={article.imageUrl}
-                  alt={article.title}
-                  className="w-full h-80 object-cover"
-                />
-              </div>
-            )}
-            <div dangerouslySetInnerHTML={{ __html: article.content }} />
-          </article>
+        {/* Featured Image */}
+        {showFeaturedImage && article.imageUrl && (
+          <div className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800">
+            <img
+              src={article.imageUrl}
+              alt={article.title}
+              className="w-full max-h-[520px] object-cover"
+            />
+          </div>
+        )}
 
-          <aside className="space-y-6">
-            <div
-              className={`rounded-2xl border p-5 shadow-sm ${
-                isDark ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white"
-              }`}
-            >
-              <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Topics</h2>
-              <ul className="mt-3 space-y-1.5 text-xs font-medium">
-                {sidebarCategories.map((topic) => (
-                  <li key={topic} className="rounded bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5">
-                    {topic}
-                  </li>
-                ))}
-              </ul>
-            </div>
+        {/* Layout Grid Switching */}
+        {singleLayout === "sidebar-right" && (
+          <div className="grid gap-8 lg:grid-cols-12">
+            <article className="lg:col-span-8 prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            </article>
+            <div className="lg:col-span-4">{renderSidebar()}</div>
+          </div>
+        )}
 
-            <div
-              className={`rounded-2xl border p-5 shadow-sm ${
-                isDark ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white"
-              }`}
+        {singleLayout === "sidebar-left" && (
+          <div className="grid gap-8 lg:grid-cols-12">
+            <div className="lg:col-span-4 order-2 lg:order-1">{renderSidebar()}</div>
+            <article className="lg:col-span-8 order-1 lg:order-2 prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            </article>
+          </div>
+        )}
+
+        {singleLayout === "full-container" && (
+          <div className="w-full">
+            <article
+              className={`w-full ${
+                singleContentWidth === "narrow"
+                  ? "max-w-[720px] mx-auto"
+                  : singleContentWidth === "standard"
+                  ? "max-w-[900px] mx-auto"
+                  : "w-full"
+              } prose max-w-none rounded-2xl border p-6 sm:p-10 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.1rem] prose-p:leading-8`}
             >
-              <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">More Stories</h2>
-              <div className="mt-3 space-y-3">
-                {relatedPosts.map((story) => (
-                  <Link
-                    key={story.id}
-                    href={`/posts/${story.slug}`}
-                    className="flex gap-2.5 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    {story.imageUrl && (
-                      <img
-                        src={story.imageUrl}
-                        alt={story.title}
-                        className="w-14 h-14 object-cover rounded flex-shrink-0"
-                      />
-                    )}
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase text-slate-400">
-                        {story.categories[0] ?? "Story"}
-                      </p>
-                      <h3 className="mt-0.5 text-xs font-semibold leading-snug line-clamp-2">
-                        {story.title}
-                      </h3>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </aside>
-        </div>
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            </article>
+          </div>
+        )}
+
+        {singleLayout === "centered" && (
+          <div className="w-full flex justify-center">
+            <article
+              className={`w-full ${
+                singleContentWidth === "narrow"
+                  ? "max-w-[720px]"
+                  : singleContentWidth === "standard"
+                  ? "max-w-[900px]"
+                  : "w-full"
+              } prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8`}
+            >
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            </article>
+          </div>
+        )}
       </main>
 
       <SiteFooter theme={theme} />

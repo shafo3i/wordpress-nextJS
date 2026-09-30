@@ -78,10 +78,10 @@ const navItems: NavItem[] = [
     icon: Palette,
     subItems: [
       { href: "/admincp/themes", label: "Themes", key: "admin.menu.themes" },
-      { href: "/admincp/customize", label: "Customize" },
-      { href: "/admincp/widgets", label: "Widgets" },
-      { href: "/admincp/menus", label: "Menus" },
-      { href: "/admincp/theme-settings", label: "Theme Settings" },
+      { href: "/admincp/customize", label: "Customize", key: "admin.menu.customize" },
+      { href: "/admincp/widgets", label: "Widgets", key: "admin.menu.widgets" },
+      { href: "/admincp/menus", label: "Menus", key: "admin.menu.menus" },
+      { href: "/admincp/theme-settings", label: "Theme Settings", key: "admin.menu.theme_settings" },
     ],
   },
   {
@@ -142,8 +142,8 @@ export function AdminNav({ dict = {} }: { dict?: Record<string, string> }) {
           <div className="relative" key={item.href}>
             <Link
               className={`flex items-center gap-2.5 px-3 py-2 text-[13px] font-normal transition-colors ${isActive
-                  ? "bg-[#2271b1] text-white"
-                  : "text-[#f0f0f1] hover:bg-[#191e23] hover:text-[#72aee6]"
+                ? "bg-[#2271b1] text-white"
+                : "text-[#f0f0f1] hover:bg-[#191e23] hover:text-[#72aee6]"
                 }`}
               href={item.href}
             >
@@ -164,8 +164,8 @@ export function AdminNav({ dict = {} }: { dict?: Record<string, string> }) {
                   return (
                     <Link
                       className={`block ps-7 pe-3 py-1 text-xs transition-colors ${isCurrentSub
-                          ? "font-semibold text-white"
-                          : "text-[#c3c4c7] hover:text-[#72aee6]"
+                        ? "font-semibold text-white"
+                        : "text-[#c3c4c7] hover:text-[#72aee6]"
                         }`}
                       href={sub.href}
                       key={`${sub.href}-${sub.label}`}

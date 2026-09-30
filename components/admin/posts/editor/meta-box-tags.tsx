@@ -7,10 +7,14 @@ export function MetaBoxTags({
   tags,
   onTagsChange,
   availableTags = [],
+  dict,
+  direction = "ltr",
 }: {
   tags: string[];
   onTagsChange: (tags: string[]) => void;
   availableTags?: { slug: string; name: string }[];
+  dict?: Record<string, string>;
+  direction?: "rtl" | "ltr";
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [inputVal, setInputVal] = useState("");
@@ -28,12 +32,12 @@ export function MetaBoxTags({
   };
 
   return (
-    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
+    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-start" dir={direction}>
       <div
         className="flex cursor-pointer select-none items-center justify-between border-b border-[#c3c4c7] px-3 py-2 text-[14px] font-semibold text-[#1d2327]"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>Tags</span>
+        <span>{dict?.["admin.posts.tags.title"] || dict?.["admin.posts.table.tags"] || "Tags"}</span>
         <button className="text-[#50575e] hover:text-[#1d2327]" type="button">
           {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
         </button>
@@ -51,7 +55,7 @@ export function MetaBoxTags({
                   handleAdd();
                 }
               }}
-              placeholder="Add tag"
+              placeholder={dict?.["admin.posts.tags.placeholder"] || "Add tag"}
               type="text"
               value={inputVal}
             />
@@ -60,11 +64,13 @@ export function MetaBoxTags({
               onClick={handleAdd}
               type="button"
             >
-              Add
+              {dict?.["admin.posts.tags.add_btn"] || "Add"}
             </button>
           </div>
 
-          <p className="text-[11px] text-[#646970]">Separate tags with commas</p>
+          <p className="text-[11px] text-[#646970]">
+            {dict?.["admin.posts.tags.hint"] || "Separate tags with commas"}
+          </p>
 
           {/* Tag Pills */}
           {tags.length > 0 && (
@@ -90,7 +96,9 @@ export function MetaBoxTags({
 
           {availableTags.length > 0 && (
             <div className="pt-2 border-t border-[#f0f0f1]">
-              <p className="text-[11px] font-semibold text-[#50575e] mb-1">Most Used Tags:</p>
+              <p className="text-[11px] font-semibold text-[#50575e] mb-1">
+                {dict?.["admin.posts.tags.most_used"] || "Most Used Tags:"}
+              </p>
               <div className="flex flex-wrap gap-1">
                 {availableTags.slice(0, 10).map((t) => (
                   <button

@@ -1,82 +1,34 @@
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor";
-import { db } from "@/db";
-import {
-  wpPostmeta,
-  wpPosts,
-  wpTermRelationships,
-  wpTermTaxonomy,
-  wpTerms,
-} from "@/db/schema";
-import { updatePost } from "../../actions";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getPostByIdQuery, getAllCategoriesQuery, getAllTagsQuery } from "../../query";
+import { updatePostAction } from "../../action";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditPostPage({
-  params,
-}: {
+interface EditPostProps {
   params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const postId = BigInt(id);
+}
 
+export default async function EditPostPage({ params }: EditPostProps) {
+  await verifyAdminOrEditor();
+
+  const { id } = await params;
   const langContext = await getAdminLanguageContext();
   const dict = langContext.dict;
   const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
-  const post = await db
-    .select({
-      id: wpPosts.id,
-      title: wpPosts.postTitle,
-      content: wpPosts.postContent,
-      excerpt: wpPosts.postExcerpt,
-      status: wpPosts.postStatus,
-    })
-    .from(wpPosts)
-    .where(and(eq(wpPosts.id, postId), eq(wpPosts.postType, "post")))
-    .limit(1);
-
-  if (!post[0]) notFound();
-
-  const [terms, relationships, featuredImage] = await Promise.all([
-    db
-      .select({
-        slug: wpTerms.slug,
-        name: wpTerms.name,
-        taxonomy: wpTermTaxonomy.taxonomy,
-      })
-      .from(wpTerms)
-      .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId)),
-    db
-      .select({
-        slug: wpTerms.slug,
-        name: wpTerms.name,
-        taxonomy: wpTermTaxonomy.taxonomy,
-      })
-      .from(wpTermRelationships)
-      .innerJoin(
-        wpTermTaxonomy,
-        eq(wpTermRelationships.termTaxonomyId, wpTermTaxonomy.termTaxonomyId),
-      )
-      .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
-      .where(eq(wpTermRelationships.objectId, postId)),
-    db
-      .select({ value: wpPostmeta.metaValue })
-      .from(wpPostmeta)
-      .where(and(eq(wpPostmeta.postId, postId), eq(wpPostmeta.metaKey, "_thumbnail_id")))
-      .limit(1),
+  const [result, categories, tags] = await Promise.all([
+    getPostByIdQuery(id),
+    getAllCategoriesQuery(),
+    getAllTagsQuery(),
   ]);
 
-  const selectedCategories = relationships
-    .filter((term) => term.taxonomy === "category")
-    .map((term) => term.slug);
-  const selectedTags = relationships
-    .filter((term) => term.taxonomy === "post_tag")
-    .map((term) => term.name)
-    .join(", ");
+  if (!result || !result.post) notFound();
+
+  const { post, translations } = result;
 
   return (
     <AdminShell>
@@ -111,21 +63,26 @@ export default async function EditPostPage({
         </div>
 
         <ClassicPostEditor
-          action={updatePost}
-          categories={terms
-            .filter((term) => term.taxonomy === "category")
-            .map(({ slug, name }) => ({ slug, name }))}
-          initialCategories={selectedCategories}
-          initialContent={post[0].content}
-          initialExcerpt={post[0].excerpt}
-          initialFeaturedImageId={featuredImage[0]?.value ?? ""}
-          initialStatus={post[0].status}
-          initialTags={selectedTags}
-          initialTitle={post[0].title}
-          postId={post[0].id.toString()}
-          tags={terms
-            .filter((term) => term.taxonomy === "post_tag")
-            .map(({ slug, name }) => ({ slug, name }))}
+          action={updatePostAction}
+          postId={post.id}
+          initialTitle={post.title}
+          initialContent={post.content}
+          initialExcerpt={post.excerpt}
+          initialFeaturedImageId={post.featuredImageId}
+          initialStatus={post.status}
+          initialCategories={post.categorySlugs}
+          initialTags={post.tags.join(", ")}
+          initialSeo={post.seo}
+          categories={categories}
+          tags={tags}
+          postType="post"
+          languages={langContext.allLanguages}
+          initialLanguageCode={post.languageCode || "en"}
+          translations={translations.map((t) => ({
+            languageCode: t.languageCode,
+            postId: t.postId.toString(),
+            title: t.title,
+          }))}
           dict={dict}
           direction={direction}
         />

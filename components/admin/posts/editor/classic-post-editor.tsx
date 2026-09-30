@@ -11,13 +11,14 @@ import { MetaBoxFeaturedImage } from "./meta-box-featured-image";
 import { MetaBoxExcerpt } from "./meta-box-excerpt";
 import { MetaBoxPageAttributes } from "./meta-box-page-attributes";
 import { MetaBoxLanguages, type LanguageOption, type TranslationLink } from "./meta-box-languages";
+import { MetaBoxSeo, type PostSeoData } from "./meta-box-seo";
 
 const DynamicEditor = dynamic(
   () => import("@tinymce/tinymce-react").then((mod) => mod.Editor),
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[420px] w-full items-center justify-center bg-[#f6f7f7] text-xs text-[#646970]">
+      <div className="flex h-105 w-full items-center justify-center bg-[#f6f7f7] text-xs text-[#646970]">
         Loading Classic Editor...
       </div>
     ),
@@ -38,6 +39,7 @@ export type ClassicPostEditorProps = {
   initialTags?: string;
   initialPostParent?: string;
   initialMenuOrder?: number;
+  initialSeo?: PostSeoData;
   parentPages?: { id: string; title: string }[];
   postId?: string;
   postType?: "post" | "page";
@@ -65,6 +67,7 @@ export function ClassicPostEditor({
   initialTags = "",
   initialPostParent = "0",
   initialMenuOrder = 0,
+  initialSeo = {},
   parentPages = [],
   postId,
   postType = "post",
@@ -215,22 +218,20 @@ export function ClassicPostEditor({
 
           <div className="flex items-center text-xs">
             <button
-              className={`rounded-t-[3px] px-3 py-1 font-medium ${
-                editorMode === "visual"
+              className={`rounded-t-[3px] px-3 py-1 font-medium ${editorMode === "visual"
                   ? "border-x border-t border-[#8c8f94] bg-white text-[#1d2327]"
                   : "border-b border-[#8c8f94] bg-[#f6f7f7] text-[#2271b1] hover:text-[#135e96]"
-              }`}
+                }`}
               onClick={() => setEditorMode("visual")}
               type="button"
             >
               {dict?.["admin.editor.visual"] || "Visual"}
             </button>
             <button
-              className={`rounded-t-[3px] px-3 py-1 font-medium ${
-                editorMode === "text"
+              className={`rounded-t-[3px] px-3 py-1 font-medium ${editorMode === "text"
                   ? "border-x border-t border-[#8c8f94] bg-white text-[#1d2327]"
                   : "border-b border-[#8c8f94] bg-[#f6f7f7] text-[#2271b1] hover:text-[#135e96]"
-              }`}
+                }`}
               onClick={() => setEditorMode("text")}
               type="button"
             >
@@ -285,6 +286,16 @@ export function ClassicPostEditor({
 
         {/* Excerpt Meta Box (Can be displayed under editor in classic WP style) */}
         <MetaBoxExcerpt dict={dict} excerpt={excerpt} onChange={setExcerpt} />
+
+        {/* SEO & Social Open Graph Meta Box */}
+        <MetaBoxSeo
+          postTitle={title}
+          postExcerpt={excerpt}
+          postSlug={slug}
+          initialSeo={initialSeo}
+          dict={dict}
+          direction={direction}
+        />
       </div>
 
       {/* Right Sidebar Meta Boxes */}
@@ -313,11 +324,13 @@ export function ClassicPostEditor({
           />
         )}
 
-        {postType === "post" && <MetaBoxFormat />}
+        {postType === "post" && <MetaBoxFormat dict={dict} direction={direction} />}
 
         {postType === "post" && (
           <MetaBoxCategories
             categories={categories}
+            dict={dict}
+            direction={direction}
             onToggleCategory={toggleCategory}
             selectedCategories={selectedCategories}
           />
@@ -326,6 +339,8 @@ export function ClassicPostEditor({
         {postType === "post" && (
           <MetaBoxTags
             availableTags={availableTags}
+            dict={dict}
+            direction={direction}
             onTagsChange={setTagList}
             tags={tagList}
           />

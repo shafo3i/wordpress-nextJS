@@ -1,29 +1,41 @@
-import Link from "next/link";
-import { eq } from "drizzle-orm";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor";
-import { db } from "@/db";
-import { wpTermTaxonomy, wpTerms } from "@/db/schema";
-import { savePost } from "../actions";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getAllCategoriesQuery, getAllTagsQuery, getPostByIdQuery } from "../query";
+import { savePostAction } from "../action";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewPostPage() {
+interface NewPostProps {
+  searchParams: Promise<{
+    lang?: string;
+    translation_of?: string;
+  }>;
+}
+
+export default async function NewPostPage({ searchParams }: NewPostProps) {
+  await verifyAdminOrEditor();
+
+  const { lang, translation_of } = await searchParams;
   const langContext = await getAdminLanguageContext();
   const dict = langContext.dict;
   const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
+  // Determine initial language
+  const targetLanguage = lang || langContext.code || "en";
+
+  // Fetch translation source info if creating a translation
+  let translationOfTitle: string | undefined;
+  if (translation_of) {
+    const sourcePost = await getPostByIdQuery(translation_of);
+    if (sourcePost?.post) {
+      translationOfTitle = sourcePost.post.title;
+    }
+  }
+
   const [categories, tags] = await Promise.all([
-    db
-      .select({ slug: wpTerms.slug, name: wpTerms.name })
-      .from(wpTerms)
-      .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
-      .where(eq(wpTermTaxonomy.taxonomy, "category")),
-    db
-      .select({ slug: wpTerms.slug, name: wpTerms.name })
-      .from(wpTerms)
-      .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
-      .where(eq(wpTermTaxonomy.taxonomy, "post_tag")),
+    getAllCategoriesQuery(),
+    getAllTagsQuery(),
   ]);
 
   return (
@@ -53,9 +65,14 @@ export default async function NewPostPage() {
         </div>
 
         <ClassicPostEditor
-          action={savePost}
+          action={savePostAction}
           categories={categories}
           tags={tags}
+          postType="post"
+          languages={langContext.allLanguages}
+          initialLanguageCode={targetLanguage}
+          translationOfId={translation_of}
+          translationOfTitle={translationOfTitle}
           dict={dict}
           direction={direction}
         />

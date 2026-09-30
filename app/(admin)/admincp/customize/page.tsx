@@ -1,5 +1,7 @@
-import { getCustomizerData } from "@/lib/themes/customizer";
-import { CustomizerShell } from "@/components/admin/customize/customizer-shell";
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getCustomizeQuery } from "./query";
+import { CustomizerShell } from "./_components";
 
 export const dynamic = "force-dynamic";
 
@@ -8,8 +10,21 @@ export default async function CustomizePage({
 }: {
   searchParams: Promise<{ theme?: string }>;
 }) {
-  const { theme } = await searchParams;
-  const data = await getCustomizerData(theme);
+  await verifyAdminOrEditor();
 
-  return <CustomizerShell key={data.themeSlug} initialData={data} />;
+  const { theme } = await searchParams;
+  const langContext = await getAdminLanguageContext();
+  const dict = langContext.dict;
+  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+
+  const data = await getCustomizeQuery(theme);
+
+  return (
+    <CustomizerShell
+      key={data.themeSlug}
+      initialData={data}
+      dict={dict}
+      direction={direction}
+    />
+  );
 }

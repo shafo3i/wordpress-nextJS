@@ -1,8 +1,7 @@
-import { AdminShell } from "@/components/admin/admin-shell";
-import { getActiveThemeName, getActiveThemeSlug, getAllThemes } from "@/lib/themes/loader";
-import { getHomepageSettings } from "@/lib/themes/homepage-blocks";
-import { getCategoriesForMenu } from "@/lib/menus/db";
-import { ThemeSettingsShell } from "@/components/admin/theme-settings/theme-settings-shell";
+import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getThemeSettingsQuery } from "./query";
+import { ThemeSettingsShell } from "./_components";
 
 export const dynamic = "force-dynamic";
 
@@ -11,17 +10,15 @@ export default async function ThemeSettingsPage({
 }: {
   searchParams: Promise<{ theme?: string }>;
 }) {
+  await verifyAdminOrEditor();
+
   const params = await searchParams;
-  const activeSlug = await getActiveThemeSlug();
-  const targetSlug = params.theme || activeSlug;
+  const langContext = await getAdminLanguageContext();
+  const dict = langContext.dict;
+  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
-  const [allThemes, homepageSettings, categories] = await Promise.all([
-    getAllThemes(),
-    getHomepageSettings(targetSlug),
-    getCategoriesForMenu(),
-  ]);
-
-  const currentTheme = allThemes.find((t) => t.slug === targetSlug) || allThemes[0];
+  const { allThemes, currentTheme, homepageSettings, categories } =
+    await getThemeSettingsQuery(params.theme);
 
   return (
     <AdminShell>
@@ -31,6 +28,8 @@ export default async function ThemeSettingsPage({
         allThemes={allThemes}
         initialSettings={homepageSettings}
         categories={categories}
+        dict={dict}
+        direction={direction}
       />
     </AdminShell>
   );

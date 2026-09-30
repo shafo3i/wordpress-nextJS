@@ -15,6 +15,8 @@ export type PostRowData = {
   commentStatus?: string;
   pingStatus?: string;
   postPassword?: string;
+  languageCode?: string;
+  translations?: { languageCode: string; postId: string; title: string }[];
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -25,7 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
   trash: "Trash",
 };
 
-function formatPostDate(value: string) {
+function formatPostDate(value: string, dict: Record<string, string> = {}) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   const yyyy = date.getFullYear();
@@ -33,9 +35,11 @@ function formatPostDate(value: string) {
   const dd = String(date.getDate()).padStart(2, "0");
   const hours = date.getHours();
   const minutes = String(date.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "pm" : "am";
+  const isPm = hours >= 12;
+  const ampm = isPm ? (dict["admin.posts.pm"] || "pm") : (dict["admin.posts.am"] || "am");
+  const atLabel = dict["admin.posts.at"] || "at";
   const hour12 = hours % 12 || 12;
-  return `${yyyy}/${mm}/${dd} at ${hour12}:${minutes} ${ampm}`;
+  return `${yyyy}/${mm}/${dd} ${atLabel} ${hour12}:${minutes} ${ampm}`;
 }
 
 export function PostRowItem({
@@ -44,14 +48,22 @@ export function PostRowItem({
   onToggleSelect,
   onQuickEdit,
   onTrash,
+  onRestore,
+  onDeletePermanently,
   basePath = "/admincp/posts",
+  dict = {},
+  direction = "ltr",
 }: {
   post: PostRowData;
   isSelected: boolean;
   onToggleSelect: (checked: boolean) => void;
   onQuickEdit: () => void;
   onTrash: () => void;
+  onRestore?: () => void;
+  onDeletePermanently?: () => void;
   basePath?: string;
+  dict?: Record<string, string>;
+  direction?: "rtl" | "ltr";
 }) {
   const isDraft = post.status === "draft";
   const isPendingReview = post.status === "pending";
@@ -59,7 +71,10 @@ export function PostRowItem({
   const isTrash = post.status === "trash";
 
   return (
-    <tr className="group border-b border-[#f0f0f1] bg-white hover:bg-[#f6f7f7] last:border-b-0">
+    <tr
+      className="group border-b border-[#f0f0f1] bg-white hover:bg-[#f6f7f7] last:border-b-0 text-start"
+      dir={direction}
+    >
       <td className="w-8 px-3 py-2 text-center align-top">
         <input
           aria-label={`Select ${post.title || "post"}`}
@@ -76,14 +91,27 @@ export function PostRowItem({
             className="text-[14px] font-semibold text-[#2271b1] hover:text-[#135e96] hover:underline"
             href={`${basePath}/${post.id}/edit`}
           >
-            {post.title || "(no title)"}
+            {post.title || dict["admin.pages.no_title"] || "(no title)"}
           </Link>
-          {isDraft && <span className="text-[13px] font-medium text-[#50575e]"> — Draft</span>}
+          {isDraft && (
+            <span className="text-[13px] font-medium text-[#50575e]">
+              {" "}— {dict["admin.common.draft"] || "Draft"}
+            </span>
+          )}
           {isPendingReview && (
-            <span className="text-[13px] font-medium text-[#50575e]"> — Pending</span>
+            <span className="text-[13px] font-medium text-[#50575e]">
+              {" "}— {dict["admin.common.pending"] || "Pending"}
+            </span>
           )}
           {isPrivate && (
-            <span className="text-[13px] font-medium text-[#50575e]"> — Private</span>
+            <span className="text-[13px] font-medium text-[#50575e]">
+              {" "}— {dict["admin.common.private"] || "Private"}
+            </span>
+          )}
+          {post.languageCode && (
+            <span className="ms-1.5 inline-flex items-center rounded border border-[#c3c4c7] bg-[#f0f0f1] px-1.5 py-0.2 text-[10px] font-bold uppercase text-[#50575e]">
+              {post.languageCode}
+            </span>
           )}
         </div>
 
@@ -95,7 +123,7 @@ export function PostRowItem({
                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
                 href={`${basePath}/${post.id}/edit`}
               >
-                Edit
+                {dict["admin.common.edit"] || "Edit"}
               </Link>
               <span>|</span>
               <button
@@ -103,7 +131,7 @@ export function PostRowItem({
                 onClick={onQuickEdit}
                 type="button"
               >
-                Quick Edit
+                {dict["admin.common.quick_edit"] || "Quick Edit"}
               </button>
               <span>|</span>
               <button
@@ -111,7 +139,7 @@ export function PostRowItem({
                 onClick={onTrash}
                 type="button"
               >
-                Trash
+                {dict["admin.common.trash"] || "Trash"}
               </button>
               <span>|</span>
               <Link
@@ -119,25 +147,25 @@ export function PostRowItem({
                 href={`/${post.slug}`}
                 target="_blank"
               >
-                View
+                {dict["admin.common.view"] || "View"}
               </Link>
             </>
           ) : (
             <>
               <button
                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
-                onClick={onTrash}
+                onClick={onRestore || onTrash}
                 type="button"
               >
-                Restore
+                {dict["admin.common.restore"] || "Restore"}
               </button>
               <span>|</span>
               <button
                 className="text-[#b32d2e] hover:text-[#8c1617] hover:underline"
-                onClick={onTrash}
+                onClick={onDeletePermanently || onTrash}
                 type="button"
               >
-                Delete Permanently
+                {dict["admin.common.delete_permanently"] || "Delete permanently"}
               </button>
             </>
           )}
@@ -165,12 +193,14 @@ export function PostRowItem({
         </span>
       </td>
 
-      <td className="px-3 py-2 text-[13px] text-[#50575e] align-top leading-tight">
+      <td className="px-3 py-2 text-[13px] text-[#50575e] align-top leading-tight whitespace-nowrap">
         <span className="text-[#646970]">
-          {post.status === "publish" ? "Published" : "Last Modified"}
+          {post.status === "publish"
+            ? dict["admin.posts.published"] || "Published"
+            : dict["admin.posts.last_modified"] || "Last Modified"}
         </span>
         <br />
-        <span className="text-[#2c3338]">{formatPostDate(post.date)}</span>
+        <span className="text-[#2c3338]">{formatPostDate(post.date, dict)}</span>
       </td>
     </tr>
   );

@@ -35,19 +35,25 @@ export function SidebarWidgetRenderer({
   switch (item.type) {
     case "search":
       return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <div className="theme-widget rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
             {item.title}
           </h4>
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              alert("Search submitted");
+              const form = e.currentTarget;
+              const input = form.querySelector<HTMLInputElement>("input[type='text']");
+              const q = input?.value?.trim();
+              if (q) {
+                window.location.href = `/search?q=${encodeURIComponent(q)}`;
+              }
             }}
             className="flex gap-1.5"
           >
             <input
               type="text"
+              name="q"
               placeholder="Search news..."
               className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none"
             />
@@ -64,8 +70,8 @@ export function SidebarWidgetRenderer({
 
     case "author_bio":
       return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <div className="theme-widget rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
             {item.title}
           </h4>
           <div className="flex items-center gap-3 mb-2">
@@ -251,8 +257,8 @@ export function SidebarWidgetRenderer({
 
     case "plugin_social":
       return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <div className="theme-widget rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
             {item.title}
           </h4>
           <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -275,7 +281,7 @@ export function SidebarWidgetRenderer({
     case "plugin_ad":
     case "custom_html":
       return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4 shadow-sm text-center">
+        <div className="theme-widget rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 p-4 shadow-sm text-center">
           <span className="text-[9px] uppercase tracking-widest text-slate-400 font-mono block mb-1.5">
             Advertisement
           </span>
@@ -292,8 +298,8 @@ export function SidebarWidgetRenderer({
 
     case "categories":
       return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+        <div className="theme-widget rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
             {item.title}
           </h4>
           <div className="flex flex-wrap gap-1.5">
@@ -317,9 +323,9 @@ export function SidebarWidgetRenderer({
       const recentList = posts.slice(0, count);
 
       return (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+        <div className="theme-widget rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2.5 mb-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-slate-400">
               {item.title}
             </h4>
             <span className="text-[10px] text-slate-400 font-mono">
