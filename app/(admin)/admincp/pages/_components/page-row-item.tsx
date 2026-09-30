@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Pencil, Plus } from "lucide-react";
 
 export type PageRowData = {
   id: string;
@@ -13,6 +15,13 @@ export type PageRowData = {
   menuOrder?: number;
   commentStatus?: string;
   postPassword?: string;
+  languageCode?: string;
+  translationGroupId?: string;
+  translations?: {
+    languageCode: string;
+    postId: string;
+    title: string;
+  }[];
 };
 
 function formatPageDate(value: string) {
@@ -34,14 +43,24 @@ export function PageRowItem({
   onToggleSelect,
   onQuickEdit,
   onTrash,
+  onRestore,
+  onDeletePermanently,
   basePath = "/admincp/pages",
+  languages = [],
+  dict = {},
+  direction = "ltr",
 }: {
   page: PageRowData;
   isSelected: boolean;
   onToggleSelect: (checked: boolean) => void;
   onQuickEdit: () => void;
   onTrash: () => void;
+  onRestore?: () => void;
+  onDeletePermanently?: () => void;
   basePath?: string;
+  languages?: { code: string; name: string; nativeName?: string }[];
+  dict?: Record<string, string>;
+  direction?: "rtl" | "ltr";
 }) {
   const isDraft = page.status === "draft";
   const isPendingReview = page.status === "pending";
@@ -50,7 +69,7 @@ export function PageRowItem({
   const hasParent = page.postParent && page.postParent !== "0";
 
   return (
-    <tr className="group border-b border-[#f0f0f1] bg-white hover:bg-[#f6f7f7] last:border-b-0">
+    <tr className="group border-b border-[#f0f0f1] bg-white hover:bg-[#f6f7f7] last:border-b-0 text-start">
       <td className="w-8 px-3 py-2 text-center align-top">
         <input
           aria-label={`Select ${page.title || "page"}`}
@@ -68,14 +87,22 @@ export function PageRowItem({
             className="text-[14px] font-semibold text-[#2271b1] hover:text-[#135e96] hover:underline"
             href={`${basePath}/${page.id}/edit`}
           >
-            {page.title || "(no title)"}
+            {page.title || dict["admin.pages.no_title"] || "(no title)"}
           </Link>
-          {isDraft && <span className="text-[13px] font-medium text-[#50575e]"> — Draft</span>}
+          {isDraft && (
+            <span className="text-[13px] font-medium text-[#50575e]">
+              {" "}— {dict["admin.common.draft"] || "Draft"}
+            </span>
+          )}
           {isPendingReview && (
-            <span className="text-[13px] font-medium text-[#50575e]"> — Pending</span>
+            <span className="text-[13px] font-medium text-[#50575e]">
+              {" "}— {dict["admin.common.pending"] || "Pending"}
+            </span>
           )}
           {isPrivate && (
-            <span className="text-[13px] font-medium text-[#50575e]"> — Private</span>
+            <span className="text-[13px] font-medium text-[#50575e]">
+              {" "}— {dict["admin.common.private"] || "Private"}
+            </span>
           )}
         </div>
 
@@ -87,7 +114,7 @@ export function PageRowItem({
                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
                 href={`${basePath}/${page.id}/edit`}
               >
-                Edit
+                {dict["admin.common.edit"] || "Edit"}
               </Link>
               <span>|</span>
               <button
@@ -95,7 +122,7 @@ export function PageRowItem({
                 onClick={onQuickEdit}
                 type="button"
               >
-                Quick Edit
+                {dict["admin.common.quick_edit"] || "Quick Edit"}
               </button>
               <span>|</span>
               <button
@@ -103,7 +130,7 @@ export function PageRowItem({
                 onClick={onTrash}
                 type="button"
               >
-                Trash
+                {dict["admin.common.trash"] || "Trash"}
               </button>
               <span>|</span>
               <Link
@@ -111,30 +138,78 @@ export function PageRowItem({
                 href={`/${page.slug}`}
                 target="_blank"
               >
-                View
+                {dict["admin.common.view"] || "View"}
               </Link>
             </>
           ) : (
             <>
               <button
                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
-                onClick={onTrash}
+                onClick={onRestore || onTrash}
                 type="button"
               >
-                Restore
+                {dict["admin.common.restore"] || "Restore"}
               </button>
               <span>|</span>
               <button
                 className="text-[#b32d2e] hover:text-[#8c1617] hover:underline"
-                onClick={onTrash}
+                onClick={onDeletePermanently || onTrash}
                 type="button"
               >
-                Delete Permanently
+                {dict["admin.common.delete_permanently"] || "Delete Permanently"}
               </button>
             </>
           )}
         </div>
       </td>
+
+      {/* Multi-language / Translations Column */}
+      {languages.length > 0 && (
+        <td className="px-3 py-2 align-top">
+          <div className="flex items-center gap-2">
+            {page.languageCode ? (
+              <span className="inline-flex items-center rounded bg-[#f0f0f1] px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase text-[#50575e]">
+                {page.languageCode}
+              </span>
+            ) : (
+              <span className="text-[12px] text-[#a7aaad]">—</span>
+            )}
+
+            {/* Translation Links for other languages */}
+            <div className="flex items-center gap-1.5">
+              {languages
+                .filter((l) => l.code !== page.languageCode)
+                .map((l) => {
+                  const existingTrans = page.translations?.find(
+                    (t) => t.languageCode === l.code
+                  );
+                  if (existingTrans) {
+                    return (
+                      <Link
+                        key={l.code}
+                        href={`${basePath}/${existingTrans.postId}/edit`}
+                        title={`Edit ${l.name} translation: ${existingTrans.title}`}
+                        className="inline-flex items-center text-[#2271b1] hover:text-[#135e96]"
+                      >
+                        <Pencil className="size-3 text-[#2271b1]" />
+                      </Link>
+                    );
+                  }
+                  return (
+                    <Link
+                      key={l.code}
+                      href={`${basePath}/new?lang=${l.code}&translation_of=${page.id}`}
+                      title={`Add translation in ${l.name}`}
+                      className="inline-flex items-center text-[#a7aaad] hover:text-[#2271b1]"
+                    >
+                      <Plus className="size-3 text-[#8c8f94] hover:text-[#2271b1]" />
+                    </Link>
+                  );
+                })}
+            </div>
+          </div>
+        </td>
+      )}
 
       <td className="px-3 py-2 text-[13px] text-[#2271b1] align-top">
         {page.authorName || "—"}
@@ -149,12 +224,12 @@ export function PageRowItem({
         </span>
       </td>
 
-      <td className="px-3 py-2 text-[13px] text-[#50575e] align-top leading-tight">
-        <span className="text-[#646970]">
-          {page.status === "publish" ? "Published" : "Last Modified"}
-        </span>
+      <td className="px-3 py-2 text-[13px] text-[#50575e] align-top whitespace-nowrap">
+        {page.status === "publish"
+          ? dict["admin.pages.published"] || "Published"
+          : dict["admin.pages.last_modified"] || "Last Modified"}
         <br />
-        <span className="text-[#2c3338]">{formatPageDate(page.date)}</span>
+        <span className="text-[12px] text-[#646970]">{formatPageDate(page.date)}</span>
       </td>
     </tr>
   );

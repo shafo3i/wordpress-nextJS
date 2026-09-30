@@ -1,52 +1,79 @@
-import { eq } from "drizzle-orm";
-import { AdminShell } from "@/components/admin/admin-shell";
+import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor";
-import { db } from "@/db";
-import { wpPosts } from "@/db/schema";
-import { savePage } from "../../posts/actions";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getParentPagesQuery, getPageByIdQuery } from "../query";
+import { savePageAction } from "../action";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewPagePage() {
-  const existingPages = await db
-    .select({ id: wpPosts.id, title: wpPosts.postTitle })
-    .from(wpPosts)
-    .where(eq(wpPosts.postType, "page"));
+interface NewPageProps {
+  searchParams: Promise<{
+    lang?: string;
+    translation_of?: string;
+  }>;
+}
 
-  const parentPages = existingPages.map((p) => ({
-    id: p.id.toString(),
-    title: p.title || `Page #${p.id}`,
-  }));
+export default async function NewPagePage({ searchParams }: NewPageProps) {
+  await verifyAdminOrEditor();
+
+  const { lang, translation_of } = await searchParams;
+  const langContext = await getAdminLanguageContext();
+  const dict = langContext.dict;
+  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+
+  // Determine initial language
+  const targetLanguage = lang || langContext.code || "en";
+
+  // Fetch translation source info if creating a translation
+  let translationOfTitle: string | undefined;
+  if (translation_of) {
+    const sourcePage = await getPageByIdQuery(translation_of);
+    if (sourcePage?.page) {
+      translationOfTitle = sourcePage.page.title;
+    }
+  }
+
+  // Parent pages options for this language
+  const parentPages = await getParentPagesQuery(undefined, targetLanguage);
 
   return (
     <AdminShell>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-            Add New Page
-          </h1>
+      <div dir={direction} className="space-y-4 text-start">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
+              {dict["admin.menu.add_new"] || "Add New Page"}
+            </h1>
+          </div>
+          <div className="flex items-center gap-1 text-[13px]">
+            <button
+              className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
+              type="button"
+            >
+              {dict["admin.common.screen_options"] || "Screen Options"}{" "}
+              <span className="text-[9px]">▼</span>
+            </button>
+            <button
+              className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
+              type="button"
+            >
+              {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-[13px]">
-          <button
-            className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
-            type="button"
-          >
-            Screen Options <span className="text-[9px]">▼</span>
-          </button>
-          <button
-            className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
-            type="button"
-          >
-            Help <span className="text-[9px]">▼</span>
-          </button>
-        </div>
-      </div>
 
-      <ClassicPostEditor
-        action={savePage}
-        parentPages={parentPages}
-        postType="page"
-      />
+        <ClassicPostEditor
+          action={savePageAction}
+          parentPages={parentPages}
+          postType="page"
+          languages={langContext.allLanguages}
+          initialLanguageCode={targetLanguage}
+          translationOfId={translation_of}
+          translationOfTitle={translationOfTitle}
+          dict={dict}
+          direction={direction}
+        />
+      </div>
     </AdminShell>
   );
 }

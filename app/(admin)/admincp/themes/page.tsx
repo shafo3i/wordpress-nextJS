@@ -1,7 +1,7 @@
-import { AdminShell } from "@/components/admin/admin-shell";
-import { getAllThemes } from "@/lib/themes/loader";
-import { ThemeHeader } from "@/components/admin/themes/theme-header";
-import { ThemeGrid } from "@/components/admin/themes/theme-grid";
+import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getThemesQuery } from "./query";
+import { ThemeHeader, ThemeGrid } from "./_components";
 
 export const dynamic = "force-dynamic";
 
@@ -10,24 +10,20 @@ export default async function ThemesPage({
 }: {
   searchParams: Promise<{ s?: string }>;
 }) {
+  await verifyAdminOrEditor();
+
   const { s } = await searchParams;
-  const search = s?.trim().toLowerCase() ?? "";
+  const langContext = await getAdminLanguageContext();
+  const dict = langContext.dict;
+  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
-  const allThemes = await getAllThemes();
-
-  const filteredThemes = allThemes.filter((theme) => {
-    if (!search) return true;
-    const matchName = theme.name.toLowerCase().includes(search);
-    const matchDesc = theme.description.toLowerCase().includes(search);
-    const matchTags = theme.tags?.toLowerCase().includes(search);
-    return matchName || matchDesc || matchTags;
-  });
+  const { themes } = await getThemesQuery(s);
 
   return (
     <AdminShell>
-      <div className="space-y-6">
-        <ThemeHeader search={s} />
-        <ThemeGrid themes={filteredThemes} />
+      <div dir={direction} className="space-y-6 text-start">
+        <ThemeHeader search={s} dict={dict} direction={direction} />
+        <ThemeGrid themes={themes} dict={dict} direction={direction} />
       </div>
     </AdminShell>
   );

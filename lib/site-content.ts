@@ -13,6 +13,7 @@ export type ContentItem = {
   categories: string[];
   tags: string[];
   imageUrl: string;
+  template?: string;
 };
 
 // Curated high-resolution editorial broadsheet photos
@@ -190,6 +191,34 @@ async function getImageData(postIds: bigint[] | string[]) {
   }
 }
 
+async function getPageTemplateData(postIds: bigint[] | string[]) {
+  if (!postIds.length) return new Map<string, string>();
+  try {
+    const metas = await db
+      .select({
+        postId: wpPostmeta.postId,
+        metaValue: wpPostmeta.metaValue,
+      })
+      .from(wpPostmeta)
+      .where(
+        and(
+          inArray(wpPostmeta.postId, postIds.map((id) => BigInt(id))),
+          eq(wpPostmeta.metaKey, "_wp_page_template")
+        )
+      );
+
+    const map = new Map<string, string>();
+    for (const m of metas) {
+      if (m.metaValue) {
+        map.set(m.postId.toString(), m.metaValue);
+      }
+    }
+    return map;
+  } catch {
+    return new Map<string, string>();
+  }
+}
+
 export async function getPublishedContent(type: "post" | "page", slug?: string, limit = 10, locale?: string) {
   let base: any[] = [];
 
@@ -244,9 +273,10 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
   }
 
   const postIds = base.map((item) => item.id.toString());
-  const [termMap, imageMap] = await Promise.all([
+  const [termMap, imageMap, templateMap] = await Promise.all([
     getTermData(postIds),
     getImageData(postIds),
+    getPageTemplateData(postIds),
   ]);
 
   return base.map((item, idx) => {
@@ -271,6 +301,7 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
       categories: termMap.get(item.id.toString())?.categories ?? ["News"],
       tags: termMap.get(item.id.toString())?.tags ?? [],
       imageUrl: resolvedImg,
+      template: templateMap.get(item.id.toString()) || "default",
     };
   });
 }

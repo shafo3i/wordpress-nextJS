@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { AdminShell } from "@/components/admin/admin-shell";
+import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor";
 import { db } from "@/db";
 import {
@@ -22,6 +22,10 @@ export default async function EditPostPage({
 }) {
   const { id } = await params;
   const postId = BigInt(id);
+
+  const langContext = await getAdminLanguageContext();
+  const dict = langContext.dict;
+  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
   const post = await db
     .select({
@@ -76,51 +80,56 @@ export default async function EditPostPage({
 
   return (
     <AdminShell>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-            Edit Post
-          </h1>
-          <Link
-            className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-2.5 py-0.5 text-[13px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
-            href="/admincp/posts/new"
-          >
-            Add New
-          </Link>
+      <div dir={direction} className="space-y-4 text-start">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
+              {dict["admin.posts.edit_post"] || "Edit Post"}
+            </h1>
+            <Link
+              className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-2.5 py-0.5 text-[13px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
+              href="/admincp/posts/new"
+            >
+              {dict["admin.menu.add_new"] || "Add New"}
+            </Link>
+          </div>
+          <div className="flex items-center gap-1 text-[13px]">
+            <button
+              className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
+              type="button"
+            >
+              {dict["admin.common.screen_options"] || "Screen Options"}{" "}
+              <span className="text-[9px]">▼</span>
+            </button>
+            <button
+              className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
+              type="button"
+            >
+              {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-[13px]">
-          <button
-            className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
-            type="button"
-          >
-            Screen Options <span className="text-[9px]">▼</span>
-          </button>
-          <button
-            className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
-            type="button"
-          >
-            Help <span className="text-[9px]">▼</span>
-          </button>
-        </div>
-      </div>
 
-      <ClassicPostEditor
-        action={updatePost}
-        categories={terms
-          .filter((term) => term.taxonomy === "category")
-          .map(({ slug, name }) => ({ slug, name }))}
-        initialCategories={selectedCategories}
-        initialContent={post[0].content}
-        initialExcerpt={post[0].excerpt}
-        initialFeaturedImageId={featuredImage[0]?.value ?? ""}
-        initialStatus={post[0].status}
-        initialTags={selectedTags}
-        initialTitle={post[0].title}
-        postId={post[0].id.toString()}
-        tags={terms
-          .filter((term) => term.taxonomy === "post_tag")
-          .map(({ slug, name }) => ({ slug, name }))}
-      />
+        <ClassicPostEditor
+          action={updatePost}
+          categories={terms
+            .filter((term) => term.taxonomy === "category")
+            .map(({ slug, name }) => ({ slug, name }))}
+          initialCategories={selectedCategories}
+          initialContent={post[0].content}
+          initialExcerpt={post[0].excerpt}
+          initialFeaturedImageId={featuredImage[0]?.value ?? ""}
+          initialStatus={post[0].status}
+          initialTags={selectedTags}
+          initialTitle={post[0].title}
+          postId={post[0].id.toString()}
+          tags={terms
+            .filter((term) => term.taxonomy === "post_tag")
+            .map(({ slug, name }) => ({ slug, name }))}
+          dict={dict}
+          direction={direction}
+        />
+      </div>
     </AdminShell>
   );
 }

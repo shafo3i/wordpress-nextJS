@@ -10,6 +10,8 @@ export function MetaBoxPublish({
   isExisting = false,
   onTrash,
   isSaving = false,
+  dict,
+  previewUrl,
 }: {
   status: string;
   onStatusChange: (status: string) => void;
@@ -17,6 +19,8 @@ export function MetaBoxPublish({
   isExisting?: boolean;
   onTrash?: () => void;
   isSaving?: boolean;
+  dict?: Record<string, string>;
+  previewUrl?: string;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [isEditingStatus, setIsEditingStatus] = useState(false);
@@ -26,25 +30,27 @@ export function MetaBoxPublish({
 
   const statusLabel =
     status === "publish"
-      ? "Published"
+      ? (dict?.["admin.editor.status_published"] || "Published")
       : status === "pending"
-        ? "Pending Review"
+        ? (dict?.["admin.editor.status_pending"] || "Pending Review")
         : status === "private"
-          ? "Private"
-          : "Draft";
+          ? (dict?.["admin.editor.status_private"] || "Private")
+          : (dict?.["admin.editor.status_draft"] || "Draft");
 
   const handleSaveStatus = () => {
     onStatusChange(tempStatus);
     setIsEditingStatus(false);
   };
 
+  const publishSubmitValue = isExisting && status !== "draft" ? status : "publish";
+
   return (
-    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
+    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-start">
       <div
         className="flex cursor-pointer select-none items-center justify-between border-b border-[#c3c4c7] px-3 py-2 text-[14px] font-semibold text-[#1d2327]"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>Publish</span>
+        <span>{dict?.["admin.editor.publish"] || "Publish"}</span>
         <button className="text-[#50575e] hover:text-[#1d2327]" type="button">
           {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
         </button>
@@ -57,17 +63,22 @@ export function MetaBoxPublish({
             <button
               className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-xs font-normal text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
               name="status"
+              onClick={() => onStatusChange("draft")}
               type="submit"
               value="draft"
             >
-              Save Draft
+              {dict?.["admin.editor.save_draft"] || "Save Draft"}
             </button>
             <button
               className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-xs font-normal text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
-              onClick={() => alert("Preview mode opens your post on the front-end.")}
+              onClick={() => {
+                if (previewUrl) {
+                  window.open(previewUrl, "_blank");
+                }
+              }}
               type="button"
             >
-              Preview
+              {dict?.["admin.editor.preview"] || "Preview"}
             </button>
           </div>
 
@@ -78,18 +89,18 @@ export function MetaBoxPublish({
               <div className="flex items-center gap-1.5">
                 <span className="text-base text-[#50575e]">📍</span>
                 <span>
-                  Status: <strong>{statusLabel}</strong>
+                  {dict?.["admin.editor.status"] || "Status:"} <strong>{statusLabel}</strong>
                 </span>
                 {!isEditingStatus && (
                   <button
-                    className="ml-1 text-[#2271b1] underline hover:text-[#135e96]"
+                    className="mx-1 text-[#2271b1] underline hover:text-[#135e96]"
                     onClick={() => {
                       setTempStatus(status);
                       setIsEditingStatus(true);
                     }}
                     type="button"
                   >
-                    Edit
+                    {dict?.["common.edit"] || "Edit"}
                   </button>
                 )}
               </div>
@@ -101,9 +112,9 @@ export function MetaBoxPublish({
                     onChange={(e) => setTempStatus(e.target.value)}
                     value={tempStatus}
                   >
-                    <option value="draft">Draft</option>
-                    <option value="pending">Pending Review</option>
-                    <option value="publish">Published</option>
+                    <option value="draft">{dict?.["admin.editor.status_draft"] || "Draft"}</option>
+                    <option value="pending">{dict?.["admin.editor.status_pending"] || "Pending Review"}</option>
+                    <option value="publish">{dict?.["admin.editor.status_published"] || "Published"}</option>
                   </select>
                   <div className="flex items-center gap-2">
                     <button
@@ -111,14 +122,14 @@ export function MetaBoxPublish({
                       onClick={handleSaveStatus}
                       type="button"
                     >
-                      OK
+                      {dict?.["admin.common.confirm"] || "OK"}
                     </button>
                     <button
                       className="text-xs text-[#2271b1] underline"
                       onClick={() => setIsEditingStatus(false)}
                       type="button"
                     >
-                      Cancel
+                      {dict?.["common.cancel"] || "Cancel"}
                     </button>
                   </div>
                 </div>
@@ -130,15 +141,20 @@ export function MetaBoxPublish({
               <div className="flex items-center gap-1.5">
                 <span className="text-base text-[#50575e]">👁</span>
                 <span>
-                  Visibility: <strong>{visibility === "public" ? "Public" : "Private"}</strong>
+                  {dict?.["admin.editor.visibility"] || "Visibility:"}{" "}
+                  <strong>
+                    {visibility === "public"
+                      ? (dict?.["admin.editor.visibility_public"] || "Public")
+                      : (dict?.["admin.editor.visibility_private"] || "Private")}
+                  </strong>
                 </span>
                 {!isEditingVisibility && (
                   <button
-                    className="ml-1 text-[#2271b1] underline hover:text-[#135e96]"
+                    className="mx-1 text-[#2271b1] underline hover:text-[#135e96]"
                     onClick={() => setIsEditingVisibility(true)}
                     type="button"
                   >
-                    Edit
+                    {dict?.["common.edit"] || "Edit"}
                   </button>
                 )}
               </div>
@@ -152,7 +168,7 @@ export function MetaBoxPublish({
                       onChange={() => setVisibility("public")}
                       type="radio"
                     />
-                    <span>Public</span>
+                    <span>{dict?.["admin.editor.visibility_public"] || "Public"}</span>
                   </label>
                   <label className="flex items-center gap-1.5">
                     <input
@@ -161,7 +177,7 @@ export function MetaBoxPublish({
                       onChange={() => setVisibility("private")}
                       type="radio"
                     />
-                    <span>Private</span>
+                    <span>{dict?.["admin.editor.visibility_private"] || "Private"}</span>
                   </label>
                   <div className="flex items-center gap-2 pt-1">
                     <button
@@ -169,14 +185,14 @@ export function MetaBoxPublish({
                       onClick={() => setIsEditingVisibility(false)}
                       type="button"
                     >
-                      OK
+                      {dict?.["admin.common.confirm"] || "OK"}
                     </button>
                     <button
                       className="text-xs text-[#2271b1] underline"
                       onClick={() => setIsEditingVisibility(false)}
                       type="button"
                     >
-                      Cancel
+                      {dict?.["common.cancel"] || "Cancel"}
                     </button>
                   </div>
                 </div>
@@ -187,7 +203,7 @@ export function MetaBoxPublish({
             <div className="flex items-center gap-1.5">
               <span className="text-base text-[#50575e]">🗓</span>
               <span>
-                Publish <strong>immediately</strong>
+                {dict?.["admin.editor.publish_immediately"] || "Publish immediately"}
               </span>
             </div>
           </div>
@@ -200,7 +216,7 @@ export function MetaBoxPublish({
                 onClick={onTrash}
                 type="button"
               >
-                Move to Trash
+                {dict?.["admin.editor.move_to_trash"] || "Move to Trash"}
               </button>
             ) : (
               <span />
@@ -210,16 +226,21 @@ export function MetaBoxPublish({
               className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-[13px] font-medium text-white shadow-[0_1px_0_#135e96] hover:border-[#135e96] hover:bg-[#135e96] disabled:opacity-50"
               disabled={isSaving}
               name="status"
+              onClick={() => {
+                if (!isExisting || status === "draft") {
+                  onStatusChange("publish");
+                }
+              }}
               type="submit"
-              value="publish"
+              value={publishSubmitValue}
             >
               {isSaving
                 ? isExisting
-                  ? "Updating..."
-                  : "Publishing..."
+                  ? (dict?.["admin.editor.updating"] || "Updating...")
+                  : (dict?.["admin.editor.publishing"] || "Publishing...")
                 : isExisting
-                  ? "Update"
-                  : "Publish"}
+                  ? (dict?.["admin.editor.update"] || "Update")
+                  : (dict?.["admin.editor.publish"] || "Publish")}
             </button>
           </div>
         </div>
