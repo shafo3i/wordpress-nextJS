@@ -1,0 +1,8 @@
+{
+  "id": "weather",
+  "name": "Weather Forecast",
+  "description": "Live weather conditions, city temperatures, and editorial weather desk badge",
+  "category": "core",
+  "defaultTitle": "Local Weather",
+  "defaultContent": "London • 18°C Sunny • Humidity 62%"
+}

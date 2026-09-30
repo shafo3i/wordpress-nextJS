@@ -1,0 +1,9 @@
+{
+  "id": "plugin_breaking",
+  "name": "Breaking Alert Banner (Plugin)",
+  "description": "Urgent breaking news dispatch powered by Breaking News plugin",
+  "category": "plugin",
+  "pluginSlug": "breaking-news",
+  "defaultTitle": "Urgent News Flash",
+  "defaultContent": "Emergency market circuit breaker triggered across secondary commodities."
+}

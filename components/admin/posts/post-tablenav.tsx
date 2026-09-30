@@ -164,9 +164,7 @@ export function PostTablenav({
 
         {totalPages > 1 && (
           <div className="flex items-center gap-1">
-            <span className="me-1 text-[13px] text-[#646970]">
-              {currentPage} {dict["admin.pagination.of"] || "of"} {totalPages}
-            </span>
+            {/* First Page */}
             {currentPage > 1 ? (
               <Link
                 aria-label={dict["admin.pagination.first"] || "First page"}
@@ -176,10 +174,12 @@ export function PostTablenav({
                 {direction === "rtl" ? <ChevronsRight className="size-3.5" /> : <ChevronsLeft className="size-3.5" />}
               </Link>
             ) : (
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad]">
+              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad] opacity-60">
                 {direction === "rtl" ? <ChevronsRight className="size-3.5" /> : <ChevronsLeft className="size-3.5" />}
               </span>
             )}
+
+            {/* Previous Page */}
             {currentPage > 1 ? (
               <Link
                 aria-label={dict["admin.pagination.prev"] || "Previous page"}
@@ -189,10 +189,17 @@ export function PostTablenav({
                 {direction === "rtl" ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
               </Link>
             ) : (
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad]">
+              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad] opacity-60">
                 {direction === "rtl" ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
               </span>
             )}
+
+            {/* Current Page of Total */}
+            <span className="px-1 text-[13px] text-[#646970]">
+              <bdi>{currentPage} {dict["admin.pagination.of"] || "of"} {totalPages}</bdi>
+            </span>
+
+            {/* Next Page */}
             {currentPage < totalPages ? (
               <Link
                 aria-label={dict["admin.pagination.next"] || "Next page"}
@@ -202,10 +209,12 @@ export function PostTablenav({
                 {direction === "rtl" ? <ChevronLeft className="size-3.5" /> : <ChevronRight className="size-3.5" />}
               </Link>
             ) : (
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad]">
+              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad] opacity-60">
                 {direction === "rtl" ? <ChevronLeft className="size-3.5" /> : <ChevronRight className="size-3.5" />}
               </span>
             )}
+
+            {/* Last Page */}
             {currentPage < totalPages ? (
               <Link
                 aria-label={dict["admin.pagination.last"] || "Last page"}
@@ -215,7 +224,7 @@ export function PostTablenav({
                 {direction === "rtl" ? <ChevronsLeft className="size-3.5" /> : <ChevronsRight className="size-3.5" />}
               </Link>
             ) : (
-              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad]">
+              <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] text-[#a7aaad] opacity-60">
                 {direction === "rtl" ? <ChevronsLeft className="size-3.5" /> : <ChevronsRight className="size-3.5" />}
               </span>
             )}

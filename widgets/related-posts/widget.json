@@ -1,0 +1,9 @@
+{
+  "id": "plugin_related_posts",
+  "name": "Related Stories (Plugin)",
+  "description": "Contextual recommended stories powered by Related Stories plugin",
+  "category": "plugin",
+  "pluginSlug": "related-posts",
+  "defaultTitle": "Recommended Follow-ups",
+  "defaultContent": "Surfaces contextual stories and editorial follow-ups based on category."
+}

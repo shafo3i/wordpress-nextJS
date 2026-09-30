@@ -292,6 +292,27 @@ export function RelatedPostsWidgetWireframe({ className = "w-8 h-6", active = fa
   );
 }
 
+// Weather Widget Wireframe (Sun/cloud badge + temperature indicator)
+export function WeatherWidgetWireframe({ className = "w-8 h-6", active = false }: WidgetWireframeProps) {
+  const stroke = active ? "#0284c7" : "#38bdf8";
+  const bg = active ? "#f0f9ff" : "#f8fafc";
+
+  return (
+    <svg viewBox="0 0 32 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="30" height="22" rx="2" fill={bg} stroke={stroke} strokeWidth="1" />
+      {/* Sun circle */}
+      <circle cx="9" cy="9" r="3.5" fill="#f59e0b" />
+      {/* Cloud */}
+      <path d="M10 13C10 11.5 11.5 10 13.5 10C15 10 16 11 16.5 12C17.5 12 18.5 12.8 18.5 14C18.5 15.2 17.5 16 16.5 16H11C9.8 16 9 15 9 14C9 13.2 9.5 13 10 13Z" fill="#93c5fd" />
+      {/* Temp numbers */}
+      <rect x="21" y="7" width="7" height="4" rx="0.5" fill="#0284c7" />
+      {/* Bottom bars */}
+      <rect x="4" y="18" width="12" height="1.8" rx="0.5" fill="#bae6fd" />
+      <rect x="18" y="18" width="10" height="1.8" rx="0.5" fill="#bae6fd" />
+    </svg>
+  );
+}
+
 /**
  * Dispatcher to render the appropriate widget layout wireframe
  */
@@ -315,6 +336,8 @@ export function WidgetWireframeIcon({
       return <AuthorBioWidgetWireframe className={className} active={active} />;
     case "custom_html":
       return <CustomHtmlWidgetWireframe className={className} active={active} />;
+    case "weather":
+      return <WeatherWidgetWireframe className={className} active={active} />;
     case "plugin_newsletter":
       return <NewsletterWidgetWireframe className={className} active={active} />;
     case "plugin_audio":

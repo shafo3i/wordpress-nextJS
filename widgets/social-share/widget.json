@@ -1,0 +1,8 @@
+{
+  "id": "plugin_social",
+  "name": "Social Channels & Share (Plugin)",
+  "description": "Connect with newsroom social handles powered by Social Share plugin",
+  "category": "plugin",
+  "pluginSlug": "social-share",
+  "defaultTitle": "Follow Our Newsroom"
+}

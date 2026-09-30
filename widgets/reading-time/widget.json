@@ -1,0 +1,9 @@
+{
+  "id": "plugin_reading_time",
+  "name": "Reading Time & Speed (Plugin)",
+  "description": "Article read pace and word count badge powered by Reading Time plugin",
+  "category": "plugin",
+  "pluginSlug": "reading-time",
+  "defaultTitle": "Reading Time Indicator",
+  "defaultContent": "Calculates estimated read speed (~200 wpm) and word counts dynamically."
+}

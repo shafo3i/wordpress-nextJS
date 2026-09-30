@@ -1,0 +1,9 @@
+{
+  "id": "plugin_audio",
+  "name": "Audio Stream / Podcast (Plugin)",
+  "description": "Broadsheet audio stream player powered by Article Audio plugin",
+  "category": "plugin",
+  "pluginSlug": "article-audio",
+  "defaultTitle": "Daily Audio Stream",
+  "defaultContent": "Daily 5-minute newsroom podcast briefing covering breaking market stories."
+}

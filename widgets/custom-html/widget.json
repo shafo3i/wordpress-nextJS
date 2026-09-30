@@ -1,0 +1,8 @@
+{
+  "id": "custom_html",
+  "name": "Custom HTML / Code",
+  "description": "Arbitrary HTML, embed codes, partner ads, or scripts",
+  "category": "core",
+  "defaultTitle": "Sponsor Advertisement",
+  "defaultContent": "<div class=\"ad-banner p-4 bg-slate-100 rounded text-center\">Featured Editorial Partner</div>"
+}

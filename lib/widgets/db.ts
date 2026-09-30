@@ -2,16 +2,19 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { wpOptions } from "@/db/schema";
 import { getActivePluginSlugs } from "@/lib/plugins/loader";
-
-export * from "./types";
 import {
+  getAvailableWidgets as getRegistryAvailableWidgets,
+  createDefaultWidgetItem,
+  REGISTERED_WIDGETS,
+} from "@/widgets/registry";
+import type {
   AvailableWidgetDescriptor,
-  CORE_WIDGETS,
-  PLUGIN_WIDGET_DEFINITIONS,
   WidgetArea,
   WidgetItem,
-  createDefaultWidgetItem,
-} from "./types";
+} from "@/widgets/types";
+
+export * from "@/widgets/types";
+export { createDefaultWidgetItem } from "@/widgets/registry";
 
 export const DEFAULT_WIDGET_AREAS: WidgetArea[] = [
   {
@@ -113,21 +116,12 @@ async function setOption(name: string, value: string): Promise<void> {
 }
 
 /**
- * Retrieve all available widgets dynamically based on active plugins
+ * Retrieve all available widgets dynamically based on active plugins from the registry
  */
 export async function getAvailableWidgets(): Promise<AvailableWidgetDescriptor[]> {
   const activeSlugs = await getActivePluginSlugs();
-  const pluginWidgets: AvailableWidgetDescriptor[] = [];
-
-  for (const slug of activeSlugs) {
-    if (PLUGIN_WIDGET_DEFINITIONS[slug]) {
-      pluginWidgets.push(PLUGIN_WIDGET_DEFINITIONS[slug]);
-    }
-  }
-
-  return [...CORE_WIDGETS, ...pluginWidgets];
+  return getRegistryAvailableWidgets(activeSlugs);
 }
-
 
 /**
  * Retrieve all widget areas from wp_options (sidebars_widgets).
@@ -172,12 +166,21 @@ export async function getAllWidgetAreas(): Promise<WidgetArea[]> {
 
   if (primaryArea) {
     for (const slug of activeSlugs) {
-      if (!existingPluginSlugs.has(slug) && PLUGIN_WIDGET_DEFINITIONS[slug]) {
-        const desc = PLUGIN_WIDGET_DEFINITIONS[slug];
-        const newWidget = createDefaultWidgetItem(desc);
-        primaryArea.items.push(newWidget);
-        existingPluginSlugs.add(slug);
-        modified = true;
+      if (!existingPluginSlugs.has(slug)) {
+        // Find widget module for this plugin slug
+        const widgetMod = Object.values(REGISTERED_WIDGETS).find((w) => w.manifest.pluginSlug === slug);
+        if (widgetMod) {
+          const newWidget = createDefaultWidgetItem({
+            type: widgetMod.manifest.id,
+            name: widgetMod.manifest.name,
+            desc: widgetMod.manifest.description,
+            isPlugin: true,
+            pluginSlug: slug,
+          });
+          primaryArea.items.push(newWidget);
+          existingPluginSlugs.add(slug);
+          modified = true;
+        }
       }
     }
   }

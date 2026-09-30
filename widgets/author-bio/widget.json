@@ -1,0 +1,8 @@
+{
+  "id": "author_bio",
+  "name": "Author Bio",
+  "description": "Showcase newsroom staff and editorial credentials",
+  "category": "core",
+  "defaultTitle": "About the Newsroom",
+  "defaultContent": "Independent investigative reporting and market intelligence operating under strict editorial standards."
+}

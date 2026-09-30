@@ -1,0 +1,9 @@
+{
+  "id": "plugin_factcheck",
+  "name": "Fact-Check Scorecard (Plugin)",
+  "description": "Editorial claim verification ratings powered by Fact Check plugin",
+  "category": "plugin",
+  "pluginSlug": "fact-check",
+  "defaultTitle": "Verified Claim Check",
+  "defaultContent": "Claim: Global shipping rates decline 40% in Q3. Verdict: TRUE (Verified by Bureau Desk)."
+}

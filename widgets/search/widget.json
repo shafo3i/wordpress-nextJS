@@ -1,0 +1,7 @@
+{
+  "id": "search",
+  "name": "Search Bar",
+  "description": "A search form for news articles",
+  "category": "core",
+  "defaultTitle": "Search News"
+}

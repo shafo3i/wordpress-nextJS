@@ -1,0 +1,9 @@
+{
+  "id": "plugin_newsletter",
+  "name": "Newsletter Signup (Plugin)",
+  "description": "Interactive email subscriber form powered by Newsletter plugin",
+  "category": "plugin",
+  "pluginSlug": "newsletter",
+  "defaultTitle": "Morning Dispatch Newsletter",
+  "defaultContent": "Receive top investigative stories and digital market briefings directly in your inbox."
+}

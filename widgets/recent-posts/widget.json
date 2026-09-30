@@ -1,0 +1,7 @@
+{
+  "id": "recent_posts",
+  "name": "Recent Posts",
+  "description": "A list of your site's most recent posts with style options",
+  "category": "core",
+  "defaultTitle": "Recent Stories"
+}

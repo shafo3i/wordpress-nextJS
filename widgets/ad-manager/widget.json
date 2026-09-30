@@ -1,0 +1,9 @@
+{
+  "id": "plugin_ad",
+  "name": "Sponsor Ad Unit (Plugin)",
+  "description": "Monetized sponsor banner powered by Ad Manager plugin",
+  "category": "plugin",
+  "pluginSlug": "ad-manager",
+  "defaultTitle": "Monetized Partner Banner",
+  "defaultContent": "<div class=\"p-3 bg-white dark:bg-slate-800 rounded border border-dashed border-slate-300 dark:border-slate-700\">Digital Infrastructure Partner 2026</div>"
+}

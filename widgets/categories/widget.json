@@ -1,0 +1,7 @@
+{
+  "id": "categories",
+  "name": "Categories",
+  "description": "A list or dropdown of editorial categories",
+  "category": "core",
+  "defaultTitle": "Categories"
+}

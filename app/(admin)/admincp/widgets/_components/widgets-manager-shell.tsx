@@ -20,6 +20,7 @@ import {
   WidgetDisplayStyle,
   createDefaultWidgetItem,
 } from "@/lib/widgets/types";
+import { getWidget } from "@/widgets/registry";
 import { saveWidgetAreaAction } from "../actions";
 import { WidgetWireframeIcon } from "./widget-wireframes";
 import { WidgetsHeader } from "./widgets-header";
@@ -114,33 +115,6 @@ export function WidgetsManagerShell({
       }
     }
     return type;
-  };
-
-  const getTextareaLabel = (type: string) => {
-    if (direction === "rtl") {
-      switch (type) {
-        case "custom_html": return "كود HTML / محتوى مخصص";
-        case "plugin_newsletter": return "رسالة دعوة الاشتراك في النشرة";
-        case "plugin_audio": return "وصف البث الصوتي";
-        case "plugin_breaking": return "نص الخبر العاجل";
-        case "plugin_factcheck": return "نص الادعاء والتقييم";
-        case "plugin_ad": return "شعار الراعي الإعلاني";
-        case "plugin_reading_time": return "وصف وقت القراءة";
-        case "plugin_related_posts": return "العنوان الفرعي للمقالات ذات الصلة";
-        default: return "محتوى النبذة التحريرية";
-      }
-    }
-    switch (type) {
-      case "custom_html": return "HTML Code";
-      case "plugin_newsletter": return "Subscription Prompt Message";
-      case "plugin_audio": return "Podcast Stream Description";
-      case "plugin_breaking": return "Breaking Dispatch Text";
-      case "plugin_factcheck": return "Claim & Rating Text";
-      case "plugin_ad": return "Sponsor Tagline";
-      case "plugin_reading_time": return "Reading Time Description";
-      case "plugin_related_posts": return "Related Stories Subtitle";
-      default: return "Bio Content";
-    }
   };
 
   const currentArea = areas.find((a) => a.id === openAreaId) || areas[0];
@@ -320,29 +294,6 @@ export function WidgetsManagerShell({
       }
     });
   };
-
-  const styleOptions = [
-    {
-      id: "list",
-      label: direction === "rtl" ? "قائمة مصغرات" : "Thumbnail List",
-      desc: direction === "rtl" ? "صورة + عنوان" : "Left thumb + title",
-    },
-    {
-      id: "compact",
-      label: direction === "rtl" ? "موجز نقطي" : "Compact Wire",
-      desc: direction === "rtl" ? "خطوط العناوين" : "Bullet headline wire",
-    },
-    {
-      id: "card",
-      label: direction === "rtl" ? "بطاقات صغيرة" : "Mini Cards",
-      desc: direction === "rtl" ? "بطاقات صور مكدسة" : "Stacked photo cards",
-    },
-    {
-      id: "numbered",
-      label: direction === "rtl" ? "قائمة مرقمة" : "Leaderboard",
-      desc: direction === "rtl" ? "ترقيم 01-05" : "Numbered 01-05",
-    },
-  ];
 
   return (
     <div dir={direction} className="space-y-4 text-[13px] text-start">
@@ -646,133 +597,46 @@ export function WidgetsManagerShell({
                               {/* Expanded Form */}
                               {isExpanded && (
                                 <div className="border-t border-[#dcdcde] bg-white p-3.5 space-y-3">
-                                  <div>
-                                    <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                      {dict?.["admin.widgets.widget_title"] || "Widget Title"}
-                                    </label>
-                                    <input
-                                      type="text"
-                                      value={item.title}
-                                      onChange={(e) => updateWidget(item.id, { title: e.target.value })}
-                                      className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
-                                    />
-                                  </div>
-
-                                  {item.type === "recent_posts" && (
-                                    <div className="space-y-3">
-                                      <div className="border-t border-[#f0f0f1] pt-2 space-y-2">
-                                        <label className="block text-[12px] font-medium text-[#50575e]">
-                                          {dict?.["admin.widgets.display_style"] || "Display Style:"}
-                                        </label>
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                          {styleOptions.map((styleOpt) => {
-                                            const isSel = (item.displayStyle || "list") === styleOpt.id;
-                                            return (
-                                              <button
-                                                key={styleOpt.id}
-                                                type="button"
-                                                onClick={() =>
-                                                  updateWidget(item.id, {
-                                                    displayStyle: styleOpt.id as WidgetDisplayStyle,
-                                                  })
-                                                }
-                                                className={`p-2 rounded border text-start transition-all ${
-                                                  isSel
-                                                    ? "border-[#2271b1] bg-[#f0f6fc] ring-1 ring-[#2271b1]"
-                                                    : "border-[#dcdcde] bg-white hover:border-[#8c8f94]"
-                                                }`}
-                                              >
-                                                <span
-                                                  className={`block text-[11px] font-semibold ${
-                                                    isSel ? "text-[#2271b1]" : "text-[#1d2327]"
-                                                  }`}
-                                                >
-                                                  {styleOpt.label}
-                                                </span>
-                                                <span className="text-[10px] text-[#646970] block">
-                                                  {styleOpt.desc}
-                                                </span>
-                                              </button>
-                                            );
-                                          })}
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-4 pt-1">
-                                          <label className="flex items-center gap-1.5 text-[11px] text-[#50575e] cursor-pointer">
-                                            <input
-                                              type="checkbox"
-                                              checked={item.showThumbnail !== false}
-                                              onChange={(e) =>
-                                                updateWidget(item.id, { showThumbnail: e.target.checked })
-                                              }
-                                              className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
-                                            />
-                                            {dict?.["admin.widgets.show_thumbnails"] || "Show Thumbnail"}
-                                          </label>
-                                          <label className="flex items-center gap-1.5 text-[11px] text-[#50575e] cursor-pointer">
-                                            <input
-                                              type="checkbox"
-                                              checked={item.showDate !== false}
-                                              onChange={(e) =>
-                                                updateWidget(item.id, { showDate: e.target.checked })
-                                              }
-                                              className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
-                                            />
-                                            {dict?.["admin.widgets.show_date"] || "Show Date"}
-                                          </label>
-                                          <label className="flex items-center gap-1.5 text-[11px] text-[#50575e] cursor-pointer">
-                                            <input
-                                              type="checkbox"
-                                              checked={Boolean(item.showExcerpt)}
-                                              onChange={(e) =>
-                                                updateWidget(item.id, { showExcerpt: e.target.checked })
-                                              }
-                                              className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
-                                            />
-                                            {dict?.["admin.widgets.show_excerpt"] || "Show Excerpt"}
-                                          </label>
-                                        </div>
-                                      </div>
-
-                                      <div>
-                                        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                          {dict?.["admin.widgets.number_of_posts"] || "Number of posts to show:"}
-                                        </label>
-                                        <input
-                                          type="number"
-                                          min="1"
-                                          max="15"
-                                          value={item.count || 5}
-                                          onChange={(e) =>
-                                            updateWidget(item.id, { count: Number(e.target.value) || 5 })
-                                          }
-                                          className="h-[30px] w-24 rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338]"
+                                  {(() => {
+                                    const widgetMod = getWidget(item.type);
+                                    if (widgetMod?.AdminForm) {
+                                      const FormComponent = widgetMod.AdminForm;
+                                      return (
+                                        <FormComponent
+                                          item={item}
+                                          onChange={(updated) => updateWidget(item.id, updated)}
+                                          dict={dict}
+                                          direction={direction}
                                         />
+                                      );
+                                    }
+                                    return (
+                                      <div className="space-y-3">
+                                        <div>
+                                          <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+                                            {dict?.["admin.widgets.widget_title"] || "Widget Title"}
+                                          </label>
+                                          <input
+                                            type="text"
+                                            value={item.title}
+                                            onChange={(e) => updateWidget(item.id, { title: e.target.value })}
+                                            className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+                                            {dict?.["admin.widgets.content"] || "Content"}
+                                          </label>
+                                          <textarea
+                                            rows={3}
+                                            value={item.content || ""}
+                                            onChange={(e) => updateWidget(item.id, { content: e.target.value })}
+                                            className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[12px] text-[#2c3338]"
+                                          />
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
-
-                                  {(item.type === "custom_html" ||
-                                    item.type === "author_bio" ||
-                                    item.type === "plugin_newsletter" ||
-                                    item.type === "plugin_audio" ||
-                                    item.type === "plugin_breaking" ||
-                                    item.type === "plugin_factcheck" ||
-                                    item.type === "plugin_ad" ||
-                                    item.type === "plugin_reading_time" ||
-                                    item.type === "plugin_related_posts") && (
-                                    <div>
-                                      <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                        {getTextareaLabel(item.type)}
-                                      </label>
-                                      <textarea
-                                        rows={3}
-                                        value={item.content || ""}
-                                        onChange={(e) => updateWidget(item.id, { content: e.target.value })}
-                                        className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[12px] text-[#2c3338]"
-                                      />
-                                    </div>
-                                  )}
+                                    );
+                                  })()}
 
                                   <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f1]">
                                     <button

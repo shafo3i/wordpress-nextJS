@@ -833,5 +833,9 @@
   "admin.posts.seo.desc_placeholder": "Write a compelling summary for Google search (defaults to post excerpt)...",
   "admin.posts.seo.og_image_label": "Social Share Image Override (OG)",
   "admin.posts.seo.noindex_label": "Discourage search engines from showing this post in search results (noindex)",
-  "admin.posts.seo.canonical_label": "Canonical URL Override"
+  "admin.posts.seo.canonical_label": "Canonical URL Override",
+  "admin.posts.status.draft": "Draft",
+  "admin.posts.status.pending": "Pending Review",
+  "admin.posts.status.private": "Private",
+  "admin.posts.status.trash": "Trash"
 }

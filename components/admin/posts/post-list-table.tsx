@@ -194,11 +194,21 @@ export function PostListTable({
       />
 
       {/* WordPress Widefat Fixed Striped Posts Table */}
-      <div className="overflow-x-auto border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
-        <table className="w-full min-w-[760px] border-collapse text-start text-[13px]">
+      <div className="overflow-x-auto rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
+        <table className="w-full min-w-[800px] table-fixed border-collapse text-start text-[13px]">
+          <colgroup>
+            <col className="w-[38px]" />
+            <col className="w-[34%]" />
+            <col className="w-[12%]" />
+            <col className="w-[14%]" />
+            <col className="w-[14%]" />
+            <col className="w-[50px]" />
+            <col className="w-[16%]" />
+          </colgroup>
+
           <thead className="border-b border-[#c3c4c7] bg-[#f6f7f7] font-semibold text-[#2c3338]">
             <tr>
-              <th className="w-8 px-3 py-2 text-center">
+              <th className="w-[38px] px-3 py-2 text-center">
                 <input
                   aria-label={dict["admin.common.select_all"] || "Select all posts"}
                   checked={allSelected}
@@ -207,32 +217,36 @@ export function PostListTable({
                   type="checkbox"
                 />
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.title"] || "Title"}{" "}
-                <ArrowUpDown className="inline size-3 text-[#a7aaad]" />
+              <th className="px-3 py-2 font-semibold text-start">
+                <span className="inline-flex items-center gap-1 cursor-pointer hover:text-[#0073aa]">
+                  <bdi>{dict["admin.posts.table.title"] || "Title"}</bdi>
+                  <span className="text-[10px] text-[#a7aaad]" aria-hidden="true">▾</span>
+                </span>
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.author"] || "Author"}
+              <th className="px-3 py-2 font-semibold text-start">
+                <bdi>{dict["admin.posts.table.author"] || "Author"}</bdi>
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.categories"] || "Categories"}
+              <th className="px-3 py-2 font-semibold text-start">
+                <bdi>{dict["admin.posts.table.categories"] || "Categories"}</bdi>
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.tags"] || "Tags"}
+              <th className="px-3 py-2 font-semibold text-start">
+                <bdi>{dict["admin.posts.table.tags"] || "Tags"}</bdi>
               </th>
-              <th className="px-3 py-2 text-center font-semibold">
+              <th className="w-[50px] px-3 py-2 text-center font-semibold">
                 <MessageSquare className="inline size-3.5 fill-[#72777c] text-transparent" />
               </th>
-              <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                {dict["admin.posts.table.date"] || "Date"}{" "}
-                <ArrowUpDown className="inline size-3 text-[#a7aaad]" />
+              <th className="px-3 py-2 font-semibold text-start whitespace-nowrap">
+                <span className="inline-flex items-center gap-1 cursor-pointer hover:text-[#0073aa]">
+                  <bdi>{dict["admin.posts.table.date"] || "Date"}</bdi>
+                  <span className="text-[10px] text-[#a7aaad]" aria-hidden="true">▾</span>
+                </span>
               </th>
             </tr>
           </thead>
 
           <tbody>
             {posts.length ? (
-              posts.map((post) => (
+              posts.map((post, idx) => (
                 quickEditId === post.id ? (
                   <PostQuickEditRow
                     categories={categories}
@@ -248,6 +262,7 @@ export function PostListTable({
                     basePath={basePath}
                     dict={dict}
                     direction={direction}
+                    index={idx}
                     isSelected={selectedIds.includes(post.id)}
                     key={post.id}
                     onDeletePermanently={() => handleRowDeletePermanently(post.id)}
@@ -270,7 +285,7 @@ export function PostListTable({
 
           <tfoot className="border-t border-[#c3c4c7] bg-[#f6f7f7] font-semibold text-[#2c3338]">
             <tr>
-              <th className="w-8 px-3 py-2 text-center">
+              <th className="w-[38px] px-3 py-2 text-center">
                 <input
                   aria-label={dict["admin.common.select_all"] || "Select all posts bottom"}
                   checked={allSelected}
@@ -279,23 +294,23 @@ export function PostListTable({
                   type="checkbox"
                 />
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.title"] || "Title"}
+              <th className="px-3 py-2 font-semibold text-start">
+                <bdi>{dict["admin.posts.table.title"] || "Title"}</bdi>
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.author"] || "Author"}
+              <th className="px-3 py-2 font-semibold text-start">
+                <bdi>{dict["admin.posts.table.author"] || "Author"}</bdi>
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.categories"] || "Categories"}
+              <th className="px-3 py-2 font-semibold text-start">
+                <bdi>{dict["admin.posts.table.categories"] || "Categories"}</bdi>
               </th>
-              <th className="px-3 py-2 font-semibold">
-                {dict["admin.posts.table.tags"] || "Tags"}
+              <th className="px-3 py-2 font-semibold text-start">
+                <bdi>{dict["admin.posts.table.tags"] || "Tags"}</bdi>
               </th>
-              <th className="px-3 py-2 text-center font-semibold">
+              <th className="w-[50px] px-3 py-2 text-center font-semibold">
                 <MessageSquare className="inline size-3.5 fill-[#72777c] text-transparent" />
               </th>
-              <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                {dict["admin.posts.table.date"] || "Date"}
+              <th className="px-3 py-2 font-semibold text-start whitespace-nowrap">
+                <bdi>{dict["admin.posts.table.date"] || "Date"}</bdi>
               </th>
             </tr>
           </tfoot>

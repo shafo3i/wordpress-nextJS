@@ -833,5 +833,9 @@
   "admin.posts.seo.desc_placeholder": "اكتب ملخصاً جذاباً يظهر في نتائج البحث (الافتراضي مقتطف المقال)...",
   "admin.posts.seo.og_image_label": "صورة المشاركة الاجتماعية المخصصة (OG)",
   "admin.posts.seo.noindex_label": "منع محركات البحث من إظهار هذا المقال في نتائج البحث (noindex)",
-  "admin.posts.seo.canonical_label": "تجاوز الرابط الأساسي (Canonical URL)"
+  "admin.posts.seo.canonical_label": "تجاوز الرابط الأساسي (Canonical URL)",
+  "admin.posts.status.draft": "مسودة",
+  "admin.posts.status.pending": "بانتظار المراجعة",
+  "admin.posts.status.private": "خاص",
+  "admin.posts.status.trash": "سلة المهملات"
 }
