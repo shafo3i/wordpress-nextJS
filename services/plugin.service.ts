@@ -223,6 +223,7 @@ export async function getAllPlugins(
         ...module.manifest,
         isInstalled: true,
         isActive: activeSet.has(slug),
+        settingsUrl: `/admincp/plugins/${slug}`,
       };
     })
     .filter(Boolean) as PluginManifest[];

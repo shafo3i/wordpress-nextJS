@@ -1,6 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
 import { DB, db } from "@/db";
 import { wpOptions } from "@/db/schema/cms-options";
+import { encryptValue } from "@/lib/encryption";
 
 export type SettingsMap = Record<string, string>;
 
@@ -36,6 +37,28 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   google_analytics_id: "",
   custom_header_scripts: "",
   custom_footer_scripts: "",
+
+  // SMTP & Mail Server
+  smtp_host: "",
+  smtp_port: "587",
+  smtp_user: "",
+  smtp_pass: "",
+  smtp_from_email: "",
+  smtp_from_name: "",
+  smtp_secure: "tls",
+
+  // Email Notifications & Features
+  admin_notification_email: "",
+  enable_new_post_notifications: "0",
+  enable_newsletter_notifications: "0",
+
+  // Email Templates Wording (Configured in UI)
+  email_new_post_subject: "📰 New Story: {{postTitle}}",
+  email_new_post_heading: "New Article Published",
+  email_welcome_subject: "🎉 Welcome to {{siteName}}",
+  email_welcome_heading: "Welcome to Our Newsletter",
+  email_welcome_body: "Thank you for subscribing to our newsletter. You will receive our top editorial dispatches and stories directly in your inbox.",
+  email_footer_text: "You received this email because you subscribed to updates.",
 };
 
 /**
@@ -105,6 +128,8 @@ export async function setOption(
   value: string,
   database: DB = db
 ): Promise<void> {
+  const finalValue = name === "smtp_pass" && value ? encryptValue(value) : value;
+
   const [existing] = await database
     .select({ id: wpOptions.optionId })
     .from(wpOptions)
@@ -114,12 +139,12 @@ export async function setOption(
   if (existing) {
     await database
       .update(wpOptions)
-      .set({ optionValue: value })
+      .set({ optionValue: finalValue })
       .where(eq(wpOptions.optionId, existing.id));
   } else {
     await database.insert(wpOptions).values({
       optionName: name,
-      optionValue: value,
+      optionValue: finalValue,
       autoload: "yes",
     });
   }

@@ -86,46 +86,64 @@ export function RecentPostsAdminForm({ item, onChange, dict }: WidgetAdminFormPr
         </div>
       </div>
 
-      <div>
-        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-          {dict?.["admin.widgets.number_of_posts"] || "Number of posts to show:"}
-        </label>
-        <input
-          type="number"
-          min="1"
-          max="15"
-          value={item.count || 5}
-          onChange={(e) => onChange({ count: Number(e.target.value) || 5 })}
-          className="h-[30px] w-24 rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338]"
-        />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+            {dict?.["admin.widgets.category_filter"] || (dict?.direction === "rtl" ? "تصفية حسب التصنيف" : "Filter by Category")}
+          </label>
+          <input
+            type="text"
+            value={item.config?.categoryFilter || ""}
+            placeholder={dict?.direction === "rtl" ? "مثال: سياسة، اقتصاد" : "e.g. politics, business"}
+            onChange={(e) => onChange({ config: { ...item.config, categoryFilter: e.target.value } })}
+            className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+            {dict?.["admin.widgets.number_of_posts"] || "Number of posts:"}
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="15"
+            value={item.count || 5}
+            onChange={(e) => onChange({ count: Number(e.target.value) || 5 })}
+            className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338]"
+          />
+        </div>
       </div>
     </div>
   );
 }
 
 export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps) {
-  const displayPosts = posts.slice(0, item.count || 5);
+  const catFilter = item.config?.categoryFilter?.trim().toLowerCase();
+  const filteredPosts = catFilter
+    ? posts.filter((p) => p.categories?.some((c) => c.toLowerCase().includes(catFilter)))
+    : posts;
+  const displayPosts = (filteredPosts.length > 0 ? filteredPosts : posts).slice(0, item.count || 5);
   const isSerif = theme ? isSerifHeading(theme) : false;
   const style = item.displayStyle || "list";
 
   return (
-    <div className="theme-widget rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2.5 mb-3">
-        <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-slate-400">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
+      <div className="flex items-center justify-between border-b border-[var(--theme-border,#e2e8f0)] pb-2.5 mb-3">
+        <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))]">
           {item.title}
         </h4>
-        <span className="text-[10px] text-slate-400 font-mono">
+        <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono">
           {displayPosts.length} stories
         </span>
       </div>
 
       {/* Numbered Style */}
       {style === "numbered" ? (
-        <ol className="divide-y divide-slate-100 dark:divide-slate-800">
+        <ol className="divide-y divide-[var(--theme-border,#e2e8f0)]">
           {displayPosts.map((post, idx) => (
             <li key={post.id} className="py-2.5 flex items-start gap-3 group">
               <span
-                style={{ color: theme?.primaryColor }}
+                style={{ color: theme?.primaryColor || "var(--theme-primary, #2271b1)" }}
                 className="font-mono text-xs font-black w-4 flex-shrink-0"
               >
                 {String(idx + 1).padStart(2, "0")}
@@ -133,14 +151,14 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/posts/${post.slug}`}
-                  className={`text-xs font-bold leading-snug hover:underline block text-slate-900 dark:text-white line-clamp-2 ${
+                  className={`text-xs font-bold leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] line-clamp-2 transition-colors ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
                 >
                   {post.title}
                 </Link>
                 {item.showDate !== false && (
-                  <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                  <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5">
                     {formatDate(post.date)}
                   </span>
                 )}
@@ -149,17 +167,17 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
           ))}
         </ol>
       ) : style === "compact" ? (
-        <div className="space-y-2 divide-y divide-slate-100 dark:divide-slate-800/60">
+        <div className="space-y-2 divide-y divide-[var(--theme-border,#e2e8f0)]">
           {displayPosts.map((post) => (
             <div key={post.id} className="pt-2 first:pt-0">
               <Link
                 href={`/posts/${post.slug}`}
-                className="text-xs font-medium leading-snug hover:underline block text-slate-900 dark:text-white"
+                className="text-xs font-medium leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] transition-colors"
               >
                 • {post.title}
               </Link>
               {item.showDate !== false && (
-                <span className="text-[10px] text-slate-400 font-mono block mt-0.5 ml-2">
+                <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5 ml-2">
                   {formatDate(post.date)}
                 </span>
               )}
@@ -171,10 +189,10 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
           {displayPosts.map((post) => (
             <div
               key={post.id}
-              className="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-2.5 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
+              className="rounded-lg border border-[var(--theme-border,#e2e8f0)] bg-[var(--theme-bg,#f8f7f4)] p-2.5 hover:border-[var(--theme-primary,#2271b1)] transition-colors"
             >
               {item.showThumbnail !== false && post.imageUrl && (
-                <div className="aspect-[16/9] w-full rounded overflow-hidden mb-2 bg-slate-100 dark:bg-slate-800">
+                <div className="aspect-[16/9] w-full rounded overflow-hidden mb-2 bg-[var(--theme-surface,#ffffff)]">
                   <img
                     src={post.imageUrl}
                     alt={post.title}
@@ -184,19 +202,19 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
               )}
               <Link
                 href={`/posts/${post.slug}`}
-                className={`text-xs font-semibold leading-snug hover:underline block text-slate-900 dark:text-white line-clamp-2 ${
+                className={`text-xs font-semibold leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] line-clamp-2 transition-colors ${
                   isSerif ? "font-serif" : "font-sans"
                 }`}
               >
                 {post.title}
               </Link>
               {item.showExcerpt && (
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                <p className="text-[11px] text-[var(--theme-muted,#64748b)] mt-1 line-clamp-2 leading-relaxed">
                   {getExcerpt(post, 80)}
                 </p>
               )}
               {item.showDate !== false && (
-                <span className="text-[10px] text-slate-400 font-mono block mt-1">
+                <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-1">
                   {formatDate(post.date)}
                 </span>
               )}
@@ -212,25 +230,25 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
                 <img
                   src={post.imageUrl}
                   alt={post.title}
-                  className="size-12 rounded object-cover flex-shrink-0 bg-slate-100 dark:bg-slate-800"
+                  className="size-12 rounded object-cover flex-shrink-0 bg-[var(--theme-bg,#f8f7f4)]"
                 />
               )}
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/posts/${post.slug}`}
-                  className={`text-xs font-bold leading-snug hover:underline block text-slate-900 dark:text-white line-clamp-2 ${
+                  className={`text-xs font-bold leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] line-clamp-2 transition-colors ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
                 >
                   {post.title}
                 </Link>
                 {item.showExcerpt && (
-                  <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                  <p className="text-[11px] text-[var(--theme-muted,#64748b)] line-clamp-1 mt-0.5">
                     {getExcerpt(post, 60)}
                   </p>
                 )}
                 {item.showDate !== false && (
-                  <span className="text-[10px] text-slate-400 font-mono block mt-0.5">
+                  <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5">
                     {formatDate(post.date)}
                   </span>
                 )}

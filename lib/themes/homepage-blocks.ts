@@ -59,10 +59,17 @@ export async function getHomepageSettings(themeSlug?: string): Promise<HomepageS
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.blocks) && parsed.blocks.length > 0) {
+      if (parsed && typeof parsed === "object") {
+        const layout = (["full_width", "right_sidebar", "left_sidebar", "dual_sidebar"].includes(parsed.layout)
+          ? parsed.layout
+          : "right_sidebar") as HomepageLayout;
+        const blocks = Array.isArray(parsed.blocks)
+          ? parsed.blocks.sort((a: HomepageBlock, b: HomepageBlock) => a.order - b.order)
+          : [];
         return {
-          layout: parsed.layout || "right_sidebar",
-          blocks: parsed.blocks.sort((a: HomepageBlock, b: HomepageBlock) => a.order - b.order),
+          layout,
+          blocks,
+          sections: parsed.sections,
         };
       }
     } catch (e) {
@@ -96,18 +103,19 @@ export async function getHomepageSettings(themeSlug?: string): Promise<HomepageS
 }
 
 /**
- * Save full homepage settings (layout + blocks) for a theme into wp_options
+ * Save full homepage settings (layout + blocks + sections) for a theme into wp_options
  */
 export async function saveHomepageSettings(
   themeSlug: string,
   settings: HomepageSettings
 ): Promise<void> {
   const optionKey = `homepage_settings_${themeSlug}`;
-  const orderedBlocks = settings.blocks.map((b, idx) => ({ ...b, order: idx + 1 }));
+  const orderedBlocks = (settings.blocks || []).map((b, idx) => ({ ...b, order: idx + 1 }));
 
   const payload: HomepageSettings = {
     layout: settings.layout,
     blocks: orderedBlocks,
+    sections: settings.sections,
   };
 
   await Promise.all([

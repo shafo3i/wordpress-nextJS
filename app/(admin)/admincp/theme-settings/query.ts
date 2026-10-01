@@ -3,6 +3,8 @@ import { getHomepageSettings } from "@/lib/themes/homepage-blocks";
 import { getCategoriesForMenu } from "@/lib/menus/db";
 import { Theme } from "@/lib/themes/types";
 import { HomepageSettings } from "@/lib/themes/homepage-types";
+import { getAvailableWidgets } from "@/lib/widgets/db";
+import { AvailableWidgetDescriptor } from "@/lib/widgets/types";
 
 export interface ThemeSettingsQueryData {
   allThemes: Theme[];
@@ -10,16 +12,18 @@ export interface ThemeSettingsQueryData {
   targetSlug: string;
   homepageSettings: HomepageSettings;
   categories: { id: string; name: string; slug: string }[];
+  availableWidgets: AvailableWidgetDescriptor[];
 }
 
 export async function getThemeSettingsQuery(targetThemeSlug?: string): Promise<ThemeSettingsQueryData> {
   const activeSlug = await getActiveThemeSlug();
   const targetSlug = targetThemeSlug || activeSlug;
 
-  const [allThemes, homepageSettings, categories] = await Promise.all([
+  const [allThemes, homepageSettings, categories, availableWidgets] = await Promise.all([
     getAllThemes(),
     getHomepageSettings(targetSlug),
     getCategoriesForMenu(),
+    getAvailableWidgets(),
   ]);
 
   const currentTheme = allThemes.find((t) => t.slug === targetSlug) || allThemes[0];
@@ -30,5 +34,6 @@ export async function getThemeSettingsQuery(targetThemeSlug?: string): Promise<T
     targetSlug: currentTheme?.slug || targetSlug,
     homepageSettings,
     categories,
+    availableWidgets,
   };
 }

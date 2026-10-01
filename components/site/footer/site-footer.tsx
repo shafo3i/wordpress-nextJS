@@ -1,14 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUp, Share2 } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
+import type { WidgetItem } from "@/widgets/types";
+import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
 
-export function SiteFooter({ theme }: { theme: FrontEndThemeContext }) {
+interface SiteFooterProps {
+  theme: FrontEndThemeContext;
+  footerWidgets?: {
+    col1?: WidgetItem[];
+    col2?: WidgetItem[];
+    col3?: WidgetItem[];
+  };
+}
+
+export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
   const mods = theme.mods || {};
   const isDark = theme.darkMode;
   const primaryColor = mods.primaryColor || theme.primaryColor || "#2271b1";
   const cols = mods.footerColumns || 4;
+
+  const col1Items = footerWidgets?.col1 || [];
+  const col2Items = footerWidgets?.col2 || [];
+  const col3Items = footerWidgets?.col3 || [];
 
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
@@ -63,34 +78,62 @@ export function SiteFooter({ theme }: { theme: FrontEndThemeContext }) {
         </div>
 
         {/* Multi-Column Layout */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${cols} gap-8 py-8`}>
-          <div>
-            <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">About Newsroom</h4>
-            <p style={{ color: footerTextColor }} className="text-xs leading-relaxed opacity-90">
-              Operating with verifiable editorial integrity, original investigative reporting, and real-time market telemetry.
-            </p>
+        <div data-footer-widgets="true" className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${cols} gap-8 py-8 items-start`}>
+          {/* Column 1 */}
+          <div className="space-y-4">
+            {col1Items.length > 0 ? (
+              col1Items.map((item) => (
+                <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
+              ))
+            ) : (
+              <div>
+                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">About Newsroom</h4>
+                <p style={{ color: footerTextColor }} className="text-xs leading-relaxed opacity-90">
+                  Operating with verifiable editorial integrity, original investigative reporting, and real-time market telemetry.
+                </p>
+              </div>
+            )}
           </div>
 
-          <div>
-            <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Key Desks</h4>
-            <ul className="text-xs space-y-2">
-              <li><Link href="/category/news" style={{ color: footerLinkColor }} className="hover:opacity-80">National Wire</Link></li>
-              <li><Link href="/category/business" style={{ color: footerLinkColor }} className="hover:opacity-80">Commercial Briefings</Link></li>
-              <li><Link href="/category/technology" style={{ color: footerLinkColor }} className="hover:opacity-80">Silicon & Artificial Systems</Link></li>
-            </ul>
+          {/* Column 2 */}
+          <div className="space-y-4">
+            {col2Items.length > 0 ? (
+              col2Items.map((item) => (
+                <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
+              ))
+            ) : (
+              <div>
+                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Key Desks</h4>
+                <ul className="text-xs space-y-2">
+                  <li><Link href="/category/news" style={{ color: footerLinkColor }} className="hover:opacity-80">National Wire</Link></li>
+                  <li><Link href="/category/business" style={{ color: footerLinkColor }} className="hover:opacity-80">Commercial Briefings</Link></li>
+                  <li><Link href="/category/technology" style={{ color: footerLinkColor }} className="hover:opacity-80">Silicon & Artificial Systems</Link></li>
+                </ul>
+              </div>
+            )}
           </div>
 
+          {/* Column 3 */}
           {cols >= 3 && (
-            <div>
-              <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Governance</h4>
-              <ul className="text-xs space-y-2">
-                <li><Link href="/editorial-standards" style={{ color: footerLinkColor }} className="hover:opacity-80">Verification Code</Link></li>
-                <li><Link href="/corrections" style={{ color: footerLinkColor }} className="hover:opacity-80">Corrections Protocol</Link></li>
-                <li><Link href="/privacy" style={{ color: footerLinkColor }} className="hover:opacity-80">Privacy Rights</Link></li>
-              </ul>
+            <div className="space-y-4">
+              {col3Items.length > 0 ? (
+                col3Items.map((item) => (
+                  <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
+                ))
+              ) : (
+                <div>
+                  <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Governance</h4>
+                  <ul className="text-xs space-y-2">
+                    <li><Link href="/editorial-standards" style={{ color: footerLinkColor }} className="hover:opacity-80">Verification Code</Link></li>
+                    <li><Link href="/corrections" style={{ color: footerLinkColor }} className="hover:opacity-80">Corrections Protocol</Link></li>
+                    <li><Link href="/privacy" style={{ color: footerLinkColor }} className="hover:opacity-80">Privacy Rights</Link></li>
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
+          {/* Column 4 */}
           {cols >= 4 && (
             <div>
               <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Broadcast Stream</h4>

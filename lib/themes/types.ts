@@ -61,6 +61,7 @@ export type ThemeMods = {
   footerHeadingColor?: string;
   footerLinkColor?: string;
   footerBorderColor?: string;
+  footerWidgetBg?: string;
   subFooterBg?: string;
   subFooterTextColor?: string;
 

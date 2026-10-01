@@ -1,9 +1,22 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveSettingsAction } from "../action";
+import { saveSettingsAction, sendTestEmailAction } from "../action";
 import type { SettingsMap } from "@/services/settings.service";
-import { Globe, Search, Share2, BarChart2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Globe,
+  Search,
+  Share2,
+  BarChart2,
+  Mail,
+  Send,
+  Eye,
+  EyeOff,
+  Lock,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 
 export function SettingsForm({
   initialSettings,
@@ -14,10 +27,16 @@ export function SettingsForm({
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
 }) {
-  const [activeTab, setActiveTab] = useState<"general" | "seo" | "social" | "analytics">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "seo" | "social" | "analytics" | "email">("general");
   const [settings, setSettings] = useState<SettingsMap>(initialSettings);
   const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // SMTP Test Email state
+  const [testEmail, setTestEmail] = useState("");
+  const [testEmailStatus, setTestEmailStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isSendingTest, startTestTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -28,6 +47,31 @@ export function SettingsForm({
       ...prev,
       [key]: prev[key] === checkedValue ? uncheckedValue : checkedValue,
     }));
+  };
+
+  const handleSendTestEmail = () => {
+    if (!testEmail || !testEmail.includes("@")) {
+      setTestEmailStatus({
+        type: "error",
+        message: dict["admin.settings.test_email_error"] || "Please enter a valid email address.",
+      });
+      return;
+    }
+    setTestEmailStatus(null);
+    startTestTransition(async () => {
+      const res = await sendTestEmailAction(testEmail);
+      if (res.success) {
+        setTestEmailStatus({
+          type: "success",
+          message: dict["admin.settings.test_email_success"] || res.message || "Test email dispatched successfully!",
+        });
+      } else {
+        setTestEmailStatus({
+          type: "error",
+          message: res.error || dict["admin.settings.test_email_error"] || "Failed to send test email.",
+        });
+      }
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -70,6 +114,11 @@ export function SettingsForm({
       id: "analytics" as const,
       label: dict["admin.settings.tab_analytics"] || "Analytics & Scripts",
       icon: BarChart2,
+    },
+    {
+      id: "email" as const,
+      label: dict["admin.settings.tab_email"] || "Email & Notifications",
+      icon: Mail,
     },
   ];
 
@@ -579,6 +628,434 @@ export function SettingsForm({
                     {dict["admin.settings.footer_scripts_desc"] || "Injected right before </body>. Useful for tracking pixels and analytics."}
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 5: EMAIL & NOTIFICATIONS                                             */}
+        {/* ========================================================================= */}
+        {activeTab === "email" && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-[16px] font-semibold text-[#1d2327]">
+                {dict["admin.settings.email_heading"] || "Email & SMTP Server"}
+              </h2>
+              <p className="text-[12px] text-[#646970]">
+                {dict["admin.settings.email_desc"] || "Configure outbound mail delivery (SMTP), admin alerts, and customize template wording."}
+              </p>
+            </div>
+
+            {/* Sub-Section 1: SMTP Server Configuration */}
+            <div className="border-t border-[#dcdcde] pt-6 space-y-6">
+              <h3 className="text-[14px] font-semibold text-[#1d2327]">
+                {dict["admin.settings.smtp_section"] || "SMTP Configuration"}
+              </h3>
+
+              {/* SMTP Host */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <label htmlFor="smtp_host" className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.smtp_host"] || "SMTP Host"}
+                </label>
+                <div>
+                  <input
+                    id="smtp_host"
+                    type="text"
+                    value={settings.smtp_host ?? ""}
+                    onChange={(e) => handleChange("smtp_host", e.target.value)}
+                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                    placeholder="smtp.mailgun.org / smtp.gmail.com"
+                  />
+                  <p className="mt-1 text-[11px] text-[#646970]">
+                    {dict["admin.settings.smtp_host_desc"] || "Hostname of your mail server."}
+                  </p>
+                </div>
+              </div>
+
+              {/* SMTP Port & Secure */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <label htmlFor="smtp_port" className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.smtp_port"] || "SMTP Port"}
+                </label>
+                <div className="flex flex-wrap items-center gap-4">
+                  <div>
+                    <input
+                      id="smtp_port"
+                      type="text"
+                      value={settings.smtp_port ?? "587"}
+                      onChange={(e) => handleChange("smtp_port", e.target.value)}
+                      className="h-[32px] w-28 rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="587"
+                    />
+                    <p className="mt-1 text-[11px] text-[#646970]">
+                      {dict["admin.settings.smtp_port_desc"] || "587 (TLS) or 465 (SSL)."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <select
+                      id="smtp_secure"
+                      value={settings.smtp_secure ?? "tls"}
+                      onChange={(e) => handleChange("smtp_secure", e.target.value)}
+                      className="h-[32px] rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                    >
+                      <option value="tls">{dict["admin.settings.smtp_secure_tls"] || "TLS / STARTTLS (Port 587)"}</option>
+                      <option value="ssl">{dict["admin.settings.smtp_secure_ssl"] || "SSL (Port 465)"}</option>
+                      <option value="none">{dict["admin.settings.smtp_secure_none"] || "None / Plaintext (Port 25)"}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SMTP User */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <label htmlFor="smtp_user" className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.smtp_user"] || "SMTP Username / API Key"}
+                </label>
+                <div>
+                  <input
+                    id="smtp_user"
+                    type="text"
+                    value={settings.smtp_user ?? ""}
+                    onChange={(e) => handleChange("smtp_user", e.target.value)}
+                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                    placeholder="postmaster@yourdomain.com"
+                  />
+                  <p className="mt-1 text-[11px] text-[#646970]">
+                    {dict["admin.settings.smtp_user_desc"] || "Username or API key for authenticating with the mail provider."}
+                  </p>
+                </div>
+              </div>
+
+              {/* SMTP Password (Encrypted) */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <label htmlFor="smtp_pass" className="text-[13px] font-semibold text-[#1d2327] flex items-center gap-1.5">
+                  <Lock className="size-3.5 text-[#00a32a]" />
+                  <span>{dict["admin.settings.smtp_pass"] || "SMTP Password / Secret"}</span>
+                </label>
+                <div>
+                  <div className="relative max-w-md">
+                    <input
+                      id="smtp_pass"
+                      type={showPassword ? "text" : "password"}
+                      value={settings.smtp_pass ?? ""}
+                      onChange={(e) => handleChange("smtp_pass", e.target.value)}
+                      className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 pe-9 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder={dict["admin.settings.smtp_pass_placeholder"] || "•••••••• (Encrypted in database)"}
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 end-0 flex items-center px-2.5 text-[#646970] hover:text-[#1d2327]"
+                    >
+                      {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] text-[#646970] flex items-center gap-1">
+                    <span className="text-[#00a32a] font-medium">✓ AES-256-GCM</span>
+                    <span>{dict["admin.settings.smtp_pass_desc"] || "Encrypted with AES-256-GCM in database before storage."}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* SMTP From Email */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <label htmlFor="smtp_from_email" className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.smtp_from_email"] || "From Email Address"}
+                </label>
+                <div>
+                  <input
+                    id="smtp_from_email"
+                    type="email"
+                    value={settings.smtp_from_email ?? ""}
+                    onChange={(e) => handleChange("smtp_from_email", e.target.value)}
+                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                    placeholder="news@yourdomain.com"
+                  />
+                  <p className="mt-1 text-[11px] text-[#646970]">
+                    {dict["admin.settings.smtp_from_email_desc"] || "Sender address that appears in outbound messages."}
+                  </p>
+                </div>
+              </div>
+
+              {/* SMTP From Name */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <label htmlFor="smtp_from_name" className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.smtp_from_name"] || "From Display Name"}
+                </label>
+                <div>
+                  <input
+                    id="smtp_from_name"
+                    type="text"
+                    value={settings.smtp_from_name ?? ""}
+                    onChange={(e) => handleChange("smtp_from_name", e.target.value)}
+                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                    placeholder="PressForge News"
+                  />
+                  <p className="mt-1 text-[11px] text-[#646970]">
+                    {dict["admin.settings.smtp_from_name_desc"] || "Sender name that appears in inboxes."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-Section 2: Notifications Configuration */}
+            <div className="border-t border-[#dcdcde] pt-6 space-y-6">
+              <h3 className="text-[14px] font-semibold text-[#1d2327]">
+                {dict["admin.settings.notifications_section"] || "Admin & Subscriber Notifications"}
+              </h3>
+
+              {/* Admin Notification Email */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <label htmlFor="admin_notification_email" className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.admin_notification_email"] || "Admin Notification Email"}
+                </label>
+                <div>
+                  <input
+                    id="admin_notification_email"
+                    type="email"
+                    value={settings.admin_notification_email ?? ""}
+                    onChange={(e) => handleChange("admin_notification_email", e.target.value)}
+                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                    placeholder="editor@yourdomain.com"
+                  />
+                  <p className="mt-1 text-[11px] text-[#646970]">
+                    {dict["admin.settings.admin_notification_email_desc"] || "Target inbox for administrative and publication alerts."}
+                  </p>
+                </div>
+              </div>
+
+              {/* Notification Toggles */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <span className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.notifications_section"] || "Automated Events"}
+                </span>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-[13px] text-[#2c3338] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.enable_new_post_notifications === "1"}
+                      onChange={() => handleCheckboxToggle("enable_new_post_notifications")}
+                      className="size-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                    />
+                    <span>{dict["admin.settings.enable_new_post_notifications"] || "Notify admin when a new post is published"}</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-[13px] text-[#2c3338] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.enable_newsletter_notifications === "1"}
+                      onChange={() => handleCheckboxToggle("enable_newsletter_notifications")}
+                      className="size-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                    />
+                    <span>{dict["admin.settings.enable_newsletter_notifications"] || "Send automated welcome email when users subscribe to newsletter"}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-Section 3: Email Templates Wording (Configurable in UI) */}
+            <div className="border-t border-[#dcdcde] pt-6 space-y-6">
+              <div>
+                <h3 className="text-[14px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.templates_section"] || "Email Templates Wording"}
+                </h3>
+                <p className="text-[12px] text-[#646970]">
+                  {dict["admin.settings.templates_section_desc"] || "Customize text, subjects, headings, and footer disclaimers for automated system emails without altering code."}
+                </p>
+              </div>
+
+              {/* Template 1: New Post Notification */}
+              <div className="rounded-[4px] border border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4">
+                <h4 className="text-[13px] font-bold text-[#1d2327]">
+                  {dict["admin.settings.tpl_new_post_heading"] || "New Post Alert Template"}
+                </h4>
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
+                  <label htmlFor="email_new_post_subject" className="text-[12px] font-medium text-[#1d2327]">
+                    {dict["admin.settings.tpl_new_post_subject"] || "Subject Line"}
+                  </label>
+                  <div>
+                    <input
+                      id="email_new_post_subject"
+                      type="text"
+                      value={settings.email_new_post_subject ?? ""}
+                      onChange={(e) => handleChange("email_new_post_subject", e.target.value)}
+                      className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="📰 New Story: {{postTitle}}"
+                    />
+                    <p className="mt-1 text-[11px] text-[#646970]">
+                      {dict["admin.settings.tpl_new_post_subject_desc"] || "Available variables: {{postTitle}}, {{siteName}}, {{authorName}}."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
+                  <label htmlFor="email_new_post_heading" className="text-[12px] font-medium text-[#1d2327]">
+                    {dict["admin.settings.tpl_new_post_title"] || "Email Main Heading"}
+                  </label>
+                  <div>
+                    <input
+                      id="email_new_post_heading"
+                      type="text"
+                      value={settings.email_new_post_heading ?? ""}
+                      onChange={(e) => handleChange("email_new_post_heading", e.target.value)}
+                      className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="New Article Published"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Template 2: Newsletter Welcome Email */}
+              <div className="rounded-[4px] border border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4">
+                <h4 className="text-[13px] font-bold text-[#1d2327]">
+                  {dict["admin.settings.tpl_welcome_heading"] || "Newsletter Welcome Template"}
+                </h4>
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
+                  <label htmlFor="email_welcome_subject" className="text-[12px] font-medium text-[#1d2327]">
+                    {dict["admin.settings.tpl_welcome_subject"] || "Subject Line"}
+                  </label>
+                  <div>
+                    <input
+                      id="email_welcome_subject"
+                      type="text"
+                      value={settings.email_welcome_subject ?? ""}
+                      onChange={(e) => handleChange("email_welcome_subject", e.target.value)}
+                      className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="🎉 Welcome to {{siteName}}"
+                    />
+                    <p className="mt-1 text-[11px] text-[#646970]">
+                      {dict["admin.settings.tpl_welcome_subject_desc"] || "Available variables: {{siteName}}, {{name}}."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
+                  <label htmlFor="email_welcome_heading" className="text-[12px] font-medium text-[#1d2327]">
+                    {dict["admin.settings.tpl_welcome_title"] || "Email Main Heading"}
+                  </label>
+                  <div>
+                    <input
+                      id="email_welcome_heading"
+                      type="text"
+                      value={settings.email_welcome_heading ?? ""}
+                      onChange={(e) => handleChange("email_welcome_heading", e.target.value)}
+                      className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="Welcome to Our Newsletter"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
+                  <label htmlFor="email_welcome_body" className="text-[12px] font-medium text-[#1d2327]">
+                    {dict["admin.settings.tpl_welcome_body"] || "Welcome Body Content"}
+                  </label>
+                  <div>
+                    <textarea
+                      id="email_welcome_body"
+                      rows={3}
+                      value={settings.email_welcome_body ?? ""}
+                      onChange={(e) => handleChange("email_welcome_body", e.target.value)}
+                      className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="Thank you for subscribing to our newsletter..."
+                    />
+                    <p className="mt-1 text-[11px] text-[#646970]">
+                      {dict["admin.settings.tpl_welcome_body_desc"] || "Main message presented to new newsletter subscribers."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Template 3: Global Footer Disclaimer */}
+              <div className="rounded-[4px] border border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4">
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
+                  <label htmlFor="email_footer_text" className="text-[12px] font-bold text-[#1d2327]">
+                    {dict["admin.settings.tpl_footer_text"] || "Email Footer Disclaimer"}
+                  </label>
+                  <div>
+                    <textarea
+                      id="email_footer_text"
+                      rows={2}
+                      value={settings.email_footer_text ?? ""}
+                      onChange={(e) => handleChange("email_footer_text", e.target.value)}
+                      className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="You received this email because you subscribed to updates."
+                    />
+                    <p className="mt-1 text-[11px] text-[#646970]">
+                      {dict["admin.settings.tpl_footer_text_desc"] || "Appears at the bottom of all system emails."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-Section 4: Live SMTP Connection Test */}
+            <div className="border-t border-[#dcdcde] pt-6 space-y-4">
+              <div>
+                <h3 className="text-[14px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.test_email_section"] || "Send Test Email"}
+                </h3>
+                <p className="text-[12px] text-[#646970]">
+                  {dict["admin.settings.test_email_desc"] || "Verify your SMTP credentials and delivery immediately."}
+                </p>
+              </div>
+
+              {testEmailStatus && (
+                <div
+                  className={`flex items-center justify-between rounded-[3px] border-s-4 p-3 text-[13px] ${
+                    testEmailStatus.type === "success"
+                      ? "border-[#00a32a] bg-[#f0f6fc] text-[#1d2327]"
+                      : "border-[#d63638] bg-[#fcf0f1] text-[#1d2327]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {testEmailStatus.type === "success" ? (
+                      <CheckCircle2 className="size-4 text-[#00a32a]" />
+                    ) : (
+                      <AlertCircle className="size-4 text-[#d63638]" />
+                    )}
+                    <span>{testEmailStatus.message}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTestEmailStatus(null)}
+                    className="text-[16px] leading-none text-[#787c82] hover:text-[#d63638]"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl">
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder={dict["admin.settings.test_email_address"] || "Recipient Email Address"}
+                  className="h-[32px] flex-1 rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  disabled={isSendingTest}
+                  onClick={handleSendTestEmail}
+                  className="inline-flex items-center justify-center gap-1.5 h-[32px] px-4 rounded-[3px] border border-[#2271b1] bg-[#2271b1] text-[13px] font-medium text-white shadow-sm hover:border-[#135e96] hover:bg-[#135e96] focus:outline-none disabled:opacity-50"
+                >
+                  {isSendingTest ? (
+                    <>
+                      <Loader2 className="size-3.5 animate-spin" />
+                      <span>{dict["admin.settings.test_email_sending"] || "Sending..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="size-3.5" />
+                      <span>{dict["admin.settings.test_email_send"] || "Send Test Email"}</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

@@ -31,13 +31,22 @@ export function ThemeSectionHeader({
 
   if (isClassic) {
     return (
-      <div className="border-b-4 border-double border-slate-900 dark:border-slate-300 pb-2 mb-6 flex items-baseline justify-between">
+      <div
+        style={{ borderColor: "var(--theme-border, #0f172a)" }}
+        className="border-b-4 border-double pb-2 mb-6 flex items-baseline justify-between transition-colors"
+      >
         <div>
-          <h2 className="text-2xl font-serif font-black uppercase tracking-tight text-slate-900 dark:text-white">
+          <h2
+            style={{ color: "var(--theme-heading, #0f172a)" }}
+            className="text-2xl font-serif font-black uppercase tracking-tight"
+          >
             {title}
           </h2>
           {subtitle && (
-            <p className="text-[11px] text-slate-500 uppercase tracking-widest font-mono mt-0.5">
+            <p
+              style={{ color: "var(--theme-muted, #64748b)" }}
+              className="text-[11px] uppercase tracking-widest font-mono mt-0.5"
+            >
               {subtitle}
             </p>
           )}
@@ -45,7 +54,7 @@ export function ThemeSectionHeader({
         {linkText && linkHref && (
           <Link
             href={linkHref}
-            style={{ color: theme.primaryColor }}
+            style={{ color: "var(--theme-primary, #2271b1)" }}
             className="text-xs font-serif font-bold uppercase tracking-wider hover:underline"
           >
             {linkText} →
@@ -57,17 +66,29 @@ export function ThemeSectionHeader({
 
   if (isMag) {
     return (
-      <div className="relative border-b border-slate-200 dark:border-slate-800 pb-3 mb-6 flex items-center justify-between">
+      <div
+        style={{ borderColor: "var(--theme-border, #e2e8f0)" }}
+        className="relative border-b pb-3 mb-6 flex items-center justify-between transition-colors"
+      >
         <div className="flex items-center gap-3">
           <span
-            style={{ backgroundColor: theme.primaryColor }}
+            style={{ backgroundColor: "var(--theme-primary, #2271b1)" }}
             className="w-2.5 h-6 rounded-sm block"
           />
-          <h2 className="text-xl sm:text-2xl font-sans font-black uppercase tracking-tight text-slate-900 dark:text-white">
+          <h2
+            style={{ color: "var(--theme-heading, #0f172a)" }}
+            className="text-xl sm:text-2xl font-sans font-black uppercase tracking-tight"
+          >
             {title}
           </h2>
           {subtitle && (
-            <span className="hidden sm:inline-block rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+            <span
+              style={{
+                backgroundColor: "var(--theme-badge-bg, #e11d48)",
+                color: "var(--theme-badge-text, #ffffff)",
+              }}
+              className="hidden sm:inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-xs"
+            >
               {subtitle}
             </span>
           )}
@@ -75,7 +96,7 @@ export function ThemeSectionHeader({
         {linkText && linkHref && (
           <Link
             href={linkHref}
-            style={{ color: theme.primaryColor }}
+            style={{ color: "var(--theme-primary, #2271b1)" }}
             className="text-xs font-bold uppercase tracking-wider hover:underline flex items-center gap-1"
           >
             {linkText} <ArrowRight className="size-3" />
@@ -87,18 +108,35 @@ export function ThemeSectionHeader({
 
   if (isDark) {
     return (
-      <div className="border-b border-slate-800 pb-2.5 mb-6 flex items-center justify-between font-mono">
+      <div
+        style={{ borderColor: "var(--theme-border, #1f2937)" }}
+        className="border-b pb-2.5 mb-6 flex items-center justify-between font-mono transition-colors"
+      >
         <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-          <h2 className="text-lg font-bold text-white tracking-wider uppercase">
+          <span
+            style={{ backgroundColor: "var(--theme-primary, #10b981)" }}
+            className="size-2 rounded-full animate-ping"
+          />
+          <h2
+            style={{ color: "var(--theme-heading, #f8fafc)" }}
+            className="text-lg font-bold tracking-wider uppercase"
+          >
             {title}
           </h2>
-          {subtitle && <span className="text-xs text-slate-500">[{subtitle}]</span>}
+          {subtitle && (
+            <span
+              style={{ color: "var(--theme-muted, #94a3b8)" }}
+              className="text-xs"
+            >
+              [{subtitle}]
+            </span>
+          )}
         </div>
         {linkText && linkHref && (
           <Link
             href={linkHref}
-            className="text-xs text-emerald-400 hover:underline uppercase tracking-wider"
+            style={{ color: "var(--theme-primary, #10b981)" }}
+            className="text-xs hover:underline uppercase tracking-wider"
           >
             {linkText} //
           </Link>
@@ -108,15 +146,32 @@ export function ThemeSectionHeader({
   }
 
   return (
-    <div className="border-b border-stone-300 pb-2 mb-6 flex items-baseline justify-between">
+    <div
+      style={{ borderColor: "var(--theme-border, #d6d3d1)" }}
+      className="border-b pb-2 mb-6 flex items-baseline justify-between transition-colors"
+    >
       <div>
-        <h2 className={`text-xl font-bold tracking-tight text-stone-900 ${isSerif ? "font-serif" : "font-sans"}`}>
+        <h2
+          style={{ color: "var(--theme-heading, #1c1917)" }}
+          className={`text-xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"}`}
+        >
           {title}
         </h2>
-        {subtitle && <p className="text-xs text-stone-500 mt-0.5">{subtitle}</p>}
+        {subtitle && (
+          <p
+            style={{ color: "var(--theme-muted, #78716c)" }}
+            className="text-xs mt-0.5"
+          >
+            {subtitle}
+          </p>
+        )}
       </div>
       {linkText && linkHref && (
-        <Link href={linkHref} className="text-xs font-serif italic text-stone-600 hover:underline">
+        <Link
+          href={linkHref}
+          style={{ color: "var(--theme-primary, #2271b1)" }}
+          className="text-xs font-serif italic hover:underline"
+        >
           {linkText} →
         </Link>
       )}

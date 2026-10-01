@@ -21,11 +21,17 @@ export function PageTemplate({
   theme = DEFAULT_THEME,
   sidebarWidgets = [],
   relatedPosts = [],
+  footerWidgets,
 }: {
   page: ContentItem;
   relatedPosts?: ContentItem[];
   sidebarWidgets?: WidgetItem[];
   theme?: FrontEndThemeContext;
+  footerWidgets?: {
+    col1?: WidgetItem[];
+    col2?: WidgetItem[];
+    col3?: WidgetItem[];
+  };
 }) {
   const isDark = isDarkTheme(theme);
   const isSerif = isSerifHeading(theme);
@@ -151,7 +157,7 @@ export function PageTemplate({
         </main>
       )}
 
-      <SiteFooter theme={theme} />
+      <SiteFooter theme={theme} footerWidgets={footerWidgets} />
     </div>
   );
 }

@@ -296,7 +296,7 @@ export function PluginTable({
                     <td className="px-3 py-3 align-top min-w-[200px]">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-sm text-[#1d2327]">
-                          {plugin.name}
+                          {dict[`admin.plugins.catalog.${plugin.slug}.name`] || plugin.name}
                         </span>
                         <PluginStatusBadge dict={dict} isActive={isActive} />
                       </div>
@@ -353,7 +353,7 @@ export function PluginTable({
 
                     <td className="px-3 py-3 align-top text-[#50575e]">
                       <p className="text-xs leading-relaxed text-[#2c3338] mb-1.5">
-                        {plugin.description}
+                        {dict[`admin.plugins.catalog.${plugin.slug}.desc`] || plugin.description}
                       </p>
 
                       <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#646970]">
@@ -370,10 +370,10 @@ export function PluginTable({
                               rel="noreferrer"
                               target="_blank"
                             >
-                              {plugin.author}
+                              {dict[`admin.plugins.catalog.${plugin.slug}.author`] || plugin.author}
                             </a>
                           ) : (
-                            plugin.author
+                            dict[`admin.plugins.catalog.${plugin.slug}.author`] || plugin.author
                           )}
                         </span>
                         {plugin.pluginUrl && (

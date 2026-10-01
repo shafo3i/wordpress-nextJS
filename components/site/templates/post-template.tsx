@@ -8,6 +8,8 @@ import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
 import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
+import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
+import type { WidgetItem } from "@/widgets/types";
 import { DEFAULT_THEME, formatDate, isDarkTheme, isSerifHeading } from "@/components/site/utils";
 
 /**
@@ -17,10 +19,18 @@ export function PostTemplate({
   article,
   relatedPosts,
   theme = DEFAULT_THEME,
+  sidebarWidgets = [],
+  footerWidgets,
 }: {
   article: ContentItem;
   relatedPosts: ContentItem[];
   theme?: FrontEndThemeContext;
+  sidebarWidgets?: WidgetItem[];
+  footerWidgets?: {
+    col1?: WidgetItem[];
+    col2?: WidgetItem[];
+    col3?: WidgetItem[];
+  };
 }) {
   const [copied, setCopied] = useState(false);
   const isDark = isDarkTheme(theme);
@@ -62,59 +72,76 @@ export function PostTemplate({
         : "theme-container mx-auto px-4 sm:px-6" // Wide: full container
       : "theme-container mx-auto px-4 sm:px-6"; // sidebar-right, sidebar-left, full-container
 
-  const renderSidebar = () => (
-    <aside className="space-y-6">
-      {/* Topics Widget */}
-      <div className="theme-widget rounded-2xl border p-5 shadow-sm">
-        <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
-          Topics & Categories
-        </h2>
-        <div className="flex flex-wrap gap-1.5">
-          {sidebarCategories.map((topic) => (
-            <Link
-              key={topic}
-              href={`/category/${topic.toLowerCase()}`}
-              className="theme-badge rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase transition-opacity hover:opacity-85"
-            >
-              {topic}
-            </Link>
+  const renderSidebar = () => {
+    if (sidebarWidgets && sidebarWidgets.length > 0) {
+      return (
+        <aside className="space-y-6">
+          {sidebarWidgets.map((item) => (
+            <SidebarWidgetRenderer
+              key={item.id}
+              item={item}
+              theme={theme}
+              posts={relatedPosts}
+            />
           ))}
-        </div>
-      </div>
+        </aside>
+      );
+    }
 
-      {/* Related Stories Widget */}
-      <div className="theme-widget rounded-2xl border p-5 shadow-sm">
-        <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
-          More from Newsroom
-        </h2>
-        <div className="space-y-3">
-          {relatedPosts.map((story) => (
-            <Link
-              key={story.id}
-              href={`/posts/${story.slug}`}
-              className="flex gap-2.5 rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
-            >
-              {story.imageUrl && (
-                <img
-                  src={story.imageUrl}
-                  alt={story.title}
-                  className="w-14 h-14 object-cover rounded flex-shrink-0"
-                />
-              )}
-              <div className="min-w-0">
-                <span className="text-[10px] font-semibold uppercase text-slate-400 block truncate">
-                  {story.categories[0] ?? "Dispatch"}
-                </span>
-                <h3 className="mt-0.5 text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[var(--theme-primary)] transition-colors">
-                  {story.title}
-                </h3>
-              </div>
-            </Link>
-          ))}
+    return (
+      <aside className="space-y-6">
+        {/* Topics Widget */}
+        <div className="theme-widget rounded-2xl border p-5 shadow-sm">
+          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
+            Topics & Categories
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {sidebarCategories.map((topic) => (
+              <Link
+                key={topic}
+                href={`/category/${topic.toLowerCase()}`}
+                className="theme-badge rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase transition-opacity hover:opacity-85"
+              >
+                {topic}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
-    </aside>
-  );
+
+        {/* Related Stories Widget */}
+        <div className="theme-widget rounded-2xl border p-5 shadow-sm">
+          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
+            More from Newsroom
+          </h2>
+          <div className="space-y-3">
+            {relatedPosts.map((story) => (
+              <Link
+                key={story.id}
+                href={`/posts/${story.slug}`}
+                className="flex gap-2.5 rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+              >
+                {story.imageUrl && (
+                  <img
+                    src={story.imageUrl}
+                    alt={story.title}
+                    className="w-14 h-14 object-cover rounded flex-shrink-0"
+                  />
+                )}
+                <div className="min-w-0">
+                  <span className="text-[10px] font-semibold uppercase text-slate-400 block truncate">
+                    {story.categories[0] ?? "Dispatch"}
+                  </span>
+                  <h3 className="mt-0.5 text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[var(--theme-primary)] transition-colors">
+                    {story.title}
+                  </h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </aside>
+    );
+  };
 
   return (
     <div
@@ -185,19 +212,26 @@ export function PostTemplate({
             {showShareButtons && (
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-medium mr-1 text-slate-400 hidden sm:inline">Share:</span>
-                <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${typeof window !== "undefined" ? encodeURIComponent(window.location.href) : ""}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.open(
+                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(window.location.href)}`,
+                        "_blank",
+                        "noopener,noreferrer"
+                      );
+                    }
+                  }}
+                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
                   title="Share on X (Twitter)"
                 >
                   <span className="text-xs font-bold px-0.5">𝕏</span>
-                </a>
+                </button>
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1"
+                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
                   title="Copy Link"
                 >
                   {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
@@ -270,7 +304,7 @@ export function PostTemplate({
         )}
       </main>
 
-      <SiteFooter theme={theme} />
+      <SiteFooter theme={theme} footerWidgets={footerWidgets} />
     </div>
   );
 }

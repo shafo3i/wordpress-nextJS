@@ -17,7 +17,7 @@ export default async function ThemeSettingsPage({
   const dict = langContext.dict;
   const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
-  const { allThemes, currentTheme, homepageSettings, categories } =
+  const { allThemes, currentTheme, homepageSettings, categories, availableWidgets } =
     await getThemeSettingsQuery(params.theme);
 
   return (
@@ -28,6 +28,7 @@ export default async function ThemeSettingsPage({
         allThemes={allThemes}
         initialSettings={homepageSettings}
         categories={categories}
+        availableWidgets={availableWidgets}
         dict={dict}
         direction={direction}
       />

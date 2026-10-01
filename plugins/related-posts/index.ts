@@ -1,23 +1,53 @@
 import { addFilter } from "@/lib/plugins/hooks";
+import { getPluginConfig } from "@/lib/plugins/config";
+import { getPublishedPosts } from "@/lib/site-content";
 
 export function init() {
-  addFilter("the_content", (content: string) => {
+  addFilter("the_content", async (content: string, context?: any) => {
     if (!content) return content;
 
+    const config = await getPluginConfig("related-posts");
+    const count = Number(config.count) || 3;
+    const currentSlug = context?.article?.slug;
+    const currentCategories: string[] = context?.article?.categories || [];
+
+    const allPosts = await getPublishedPosts(10);
+    const candidatePosts = allPosts.filter((p) => p.slug !== currentSlug);
+
+    // Prefer posts sharing at least one category
+    const categoryMatches = candidatePosts.filter((p) =>
+      p.categories?.some((c) => currentCategories.includes(c))
+    );
+    const relatedStories = (categoryMatches.length > 0 ? categoryMatches : candidatePosts).slice(
+      0,
+      count
+    );
+
+    if (relatedStories.length === 0) {
+      return content;
+    }
+
+    const cardsHtml = relatedStories
+      .map(
+        (story) => `
+    <a href="/posts/${story.slug}" class="block p-3 bg-white border border-slate-200 rounded-lg hover:border-[#2271b1] hover:shadow-sm transition-all group">
+      <span class="text-[10px] text-[#2271b1] font-bold uppercase tracking-wider block mb-1">${
+        story.categories?.[0] || "Analysis"
+      }</span>
+      <p class="font-bold text-slate-900 group-hover:text-[#2271b1] transition-colors line-clamp-2 leading-snug">${
+        story.title
+      }</p>
+    </a>`
+      )
+      .join("");
+
     const relatedBox = `
-<div class="wp-plugin-related-posts not-prose my-8 p-5 bg-slate-50 border border-slate-200 rounded-md">
+<div class="wp-plugin-related-posts not-prose my-8 p-5 bg-slate-50 border border-slate-200 rounded-xl">
   <h4 class="text-xs uppercase tracking-wider font-bold text-slate-500 mb-3 flex items-center gap-1.5">
-    <span>📌</span> Recommended Follow-ups
+    <span>📌</span> Recommended Follow-ups & Next Reads
   </h4>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-    <div class="p-2.5 bg-white border border-slate-200 rounded hover:border-[#2271b1] transition-colors">
-      <span class="text-[10px] text-[#2271b1] font-semibold">Special Report</span>
-      <p class="font-medium text-slate-800 mt-1">Infrastructure resilience and high-availability setups</p>
-    </div>
-    <div class="p-2.5 bg-white border border-slate-200 rounded hover:border-[#2271b1] transition-colors">
-      <span class="text-[10px] text-[#2271b1] font-semibold">Analysis</span>
-      <p class="font-medium text-slate-800 mt-1">Global market trends and quarterly editorial retrospective</p>
-    </div>
+    ${cardsHtml}
   </div>
 </div>`;
 

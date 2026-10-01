@@ -5,6 +5,7 @@ import { getPublishedPostBySlug, getPublishedPosts } from "@/lib/site-content";
 import { getFrontEndThemeContext } from "@/lib/site-theme";
 import { initActivePlugins } from "@/lib/plugins/loader";
 import { applyFilters } from "@/lib/plugins/hooks";
+import { getAllWidgetAreas } from "@/lib/widgets/db";
 
 export const dynamic = "force-dynamic";
 
@@ -44,10 +45,11 @@ export async function generateMetadata({
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const [article, theme, relatedPosts] = await Promise.all([
+  const [article, theme, relatedPosts, widgetAreas] = await Promise.all([
     getPublishedPostBySlug(slug),
     getFrontEndThemeContext(),
     getPublishedPosts(4),
+    getAllWidgetAreas(),
   ]);
 
   if (!article) {
@@ -60,11 +62,20 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   // Apply the_content filters registered by active plugins (e.g. reading time, newsletter)
   const filteredContent = await applyFilters("the_content", article.content, { article });
 
+  const sidebarWidgets = widgetAreas.find((a) => a.id === "sidebar_primary")?.items || [];
+  const footerWidgets = {
+    col1: widgetAreas.find((a) => a.id === "footer_1")?.items || [],
+    col2: widgetAreas.find((a) => a.id === "footer_2")?.items || [],
+    col3: widgetAreas.find((a) => a.id === "footer_3")?.items || [],
+  };
+
   return (
     <PostTemplate
       article={{ ...article, content: filteredContent }}
       relatedPosts={relatedPosts.filter((post) => post.slug !== slug)}
       theme={theme}
+      sidebarWidgets={sidebarWidgets}
+      footerWidgets={footerWidgets}
     />
   );
 }

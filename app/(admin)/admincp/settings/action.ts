@@ -34,3 +34,22 @@ export async function saveSettingsAction(
     };
   }
 }
+
+export async function sendTestEmailAction(
+  targetEmail: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    await verifyAdminOrEditor();
+    if (!targetEmail || !targetEmail.includes("@")) {
+      return { success: false, error: "Please enter a valid email address." };
+    }
+    const { sendTestEmail } = await import("@/lib/email");
+    const res = await sendTestEmail(targetEmail);
+    if (!res.success) {
+      return { success: false, error: res.error || "Failed to dispatch test email." };
+    }
+    return { success: true, message: "Test email dispatched successfully! Check your inbox." };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Failed to send test email." };
+  }
+}

@@ -32,29 +32,6 @@ interface WidgetsManagerShellProps {
   direction?: "rtl" | "ltr";
 }
 
-const DEFAULT_ITEM_TITLE_ARABIC: Record<string, string> = {
-  "About Signal News": "عن سيجنال نيوز",
-  "Search News": "البحث في الأخبار",
-  "Search Articles": "البحث في المقالات",
-  "Recent Stories": "أحدث القصص",
-  "Recent Posts": "أحدث المقالات",
-  "Morning Dispatch": "الموجز الصباحي",
-  "Morning Dispatch Newsletter": "نشرة الموجز الصباحي",
-  "Explore Topics": "استكشاف الموضوعات",
-  "Categories": "التصنيفات",
-  "About the Newsroom": "نبذة عن غرفة الأخبار",
-  "Newsroom Daily Audio": "صوتيات غرفة الأخبار اليومية",
-  "Daily Audio Stream": "البث الصوتي اليومي",
-  "Quick Sections": "أقسام سريعة",
-  "Claim Verification": "التحقق من الادعاءات",
-  "Verified Claim Check": "فحص الادعاءات الموثقة",
-  "Urgent News Flash": "خبر عاجل",
-  "Follow Our Newsroom": "تابع غرفة أخبارنا",
-  "Monetized Partner Banner": "بانر إعلاني للشركاء",
-  "Reading Time Indicator": "مؤشر وقت القراءة",
-  "Recommended Follow-ups": "متابعات مقترحة",
-};
-
 export function WidgetsManagerShell({
   initialAreas,
   availableWidgets,
@@ -89,32 +66,19 @@ export function WidgetsManagerShell({
   };
 
   const getItemDisplayTitle = (item: WidgetItem) => {
-    if (direction === "rtl" && DEFAULT_ITEM_TITLE_ARABIC[item.title]) {
-      return DEFAULT_ITEM_TITLE_ARABIC[item.title];
+    const localized = dict?.[`admin.widgets.descriptor.${item.type}.name`];
+    if (!item.title || item.title === item.type) {
+      return localized || item.type;
     }
-    return item.title;
+    const available = availableWidgets.find((w) => w.type === item.type);
+    if (available && (item.title === available.name || item.title === available.type)) {
+      return localized || available.name;
+    }
+    return localized || item.title;
   };
 
   const getWidgetTypeBadge = (type: string) => {
-    if (direction === "rtl") {
-      switch (type) {
-        case "search": return "بحث";
-        case "recent_posts": return "أحدث المقالات";
-        case "categories": return "تصنيفات";
-        case "author_bio": return "نبذة الكاتب";
-        case "custom_html": return "HTML مخصص";
-        case "plugin_reading_time": return "وقت القراءة";
-        case "plugin_related_posts": return "مقالات ذات صلة";
-        case "plugin_newsletter": return "نشرة بريدية";
-        case "plugin_audio": return "بث صوتي";
-        case "plugin_breaking": return "عاجل";
-        case "plugin_social": return "تواصل";
-        case "plugin_factcheck": return "تدقيق حقائق";
-        case "plugin_ad": return "إعلان";
-        default: return type;
-      }
-    }
-    return type;
+    return dict?.[`admin.widgets.descriptor.${type}.name`] || type;
   };
 
   const currentArea = areas.find((a) => a.id === openAreaId) || areas[0];
@@ -159,10 +123,7 @@ export function WidgetsManagerShell({
     // Case 1: Dropping new widget from palette into area
     if (draggedPaletteWidget) {
       const newWidget = createDefaultWidgetItem(draggedPaletteWidget);
-      // Localize default title if in Arabic
-      if (direction === "rtl" && DEFAULT_ITEM_TITLE_ARABIC[newWidget.title]) {
-        newWidget.title = DEFAULT_ITEM_TITLE_ARABIC[newWidget.title];
-      }
+      newWidget.title = ""; // Keep empty for dynamic dict localization
 
       setAreas((curr) =>
         curr.map((area) => {
@@ -243,9 +204,7 @@ export function WidgetsManagerShell({
   const addWidget = (desc: AvailableWidgetDescriptor) => {
     if (!currentArea) return;
     const newWidget = createDefaultWidgetItem(desc);
-    if (direction === "rtl" && DEFAULT_ITEM_TITLE_ARABIC[newWidget.title]) {
-      newWidget.title = DEFAULT_ITEM_TITLE_ARABIC[newWidget.title];
-    }
+    newWidget.title = "";
     const updatedItems = [...currentArea.items, newWidget];
     setAreas((curr) =>
       curr.map((a) => (a.id === currentArea.id ? { ...a, items: updatedItems } : a))
@@ -322,11 +281,10 @@ export function WidgetsManagerShell({
       {/* Inline Feedback Banner (Clean WP notice replacing browser alert) */}
       {feedback && (
         <div
-          className={`flex items-center justify-between border-s-4 bg-white p-3 text-[13px] shadow-[0_1px_1px_rgba(0,0,0,0.04)] ${
-            feedback.type === "error"
-              ? "border-[#d63638] text-[#d63638]"
-              : "border-[#00a32a] text-[#1d2327]"
-          }`}
+          className={`flex items-center justify-between border-s-4 bg-white p-3 text-[13px] shadow-[0_1px_1px_rgba(0,0,0,0.04)] ${feedback.type === "error"
+            ? "border-[#d63638] text-[#d63638]"
+            : "border-[#00a32a] text-[#1d2327]"
+            }`}
         >
           <span>
             {feedback.type === "error" ? "⚠ " : "✓ "}
@@ -461,19 +419,17 @@ export function WidgetsManagerShell({
                   }
                 }}
                 onDrop={(e) => handleDropOnArea(e, area.id)}
-                className={`rounded-[3px] border bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] overflow-hidden transition-all ${
-                  isAreaDragOver
-                    ? "border-[#2271b1] ring-2 ring-[#2271b1]/30"
-                    : "border-[#c3c4c7]"
-                }`}
+                className={`rounded-[3px] border bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] overflow-hidden transition-all ${isAreaDragOver
+                  ? "border-[#2271b1] ring-2 ring-[#2271b1]/30"
+                  : "border-[#c3c4c7]"
+                  }`}
               >
                 {/* Area Header Bar */}
                 <button
                   type="button"
                   onClick={() => setOpenAreaId(isOpen ? "" : area.id)}
-                  className={`flex w-full items-center justify-between border-b border-[#c3c4c7] px-4 py-3 text-start font-semibold text-[#2c3338] transition-colors ${
-                    isOpen ? "bg-[#f0f0f1]" : "bg-[#f6f7f7] hover:bg-[#f0f0f1]"
-                  }`}
+                  className={`flex w-full items-center justify-between border-b border-[#c3c4c7] px-4 py-3 text-start font-semibold text-[#2c3338] transition-colors ${isOpen ? "bg-[#f0f0f1]" : "bg-[#f6f7f7] hover:bg-[#f0f0f1]"
+                    }`}
                 >
                   <div className="flex items-center flex-wrap gap-2">
                     <span className="text-sm text-[#1d2327]">{areaTitle}</span>
@@ -522,15 +478,14 @@ export function WidgetsManagerShell({
                               onDragOver={(e) => handleDragOverItem(e, area.id, index)}
                               onDrop={(e) => handleDropOnArea(e, area.id, index)}
                               onDragEnd={handleDragEnd}
-                              className={`rounded-[3px] border transition-all ${
-                                isDragging
-                                  ? "opacity-30 border-dashed border-[#2271b1] bg-blue-50"
-                                  : isDragOver
+                              className={`rounded-[3px] border transition-all ${isDragging
+                                ? "opacity-30 border-dashed border-[#2271b1] bg-blue-50"
+                                : isDragOver
                                   ? "border-t-4 border-t-[#2271b1] border-[#c3c4c7] bg-[#f0f6fc]"
                                   : isPlugin
-                                  ? "border-purple-300 bg-purple-50/20 hover:border-purple-400"
-                                  : "border-[#c3c4c7] bg-[#f6f7f7] hover:border-[#8c8f94]"
-                              }`}
+                                    ? "border-purple-300 bg-purple-50/20 hover:border-purple-400"
+                                    : "border-[#c3c4c7] bg-[#f6f7f7] hover:border-[#8c8f94]"
+                                }`}
                             >
                               <div className="flex items-center justify-between px-3 py-2">
                                 <div className="flex items-center gap-2">
@@ -671,11 +626,10 @@ export function WidgetsManagerShell({
                               setDragOverItemIndex(area.items.length);
                             }}
                             onDrop={(e) => handleDropOnArea(e, area.id, area.items.length)}
-                            className={`p-3 rounded border-2 border-dashed text-center text-xs transition-colors ${
-                              dragOverAreaId === area.id && dragOverItemIndex === area.items.length
-                                ? "border-[#2271b1] bg-[#f0f6fc] text-[#2271b1] font-semibold"
-                                : "border-slate-300 bg-slate-50/80 text-slate-500"
-                            }`}
+                            className={`p-3 rounded border-2 border-dashed text-center text-xs transition-colors ${dragOverAreaId === area.id && dragOverItemIndex === area.items.length
+                              ? "border-[#2271b1] bg-[#f0f6fc] text-[#2271b1] font-semibold"
+                              : "border-slate-300 bg-slate-50/80 text-slate-500"
+                              }`}
                           >
                             + {direction === "rtl"
                               ? `أفلت هنا للوضع في أسفل ${areaTitle}`
@@ -687,16 +641,15 @@ export function WidgetsManagerShell({
                       <div
                         onDragOver={(e) => handleDragOverArea(e, area.id)}
                         onDrop={(e) => handleDropOnArea(e, area.id)}
-                        className={`border-2 border-dashed p-6 text-center transition-colors ${
-                          dragOverAreaId === area.id
-                            ? "border-[#2271b1] bg-[#f0f6fc] text-[#2271b1] font-medium"
-                            : "border-[#c3c4c7] text-[#646970] bg-slate-50/50"
-                        }`}
+                        className={`border-2 border-dashed p-6 text-center transition-colors ${dragOverAreaId === area.id
+                          ? "border-[#2271b1] bg-[#f0f6fc] text-[#2271b1] font-medium"
+                          : "border-[#c3c4c7] text-[#646970] bg-slate-50/50"
+                          }`}
                       >
                         {draggedPaletteWidget || draggedSource
                           ? (direction === "rtl" ? `أفلت الودجت هنا لإضافته إلى ${areaTitle}` : `Drop widget here to add to ${areaTitle}`)
                           : dict?.["admin.widgets.no_widgets_in_area"] ||
-                            "No widgets in this area yet. Drag any widget from the left or click to add."}
+                          "No widgets in this area yet. Drag any widget from the left or click to add."}
                       </div>
                     )}
 

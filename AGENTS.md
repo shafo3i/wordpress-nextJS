@@ -10,6 +10,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Work on **ONE thing at a time**. Do not anticipate, expand scope, or proactively change other pages/modules (e.g. NEVER touch Posts, Themes, Frontend, or any other area when asked to fix Comments).
 - Only make changes strictly and directly requested. Always stop and wait for explicit confirmation from the user before touching anything else.
 
+# Zero Hardcoded Values & Dynamic Localization Policy (CRITICAL MANDATORY RULE)
+
+- **NEVER EVER hardcode anything**: Never hardcode Arabic or English strings, labels, titles, defaults, mock data, inline dictionaries, lookup sets, or switch-cases inside TSX/TS components.
+- **NEVER invent anything**: Do not invent new styles, arbitrary wrapper files, or ad-hoc translation maps. Strictly use the established repository architecture.
+- **Always use the Database / Dynamic Translation System**:
+  - Every UI string, block name, widget descriptor, button label, badge, and placeholder **MUST** be dynamically resolved from the active `dict` context (loaded from `translationsTable` in DB and `templates/language/*.json` via `getAdminLanguageContext()`).
+  - Form inputs must strictly follow the dynamic pattern:
+    ```tsx
+    value={entity.title || ""}
+    placeholder={dict?.[`key`] || fallback}
+    ```
+  - When saving or creating new blocks, sections, or widgets, **never bake static language strings into default titles**—keep default titles empty (`title: ""`) so they automatically and seamlessly reflect the user's active language at render time.
+- **Immediate Cleanup Mandate**: If you encounter ANY hardcoded string, dictionary, or static label in the codebase, you must remove it immediately and route it through the proper dynamic translation dictionary.
+
 # PressForge Admin CRUD Architecture & UI Standards (MANDATORY)
 
 For **all** administrative modules under `app/(admin)/admincp/`, you **MUST** strictly follow the structure and standards defined in `docs/ADMIN_CRUD_STANDARDS.md` (based on the `comments` module):

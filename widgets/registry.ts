@@ -68,11 +68,78 @@ export const REGISTERED_WIDGETS: Record<string, WidgetModule> = {
   plugin_related_posts: { ...relatedPostsModule, manifest: relatedPostsManifest as any },
 };
 
+const WIDGET_ALIASES: Record<string, string> = {
+  newsletter: "plugin_newsletter",
+  "plugin_newsletter": "plugin_newsletter",
+  article_audio: "plugin_audio",
+  "article-audio": "plugin_audio",
+  audio: "plugin_audio",
+  "plugin_audio": "plugin_audio",
+  breaking_news: "plugin_breaking",
+  "breaking-news": "plugin_breaking",
+  breaking: "plugin_breaking",
+  "plugin_breaking": "plugin_breaking",
+  social_share: "plugin_social",
+  "social-share": "plugin_social",
+  social: "plugin_social",
+  "plugin_social": "plugin_social",
+  reading_time: "plugin_reading_time",
+  "reading-time": "plugin_reading_time",
+  "plugin_reading_time": "plugin_reading_time",
+  related_posts: "plugin_related_posts",
+  "related-posts": "plugin_related_posts",
+  "plugin_related_posts": "plugin_related_posts",
+  ad: "plugin_ad",
+  ad_manager: "plugin_ad",
+  "ad-manager": "plugin_ad",
+  "plugin_ad": "plugin_ad",
+  factcheck: "plugin_factcheck",
+  fact_check: "plugin_factcheck",
+  "fact-check": "plugin_factcheck",
+  "plugin_factcheck": "plugin_factcheck",
+  recent_posts: "recent_posts",
+  "recent-posts": "recent_posts",
+  author_bio: "author_bio",
+  "author-bio": "author_bio",
+  custom_html: "custom_html",
+  "custom-html": "custom_html",
+};
+
 /**
  * Get a widget module by its unique identifier / type
  */
 export function getWidget(id: string): WidgetModule | undefined {
-  return REGISTERED_WIDGETS[id];
+  if (!id) return undefined;
+  
+  // 1. Direct key match
+  if (REGISTERED_WIDGETS[id]) return REGISTERED_WIDGETS[id];
+  
+  // 2. Normalized underscore match
+  const normalized = id.replace(/-/g, "_");
+  if (REGISTERED_WIDGETS[normalized]) return REGISTERED_WIDGETS[normalized];
+  
+  // 3. Alias dictionary check
+  const alias = WIDGET_ALIASES[id] || WIDGET_ALIASES[normalized];
+  if (alias && REGISTERED_WIDGETS[alias]) return REGISTERED_WIDGETS[alias];
+  
+  // 4. "plugin_" prefix checks
+  if (REGISTERED_WIDGETS[`plugin_${id}`]) return REGISTERED_WIDGETS[`plugin_${id}`];
+  if (REGISTERED_WIDGETS[`plugin_${normalized}`]) return REGISTERED_WIDGETS[`plugin_${normalized}`];
+  
+  // 5. Look up by pluginSlug or manifest.id
+  const bySlug = Object.values(REGISTERED_WIDGETS).find((w) => {
+    const m = w.manifest;
+    return (
+      m.id === id ||
+      m.id === normalized ||
+      m.pluginSlug === id ||
+      m.pluginSlug === normalized ||
+      m.pluginSlug === id.replace(/_/g, "-")
+    );
+  });
+  if (bySlug) return bySlug;
+
+  return undefined;
 }
 
 /**

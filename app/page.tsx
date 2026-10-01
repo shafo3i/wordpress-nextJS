@@ -16,6 +16,11 @@ export default async function Page() {
 
   const primarySidebar = widgetAreas.find((a) => a.id === "sidebar_primary")?.items || [];
   const secondarySidebar = widgetAreas.find((a) => a.id === "sidebar_secondary")?.items || [];
+  const footerWidgets = {
+    col1: widgetAreas.find((a) => a.id === "footer_1")?.items || [],
+    col2: widgetAreas.find((a) => a.id === "footer_2")?.items || [],
+    col3: widgetAreas.find((a) => a.id === "footer_3")?.items || [],
+  };
 
   return (
     <NewsHome
@@ -24,6 +29,7 @@ export default async function Page() {
       settings={settings}
       primarySidebar={primarySidebar}
       secondarySidebar={secondarySidebar}
+      footerWidgets={footerWidgets}
     />
   );
 }

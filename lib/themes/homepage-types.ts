@@ -47,10 +47,115 @@ export type HomepageBlock = {
   showCategory?: boolean;
 };
 
+export type ColumnWidth = "12/12" | "6/12" | "8/12" | "4/12" | "3/12";
+
+export type RowPreset = "1/1" | "1/2_1/2" | "2/3_1/3" | "1/3_2/3" | "1/3_1/3_1/3" | "1/4_1/2_1/4";
+
+export type BuilderItem =
+  | { id: string; type: "block"; block: HomepageBlock }
+  | { id: string; type: "widget"; widgetId: string; title?: string; config?: Record<string, any> };
+
+export interface PageBuilderColumn {
+  id: string;
+  width: ColumnWidth;
+  items: BuilderItem[];
+}
+
+export interface PageBuilderRow {
+  id: string;
+  preset: RowPreset;
+  columns: PageBuilderColumn[];
+}
+
+export interface PageBuilderSection {
+  id: string;
+  title?: string;
+  container: "boxed" | "full";
+  paddingY: "none" | "sm" | "md" | "lg";
+  backgroundColor?: string;
+  rows: PageBuilderRow[];
+}
+
 export type HomepageSettings = {
   layout: HomepageLayout;
   blocks: HomepageBlock[];
+  sections?: PageBuilderSection[];
 };
+
+export function getColumnSpanClass(width: ColumnWidth): string {
+  switch (width) {
+    case "12/12":
+      return "col-span-12";
+    case "8/12":
+      return "col-span-12 lg:col-span-8";
+    case "6/12":
+      return "col-span-12 md:col-span-6";
+    case "4/12":
+      return "col-span-12 md:col-span-4";
+    case "3/12":
+      return "col-span-12 sm:col-span-6 lg:col-span-3";
+    default:
+      return "col-span-12";
+  }
+}
+
+export function normalizeHomepageSettings(settings: HomepageSettings): {
+  layout: HomepageLayout;
+  blocks: HomepageBlock[];
+  sections: PageBuilderSection[];
+} {
+  if (settings.sections && settings.sections.length > 0) {
+    return {
+      layout: settings.layout,
+      blocks: settings.blocks || [],
+      sections: settings.sections,
+    };
+  }
+
+  // Convert legacy flat blocks into single-column rows inside a default section
+  const rows: PageBuilderRow[] = (settings.blocks || []).map((block) => ({
+    id: `row-${block.id}`,
+    preset: "1/1",
+    columns: [
+      {
+        id: `col-${block.id}`,
+        width: "12/12",
+        items: [{ id: `item-${block.id}`, type: "block", block }],
+      },
+    ],
+  }));
+
+  const defaultSection: PageBuilderSection = {
+    id: "sec-default",
+    title: "",
+    container: "boxed",
+    paddingY: "md",
+    rows,
+  };
+
+  return {
+    layout: settings.layout,
+    blocks: settings.blocks || [],
+    sections: rows.length > 0 ? [defaultSection] : [],
+  };
+}
+
+export function flattenSectionsToBlocks(sections: PageBuilderSection[]): HomepageBlock[] {
+  const blocks: HomepageBlock[] = [];
+  let order = 1;
+  for (const sec of sections) {
+    for (const row of sec.rows) {
+      for (const col of row.columns) {
+        for (const item of col.items) {
+          if (item.type === "block" && item.block) {
+            blocks.push({ ...item.block, order: order++ });
+          }
+        }
+      }
+    }
+  }
+  return blocks;
+}
 
 // Signature defaults per theme
 export const THEME_DEFAULT_SETTINGS: Record<string, HomepageSettings> = {

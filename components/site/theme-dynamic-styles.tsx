@@ -93,6 +93,7 @@ export function ThemeDynamicStyles({ mods }: { mods: ThemeMods }) {
       --theme-footer-heading: ${mods.footerHeadingColor || '#ffffff'};
       --theme-footer-text: ${mods.footerTextColor || '#94a3b8'};
       --theme-footer-link: ${mods.footerLinkColor || '#cbd5e1'};
+      --theme-footer-widget-bg: ${mods.footerWidgetBg || 'transparent'};
       --theme-footer-border: ${mods.footerBorderColor || border};
       --theme-subfooter-bg: ${mods.subFooterBg || (mods.footerBg || (mods.darkMode ? '#030712' : '#0f172a'))};
       --theme-subfooter-text: ${mods.subFooterTextColor || (mods.footerTextColor || '#94a3b8')};
@@ -133,6 +134,47 @@ export function ThemeDynamicStyles({ mods }: { mods: ThemeMods }) {
     }
     .theme-widget a, [data-theme-widget] a {
       color: var(--theme-widget-link);
+    }
+
+    /* Footer Widget Contextual Inheritance */
+    footer .theme-widget,
+    [data-footer-widgets] .theme-widget {
+      background-color: var(--theme-footer-widget-bg, transparent) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      color: var(--theme-footer-text, #94a3b8) !important;
+      box-shadow: none !important;
+    }
+    footer .theme-widget .theme-widget-title,
+    [data-footer-widgets] .theme-widget-title {
+      color: var(--theme-footer-heading, #ffffff) !important;
+    }
+    footer .theme-widget h1,
+    footer .theme-widget h2,
+    footer .theme-widget h3,
+    footer .theme-widget h4,
+    footer .theme-widget h5,
+    footer .theme-widget h6 {
+      color: var(--theme-footer-heading, #ffffff) !important;
+    }
+    footer .theme-widget a,
+    [data-footer-widgets] .theme-widget a {
+      color: var(--theme-footer-link, #cbd5e1) !important;
+    }
+    footer .theme-widget p,
+    footer .theme-widget span,
+    footer .theme-widget li {
+      color: var(--theme-footer-text, #94a3b8);
+    }
+    footer .theme-widget input,
+    footer .theme-widget select,
+    footer .theme-widget textarea {
+      background-color: rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(255, 255, 255, 0.18) !important;
+      color: #ffffff !important;
+    }
+    footer .theme-widget input::placeholder,
+    footer .theme-widget textarea::placeholder {
+      color: rgba(255, 255, 255, 0.45) !important;
     }
 
     /* Granular Badge Styling */
