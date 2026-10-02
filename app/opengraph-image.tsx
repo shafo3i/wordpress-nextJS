@@ -13,6 +13,8 @@ export const contentType = "image/png";
 export default async function Image() {
   let siteName = "PressForge News";
   let tagline = "Independent News, Investigative Reporting & Editorial Excellence";
+  let ogDefaultImage = "";
+  let ogSiteName = "";
 
   try {
     const rows = await db
@@ -21,16 +23,58 @@ export default async function Image() {
         value: wpOptions.optionValue,
       })
       .from(wpOptions)
-      .where(sql`${wpOptions.optionName} IN ('blogname', 'blogdescription')`);
+      .where(
+        sql`${wpOptions.optionName} IN ('blogname', 'blogdescription', 'og_default_image', 'og_site_name')`
+      );
 
     for (const r of rows) {
       if (r.name === "blogname" && r.value) siteName = r.value;
       if (r.name === "blogdescription" && r.value) tagline = r.value;
+      if (r.name === "og_default_image" && r.value) ogDefaultImage = r.value;
+      if (r.name === "og_site_name" && r.value) ogSiteName = r.value;
     }
   } catch {
     // fallback
   }
 
+  const effectiveSiteName = ogSiteName || siteName;
+
+  // If a custom default OG image has been uploaded or configured in Settings, render it
+  if (ogDefaultImage && ogDefaultImage.trim().length > 0) {
+    const fullImageUrl = ogDefaultImage.startsWith("http")
+      ? ogDefaultImage
+      : `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}${ogDefaultImage}`;
+
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            position: "relative",
+            backgroundColor: "#0f172a",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={fullImageUrl}
+            alt={effectiveSiteName}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      ),
+      {
+        ...size,
+      }
+    );
+  }
+
+  // Fallback to editorial dynamic card
   return new ImageResponse(
     (
       <div
@@ -86,7 +130,7 @@ export default async function Image() {
               fontWeight: 800,
             }}
           >
-            P
+            {effectiveSiteName.charAt(0).toUpperCase()}
           </div>
           <div
             style={{
@@ -97,7 +141,7 @@ export default async function Image() {
               color: "#94a3b8",
             }}
           >
-            {siteName}
+            {effectiveSiteName}
           </div>
         </div>
 
@@ -120,7 +164,7 @@ export default async function Image() {
               color: "#ffffff",
             }}
           >
-            {siteName}
+            {effectiveSiteName}
           </div>
           <div
             style={{
@@ -134,7 +178,7 @@ export default async function Image() {
           </div>
         </div>
 
-        {/* Footer footer info */}
+        {/* Footer info */}
         <div
           style={{
             display: "flex",
@@ -161,7 +205,7 @@ export default async function Image() {
               fontWeight: 600,
             }}
           >
-            pressforge.news
+            {effectiveSiteName.toLowerCase().replace(/[^a-z0-9]+/g, "")}.local
           </div>
         </div>
       </div>

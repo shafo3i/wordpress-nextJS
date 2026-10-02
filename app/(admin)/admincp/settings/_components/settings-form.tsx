@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { saveSettingsAction, sendTestEmailAction } from "../action";
 import type { SettingsMap } from "@/services/settings.service";
+import { MediaSelectModal } from "@/components/admin/media-select-modal";
 import {
   Globe,
   Search,
@@ -16,6 +17,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Image as ImageIcon,
+  Trash2,
+  Upload,
 } from "lucide-react";
 
 export function SettingsForm({
@@ -37,6 +41,7 @@ export function SettingsForm({
   const [testEmailStatus, setTestEmailStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isSendingTest, startTestTransition] = useTransition();
   const [showPassword, setShowPassword] = useState(false);
+  const [isOgMediaModalOpen, setIsOgMediaModalOpen] = useState(false);
 
   const handleChange = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -262,6 +267,36 @@ export function SettingsForm({
                 </div>
               </div>
 
+              {/* Membership / Registration */}
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
+                <span className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.membership"] || "Membership"}
+                </span>
+                <div>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.users_can_register !== "0" && settings.disableSignUp !== "true"}
+                      onChange={(e) => {
+                        const canRegister = e.target.checked;
+                        setSettings((prev) => ({
+                          ...prev,
+                          users_can_register: canRegister ? "1" : "0",
+                          disableSignUp: canRegister ? "false" : "true",
+                        }));
+                      }}
+                      className="mt-0.5 size-4 rounded-[2px] border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                    />
+                    <span className="text-[13px] text-[#2c3338]">
+                      {dict["admin.settings.users_can_register"] || "Anyone can register"}
+                    </span>
+                  </label>
+                  <p className="mt-1 text-[11px] text-[#646970]">
+                    {dict["admin.settings.users_can_register_desc"] || "Allow visitors to register new accounts. If unchecked, new user registrations are blocked."}
+                  </p>
+                </div>
+              </div>
+
               {/* Timezone */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
                 <label htmlFor="timezone_string" className="text-[13px] font-semibold text-[#1d2327]">
@@ -430,21 +465,65 @@ export function SettingsForm({
             <div className="space-y-4">
               {/* Default OG Image */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="og_default_image" className="text-[13px] font-semibold text-[#1d2327]">
+                <label className="text-[13px] font-semibold text-[#1d2327]">
                   {dict["admin.settings.og_image"] || "Default Share Image (OG)"}
                 </label>
-                <div>
-                  <input
-                    id="og_default_image"
-                    type="text"
-                    value={settings.og_default_image ?? ""}
-                    onChange={(e) => handleChange("og_default_image", e.target.value)}
-                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="https://yourdomain.com/images/default-og.jpg or /images/..."
-                  />
-                  <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.og_image_desc"] || "Recommended resolution: 1200x630 pixels. Used when an article or page has no featured image."}
-                  </p>
+                <div className="space-y-3">
+                  {settings.og_default_image ? (
+                    <div className="max-w-md space-y-2">
+                      <div className="relative aspect-[1200/630] w-full overflow-hidden rounded-[3px] border border-[#dcdcde] bg-[#f0f0f1] shadow-xs">
+                        <img
+                          src={settings.og_default_image}
+                          alt="Open Graph preview"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsOgMediaModalOpen(true)}
+                          className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-white px-3 py-1 text-[12px] font-medium text-[#2271b1] hover:bg-[#f0f6fc] transition-colors cursor-pointer"
+                        >
+                          <ImageIcon className="size-3.5" />
+                          <span>{dict["admin.settings.replace_image"] || "Replace Image"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleChange("og_default_image", "")}
+                          className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#d63638] bg-white px-3 py-1 text-[12px] font-medium text-[#d63638] hover:bg-[#fcf0f1] transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="size-3.5" />
+                          <span>{dict["admin.settings.remove_image"] || "Remove Image"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setIsOgMediaModalOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#f0f6fc] px-4 py-2 text-[13px] font-medium text-[#2271b1] hover:bg-[#2271b1] hover:text-white transition-colors cursor-pointer"
+                      >
+                        <ImageIcon className="size-4" />
+                        <span>{dict["admin.settings.select_og_image"] || "Select or Upload Image from Media Library"}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Manual URL field */}
+                  <div>
+                    <input
+                      id="og_default_image"
+                      type="text"
+                      value={settings.og_default_image ?? ""}
+                      onChange={(e) => handleChange("og_default_image", e.target.value)}
+                      className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                      placeholder="https://yourdomain.com/images/default-og.jpg or /uploads/..."
+                    />
+                    <p className="mt-1 text-[11px] text-[#646970]">
+                      {dict["admin.settings.og_image_desc"] || "Recommended resolution: 1200x630 pixels. Used when an article or page has no featured image."}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1074,6 +1153,16 @@ export function SettingsForm({
           </button>
         </div>
       </form>
+
+      {/* Media Library Selector Modal */}
+      <MediaSelectModal
+        isOpen={isOgMediaModalOpen}
+        onClose={() => setIsOgMediaModalOpen(false)}
+        onSelect={(item) => handleChange("og_default_image", item.url)}
+        title={dict["admin.settings.select_og_image"] || "Select Default Share Image"}
+        selectButtonText={dict["admin.settings.set_og_image"] || "Set as Share Image"}
+        dict={dict}
+      />
     </div>
   );
 }

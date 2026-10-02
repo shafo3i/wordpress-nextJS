@@ -7,6 +7,10 @@ import { initActivePlugins } from "@/lib/plugins/loader";
 import { applyFilters } from "@/lib/plugins/hooks";
 import { getAllWidgetAreas } from "@/lib/widgets/db";
 
+import { db } from "@/db";
+import { wpOptions } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
@@ -15,29 +19,49 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = await getPublishedPostBySlug(slug);
+  const [article, siteNameOpt, ogSiteOpt, ogImgOpt] = await Promise.all([
+    getPublishedPostBySlug(slug),
+    db.select({ value: wpOptions.optionValue }).from(wpOptions).where(eq(wpOptions.optionName, "blogname")).limit(1),
+    db.select({ value: wpOptions.optionValue }).from(wpOptions).where(eq(wpOptions.optionName, "og_site_name")).limit(1),
+    db.select({ value: wpOptions.optionValue }).from(wpOptions).where(eq(wpOptions.optionName, "og_default_image")).limit(1),
+  ]);
+
+  const siteName = ogSiteOpt[0]?.value || siteNameOpt[0]?.value || "PressForge News";
 
   if (!article) {
     return {
-      title: "Post Not Found | Signal News",
+      title: `Post Not Found | ${siteName}`,
     };
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const postImage = article.imageUrl || ogImgOpt[0]?.value || `${siteUrl}/posts/${slug}/opengraph-image`;
+
   return {
-    title: `${article.title} | Signal News`,
+    title: `${article.title} | ${siteName}`,
     description: article.excerpt || article.title,
     openGraph: {
+      siteName,
       title: article.title,
       description: article.excerpt || article.title,
       type: "article",
       publishedTime: article.date.toISOString(),
       authors: [article.authorName],
       tags: [...article.categories, ...article.tags],
+      images: [
+        {
+          url: postImage,
+          width: 1200,
+          height: 630,
+          alt: article.title,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description: article.excerpt || article.title,
+      images: [postImage],
     },
   };
 }

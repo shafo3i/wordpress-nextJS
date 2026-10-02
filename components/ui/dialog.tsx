@@ -43,17 +43,38 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  dir,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  dir?: "rtl" | "ltr"
 }) {
+  const [resolvedDir, setResolvedDir] = React.useState<"rtl" | "ltr" | undefined>(dir)
+
+  React.useEffect(() => {
+    if (dir) {
+      setResolvedDir(dir)
+      return
+    }
+    const shell = document.querySelector(".wp-admin-shell")
+    const shellDir = shell?.getAttribute("dir") as "rtl" | "ltr" | null
+    const docDir = document.documentElement.getAttribute("dir") as "rtl" | "ltr" | null
+    const bodyDir = document.body.getAttribute("dir") as "rtl" | "ltr" | null
+    if (shellDir || docDir || bodyDir) {
+      setResolvedDir(shellDir || docDir || bodyDir || "ltr")
+    }
+  }, [dir])
+
+  const effectiveDir = dir || resolvedDir
+
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
+        dir={effectiveDir}
         className={cn(
-          "fixed top-1/2 start-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 rtl:translate-x-1/2 -translate-y-1/2 gap-6 rounded-none bg-popover p-6 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] gap-6 rounded-none bg-popover p-6 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -65,13 +86,12 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-5 end-5 bg-secondary"
+                className="absolute top-3.5 end-3.5 size-7 rounded-[3px] text-[#50575e] hover:bg-[#f0f0f1] hover:text-[#1d2327] cursor-pointer inline-flex items-center justify-center p-0"
                 size="icon-sm"
               />
             }
           >
-            <XIcon
-            />
+            <XIcon className="size-4" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
@@ -84,7 +104,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
+      className={cn("flex flex-col gap-2 pe-8 text-start", className)}
       {...props}
     />
   )

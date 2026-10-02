@@ -13,6 +13,8 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   siteurl: "http://localhost:3000",
   home: "http://localhost:3000",
   default_role: "subscriber",
+  users_can_register: "1",
+  disableSignUp: "false",
   timezone_string: "UTC",
   date_format: "F j, Y",
   time_format: "g:i a",
@@ -168,4 +170,63 @@ export async function setOptions(
 export async function getAllSettings(database: DB = db): Promise<SettingsMap> {
   const allKeys = Object.keys(DEFAULT_SETTINGS);
   return await getOptions(allKeys, database);
+}
+
+/**
+ * Resolves standard Next.js Metadata for the site from wp_options
+ */
+export async function getSiteMetadata(database: DB = db): Promise<any> {
+  const options = await getOptions(
+    [
+      "blogname",
+      "blogdescription",
+      "og_default_image",
+      "og_site_name",
+      "twitter_card_type",
+      "twitter_site_handle",
+      "facebook_app_id",
+    ],
+    database
+  );
+
+  const siteName = options.blogname || "PressForge News";
+  const description = options.blogdescription || "";
+  const ogSiteName = options.og_site_name || siteName;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const ogImage = options.og_default_image
+    ? options.og_default_image.startsWith("http")
+      ? options.og_default_image
+      : `${siteUrl}${options.og_default_image}`
+    : `${siteUrl}/opengraph-image`;
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: siteName,
+      template: `%s | ${siteName}`,
+    },
+    description,
+    openGraph: {
+      siteName: ogSiteName,
+      title: siteName,
+      description,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: siteName,
+        },
+      ],
+      type: "website",
+    },
+    twitter: {
+      card: options.twitter_card_type || "summary_large_image",
+      site: options.twitter_site_handle || undefined,
+      title: siteName,
+      description,
+      images: [ogImage],
+    },
+    other: options.facebook_app_id ? { "fb:app_id": options.facebook_app_id } : {},
+  };
 }

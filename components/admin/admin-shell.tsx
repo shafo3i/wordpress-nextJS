@@ -4,7 +4,7 @@ import { count, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { wpComments, wpOptions } from "@/db/schema";
-import { Home, MessageSquare, Plus, ShieldCheck, Globe } from "lucide-react";
+import { Home, MessageSquare, Plus, ShieldCheck, Globe, User, LogOut } from "lucide-react";
 import { AdminNav } from "./admin-nav";
 import {
   getLanguageByCode,
@@ -132,11 +132,11 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          <span className="wp-admin-user">
-            {dict["admin.menu.howdy"] || "Howdy"}, {context.userName || "—"}
-          </span>
+          <Link className="wp-admin-user-link" href="/admincp/profile">
+            <User className="size-4" /> {dict["admin.menu.howdy"] || "Howdy"}, {context.userName || "—"}
+          </Link>
           <Link className="wp-admin-user-link" href="/cms-login">
-            {dict["admin.menu.logout"] || "Log Out"}
+            <LogOut className="size-4" /> {dict["admin.menu.logout"] || "Log Out"}
           </Link>
         </div>
       </header>
