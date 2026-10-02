@@ -54,6 +54,10 @@ const navItems: NavItem[] = [
     label: "Media",
     key: "admin.menu.media",
     icon: FolderOpen,
+    subItems: [
+      { href: "/admincp/media", label: "Library", key: "admin.menu.library" },
+      { href: "/admincp/media?action=upload", label: "Add New Media File", key: "admin.menu.add_new_media" },
+    ],
   },
   {
     href: "/admincp/pages",
@@ -105,6 +109,17 @@ const navItems: NavItem[] = [
     label: "Tools",
     key: "admin.menu.tools",
     icon: Wrench,
+    subItems: [
+      { href: "/admincp/tools", label: "Available Tools", key: "admin.menu.available_tools" },
+      { href: "/admincp/tools/import", label: "Import", key: "admin.menu.import" },
+      { href: "/admincp/tools/export", label: "Export", key: "admin.menu.export" },
+      { href: "/admincp/tools/search-replace", label: "Search & Replace", key: "admin.menu.search_replace" },
+      { href: "/admincp/tools/cleanup", label: "Database Cleanup", key: "admin.menu.cleanup" },
+      { href: "/admincp/tools/site-health", label: "Site Health", key: "admin.menu.site_health" },
+      { href: "/admincp/tools/redirects", label: "301 Redirects", key: "admin.menu.redirects" },
+      { href: "/admincp/tools/seo-feeds", label: "SEO & Feeds", key: "admin.menu.seo_feeds" },
+      { href: "/admincp/tools/media", label: "Media Utilities", key: "admin.menu.media_tools" },
+    ],
   },
   {
     href: "/admincp/languages",

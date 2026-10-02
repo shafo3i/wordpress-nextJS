@@ -1,0 +1,173 @@
+import { ImageResponse } from "next/og";
+import { db } from "@/db";
+import { wpOptions } from "@/db/schema";
+import { sql } from "drizzle-orm";
+
+export const size = {
+  width: 1200,
+  height: 630,
+};
+
+export const contentType = "image/png";
+
+export default async function Image() {
+  let siteName = "PressForge News";
+  let tagline = "Independent News, Investigative Reporting & Editorial Excellence";
+
+  try {
+    const rows = await db
+      .select({
+        name: wpOptions.optionName,
+        value: wpOptions.optionValue,
+      })
+      .from(wpOptions)
+      .where(sql`${wpOptions.optionName} IN ('blogname', 'blogdescription')`);
+
+    for (const r of rows) {
+      if (r.name === "blogname" && r.value) siteName = r.value;
+      if (r.name === "blogdescription" && r.value) tagline = r.value;
+    }
+  } catch {
+    // fallback
+  }
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "70px 80px",
+          backgroundColor: "#0f172a",
+          color: "#f8fafc",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          position: "relative",
+        }}
+      >
+        {/* Subtle grid pattern background */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.1,
+            backgroundImage:
+              "radial-gradient(#38bdf8 1px, transparent 1px), radial-gradient(#38bdf8 1px, #0f172a 1px)",
+            backgroundSize: "40px 40px",
+            backgroundPosition: "0 0, 20px 20px",
+          }}
+        />
+
+        {/* Top bar with branding */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+            zIndex: 1,
+          }}
+        >
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              borderRadius: "10px",
+              backgroundColor: "#2271b1",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#ffffff",
+              fontSize: "26px",
+              fontWeight: 800,
+            }}
+          >
+            P
+          </div>
+          <div
+            style={{
+              fontSize: "22px",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#94a3b8",
+            }}
+          >
+            {siteName}
+          </div>
+        </div>
+
+        {/* Headline / Main statement */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            zIndex: 1,
+            maxWidth: "960px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "64px",
+              fontWeight: 800,
+              lineHeight: 1.15,
+              letterSpacing: "-0.03em",
+              color: "#ffffff",
+            }}
+          >
+            {siteName}
+          </div>
+          <div
+            style={{
+              fontSize: "28px",
+              lineHeight: 1.4,
+              color: "#94a3b8",
+              fontWeight: 400,
+            }}
+          >
+            {tagline}
+          </div>
+        </div>
+
+        {/* Footer footer info */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderTop: "1px solid #334155",
+            paddingTop: "28px",
+            zIndex: 1,
+          }}
+        >
+          <div
+            style={{
+              fontSize: "18px",
+              color: "#64748b",
+              fontWeight: 500,
+            }}
+          >
+            Daily Editorial & Breaking News
+          </div>
+          <div
+            style={{
+              fontSize: "18px",
+              color: "#38bdf8",
+              fontWeight: 600,
+            }}
+          >
+            pressforge.news
+          </div>
+        </div>
+      </div>
+    ),
+    {
+      ...size,
+    }
+  );
+}
