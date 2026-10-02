@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme, getPostUrl } from "@/components/site/utils";
 
 /**
  * 2. BROADSHEET 3-COLUMN WIRE BLOCK
@@ -81,7 +81,7 @@ export function Broadsheet3ColBlock({
                   {col1Item.categories[0]}
                 </span>
               )}
-              <Link href={`/posts/${col1Item.slug}`} className="block">
+              <Link href={getPostUrl(col1Item.slug, theme)} className="block">
                 <h4
                   style={{ color: "var(--theme-heading, #0f172a)" }}
                   className={`text-sm font-bold leading-snug hover:underline ${isSerif ? "font-serif" : "font-sans"}`}
@@ -113,7 +113,7 @@ export function Broadsheet3ColBlock({
                   • 14m ago
                 </span>
                 <Link
-                  href={`/posts/${item.slug}`}
+                  href={getPostUrl(item.slug, theme)}
                   style={{ color: "var(--theme-heading, #0f172a)" }}
                   className="block font-semibold hover:underline"
                 >
@@ -169,7 +169,7 @@ export function Broadsheet3ColBlock({
               )}
             </div>
 
-            <Link href={`/posts/${centerFeature.slug}`} className="block">
+            <Link href={getPostUrl(centerFeature.slug, theme)} className="block">
               <h3
                 style={{ color: "var(--theme-heading, #0f172a)" }}
                 className={`text-2xl sm:text-3xl font-black leading-tight tracking-tight hover:underline ${
@@ -202,7 +202,7 @@ export function Broadsheet3ColBlock({
                 </span>
               )}
               <Link
-                href={`/posts/${centerFeature.slug}`}
+                href={getPostUrl(centerFeature.slug, theme)}
                 style={{ color: "var(--theme-primary, #2271b1)" }}
                 className="font-bold hover:underline"
               >
@@ -248,7 +248,7 @@ export function Broadsheet3ColBlock({
                     • {0 + (idx + 1) * 15}m ago
                   </span>
                 </div>
-                <Link href={`/posts/${item.slug}`} className="block">
+                <Link href={getPostUrl(item.slug, theme)} className="block">
                   <h4
                     style={{ color: "var(--theme-heading, #0f172a)" }}
                     className={`text-xs font-bold leading-snug hover:underline ${

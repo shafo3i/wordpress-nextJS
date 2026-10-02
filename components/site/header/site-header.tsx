@@ -5,15 +5,7 @@ import { useState } from "react";
 import { Search, Clock, Share2, ArrowRight } from "lucide-react";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { getFontFamilyCss } from "@/components/site/theme-dynamic-styles";
-import { isDarkTheme } from "@/components/site/utils";
-
-function formatDate(value: Date) {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(value);
-}
+import { isDarkTheme, formatDate, localizePath } from "@/components/site/utils";
 
 // Color luminance contrast helper to ensure pill badges and links never clash
 function isColorDark(hexColor?: string): boolean {
@@ -111,7 +103,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           <div className="flex items-center gap-3">
             {mods.showDateInHeader !== false && (
               <span className="text-[11px] opacity-75 font-mono hidden sm:inline flex-shrink-0">
-                {formatDate(new Date())}
+                {formatDate(new Date(), theme.locale)}
               </span>
             )}
             {/* Language Switcher */}
@@ -240,7 +232,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               mods.showSiteTitle !== false && (
                 <div>
                   <Link
-                    href="/"
+                    href={localizePath("/", theme.locale, theme.defaultLocale)}
                     style={{
                       fontFamily: `${headingFont}, sans-serif`,
                       color: mods.headerTextColor || (isDark ? "#ffffff" : primaryColor),
@@ -304,7 +296,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               mods.showSiteTitle !== false && (
                 <div>
                   <Link
-                    href="/"
+                    href={localizePath("/", theme.locale, theme.defaultLocale)}
                     style={{
                       fontFamily: `${headingFont}, sans-serif`,
                       color: mods.headerTextColor || (isHeaderDark ? "#ffffff" : primaryColor),
@@ -431,9 +423,9 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           className="border-b px-6 py-1.5 text-[11px] uppercase tracking-widest text-slate-500"
         >
           <div className="mx-auto theme-container flex items-center justify-between">
-            <span>The Daily Record</span>
-            <span>{formatDate(new Date())}</span>
-            <span>Independent Bureau</span>
+            <span>{theme.dict?.["site.daily_record"] || (theme.locale === "ar" ? "السجل اليومي" : "The Daily Record")}</span>
+            <span>{formatDate(new Date(), theme.locale)}</span>
+            <span>{theme.dict?.["site.independent_bureau"] || (theme.locale === "ar" ? "مكتب مستقل" : "Independent Bureau")}</span>
           </div>
         </div>
       )}
@@ -449,7 +441,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         ) : (
           mods.showSiteTitle !== false && (
             <Link
-              href="/"
+              href={localizePath("/", theme.locale, theme.defaultLocale)}
               style={{
                 fontFamily: `${headingFont}, serif`,
                 color: mods.headerTextColor || (isHeaderDark ? "#ffffff" : primaryColor),

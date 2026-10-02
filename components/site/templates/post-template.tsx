@@ -10,7 +10,7 @@ import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
 import type { WidgetItem } from "@/widgets/types";
-import { DEFAULT_THEME, formatDate, isDarkTheme, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, isDarkTheme, isSerifHeading, getPostUrl, getCategoryUrl } from "@/components/site/utils";
 
 /**
  * Single post article template with configurable layout architectures
@@ -93,13 +93,13 @@ export function PostTemplate({
         {/* Topics Widget */}
         <div className="theme-widget rounded-2xl border p-5 shadow-sm">
           <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
-            Topics & Categories
+            {theme.dict?.["site.topics_categories"] || (theme.locale === "ar" ? "المواضيع والتصنيفات" : "Topics & Categories")}
           </h2>
           <div className="flex flex-wrap gap-1.5">
             {sidebarCategories.map((topic) => (
               <Link
                 key={topic}
-                href={`/category/${topic.toLowerCase()}`}
+                href={getCategoryUrl(topic.toLowerCase(), theme)}
                 className="theme-badge rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase transition-opacity hover:opacity-85"
               >
                 {topic}
@@ -111,13 +111,13 @@ export function PostTemplate({
         {/* Related Stories Widget */}
         <div className="theme-widget rounded-2xl border p-5 shadow-sm">
           <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
-            More from Newsroom
+            {theme.dict?.["site.more_from_newsroom"] || (theme.locale === "ar" ? "المزيد من غرفة الأخبار" : "More from Newsroom")}
           </h2>
           <div className="space-y-3">
             {relatedPosts.map((story) => (
               <Link
                 key={story.id}
-                href={`/posts/${story.slug}`}
+                href={getPostUrl(story.slug, theme)}
                 className="flex gap-2.5 rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
               >
                 {story.imageUrl && (
@@ -145,6 +145,8 @@ export function PostTemplate({
 
   return (
     <div
+      dir={theme.direction || "ltr"}
+      lang={theme.locale || "en"}
       className={`min-h-screen transition-colors ${
         isDark
           ? "bg-[#0a0f1d] text-slate-100"
@@ -170,7 +172,7 @@ export function PostTemplate({
             ))}
             {showReadingTime && (
               <span className="flex items-center gap-1 text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">
-                <Clock className="size-3" /> {readingMinutes} min read
+                <Clock className="size-3" /> {readingMinutes} {theme.dict?.["site.min_read"] || (theme.locale === "ar" ? "دقائق للقراءة" : "min read")}
               </span>
             )}
           </div>
@@ -198,11 +200,11 @@ export function PostTemplate({
               )}
               <div>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 block">
-                  {article.authorName || "Editorial Staff"}
+                  {article.authorName || theme.dict?.["site.editorial_staff"] || (theme.locale === "ar" ? "هيئة التحرير" : "Editorial Staff")}
                 </span>
                 {showDate && (
                   <time dateTime={article.date.toISOString()} className="text-[11px] text-slate-400 block font-mono">
-                    {formatDate(article.date)}
+                    {formatDate(article.date, theme.locale)}
                   </time>
                 )}
               </div>
@@ -211,7 +213,9 @@ export function PostTemplate({
             {/* Social Share Buttons */}
             {showShareButtons && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium mr-1 text-slate-400 hidden sm:inline">Share:</span>
+                <span className="text-[11px] font-medium mr-1 text-slate-400 hidden sm:inline">
+                  {theme.dict?.["site.share"] || (theme.locale === "ar" ? "مشاركة:" : "Share:")}
+                </span>
                 <button
                   type="button"
                   onClick={() => {
@@ -232,7 +236,7 @@ export function PostTemplate({
                   type="button"
                   onClick={handleCopy}
                   className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
-                  title="Copy Link"
+                  title={theme.dict?.["site.copy_link"] || (theme.locale === "ar" ? "نسخ الرابط" : "Copy Link")}
                 >
                   {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
                 </button>

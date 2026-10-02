@@ -1,12 +1,41 @@
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 
-export function formatDate(value: Date) {
-  return new Intl.DateTimeFormat("en", {
+export function formatDate(value: Date, locale = "en") {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
   }).format(value);
+}
+
+export function localizePath(path: string, locale?: string, defaultLocale?: string): string {
+  if (!path) return "/";
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("#") || path.startsWith("mailto:")) {
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  if (!locale || (defaultLocale && locale === defaultLocale)) {
+    return cleanPath;
+  }
+  if (cleanPath === `/${locale}` || cleanPath.startsWith(`/${locale}/`)) {
+    return cleanPath;
+  }
+  return cleanPath === "/" ? `/${locale}` : `/${locale}${cleanPath}`;
+}
+
+export function getPostUrl(slug: string, theme?: FrontEndThemeContext): string {
+  const locale = theme?.locale;
+  const defaultLocale = theme?.defaultLocale;
+  const isDefault = !locale || (defaultLocale ? locale === defaultLocale : false);
+  return isDefault ? `/posts/${slug}` : `/${locale}/posts/${slug}`;
+}
+
+export function getCategoryUrl(slug: string, theme?: FrontEndThemeContext): string {
+  const locale = theme?.locale;
+  const defaultLocale = theme?.defaultLocale;
+  const isDefault = !locale || (defaultLocale ? locale === defaultLocale : false);
+  return isDefault ? `/category/${slug}` : `/${locale}/category/${slug}`;
 }
 
 export function getExcerpt(item: ContentItem, maxChars = 140) {

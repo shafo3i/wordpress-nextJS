@@ -18,6 +18,7 @@ export type LanguageLink = {
   url: string;
   isActive: boolean;
   direction: string;
+  isDefault: boolean;
 };
 
 export type FrontEndThemeContext = {
@@ -33,26 +34,15 @@ export type FrontEndThemeContext = {
   footerNav: MenuItem[];
   mods: ThemeMods;
   locale?: string;
+  defaultLocale?: string;
+  isDefaultLocale?: boolean;
   direction?: "ltr" | "rtl";
   languages?: LanguageLink[];
   dict?: Record<string, string>;
 };
 
-const DEFAULT_PRIMARY_NAV: MenuItem[] = [
-  { id: "def-1", title: "Home", url: "/", order: 1 },
-  { id: "def-2", title: "News", url: "/category/news", order: 2 },
-  { id: "def-3", title: "Business", url: "/category/business", order: 3 },
-  { id: "def-4", title: "Technology", url: "/category/technology", order: 4 },
-  { id: "def-5", title: "Opinion", url: "/category/opinion", order: 5 },
-  { id: "def-6", title: "About", url: "/about", order: 6 },
-];
-
-const DEFAULT_FOOTER_NAV: MenuItem[] = [
-  { id: "f-1", title: "About", url: "/about", order: 1 },
-  { id: "f-2", title: "Contact", url: "/contact", order: 2 },
-  { id: "f-3", title: "Editorial Standards", url: "/editorial-standards", order: 3 },
-  { id: "f-4", title: "Privacy Policy", url: "/privacy", order: 4 },
-];
+import { localizePath } from "@/components/site/utils";
+export { localizePath };
 
 export async function getFrontEndThemeContext(options?: {
   locale?: string;
@@ -72,20 +62,24 @@ export async function getFrontEndThemeContext(options?: {
   const currentLangObj = activeLanguages.find((l) => l.code === activeLocale) || defaultLang;
   const direction = (currentLangObj?.direction as "ltr" | "rtl") || "ltr";
 
-  // Build language links for the switcher
+  // Build clean language links for the switcher without query parameters
   const languages: LanguageLink[] = activeLanguages.map((l) => {
-    let url = "/";
     const isThisDefault = l.isDefault || l.code === defaultLocale;
+    let rawPath = options?.currentPath || "/";
+    for (const al of activeLanguages) {
+      if (rawPath === `/${al.code}` || rawPath.startsWith(`/${al.code}/`)) {
+        rawPath = rawPath.replace(new RegExp(`^/${al.code}`), "") || "/";
+        break;
+      }
+    }
+
+    let url = isThisDefault ? rawPath : (rawPath === "/" ? `/${l.code}` : `/${l.code}${rawPath}`);
 
     if (options?.postTranslations && options.postTranslations.length > 0) {
       const match = options.postTranslations.find((t) => t.languageCode === l.code);
       if (match) {
         url = isThisDefault ? `/posts/${match.slug}` : `/${l.code}/posts/${match.slug}`;
-      } else {
-        url = isThisDefault ? "/" : `/${l.code}`;
       }
-    } else {
-      url = isThisDefault ? "/" : `/${l.code}`;
     }
 
     return {
@@ -95,13 +89,14 @@ export async function getFrontEndThemeContext(options?: {
       url,
       isActive: l.code === activeLocale,
       direction: (l.direction as "ltr" | "rtl") || "ltr",
+      isDefault: isThisDefault,
     };
   });
 
   const dict = await getTranslations(activeLocale).catch(() => ({}));
 
-  let primaryNav = DEFAULT_PRIMARY_NAV;
-  let footerNav = DEFAULT_FOOTER_NAV;
+  let primaryNav: MenuItem[] = [];
+  let footerNav: MenuItem[] = [];
 
   const primaryMenuId =
     locations[`primary_${activeLocale}`] ||
@@ -116,14 +111,20 @@ export async function getFrontEndThemeContext(options?: {
   if (primaryMenuId) {
     const pMenu = await getMenuWithItems(primaryMenuId);
     if (pMenu && pMenu.items.length > 0) {
-      primaryNav = pMenu.items;
+      primaryNav = pMenu.items.map((item) => ({
+        ...item,
+        url: localizePath(item.url, activeLocale, defaultLocale),
+      }));
     }
   }
 
   if (footerMenuId) {
     const fMenu = await getMenuWithItems(footerMenuId);
     if (fMenu && fMenu.items.length > 0) {
-      footerNav = fMenu.items;
+      footerNav = fMenu.items.map((item) => ({
+        ...item,
+        url: localizePath(item.url, activeLocale, defaultLocale),
+      }));
     }
   }
 
@@ -152,6 +153,8 @@ export async function getFrontEndThemeContext(options?: {
     footerNav,
     mods,
     locale: activeLocale,
+    defaultLocale,
+    isDefaultLocale: activeLocale === defaultLocale,
     direction,
     languages,
     dict,

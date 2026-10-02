@@ -36,11 +36,17 @@ export function PageTemplate({
   const isDark = isDarkTheme(theme);
   const isSerif = isSerifHeading(theme);
   const template = page.template || "default";
+  const isRtl = theme.direction === "rtl";
+  const pageBadge = theme.dict?.["site.page"] || (theme.locale === "ar" ? "صفحة" : "Page");
+  const editorialBadge = theme.dict?.["site.editorial_page"] || (theme.locale === "ar" ? "صفحة تحريرية" : "Editorial Page");
 
   return (
     <div
-      className={`min-h-screen transition-colors ${isDark ? "bg-[#0a0f1d] text-slate-100" : "bg-[#f8f7f4] text-slate-900"
-        }`}
+      dir={theme.direction || "ltr"}
+      lang={theme.locale || "en"}
+      className={`min-h-screen transition-colors ${
+        isDark ? "bg-[#0a0f1d] text-slate-100" : "bg-[#f8f7f4] text-slate-900"
+      }`}
     >
       {theme.mods && <ThemeDynamicStyles mods={theme.mods} />}
       <SiteHeader theme={theme} />
@@ -72,7 +78,7 @@ export function PageTemplate({
               className={`rounded-2xl border p-8 sm:p-12 shadow-sm ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"
                 }`}
             >
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Page</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{pageBadge}</p>
               <h1
                 className={`mt-2 text-3xl sm:text-5xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"
                   }`}
@@ -116,7 +122,7 @@ export function PageTemplate({
             className={`rounded-2xl border p-8 sm:p-12 shadow-sm ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"
               }`}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Page</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{pageBadge}</p>
             <h1
               className={`mt-2 text-3xl sm:text-5xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"
                 }`}
@@ -139,7 +145,7 @@ export function PageTemplate({
             className={`rounded-2xl border p-8 sm:p-12 shadow-sm ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"
               }`}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Editorial Page</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{editorialBadge}</p>
             <h1
               className={`mt-2 text-3xl sm:text-5xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"
                 }`}

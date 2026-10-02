@@ -5,7 +5,7 @@ import { Clock, ArrowRight } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, getPostUrl } from "@/components/site/utils";
 
 /**
  * 1. BENTO MEGA-GRID BLOCK (1 Hero Left + 4 Cards Right)
@@ -70,7 +70,7 @@ export function MagazineBentoBlock({
                 </span>
               </div>
 
-              <Link href={`/posts/${lead.slug}`} className="block">
+              <Link href={getPostUrl(lead.slug, theme)} className="block">
                 <h3
                   className={`text-2xl sm:text-4xl lg:text-5xl font-black leading-[1.1] tracking-tight text-white hover:underline drop-shadow-md ${
                     isSerif ? "font-serif" : "font-sans"
@@ -100,7 +100,7 @@ export function MagazineBentoBlock({
                 </div>
 
                 <Link
-                  href={`/posts/${lead.slug}`}
+                  href={getPostUrl(lead.slug, theme)}
                   style={{ color: "#ffffff" }}
                   className="rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md px-3.5 py-1.5 font-bold text-xs transition-colors flex items-center gap-1.5"
                 >
@@ -131,7 +131,7 @@ export function MagazineBentoBlock({
                   </span>
                 )}
 
-                <Link href={`/posts/${item.slug}`} className="block">
+                <Link href={getPostUrl(item.slug, theme)} className="block">
                   <h4
                     className={`text-xs sm:text-sm font-bold leading-snug text-white line-clamp-2 hover:underline ${
                       isSerif ? "font-serif" : "font-sans"

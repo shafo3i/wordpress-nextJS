@@ -110,6 +110,8 @@ export function NewsHome({
 
   return (
     <div
+      dir={theme.direction || "ltr"}
+      lang={theme.locale || "en"}
       className={`min-h-screen transition-colors ${isDark
         ? "bg-[#0a0f1d] text-slate-100"
         : (theme.themeSlug?.includes("reader") || theme.themeSlug?.includes("longform"))

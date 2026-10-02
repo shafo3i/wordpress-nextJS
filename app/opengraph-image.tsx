@@ -100,6 +100,7 @@ export default async function Image() {
             right: 0,
             bottom: 0,
             opacity: 0.1,
+            display: "flex",
             backgroundImage:
               "radial-gradient(#38bdf8 1px, transparent 1px), radial-gradient(#38bdf8 1px, #0f172a 1px)",
             backgroundSize: "40px 40px",
@@ -113,7 +114,6 @@ export default async function Image() {
             display: "flex",
             alignItems: "center",
             gap: "16px",
-            zIndex: 1,
           }}
         >
           <div
@@ -134,6 +134,7 @@ export default async function Image() {
           </div>
           <div
             style={{
+              display: "flex",
               fontSize: "22px",
               fontWeight: 700,
               letterSpacing: "0.08em",
@@ -151,12 +152,12 @@ export default async function Image() {
             display: "flex",
             flexDirection: "column",
             gap: "20px",
-            zIndex: 1,
             maxWidth: "960px",
           }}
         >
           <div
             style={{
+              display: "flex",
               fontSize: "64px",
               fontWeight: 800,
               lineHeight: 1.15,
@@ -168,6 +169,7 @@ export default async function Image() {
           </div>
           <div
             style={{
+              display: "flex",
               fontSize: "28px",
               lineHeight: 1.4,
               color: "#94a3b8",
@@ -186,11 +188,11 @@ export default async function Image() {
             alignItems: "center",
             borderTop: "1px solid #334155",
             paddingTop: "28px",
-            zIndex: 1,
           }}
         >
           <div
             style={{
+              display: "flex",
               fontSize: "18px",
               color: "#64748b",
               fontWeight: 500,
@@ -200,6 +202,7 @@ export default async function Image() {
           </div>
           <div
             style={{
+              display: "flex",
               fontSize: "18px",
               color: "#38bdf8",
               fontWeight: 600,

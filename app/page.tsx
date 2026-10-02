@@ -6,10 +6,17 @@ import { getAllWidgetAreas } from "@/lib/widgets/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ lang?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const lang = resolvedSearchParams?.lang;
+
   const [posts, theme, settings, widgetAreas] = await Promise.all([
-    getPublishedPosts(20),
-    getFrontEndThemeContext(),
+    getPublishedPosts(20, lang),
+    getFrontEndThemeContext({ locale: lang, currentPath: "/" }),
     getHomepageSettings(),
     getAllWidgetAreas(),
   ]);

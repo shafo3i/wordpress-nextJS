@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { wpPosts, wpPostmeta, wpTermRelationships, wpTermTaxonomy, wpTerms, user, postTranslationsTable } from "@/db/schema";
+import { wpPosts, wpPostmeta, wpTermRelationships, wpTermTaxonomy, wpTerms, user, postTranslationsTable, languagesTable } from "@/db/schema";
+import { getDefaultLanguage } from "@/services/language.service";
 
 export type ContentItem = {
   id: string;
@@ -14,6 +15,8 @@ export type ContentItem = {
   tags: string[];
   imageUrl: string;
   template?: string;
+  locale?: string;
+  direction?: "ltr" | "rtl";
 };
 
 // Curated high-resolution editorial broadsheet photos
@@ -221,55 +224,41 @@ async function getPageTemplateData(postIds: bigint[] | string[]) {
 
 export async function getPublishedContent(type: "post" | "page", slug?: string, limit = 10, locale?: string) {
   let base: any[] = [];
+  let effectiveLocale = locale;
+  if (!effectiveLocale) {
+    const defaultLang = await getDefaultLanguage().catch(() => null);
+    effectiveLocale = defaultLang?.code || "en";
+  }
 
-  if (locale) {
-    base = await db
-      .select({
-        id: wpPosts.id,
-        title: wpPosts.postTitle,
-        slug: wpPosts.postName,
-        excerpt: wpPosts.postExcerpt,
-        content: wpPosts.postContent,
-        date: wpPosts.postDate,
-        authorName: user.name,
-      })
-      .from(wpPosts)
-      .innerJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
-      .leftJoin(user, eq(wpPosts.postAuthor, user.id))
-      .where(
-        and(
-          eq(wpPosts.postType, type),
-          eq(wpPosts.postStatus, "publish"),
-          eq(postTranslationsTable.languageCode, locale),
-          slug ? eq(wpPosts.postName, slug) : undefined
-        )
+  base = await db
+    .select({
+      id: wpPosts.id,
+      title: wpPosts.postTitle,
+      slug: wpPosts.postName,
+      excerpt: wpPosts.postExcerpt,
+      content: wpPosts.postContent,
+      date: wpPosts.postDate,
+      authorName: user.name,
+      locale: postTranslationsTable.languageCode,
+      direction: languagesTable.direction,
+    })
+    .from(wpPosts)
+    .innerJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
+    .leftJoin(languagesTable, eq(postTranslationsTable.languageCode, languagesTable.code))
+    .leftJoin(user, eq(wpPosts.postAuthor, user.id))
+    .where(
+      and(
+        eq(wpPosts.postType, type),
+        eq(wpPosts.postStatus, "publish"),
+        eq(postTranslationsTable.languageCode, effectiveLocale),
+        slug ? eq(wpPosts.postName, slug) : undefined
       )
-      .orderBy(desc(wpPosts.postDate))
-      .limit(limit);
-  }
-
-  // Fallback to query without postTranslationsTable filter if no locale-specific posts were found or no locale given
-  if (!base.length && !locale) {
-    base = await db
-      .select({
-        id: wpPosts.id,
-        title: wpPosts.postTitle,
-        slug: wpPosts.postName,
-        excerpt: wpPosts.postExcerpt,
-        content: wpPosts.postContent,
-        date: wpPosts.postDate,
-        authorName: user.name,
-      })
-      .from(wpPosts)
-      .leftJoin(user, eq(wpPosts.postAuthor, user.id))
-      .where(and(eq(wpPosts.postType, type), eq(wpPosts.postStatus, "publish"), slug ? eq(wpPosts.postName, slug) : undefined))
-      .orderBy(desc(wpPosts.postDate))
-      .limit(limit);
-  }
+    )
+    .orderBy(desc(wpPosts.postDate))
+    .limit(limit);
 
   if (!base.length) {
-    const filtered = FALLBACK_POSTS.filter((item) => item.slug === slug || item.slug !== "");
-    return type === "page" ? filtered.filter((item) => item.slug.includes("launch") || item.slug.includes("workflow")).slice(0, 1) : filtered.slice(0, limit);
+    return [];
   }
 
   const postIds = base.map((item) => item.id.toString());
@@ -302,27 +291,22 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
       tags: termMap.get(item.id.toString())?.tags ?? [],
       imageUrl: resolvedImg,
       template: templateMap.get(item.id.toString()) || "default",
+      locale: item.locale || undefined,
+      direction: (item.direction as "ltr" | "rtl") || undefined,
     };
   });
 }
 
 export async function getPublishedPosts(limit = 12, locale?: string) {
-  const posts = await getPublishedContent("post", undefined, limit, locale);
-  return posts.length ? posts : FALLBACK_POSTS.slice(0, limit);
+  return await getPublishedContent("post", undefined, limit, locale);
 }
 
 export async function getPublishedPageBySlug(slug: string, locale?: string) {
   const pages = await getPublishedContent("page", slug, 1, locale);
-  if (pages.length) return pages[0];
-
-  const fallback = FALLBACK_POSTS.find((item) => item.slug === slug) ?? FALLBACK_POSTS[0];
-  return fallback;
+  return pages.length ? pages[0] : null;
 }
 
 export async function getPublishedPostBySlug(slug: string, locale?: string) {
   const posts = await getPublishedContent("post", slug, 1, locale);
-  if (posts.length) return posts[0];
-
-  const fallback = FALLBACK_POSTS.find((item) => item.slug === slug) ?? FALLBACK_POSTS[0];
-  return fallback;
+  return posts.length ? posts[0] : null;
 }
