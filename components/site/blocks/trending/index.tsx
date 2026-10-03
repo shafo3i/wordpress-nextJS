@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Flame } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { DEFAULT_THEME, isSerifHeading, isDarkTheme } from "@/components/site/utils";
+import { DEFAULT_THEME, isSerifHeading, isDarkTheme, getPostUrl } from "@/components/site/utils";
 
 /**
  * 10. TRENDING LEADERBOARD (Ranked 01-05 Stories)
@@ -59,7 +59,7 @@ export function TrendingBlock({
             >
               0{idx + 1}
             </span>
-            <Link href={`/posts/${item.slug}`} className="block hover:underline">
+            <Link href={getPostUrl(item.slug, theme)} className="block hover:underline">
               <h4
                 style={{ color: "var(--theme-heading, #0f172a)" }}
                 className="text-xs font-bold leading-snug line-clamp-3"

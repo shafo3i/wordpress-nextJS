@@ -24,10 +24,11 @@ export async function getCategoryCounts(): Promise<CategoryCounts> {
 }
 
 export async function getParentCategories(
-  excludeTermId?: bigint | string | number
+  excludeTermId?: bigint | string | number,
+  language?: string
 ): Promise<{ id: string; name: string; parent: string }[]> {
   await verifyAdminOrEditor();
-  return getParentsFromService(excludeTermId);
+  return getParentsFromService(excludeTermId, language);
 }
 
 export async function getCategoryById(

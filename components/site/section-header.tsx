@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowLeft } from "lucide-react";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { DEFAULT_THEME } from "@/components/site/utils";
+import { DEFAULT_THEME, localizePath } from "@/components/site/utils";
 
 export function ThemeSectionHeader({
   title,
@@ -18,6 +18,13 @@ export function ThemeSectionHeader({
   linkHref?: string;
   theme?: FrontEndThemeContext;
 }) {
+  const isRtl = theme.direction === "rtl";
+  const displayTitle = title ? (theme.dict?.[title] || theme.dict?.[`site.${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`] || title) : "";
+  const displaySubtitle = subtitle ? (theme.dict?.[subtitle] || theme.dict?.[`site.${subtitle.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`] || subtitle) : undefined;
+  const displayLinkText = linkText ? (theme.dict?.[linkText] || theme.dict?.[`site.${linkText.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`] || linkText) : undefined;
+  const effectiveLinkHref = linkHref ? localizePath(linkHref, theme.locale, theme.defaultLocale) : undefined;
+  const arrowChar = isRtl ? "←" : "→";
+
   const slug = theme.themeSlug || "";
   const isMag = slug.includes("magazine");
   const isClassic = slug.includes("classic") || slug.includes("broadsheet");
@@ -40,24 +47,24 @@ export function ThemeSectionHeader({
             style={{ color: "var(--theme-heading, #0f172a)" }}
             className="text-2xl font-serif font-black uppercase tracking-tight"
           >
-            {title}
+            {displayTitle}
           </h2>
-          {subtitle && (
+          {displaySubtitle && (
             <p
               style={{ color: "var(--theme-muted, #64748b)" }}
               className="text-[11px] uppercase tracking-widest font-mono mt-0.5"
             >
-              {subtitle}
+              {displaySubtitle}
             </p>
           )}
         </div>
-        {linkText && linkHref && (
+        {displayLinkText && effectiveLinkHref && (
           <Link
-            href={linkHref}
+            href={effectiveLinkHref}
             style={{ color: "var(--theme-primary, #2271b1)" }}
             className="text-xs font-serif font-bold uppercase tracking-wider hover:underline"
           >
-            {linkText} →
+            {displayLinkText} {arrowChar}
           </Link>
         )}
       </div>
@@ -79,9 +86,9 @@ export function ThemeSectionHeader({
             style={{ color: "var(--theme-heading, #0f172a)" }}
             className="text-xl sm:text-2xl font-sans font-black uppercase tracking-tight"
           >
-            {title}
+            {displayTitle}
           </h2>
-          {subtitle && (
+          {displaySubtitle && (
             <span
               style={{
                 backgroundColor: "var(--theme-badge-bg, #e11d48)",
@@ -89,17 +96,17 @@ export function ThemeSectionHeader({
               }}
               className="hidden sm:inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-xs"
             >
-              {subtitle}
+              {displaySubtitle}
             </span>
           )}
         </div>
-        {linkText && linkHref && (
+        {displayLinkText && effectiveLinkHref && (
           <Link
-            href={linkHref}
+            href={effectiveLinkHref}
             style={{ color: "var(--theme-primary, #2271b1)" }}
             className="text-xs font-bold uppercase tracking-wider hover:underline flex items-center gap-1"
           >
-            {linkText} <ArrowRight className="size-3" />
+            {displayLinkText} <ArrowRight className={`size-3 ${isRtl ? "rotate-180" : ""}`} />
           </Link>
         )}
       </div>
@@ -121,24 +128,24 @@ export function ThemeSectionHeader({
             style={{ color: "var(--theme-heading, #f8fafc)" }}
             className="text-lg font-bold tracking-wider uppercase"
           >
-            {title}
+            {displayTitle}
           </h2>
-          {subtitle && (
+          {displaySubtitle && (
             <span
               style={{ color: "var(--theme-muted, #94a3b8)" }}
               className="text-xs"
             >
-              [{subtitle}]
+              [{displaySubtitle}]
             </span>
           )}
         </div>
-        {linkText && linkHref && (
+        {displayLinkText && effectiveLinkHref && (
           <Link
-            href={linkHref}
+            href={effectiveLinkHref}
             style={{ color: "var(--theme-primary, #10b981)" }}
             className="text-xs hover:underline uppercase tracking-wider"
           >
-            {linkText} //
+            {displayLinkText} //
           </Link>
         )}
       </div>
@@ -155,24 +162,24 @@ export function ThemeSectionHeader({
           style={{ color: "var(--theme-heading, #1c1917)" }}
           className={`text-xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"}`}
         >
-          {title}
+          {displayTitle}
         </h2>
-        {subtitle && (
+        {displaySubtitle && (
           <p
             style={{ color: "var(--theme-muted, #78716c)" }}
             className="text-xs mt-0.5"
           >
-            {subtitle}
+            {displaySubtitle}
           </p>
         )}
       </div>
-      {linkText && linkHref && (
+      {displayLinkText && effectiveLinkHref && (
         <Link
-          href={linkHref}
+          href={effectiveLinkHref}
           style={{ color: "var(--theme-primary, #2271b1)" }}
           className="text-xs font-serif italic hover:underline"
         >
-          {linkText} →
+          {displayLinkText} {arrowChar}
         </Link>
       )}
     </div>

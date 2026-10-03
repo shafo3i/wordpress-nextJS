@@ -17,8 +17,14 @@ export async function createTag(formData: FormData) {
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = createTagSchema.parse(raw);
+  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
+  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
 
-  const tag = await createTagService(parsed);
+  const tag = await createTagService({
+    ...parsed,
+    languageCode,
+    sourceTermTaxonomyId,
+  });
 
   revalidatePath("/admincp/tags");
   revalidatePath("/admincp/posts");
@@ -35,10 +41,15 @@ export async function updateTag(formData: FormData) {
     throw new Error("A valid tag ID is required.");
   }
 
+  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
+  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
+
   await updateTagService(parsed.termId, {
     name: parsed.name,
     slug: parsed.slug,
     description: parsed.description,
+    languageCode,
+    sourceTermTaxonomyId,
   });
 
   revalidatePath("/admincp/tags");

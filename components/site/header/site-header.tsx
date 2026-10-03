@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Search, Clock, Share2, ArrowRight } from "lucide-react";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { getFontFamilyCss } from "@/components/site/theme-dynamic-styles";
-import { isDarkTheme, formatDate, localizePath } from "@/components/site/utils";
+import { isDarkTheme, formatDate, localizePath, t } from "@/components/site/utils";
 
 // Color luminance contrast helper to ensure pill badges and links never clash
 function isColorDark(hexColor?: string): boolean {
@@ -94,10 +94,10 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               }}
               className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider animate-pulse flex-shrink-0"
             >
-              {theme.dict?.["site.breaking"] || "Breaking"}
+              {t("site.breaking", theme, "Breaking")}
             </span>
             <span className="text-xs font-medium truncate max-w-xl">
-              {mods.topBarTickerText || "Editorial dispatch: Global supply chains adjust to new infrastructure corridors"}
+              {mods.topBarTickerText ? (theme.dict?.[mods.topBarTickerText] || mods.topBarTickerText) : t("site.ticker_default", theme, "Editorial dispatch: Global supply chains adjust to new infrastructure corridors")}
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -260,11 +260,11 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               </button>
             )}
             <Link
-              href="/about"
+              href={localizePath("/about", theme.locale, theme.defaultLocale)}
               style={{ borderColor: primaryColor, color: primaryColor }}
               className="rounded-full border px-4 py-1.5 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
-              About
+              {t("site.about", theme, "About")}
             </Link>
           </div>
         </div>
@@ -323,7 +323,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               className="rounded-lg px-3 py-1 text-xs text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1.5"
             >
               <Clock className="size-3 text-rose-500" />
-              Live Newsroom Edition
+              {t("site.live_newsroom_edition", theme, "Live Newsroom Edition")}
             </span>
           </div>
         </div>
@@ -371,7 +371,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           ) : (
             mods.showSiteTitle !== false && (
               <Link
-                href="/"
+                href={localizePath("/", theme.locale, theme.defaultLocale)}
                 style={{
                   fontFamily: `${headingFont}, serif`,
                   color: mods.headerTextColor || (isHeaderDark ? "#ffffff" : primaryColor),
@@ -423,9 +423,9 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           className="border-b px-6 py-1.5 text-[11px] uppercase tracking-widest text-slate-500"
         >
           <div className="mx-auto theme-container flex items-center justify-between">
-            <span>{theme.dict?.["site.daily_record"] || (theme.locale === "ar" ? "السجل اليومي" : "The Daily Record")}</span>
+            <span>{t("site.daily_record", theme, "The Daily Record")}</span>
             <span>{formatDate(new Date(), theme.locale)}</span>
-            <span>{theme.dict?.["site.independent_bureau"] || (theme.locale === "ar" ? "مكتب مستقل" : "Independent Bureau")}</span>
+            <span>{t("site.independent_bureau", theme, "Independent Bureau")}</span>
           </div>
         </div>
       )}

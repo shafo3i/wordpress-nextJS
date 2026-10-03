@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, isSerifHeading, getPostUrl, t } from "@/components/site/utils";
 
 /**
  * 7. VISUAL MAGAZINE PHOTO TILES (Overlay Cards)
@@ -16,6 +16,9 @@ export function VisualGridBlock({
   showCategory = true,
   showAuthor = true,
   showDate = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -24,6 +27,9 @@ export function VisualGridBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   const isSerif = isSerifHeading(theme);
 
@@ -33,7 +39,9 @@ export function VisualGridBlock({
     <section className="space-y-4">
       <ThemeSectionHeader
         title={title}
-        subtitle="Visuals"
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
 
@@ -53,11 +61,11 @@ export function VisualGridBlock({
             <div className="relative z-10 space-y-2">
               {showCategory && (
                 <span className="rounded bg-white/20 backdrop-blur-sm px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white inline-block">
-                  {item.categories[0] || "Photo Feature"}
+                  {item.categories[0] || t("site.photo_feature", theme, "Photo Feature")}
                 </span>
               )}
 
-              <Link href={`/posts/${item.slug}`} className="block">
+              <Link href={getPostUrl(item.slug, theme)} className="block">
                 <h3
                   className={`text-lg font-bold leading-snug text-white hover:underline ${
                     isSerif ? "font-serif" : "font-sans"
@@ -68,8 +76,8 @@ export function VisualGridBlock({
               </Link>
 
               <div className="flex items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-white/20">
-                {showAuthor && <span>{item.authorName}</span>}
-                {showDate && <span className="font-mono">{formatDate(item.date)}</span>}
+                {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
+                {showDate && <span className="font-mono">{formatDate(item.date, theme.locale)}</span>}
               </div>
             </div>
           </article>

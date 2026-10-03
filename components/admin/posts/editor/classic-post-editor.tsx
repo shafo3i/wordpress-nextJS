@@ -97,6 +97,7 @@ export function ClassicPostEditor({
   const [editorMode, setEditorMode] = useState<"visual" | "text">("visual");
   const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [customSlug, setCustomSlug] = useState("");
+  const [languageCode, setLanguageCode] = useState(initialLanguageCode);
   const [lastSaved, setLastSaved] = useState<string>(
     new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" }),
   );
@@ -315,7 +316,8 @@ export function ClassicPostEditor({
           <MetaBoxLanguages
             dict={dict}
             languages={languages}
-            currentLanguage={initialLanguageCode}
+            currentLanguage={languageCode}
+            onLanguageChange={setLanguageCode}
             translations={translations}
             postId={postId}
             postType={postType}
@@ -329,6 +331,7 @@ export function ClassicPostEditor({
         {postType === "post" && (
           <MetaBoxCategories
             categories={categories}
+            currentLanguage={languageCode}
             dict={dict}
             direction={direction}
             onToggleCategory={toggleCategory}

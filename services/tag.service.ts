@@ -12,7 +12,8 @@ import {
   SelectTerm,
   SelectTermTaxonomy,
 } from "@/db/schema/cms-taxonomy";
-import { postTranslationsTable } from "@/db/schema/cms-languages";
+import { postTranslationsTable, termTranslationsTable, languagesTable } from "@/db/schema/cms-languages";
+import { setTermLanguage, getTermLanguage, getTermTranslations } from "./language.service";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -29,7 +30,7 @@ export function toSlug(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}0-9_-]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 200);
 }
@@ -65,6 +66,14 @@ export async function uniqueTagSlug(
 // Types & Interfaces
 // ---------------------------------------------------------------------------
 
+export interface LinkedTagTranslation {
+  termTaxonomyId: string;
+  termId: string;
+  name: string;
+  slug: string;
+  languageCode: string;
+}
+
 export interface TagItem {
   id: string;
   name: string;
@@ -72,6 +81,19 @@ export interface TagItem {
   description: string;
   termTaxonomyId: string;
   count: number;
+  languageCode?: string;
+  translationGroupId?: string;
+  translations?: LinkedTagTranslation[];
+}
+
+export interface CreateTagOptions extends TagInput {
+  languageCode?: string;
+  sourceTermTaxonomyId?: bigint | string | number;
+}
+
+export interface UpdateTagOptions extends Partial<TagInput> {
+  languageCode?: string;
+  sourceTermTaxonomyId?: bigint | string | number;
 }
 
 export interface GetTagsOptions {
@@ -128,34 +150,16 @@ export async function getAllTags(
   const conditions = [eq(wpTermTaxonomy.taxonomy, "post_tag")];
 
   if (language && language !== "all") {
-    const metaTerms = await database
-      .select({ termId: wpTermmeta.termId })
-      .from(wpTermmeta)
-      .where(and(eq(wpTermmeta.metaKey, "language"), eq(wpTermmeta.metaValue, language)));
-    const metaTermIds = metaTerms.map((m) => m.termId);
+    const matching = await database
+      .select({ termTaxonomyId: termTranslationsTable.termTaxonomyId })
+      .from(termTranslationsTable)
+      .where(eq(termTranslationsTable.languageCode, language));
+    const taxIds = matching.map((m) => m.termTaxonomyId);
 
-    const postTerms = await database
-      .selectDistinct({ termTaxonomyId: wpTermRelationships.termTaxonomyId })
-      .from(wpTermRelationships)
-      .innerJoin(
-        postTranslationsTable,
-        eq(sql`${wpTermRelationships.objectId}::bigint`, postTranslationsTable.postId)
-      )
-      .where(eq(postTranslationsTable.languageCode, language));
-    const postTermTaxIds = postTerms.map((p) => p.termTaxonomyId);
-
-    const langConditions = [];
-    if (metaTermIds.length > 0) {
-      langConditions.push(inArray(wpTerms.termId, metaTermIds));
-    }
-    if (postTermTaxIds.length > 0) {
-      langConditions.push(inArray(wpTermTaxonomy.termTaxonomyId, postTermTaxIds));
-    }
-
-    if (langConditions.length > 0) {
-      conditions.push(or(...langConditions)!);
+    if (taxIds.length > 0) {
+      conditions.push(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
     } else {
-      conditions.push(eq(wpTerms.termId, BigInt(-1)));
+      conditions.push(eq(wpTermTaxonomy.termTaxonomyId, BigInt(-1)));
     }
   }
 
@@ -200,9 +204,15 @@ export async function getAllTags(
       description: wpTermTaxonomy.description,
       termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
       count: wpTermTaxonomy.count,
+      languageCode: termTranslationsTable.languageCode,
+      translationGroupId: termTranslationsTable.translationGroupId,
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
+    .leftJoin(
+      termTranslationsTable,
+      eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
+    )
     .where(whereClause)
     .orderBy(orderExpr)
     .$dynamic();
@@ -230,6 +240,45 @@ export async function getAllTags(
 
   const countMap = new Map(tagCounts.map((item) => [item.id, item.count]));
 
+  // Batch load translation links for the returned groups
+  const groupIds = Array.from(
+    new Set(rows.map((r) => r.translationGroupId).filter(Boolean))
+  ) as string[];
+
+  const groupTranslationsMap = new Map<string, LinkedTagTranslation[]>();
+  if (groupIds.length > 0) {
+    const allGroupTerms = await database
+      .select({
+        termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+        termId: wpTerms.termId,
+        name: wpTerms.name,
+        slug: wpTerms.slug,
+        languageCode: termTranslationsTable.languageCode,
+        translationGroupId: termTranslationsTable.translationGroupId,
+      })
+      .from(termTranslationsTable)
+      .innerJoin(
+        wpTermTaxonomy,
+        eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
+      )
+      .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
+      .where(inArray(termTranslationsTable.translationGroupId, groupIds));
+
+    for (const item of allGroupTerms) {
+      const gid = item.translationGroupId;
+      if (!groupTranslationsMap.has(gid)) {
+        groupTranslationsMap.set(gid, []);
+      }
+      groupTranslationsMap.get(gid)!.push({
+        termTaxonomyId: item.termTaxonomyId.toString(),
+        termId: item.termId.toString(),
+        name: item.name,
+        slug: item.slug,
+        languageCode: item.languageCode,
+      });
+    }
+  }
+
   const tags: TagItem[] = rows.map((t) => ({
     id: t.termId.toString(),
     name: t.name,
@@ -237,6 +286,9 @@ export async function getAllTags(
     description: t.description || "",
     termTaxonomyId: t.termTaxonomyId.toString(),
     count: countMap.get(t.termId.toString()) ?? Number(t.count ?? 0),
+    languageCode: t.languageCode ?? "en",
+    translationGroupId: t.translationGroupId ?? undefined,
+    translations: t.translationGroupId ? groupTranslationsMap.get(t.translationGroupId) ?? [] : [],
   }));
 
   return { tags, total };
@@ -267,9 +319,15 @@ export async function getTagById(
       description: wpTermTaxonomy.description,
       termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
       count: wpTermTaxonomy.count,
+      languageCode: termTranslationsTable.languageCode,
+      translationGroupId: termTranslationsTable.translationGroupId,
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
+    .leftJoin(
+      termTranslationsTable,
+      eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
+    )
     .where(and(eq(wpTerms.termId, termId), eq(wpTermTaxonomy.taxonomy, "post_tag")))
     .limit(1);
 
@@ -281,6 +339,33 @@ export async function getTagById(
     .from(wpTermRelationships)
     .where(eq(wpTermRelationships.termTaxonomyId, tag.termTaxonomyId));
 
+  let translations: LinkedTagTranslation[] = [];
+  if (tag.translationGroupId) {
+    const trRows = await database
+      .select({
+        termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+        termId: wpTerms.termId,
+        name: wpTerms.name,
+        slug: wpTerms.slug,
+        languageCode: termTranslationsTable.languageCode,
+      })
+      .from(termTranslationsTable)
+      .innerJoin(
+        wpTermTaxonomy,
+        eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
+      )
+      .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
+      .where(eq(termTranslationsTable.translationGroupId, tag.translationGroupId));
+
+    translations = trRows.map((r) => ({
+      termTaxonomyId: r.termTaxonomyId.toString(),
+      termId: r.termId.toString(),
+      name: r.name,
+      slug: r.slug,
+      languageCode: r.languageCode,
+    }));
+  }
+
   return {
     id: tag.termId.toString(),
     name: tag.name,
@@ -288,6 +373,9 @@ export async function getTagById(
     description: tag.description || "",
     termTaxonomyId: tag.termTaxonomyId.toString(),
     count: Number(c?.count ?? tag.count ?? 0),
+    languageCode: tag.languageCode ?? "en",
+    translationGroupId: tag.translationGroupId ?? undefined,
+    translations,
   };
 }
 
@@ -303,9 +391,15 @@ export async function getTagBySlug(
       description: wpTermTaxonomy.description,
       termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
       count: wpTermTaxonomy.count,
+      languageCode: termTranslationsTable.languageCode,
+      translationGroupId: termTranslationsTable.translationGroupId,
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
+    .leftJoin(
+      termTranslationsTable,
+      eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
+    )
     .where(and(eq(wpTerms.slug, slug), eq(wpTermTaxonomy.taxonomy, "post_tag")))
     .limit(1);
 
@@ -319,6 +413,8 @@ export async function getTagBySlug(
     description: tag.description || "",
     termTaxonomyId: tag.termTaxonomyId.toString(),
     count: Number(tag.count ?? 0),
+    languageCode: tag.languageCode ?? "en",
+    translationGroupId: tag.translationGroupId ?? undefined,
   };
 }
 
@@ -327,13 +423,13 @@ export async function getTagBySlug(
 // ---------------------------------------------------------------------------
 
 export async function createTag(
-  data: TagInput,
+  data: CreateTagOptions,
   database: DB = db
 ): Promise<TagItem> {
   const parsed = createTagSchema.parse(data);
   const slug = await uniqueTagSlug(parsed.slug || parsed.name, undefined, database);
 
-  const termId = await database.transaction(async (tx) => {
+  const { termId, termTaxonomyId } = await database.transaction(async (tx) => {
     const insertedTerm = await tx
       .insert(wpTerms)
       .values({
@@ -345,16 +441,23 @@ export async function createTag(
 
     const newTermId = insertedTerm[0].termId;
 
-    await tx.insert(wpTermTaxonomy).values({
-      termId: newTermId,
-      taxonomy: "post_tag",
-      description: parsed.description || "",
-      parent: BigInt(0),
-      count: BigInt(0),
-    });
+    const insertedTax = await tx
+      .insert(wpTermTaxonomy)
+      .values({
+        termId: newTermId,
+        taxonomy: "post_tag",
+        description: parsed.description || "",
+        parent: BigInt(0),
+        count: BigInt(0),
+      })
+      .returning({ termTaxonomyId: wpTermTaxonomy.termTaxonomyId });
 
-    return newTermId;
+    return { termId: newTermId, termTaxonomyId: insertedTax[0].termTaxonomyId };
   });
+
+  const langCode = data.languageCode || "en";
+  const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
+  await setTermLanguage(termTaxonomyId, langCode, sourceTaxId, database);
 
   const created = await getTagById(termId, database);
   if (!created) {
@@ -365,7 +468,7 @@ export async function createTag(
 
 export async function updateTag(
   id: bigint | string | number,
-  data: Partial<TagInput>,
+  data: UpdateTagOptions,
   database: DB = db
 ): Promise<TagItem> {
   const termId = toBigInt(id);
@@ -396,6 +499,11 @@ export async function updateTag(
       .set({ description })
       .where(and(eq(wpTermTaxonomy.termId, termId), eq(wpTermTaxonomy.taxonomy, "post_tag")));
   });
+
+  if (data.languageCode) {
+    const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
+    await setTermLanguage(toBigInt(existing.termTaxonomyId), data.languageCode, sourceTaxId, database);
+  }
 
   const updated = await getTagById(termId, database);
   if (!updated) {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme, getPostUrl, t } from "@/components/site/utils";
 
 /**
  * 8. MINIMAL TEXT BROADSHEET WIRE (Text Only Wire)
@@ -17,6 +17,9 @@ export function MinimalTextWireBlock({
   showAuthor = true,
   showDate = true,
   showCategory = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -25,6 +28,9 @@ export function MinimalTextWireBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   const isDark = isDarkTheme(theme);
   const isSerif = isSerifHeading(theme);
@@ -35,7 +41,9 @@ export function MinimalTextWireBlock({
     <section className="space-y-4">
       <ThemeSectionHeader
         title={title}
-        subtitle="Text Wire"
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
 
@@ -49,7 +57,7 @@ export function MinimalTextWireBlock({
                     [{item.categories[0]}]
                   </span>
                 )}
-                <Link href={`/posts/${item.slug}`} className="hover:underline">
+                <Link href={getPostUrl(item.slug, theme)} className="hover:underline">
                   <h4 className={`text-sm font-bold text-slate-900 dark:text-white ${isSerif ? "font-serif" : "font-sans"}`}>
                     {item.title}
                   </h4>
@@ -63,8 +71,8 @@ export function MinimalTextWireBlock({
             </div>
 
             <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono flex-shrink-0">
-              {showAuthor && <span>{item.authorName}</span>}
-              {showDate && <span>{formatDate(item.date)}</span>}
+              {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
+              {showDate && <span>{formatDate(item.date, theme.locale)}</span>}
             </div>
           </article>
         ))}

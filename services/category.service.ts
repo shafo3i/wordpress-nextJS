@@ -12,7 +12,8 @@ import {
   SelectTerm,
   SelectTermTaxonomy,
 } from "@/db/schema/cms-taxonomy";
-import { postTranslationsTable } from "@/db/schema/cms-languages";
+import { postTranslationsTable, termTranslationsTable, languagesTable } from "@/db/schema/cms-languages";
+import { setTermLanguage, getTermLanguage, getTermTranslations } from "./language.service";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -29,7 +30,7 @@ export function toSlug(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}0-9_-]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 200);
 }
@@ -65,6 +66,14 @@ export async function uniqueCategorySlug(
 // Types & Interfaces
 // ---------------------------------------------------------------------------
 
+export interface LinkedCategoryTranslation {
+  termTaxonomyId: string;
+  termId: string;
+  name: string;
+  slug: string;
+  languageCode: string;
+}
+
 export interface CategoryItem {
   id: string;
   name: string;
@@ -73,6 +82,19 @@ export interface CategoryItem {
   parent: string;
   termTaxonomyId: string;
   count: number;
+  languageCode?: string;
+  translationGroupId?: string;
+  translations?: LinkedCategoryTranslation[];
+}
+
+export interface CreateCategoryOptions extends CategoryInput {
+  languageCode?: string;
+  sourceTermTaxonomyId?: bigint | string | number;
+}
+
+export interface UpdateCategoryOptions extends Partial<CategoryInput> {
+  languageCode?: string;
+  sourceTermTaxonomyId?: bigint | string | number;
 }
 
 export interface GetCategoriesOptions {
@@ -129,34 +151,16 @@ export async function getAllCategories(
   const conditions = [eq(wpTermTaxonomy.taxonomy, "category")];
 
   if (language && language !== "all") {
-    const metaTerms = await database
-      .select({ termId: wpTermmeta.termId })
-      .from(wpTermmeta)
-      .where(and(eq(wpTermmeta.metaKey, "language"), eq(wpTermmeta.metaValue, language)));
-    const metaTermIds = metaTerms.map((m) => m.termId);
+    const matching = await database
+      .select({ termTaxonomyId: termTranslationsTable.termTaxonomyId })
+      .from(termTranslationsTable)
+      .where(eq(termTranslationsTable.languageCode, language));
+    const taxIds = matching.map((m) => m.termTaxonomyId);
 
-    const postTerms = await database
-      .selectDistinct({ termTaxonomyId: wpTermRelationships.termTaxonomyId })
-      .from(wpTermRelationships)
-      .innerJoin(
-        postTranslationsTable,
-        eq(sql`${wpTermRelationships.objectId}::bigint`, postTranslationsTable.postId)
-      )
-      .where(eq(postTranslationsTable.languageCode, language));
-    const postTermTaxIds = postTerms.map((p) => p.termTaxonomyId);
-
-    const langConditions = [];
-    if (metaTermIds.length > 0) {
-      langConditions.push(inArray(wpTerms.termId, metaTermIds));
-    }
-    if (postTermTaxIds.length > 0) {
-      langConditions.push(inArray(wpTermTaxonomy.termTaxonomyId, postTermTaxIds));
-    }
-
-    if (langConditions.length > 0) {
-      conditions.push(or(...langConditions)!);
+    if (taxIds.length > 0) {
+      conditions.push(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
     } else {
-      conditions.push(eq(wpTerms.termId, BigInt(-1)));
+      conditions.push(eq(wpTermTaxonomy.termTaxonomyId, BigInt(-1)));
     }
   }
 
@@ -202,9 +206,15 @@ export async function getAllCategories(
       parent: wpTermTaxonomy.parent,
       termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
       count: wpTermTaxonomy.count,
+      languageCode: termTranslationsTable.languageCode,
+      translationGroupId: termTranslationsTable.translationGroupId,
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
+    .leftJoin(
+      termTranslationsTable,
+      eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
+    )
     .where(whereClause)
     .orderBy(orderExpr)
     .$dynamic();
@@ -232,6 +242,45 @@ export async function getAllCategories(
 
   const countMap = new Map(categoryCounts.map((item) => [item.id, item.count]));
 
+  // Batch load translation links for the returned groups
+  const groupIds = Array.from(
+    new Set(rows.map((r) => r.translationGroupId).filter(Boolean))
+  ) as string[];
+
+  const groupTranslationsMap = new Map<string, LinkedCategoryTranslation[]>();
+  if (groupIds.length > 0) {
+    const allGroupTerms = await database
+      .select({
+        termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+        termId: wpTerms.termId,
+        name: wpTerms.name,
+        slug: wpTerms.slug,
+        languageCode: termTranslationsTable.languageCode,
+        translationGroupId: termTranslationsTable.translationGroupId,
+      })
+      .from(termTranslationsTable)
+      .innerJoin(
+        wpTermTaxonomy,
+        eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
+      )
+      .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
+      .where(inArray(termTranslationsTable.translationGroupId, groupIds));
+
+    for (const item of allGroupTerms) {
+      const gid = item.translationGroupId;
+      if (!groupTranslationsMap.has(gid)) {
+        groupTranslationsMap.set(gid, []);
+      }
+      groupTranslationsMap.get(gid)!.push({
+        termTaxonomyId: item.termTaxonomyId.toString(),
+        termId: item.termId.toString(),
+        name: item.name,
+        slug: item.slug,
+        languageCode: item.languageCode,
+      });
+    }
+  }
+
   const categories: CategoryItem[] = rows.map((c) => ({
     id: c.termId.toString(),
     name: c.name,
@@ -240,6 +289,9 @@ export async function getAllCategories(
     parent: c.parent?.toString() || "0",
     termTaxonomyId: c.termTaxonomyId.toString(),
     count: countMap.get(c.termId.toString()) ?? Number(c.count ?? 0),
+    languageCode: c.languageCode ?? "en",
+    translationGroupId: c.translationGroupId ?? undefined,
+    translations: c.translationGroupId ? groupTranslationsMap.get(c.translationGroupId) ?? [] : [],
   }));
 
   return { categories, total };
@@ -258,12 +310,24 @@ export async function getCategoryCounts(database: DB = db): Promise<CategoryCoun
 
 export async function getParentCategories(
   excludeTermId?: bigint | string | number,
+  language?: string,
   database: DB = db
 ): Promise<{ id: string; name: string; parent: string }[]> {
   const conditions = [eq(wpTermTaxonomy.taxonomy, "category")];
 
   if (excludeTermId !== undefined) {
     conditions.push(ne(wpTerms.termId, toBigInt(excludeTermId)));
+  }
+
+  if (language && language !== "all") {
+    const matching = await database
+      .select({ termTaxonomyId: termTranslationsTable.termTaxonomyId })
+      .from(termTranslationsTable)
+      .where(eq(termTranslationsTable.languageCode, language));
+    const taxIds = matching.map((m) => m.termTaxonomyId);
+    if (taxIds.length > 0) {
+      conditions.push(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
+    }
   }
 
   const rows = await database
@@ -299,9 +363,15 @@ export async function getCategoryById(
       parent: wpTermTaxonomy.parent,
       termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
       count: wpTermTaxonomy.count,
+      languageCode: termTranslationsTable.languageCode,
+      translationGroupId: termTranslationsTable.translationGroupId,
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
+    .leftJoin(
+      termTranslationsTable,
+      eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
+    )
     .where(and(eq(wpTerms.termId, termId), eq(wpTermTaxonomy.taxonomy, "category")))
     .limit(1);
 
@@ -313,6 +383,33 @@ export async function getCategoryById(
     .from(wpTermRelationships)
     .where(eq(wpTermRelationships.termTaxonomyId, cat.termTaxonomyId));
 
+  let translations: LinkedCategoryTranslation[] = [];
+  if (cat.translationGroupId) {
+    const trRows = await database
+      .select({
+        termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+        termId: wpTerms.termId,
+        name: wpTerms.name,
+        slug: wpTerms.slug,
+        languageCode: termTranslationsTable.languageCode,
+      })
+      .from(termTranslationsTable)
+      .innerJoin(
+        wpTermTaxonomy,
+        eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
+      )
+      .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
+      .where(eq(termTranslationsTable.translationGroupId, cat.translationGroupId));
+
+    translations = trRows.map((r) => ({
+      termTaxonomyId: r.termTaxonomyId.toString(),
+      termId: r.termId.toString(),
+      name: r.name,
+      slug: r.slug,
+      languageCode: r.languageCode,
+    }));
+  }
+
   return {
     id: cat.termId.toString(),
     name: cat.name,
@@ -321,6 +418,9 @@ export async function getCategoryById(
     parent: cat.parent?.toString() || "0",
     termTaxonomyId: cat.termTaxonomyId.toString(),
     count: Number(c?.count ?? cat.count ?? 0),
+    languageCode: cat.languageCode ?? "en",
+    translationGroupId: cat.translationGroupId ?? undefined,
+    translations,
   };
 }
 
@@ -337,9 +437,15 @@ export async function getCategoryBySlug(
       parent: wpTermTaxonomy.parent,
       termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
       count: wpTermTaxonomy.count,
+      languageCode: termTranslationsTable.languageCode,
+      translationGroupId: termTranslationsTable.translationGroupId,
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
+    .leftJoin(
+      termTranslationsTable,
+      eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
+    )
     .where(and(eq(wpTerms.slug, slug), eq(wpTermTaxonomy.taxonomy, "category")))
     .limit(1);
 
@@ -354,6 +460,8 @@ export async function getCategoryBySlug(
     parent: cat.parent?.toString() || "0",
     termTaxonomyId: cat.termTaxonomyId.toString(),
     count: Number(cat.count ?? 0),
+    languageCode: cat.languageCode ?? "en",
+    translationGroupId: cat.translationGroupId ?? undefined,
   };
 }
 
@@ -362,13 +470,13 @@ export async function getCategoryBySlug(
 // ---------------------------------------------------------------------------
 
 export async function createCategory(
-  data: CategoryInput,
+  data: CreateCategoryOptions,
   database: DB = db
 ): Promise<CategoryItem> {
   const parsed = createCategorySchema.parse(data);
   const slug = await uniqueCategorySlug(parsed.slug || parsed.name, undefined, database);
 
-  const termId = await database.transaction(async (tx) => {
+  const { termId, termTaxonomyId } = await database.transaction(async (tx) => {
     const insertedTerm = await tx
       .insert(wpTerms)
       .values({
@@ -380,16 +488,23 @@ export async function createCategory(
 
     const newTermId = insertedTerm[0].termId;
 
-    await tx.insert(wpTermTaxonomy).values({
-      termId: newTermId,
-      taxonomy: "category",
-      description: parsed.description || "",
-      parent: parsed.parent ?? BigInt(0),
-      count: BigInt(0),
-    });
+    const insertedTax = await tx
+      .insert(wpTermTaxonomy)
+      .values({
+        termId: newTermId,
+        taxonomy: "category",
+        description: parsed.description || "",
+        parent: parsed.parent ?? BigInt(0),
+        count: BigInt(0),
+      })
+      .returning({ termTaxonomyId: wpTermTaxonomy.termTaxonomyId });
 
-    return newTermId;
+    return { termId: newTermId, termTaxonomyId: insertedTax[0].termTaxonomyId };
   });
+
+  const langCode = data.languageCode || "en";
+  const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
+  await setTermLanguage(termTaxonomyId, langCode, sourceTaxId, database);
 
   const created = await getCategoryById(termId, database);
   if (!created) {
@@ -400,7 +515,7 @@ export async function createCategory(
 
 export async function updateCategory(
   id: bigint | string | number,
-  data: Partial<CategoryInput>,
+  data: UpdateCategoryOptions,
   database: DB = db
 ): Promise<CategoryItem> {
   const termId = toBigInt(id);
@@ -432,6 +547,11 @@ export async function updateCategory(
       .set({ description, parent })
       .where(and(eq(wpTermTaxonomy.termId, termId), eq(wpTermTaxonomy.taxonomy, "category")));
   });
+
+  if (data.languageCode) {
+    const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
+    await setTermLanguage(toBigInt(existing.termTaxonomyId), data.languageCode, sourceTaxId, database);
+  }
 
   const updated = await getCategoryById(termId, database);
   if (!updated) {

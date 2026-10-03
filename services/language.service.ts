@@ -6,6 +6,7 @@ import {
     languagesTable,
     translationsTable,
     postTranslationsTable,
+    termTranslationsTable,
     createLanguageSchema,
     updateLanguageSchema,
     createTranslationSchema,
@@ -15,6 +16,7 @@ import {
     SelectTranslation,
 } from "@/db/schema/cms-languages";
 import { wpPosts } from "@/db/schema/cms-posts";
+import { wpTerms, wpTermTaxonomy } from "@/db/schema/cms-taxonomy";
 
 // ---------------------------------------------------------------------------
 // Template File Helpers
@@ -574,3 +576,120 @@ export async function setPostLanguage(
     await linkPostTranslation(pid, languageCode, groupId, database);
     return groupId;
 }
+
+// ---------------------------------------------------------------------------
+// Term (Taxonomy) Translations (WPML / Polylang group model)
+// ---------------------------------------------------------------------------
+
+export type LinkedTermTranslation = {
+    termTaxonomyId: bigint;
+    termId: bigint;
+    slug: string;
+    name: string;
+    languageCode: string;
+    languageName: string;
+    nativeName: string;
+    direction: string;
+    isDefault: boolean;
+};
+
+export async function getTermLanguage(
+    termTaxonomyId: bigint | number,
+    database: DB = db
+): Promise<{ languageCode: string; translationGroupId: string } | null> {
+    const [row] = await database
+        .select({
+            languageCode: termTranslationsTable.languageCode,
+            translationGroupId: termTranslationsTable.translationGroupId,
+        })
+        .from(termTranslationsTable)
+        .where(eq(termTranslationsTable.termTaxonomyId, BigInt(termTaxonomyId)))
+        .limit(1);
+
+    return row ?? null;
+}
+
+export async function getTermTranslations(
+    termTaxonomyId: bigint | number,
+    database: DB = db
+): Promise<LinkedTermTranslation[]> {
+    const termLang = await getTermLanguage(termTaxonomyId, database);
+    if (!termLang) return [];
+
+    const rows = await database
+        .select({
+            termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+            termId: wpTerms.termId,
+            slug: wpTerms.slug,
+            name: wpTerms.name,
+            languageCode: languagesTable.code,
+            languageName: languagesTable.name,
+            nativeName: languagesTable.nativeName,
+            direction: languagesTable.direction,
+            isDefault: languagesTable.isDefault,
+        })
+        .from(termTranslationsTable)
+        .innerJoin(wpTermTaxonomy, eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId))
+        .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
+        .innerJoin(languagesTable, eq(termTranslationsTable.languageCode, languagesTable.code))
+        .where(eq(termTranslationsTable.translationGroupId, termLang.translationGroupId));
+
+    return rows;
+}
+
+export async function linkTermTranslation(
+    termTaxonomyId: bigint | number,
+    languageCode: string,
+    translationGroupId: string,
+    database: DB = db
+): Promise<void> {
+    const tid = BigInt(termTaxonomyId);
+    const existing = await getTermLanguage(tid, database);
+
+    if (existing) {
+        await database
+            .update(termTranslationsTable)
+            .set({
+                languageCode,
+                translationGroupId,
+                updatedAt: new Date(),
+            })
+            .where(eq(termTranslationsTable.termTaxonomyId, tid));
+    } else {
+        await database
+            .insert(termTranslationsTable)
+            .values({
+                termTaxonomyId: tid,
+                languageCode,
+                translationGroupId,
+            });
+    }
+}
+
+export async function setTermLanguage(
+    termTaxonomyId: bigint | number,
+    languageCode: string,
+    sourceTermTaxonomyId?: bigint | number,
+    database: DB = db
+): Promise<string> {
+    const tid = BigInt(termTaxonomyId);
+    let groupId: string;
+
+    if (sourceTermTaxonomyId) {
+        const sourceLang = await getTermLanguage(sourceTermTaxonomyId, database);
+        if (sourceLang) {
+            groupId = sourceLang.translationGroupId;
+        } else {
+            groupId = `term_${sourceTermTaxonomyId}`;
+            const defLang = await getDefaultLanguage(database);
+            await linkTermTranslation(sourceTermTaxonomyId, defLang?.code ?? "en", groupId, database);
+        }
+    } else {
+        const existing = await getTermLanguage(tid, database);
+        groupId = existing?.translationGroupId ?? `term_${tid}`;
+    }
+
+    await linkTermTranslation(tid, languageCode, groupId, database);
+    return groupId;
+}
+

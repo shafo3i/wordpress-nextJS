@@ -199,6 +199,9 @@ export function CategoryTable({
                 {dict["admin.categories.table.slug"] || "Slug"}
               </th>
               <th className="px-3 py-2 text-center font-semibold">
+                {dict["admin.common.language"] || "Language"}
+              </th>
+              <th className="px-3 py-2 text-center font-semibold">
                 {dict["admin.categories.table.count"] || "Count"}
               </th>
             </tr>
@@ -221,6 +224,7 @@ export function CategoryTable({
                     dict={dict}
                     isSelected={selectedIds.includes(category.id)}
                     key={category.id}
+                    languages={languages}
                     onDelete={() => handleDeleteOne(category.id)}
                     onQuickEdit={() => setQuickEditId(category.id)}
                     onToggleSelect={(checked) => toggleSelectOne(category.id, checked)}
@@ -229,7 +233,7 @@ export function CategoryTable({
               )
             ) : (
               <tr>
-                <td className="px-4 py-8 text-center text-[#646970]" colSpan={5}>
+                <td className="px-4 py-8 text-center text-[#646970]" colSpan={6}>
                   {dict["admin.categories.table.no_categories"] || "No categories found."}
                 </td>
               </tr>
@@ -255,6 +259,9 @@ export function CategoryTable({
               </th>
               <th className="px-3 py-2 text-start font-semibold">
                 {dict["admin.categories.table.slug"] || "Slug"}
+              </th>
+              <th className="px-3 py-2 text-center font-semibold">
+                {dict["admin.common.language"] || "Language"}
               </th>
               <th className="px-3 py-2 text-center font-semibold">
                 {dict["admin.categories.table.count"] || "Count"}

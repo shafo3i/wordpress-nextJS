@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, getPostUrl } from "@/components/site/utils";
 
 /**
  * 6. MULTI-COLUMN STORY CARDS GRID (3 or 4 Columns)
@@ -18,6 +18,9 @@ export function CardsGridBlock({
   showAuthor = true,
   showDate = true,
   showCategory = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -27,6 +30,9 @@ export function CardsGridBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   const isSerif = isSerifHeading(theme);
 
@@ -36,7 +42,9 @@ export function CardsGridBlock({
     <section className="space-y-4">
       <ThemeSectionHeader
         title={title}
-        subtitle={`${columns} Columns`}
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
 
@@ -68,7 +76,7 @@ export function CardsGridBlock({
                     {item.categories[0]}
                   </span>
                 )}
-                <Link href={`/posts/${item.slug}`} className="block">
+                <Link href={getPostUrl(item.slug, theme)} className="block">
                   <h4
                     style={{ color: "var(--theme-heading, #0f172a)" }}
                     className={`font-bold leading-snug line-clamp-2 hover:underline text-sm ${
@@ -94,7 +102,7 @@ export function CardsGridBlock({
               >
                 {showAuthor && (
                   <span style={{ color: "var(--theme-muted, #64748b)" }}>
-                    {item.authorName}
+                    {theme.dict?.[item.authorName] || item.authorName}
                   </span>
                 )}
                 {showDate && (
@@ -102,7 +110,7 @@ export function CardsGridBlock({
                     style={{ color: "var(--theme-muted, #94a3b8)" }}
                     className="font-mono"
                   >
-                    {formatDate(item.date)}
+                    {formatDate(item.date, theme.locale)}
                   </span>
                 )}
               </div>

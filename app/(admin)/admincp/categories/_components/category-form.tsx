@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createCategory } from "../action";
+import type { SelectLanguage } from "@/db/schema/cms-languages";
+import type { CategoryItem } from "@/services/category.service";
 
 export type CategoryParentOption = {
   id: string;
@@ -12,10 +14,20 @@ export type CategoryParentOption = {
 
 export function CategoryForm({
   parentCategories = [],
+  languages = [],
+  currentLanguage = "en",
+  sourceCategories = [],
+  initialTargetLanguage,
+  initialSourceTaxId,
   onCreated,
   dict = {},
 }: {
   parentCategories?: CategoryParentOption[];
+  languages?: SelectLanguage[];
+  currentLanguage?: string;
+  sourceCategories?: CategoryItem[];
+  initialTargetLanguage?: string;
+  initialSourceTaxId?: string;
   onCreated?: () => void;
   dict?: Record<string, string>;
 }) {
@@ -23,10 +35,26 @@ export function CategoryForm({
   const [slug, setSlug] = useState("");
   const [parent, setParent] = useState("0");
   const [description, setDescription] = useState("");
+  const [languageCode, setLanguageCode] = useState(
+    initialTargetLanguage || (currentLanguage !== "all" ? currentLanguage : "en")
+  );
+  const [sourceTermTaxonomyId, setSourceTermTaxonomyId] = useState(initialSourceTaxId || "0");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  useEffect(() => {
+    if (initialTargetLanguage) {
+      setLanguageCode(initialTargetLanguage);
+    }
+  }, [initialTargetLanguage]);
+
+  useEffect(() => {
+    if (initialSourceTaxId) {
+      setSourceTermTaxonomyId(initialSourceTaxId);
+    }
+  }, [initialSourceTaxId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,12 +75,17 @@ export function CategoryForm({
         formData.set("slug", slug.trim());
         formData.set("parent", parent);
         formData.set("description", description.trim());
+        formData.set("languageCode", languageCode);
+        if (sourceTermTaxonomyId && sourceTermTaxonomyId !== "0") {
+          formData.set("sourceTermTaxonomyId", sourceTermTaxonomyId);
+        }
 
         await createCategory(formData);
         setName("");
         setSlug("");
         setParent("0");
         setDescription("");
+        setSourceTermTaxonomyId("0");
         setSuccessMessage(
           dict["admin.categories.created_notice"] || "Category added."
         );
@@ -123,6 +156,55 @@ export function CategoryForm({
               "The “slug” is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens."}
           </p>
         </div>
+
+        {languages && languages.length > 0 && (
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
+              {dict["admin.common.language"] || "Language"}
+            </label>
+            <select
+              className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1]"
+              disabled={isPending}
+              name="languageCode"
+              onChange={(e) => setLanguageCode(e.target.value)}
+              value={languageCode}
+            >
+              {languages.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.nativeName ? `${l.nativeName} (${l.name})` : l.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {languageCode !== "en" && sourceCategories && sourceCategories.length > 0 && (
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
+              {dict["admin.categories.translation_of"] || "Translation of"}
+            </label>
+            <select
+              className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1]"
+              disabled={isPending}
+              name="sourceTermTaxonomyId"
+              onChange={(e) => setSourceTermTaxonomyId(e.target.value)}
+              value={sourceTermTaxonomyId}
+            >
+              <option value="0">
+                {dict["admin.common.none"] || "— None (standalone category) —"}
+              </option>
+              {sourceCategories.map((c) => (
+                <option key={c.termTaxonomyId} value={c.termTaxonomyId}>
+                  {c.name} ({c.slug})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-[#646970]">
+              {dict["admin.categories.translation_of_desc"] ||
+                "Link this category as a translation of an English category."}
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="mb-1 block text-xs font-semibold text-[#1d2327]">

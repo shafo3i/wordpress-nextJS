@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, AlertTriangle, XCircle, HelpCircle, ArrowUpRight } from "lucide-react";
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
+import { t } from "@/components/site/utils";
 
 export function FactCheckAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
   const isRtl = direction === "rtl";
@@ -144,7 +145,7 @@ export function FactCheckRender({ item, theme }: WidgetRenderProps) {
     <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
       <div className="flex items-center justify-between pb-2 mb-2 border-b border-[var(--theme-border,#e2e8f0)]">
         <span className="theme-widget-title text-[10px] font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))]">
-          {item.title || (isRtl ? "تدقيق الحقائق" : "Fact Check Desk")}
+          {item.title || t("site.fact_check", theme, "Fact Check Desk")}
         </span>
         <span className={`rounded ${verdictMeta.color} font-black text-[9px] px-2 py-0.5 flex items-center gap-1`}>
           <VerdictIcon className="size-3" />

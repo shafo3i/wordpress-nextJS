@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { CategoryItem } from "@/services/category.service";
+import type { SelectLanguage } from "@/db/schema/cms-languages";
 
 export type CategoryRowData = CategoryItem;
 
@@ -11,6 +12,7 @@ export function CategoryRowItem({
   onToggleSelect,
   onQuickEdit,
   onDelete,
+  languages = [],
   basePath = "/admincp/categories",
   dict = {},
 }: {
@@ -19,6 +21,7 @@ export function CategoryRowItem({
   onToggleSelect: (checked: boolean) => void;
   onQuickEdit: () => void;
   onDelete: () => void;
+  languages?: SelectLanguage[];
   basePath?: string;
   dict?: Record<string, string>;
 }) {
@@ -101,6 +104,43 @@ export function CategoryRowItem({
 
       <td className="px-3 py-2 text-start text-[#50575e] align-top">
         {category.slug}
+      </td>
+
+      <td className="px-3 py-2 text-center align-top whitespace-nowrap">
+        <div className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center rounded border border-[#c3c4c7] bg-[#f0f0f1] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#50575e]">
+            {category.languageCode || "en"}
+          </span>
+          {languages
+            .filter((l) => l.code !== (category.languageCode || "en"))
+            .map((otherLang) => {
+              const tr = category.translations?.find(
+                (t) => t.languageCode === otherLang.code
+              );
+              if (tr) {
+                return (
+                  <Link
+                    className="inline-flex items-center justify-center size-5 rounded hover:bg-[#dcdcde] text-[11px] font-semibold text-[#2271b1]"
+                    href={`${basePath}/${tr.termId}/edit`}
+                    key={otherLang.code}
+                    title={`${otherLang.name}: ${tr.name}`}
+                  >
+                    ✓
+                  </Link>
+                );
+              }
+              return (
+                <Link
+                  className="inline-flex items-center justify-center size-5 rounded border border-dashed border-[#8c8f94] hover:bg-[#2271b1] hover:text-white text-[11px] text-[#50575e]"
+                  href={`${basePath}?targetLang=${otherLang.code}&sourceTaxId=${category.termTaxonomyId}#add-category`}
+                  key={otherLang.code}
+                  title={`Add ${otherLang.name} translation`}
+                >
+                  +
+                </Link>
+              );
+            })}
+        </div>
       </td>
 
       <td className="px-3 py-2 text-center align-top font-medium text-[#2271b1]">

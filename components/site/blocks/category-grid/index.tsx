@@ -16,6 +16,9 @@ export function CategoryGridBlock({
   showAuthor = true,
   showDate = true,
   showCategory = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -24,6 +27,9 @@ export function CategoryGridBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   return (
     <CardsGridBlock
@@ -35,6 +41,9 @@ export function CategoryGridBlock({
       showAuthor={showAuthor}
       showDate={showDate}
       showCategory={showCategory}
+      subtitle={subtitle}
+      linkText={linkText}
+      linkHref={linkHref}
     />
   );
 }

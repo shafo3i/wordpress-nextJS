@@ -9,7 +9,7 @@ import {
   wpTerms,
   user,
 } from "@/db/schema";
-import { languagesTable, postTranslationsTable } from "@/db/schema/cms-languages";
+import { languagesTable, postTranslationsTable, termTranslationsTable } from "@/db/schema/cms-languages";
 import {
   getPostLanguage,
   getPostTranslations,
@@ -134,6 +134,9 @@ export interface CategoryOption {
   id: string;
   slug: string;
   name: string;
+  termTaxonomyId?: string;
+  languageCode?: string;
+  translationGroupId?: string;
 }
 
 export interface TagOption {
@@ -690,22 +693,50 @@ export async function getPostById(
   };
 }
 
-export async function getAllCategoriesOptions(database: DB = db): Promise<CategoryOption[]> {
+export async function getAllCategoriesOptions(
+  language?: string,
+  database: DB = db
+): Promise<CategoryOption[]> {
+  const conditions = [eq(wpTermTaxonomy.taxonomy, "category")];
+
+  if (language && language !== "all") {
+    const matching = await database
+      .select({ termTaxonomyId: termTranslationsTable.termTaxonomyId })
+      .from(termTranslationsTable)
+      .where(eq(termTranslationsTable.languageCode, language));
+    const taxIds = matching.map((m) => m.termTaxonomyId);
+    if (taxIds.length > 0) {
+      conditions.push(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
+    } else {
+      conditions.push(eq(wpTermTaxonomy.termTaxonomyId, BigInt(-1)));
+    }
+  }
+
   const rows = await database
     .select({
       id: wpTerms.termId,
       slug: wpTerms.slug,
       name: wpTerms.name,
+      termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+      languageCode: termTranslationsTable.languageCode,
+      translationGroupId: termTranslationsTable.translationGroupId,
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
-    .where(eq(wpTermTaxonomy.taxonomy, "category"))
+    .leftJoin(
+      termTranslationsTable,
+      eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
+    )
+    .where(and(...conditions))
     .orderBy(asc(wpTerms.name));
 
   return rows.map((r) => ({
     id: r.id.toString(),
     slug: r.slug,
     name: r.name,
+    termTaxonomyId: r.termTaxonomyId.toString(),
+    languageCode: r.languageCode ?? "en",
+    translationGroupId: r.translationGroupId ?? undefined,
   }));
 }
 

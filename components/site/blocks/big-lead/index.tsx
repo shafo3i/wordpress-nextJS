@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme, getPostUrl, t } from "@/components/site/utils";
 
 /**
  * 4. BIG LEAD + SIDE LIST (Supports Lead Left OR Lead Right)
@@ -18,6 +18,9 @@ export function BigLeadSideListBlock({
   showAuthor = true,
   showDate = true,
   showCategory = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -27,6 +30,9 @@ export function BigLeadSideListBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   const isDark = isDarkTheme(theme);
   const isSerif = isSerifHeading(theme);
@@ -39,7 +45,9 @@ export function BigLeadSideListBlock({
     <section className="space-y-4">
       <ThemeSectionHeader
         title={title}
-        subtitle="Special Focus"
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
 
@@ -62,12 +70,12 @@ export function BigLeadSideListBlock({
             </div>
             <div className="p-6">
               <div className="mb-2 flex items-center gap-2">
-                {showCategory && (
+                {showCategory && lead.categories?.[0] && (
                   <span
                     style={{ color: "var(--theme-primary, #2271b1)" }}
                     className="font-bold text-[11px] uppercase tracking-wider"
                   >
-                    {lead.categories[0] || "Lead Story"}
+                    {lead.categories[0]}
                   </span>
                 )}
                 {showDate && (
@@ -77,13 +85,13 @@ export function BigLeadSideListBlock({
                       style={{ color: "var(--theme-muted, #94a3b8)" }}
                       className="text-xs font-mono"
                     >
-                      {formatDate(lead.date)}
+                      {formatDate(lead.date, theme.locale)}
                     </time>
                   </>
                 )}
               </div>
 
-              <Link href={`/posts/${lead.slug}`} className="block">
+              <Link href={getPostUrl(lead.slug, theme)} className="block">
                 <h3
                   style={{ color: "var(--theme-heading, #0f172a)" }}
                   className={`text-2xl sm:text-3xl font-black tracking-tight leading-snug hover:underline ${
@@ -112,16 +120,18 @@ export function BigLeadSideListBlock({
                     style={{ color: "var(--theme-muted, #64748b)" }}
                     className="font-semibold"
                   >
-                    {lead.authorName}
+                    {theme.dict?.[lead.authorName] || lead.authorName}
                   </span>
                 )}
-                <Link
-                  href={`/posts/${lead.slug}`}
-                  style={{ color: "var(--theme-primary, #2271b1)" }}
-                  className="font-bold hover:underline"
-                >
-                  Full Coverage →
-                </Link>
+                {linkText && (
+                  <Link
+                    href={getPostUrl(lead.slug, theme)}
+                    style={{ color: "var(--theme-primary, #2271b1)" }}
+                    className="font-bold hover:underline"
+                  >
+                    {linkText} {theme.direction === "rtl" ? "←" : "→"}
+                  </Link>
+                )}
               </div>
             </div>
           </article>
@@ -144,10 +154,10 @@ export function BigLeadSideListBlock({
                       style={{ color: "var(--theme-primary, #2271b1)" }}
                       className="text-[10px] font-bold uppercase tracking-wider"
                     >
-                      {item.categories[0] || "News"}
+                      {item.categories[0]}
                     </span>
                   )}
-                  <Link href={`/posts/${item.slug}`} className="block mt-0.5">
+                  <Link href={getPostUrl(item.slug, theme)} className="block mt-0.5">
                     <h4
                       style={{ color: "var(--theme-heading, #0f172a)" }}
                       className={`text-sm font-bold leading-snug line-clamp-2 hover:underline ${
@@ -162,8 +172,8 @@ export function BigLeadSideListBlock({
                   style={{ color: "var(--theme-muted, #94a3b8)" }}
                   className="flex items-center justify-between text-[11px] font-mono mt-2"
                 >
-                  {showAuthor && <span>{item.authorName}</span>}
-                  {showDate && <span>{formatDate(item.date)}</span>}
+                  {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
+                  {showDate && <span>{formatDate(item.date, theme.locale)}</span>}
                 </div>
               </div>
 

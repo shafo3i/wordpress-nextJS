@@ -11,13 +11,15 @@ type PageProps = {
     s?: string;
     page?: string;
     lang?: string;
+    targetLang?: string;
+    sourceTaxId?: string;
   }>;
 };
 
 export default async function CategoriesPage({ searchParams }: PageProps) {
   await verifyAdminOrEditor();
 
-  const { s, page, lang } = await searchParams;
+  const { s, page, lang, targetLang, sourceTaxId } = await searchParams;
   const searchQuery = s?.trim() ?? "";
   const currentPage = Number(page) > 0 ? Number(page) : 1;
   const currentLanguage = lang ?? "all";
@@ -27,14 +29,15 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
   const dict = langContext.dict;
   const direction = langContext.direction;
 
-  const [{ categories, total }, parentOptions] = await Promise.all([
+  const [{ categories, total }, parentOptions, englishCategories] = await Promise.all([
     getCategories({
       search: searchQuery,
       language: currentLanguage,
       page: currentPage,
       limit: pageSize,
     }),
-    getParentCategories(),
+    getParentCategories(undefined, currentLanguage !== "all" ? currentLanguage : undefined),
+    getCategories({ language: "en", limit: 100 }),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -59,6 +62,11 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
           <CategoryForm
             dict={dict}
             parentCategories={parentOptions}
+            languages={langContext.allLanguages}
+            currentLanguage={currentLanguage !== "all" ? currentLanguage : "en"}
+            sourceCategories={englishCategories.categories}
+            initialTargetLanguage={targetLang}
+            initialSourceTaxId={sourceTaxId}
           />
         </div>
 

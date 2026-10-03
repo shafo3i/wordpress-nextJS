@@ -10,7 +10,7 @@ import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
 import type { WidgetItem } from "@/widgets/types";
-import { DEFAULT_THEME, formatDate, isDarkTheme, isSerifHeading, getPostUrl, getCategoryUrl } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, isDarkTheme, isSerifHeading, getPostUrl, getCategoryUrl, t } from "@/components/site/utils";
 
 /**
  * Single post article template with configurable layout architectures
@@ -111,7 +111,7 @@ export function PostTemplate({
         {/* Related Stories Widget */}
         <div className="theme-widget rounded-2xl border p-5 shadow-sm">
           <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
-            {theme.dict?.["site.more_from_newsroom"] || (theme.locale === "ar" ? "المزيد من غرفة الأخبار" : "More from Newsroom")}
+            {t("site.more_from_newsroom", theme, "More from Newsroom")}
           </h2>
           <div className="space-y-3">
             {relatedPosts.map((story) => (
@@ -129,7 +129,7 @@ export function PostTemplate({
                 )}
                 <div className="min-w-0">
                   <span className="text-[10px] font-semibold uppercase text-slate-400 block truncate">
-                    {story.categories[0] ?? "Dispatch"}
+                    {story.categories[0] ?? t("site.dispatch", theme, "Dispatch")}
                   </span>
                   <h3 className="mt-0.5 text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[var(--theme-primary)] transition-colors">
                     {story.title}
@@ -172,7 +172,7 @@ export function PostTemplate({
             ))}
             {showReadingTime && (
               <span className="flex items-center gap-1 text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">
-                <Clock className="size-3" /> {readingMinutes} {theme.dict?.["site.min_read"] || (theme.locale === "ar" ? "دقائق للقراءة" : "min read")}
+                <Clock className="size-3" /> {readingMinutes} {t("site.min_read", theme, "min read")}
               </span>
             )}
           </div>
@@ -200,7 +200,7 @@ export function PostTemplate({
               )}
               <div>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 block">
-                  {article.authorName || theme.dict?.["site.editorial_staff"] || (theme.locale === "ar" ? "هيئة التحرير" : "Editorial Staff")}
+                  {article.authorName ? (theme.dict?.[article.authorName] || article.authorName) : t("site.editorial_staff", theme, "Editorial Staff")}
                 </span>
                 {showDate && (
                   <time dateTime={article.date.toISOString()} className="text-[11px] text-slate-400 block font-mono">
@@ -214,7 +214,7 @@ export function PostTemplate({
             {showShareButtons && (
               <div className="flex items-center gap-1.5">
                 <span className="text-[11px] font-medium mr-1 text-slate-400 hidden sm:inline">
-                  {theme.dict?.["site.share"] || (theme.locale === "ar" ? "مشاركة:" : "Share:")}
+                  {t("site.share", theme, "Share")}:
                 </span>
                 <button
                   type="button"
@@ -236,7 +236,7 @@ export function PostTemplate({
                   type="button"
                   onClick={handleCopy}
                   className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
-                  title={theme.dict?.["site.copy_link"] || (theme.locale === "ar" ? "نسخ الرابط" : "Copy Link")}
+                  title={t("site.copy_link", theme, "Copy Link")}
                 >
                   {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
                 </button>

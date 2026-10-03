@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { DEFAULT_THEME, formatDate, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, isSerifHeading, getPostUrl, t } from "@/components/site/utils";
 
 /**
  * 9. INTERACTIVE TABBED TOPIC SWITCHER
@@ -69,7 +69,7 @@ export function TabbedBlock({
                 : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
             }`}
           >
-            All Stories
+            {t("site.all_stories", theme, "All Stories")}
           </button>
           {categories.map((cat) => (
             <button
@@ -121,7 +121,7 @@ export function TabbedBlock({
                 >
                   {item.categories[0]}
                 </span>
-                <Link href={`/posts/${item.slug}`} className="block mt-0.5">
+                <Link href={getPostUrl(item.slug, theme)} className="block mt-0.5">
                   <h4
                     style={{ color: "var(--theme-heading, #0f172a)" }}
                     className={`text-sm font-bold leading-snug line-clamp-2 hover:underline ${
@@ -136,7 +136,7 @@ export function TabbedBlock({
                 style={{ color: "var(--theme-muted, #94a3b8)" }}
                 className="text-[10px] font-mono mt-1"
               >
-                {formatDate(item.date)}
+                {formatDate(item.date, theme.locale)}
               </span>
             </div>
           </article>

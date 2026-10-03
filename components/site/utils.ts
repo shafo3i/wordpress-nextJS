@@ -1,12 +1,25 @@
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 
-export function formatDate(value: Date, locale = "en") {
-  return new Intl.DateTimeFormat(locale, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(value);
+export function formatDate(value: Date | string | number, locale = "en") {
+  try {
+    const d = value instanceof Date ? value : new Date(value);
+    if (isNaN(d.getTime())) return "";
+    return new Intl.DateTimeFormat(locale || "en", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }).format(d);
+  } catch {
+    return "";
+  }
+}
+
+export function t(key: string, theme?: FrontEndThemeContext, fallback?: string): string {
+  if (theme?.dict && theme.dict[key]) {
+    return theme.dict[key];
+  }
+  return fallback !== undefined ? fallback : key;
 }
 
 export function localizePath(path: string, locale?: string, defaultLocale?: string): string {

@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, getPostUrl, t } from "@/components/site/utils";
 
 /**
  * 3. HERO CAROUSEL WITH INTERACTIVE FILMSTRIP
@@ -17,6 +17,9 @@ export function HeroSliderBlock({
   theme = DEFAULT_THEME,
   showExcerpt = true,
   showCategory = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -25,6 +28,9 @@ export function HeroSliderBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const isSerif = isSerifHeading(theme);
@@ -46,7 +52,9 @@ export function HeroSliderBlock({
     <section className="space-y-3">
       <ThemeSectionHeader
         title={title}
-        subtitle="Carousel"
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
 
@@ -65,15 +73,15 @@ export function HeroSliderBlock({
                 style={{ backgroundColor: theme.primaryColor }}
                 className="rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
               >
-                {current.categories[0] || "Spotlight"}
+                {current.categories[0] || t("site.spotlight", theme, "Spotlight")}
               </span>
             )}
             <span className="text-xs text-slate-300 font-mono">
-              {formatDate(current.date)}
+              {formatDate(current.date, theme.locale)}
             </span>
           </div>
 
-          <Link href={`/posts/${current.slug}`} className="block">
+          <Link href={getPostUrl(current.slug, theme)} className="block">
             <h3
               className={`text-2xl sm:text-4xl font-black leading-tight tracking-tight text-white hover:underline ${
                 isSerif ? "font-serif" : "font-sans"

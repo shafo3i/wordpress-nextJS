@@ -17,8 +17,14 @@ export async function createCategory(formData: FormData) {
 
   const raw = Object.fromEntries(formData.entries());
   const parsed = createCategorySchema.parse(raw);
+  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
+  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
 
-  const category = await createCategoryService(parsed);
+  const category = await createCategoryService({
+    ...parsed,
+    languageCode,
+    sourceTermTaxonomyId,
+  });
 
   revalidatePath("/admincp/categories");
   revalidatePath("/admincp/posts");
@@ -35,11 +41,16 @@ export async function updateCategory(formData: FormData) {
     throw new Error("A valid category ID is required.");
   }
 
+  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
+  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
+
   await updateCategoryService(parsed.termId, {
     name: parsed.name,
     slug: parsed.slug,
     parent: parsed.parent,
     description: parsed.description,
+    languageCode,
+    sourceTermTaxonomyId,
   });
 
   revalidatePath("/admincp/categories");

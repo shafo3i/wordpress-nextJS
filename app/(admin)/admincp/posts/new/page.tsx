@@ -24,19 +24,36 @@ export default async function NewPostPage({ searchParams }: NewPostProps) {
   // Determine initial language
   const targetLanguage = lang || langContext.code || "en";
 
-  // Fetch translation source info if creating a translation
-  let translationOfTitle: string | undefined;
-  if (translation_of) {
-    const sourcePost = await getPostByIdQuery(translation_of);
-    if (sourcePost?.post) {
-      translationOfTitle = sourcePost.post.title;
-    }
-  }
-
   const [categories, tags] = await Promise.all([
     getAllCategoriesQuery(),
     getAllTagsQuery(),
   ]);
+
+  // Fetch translation source info if creating a translation
+  let translationOfTitle: string | undefined;
+  let initialCategories: string[] = [];
+  if (translation_of) {
+    const sourcePost = await getPostByIdQuery(translation_of);
+    if (sourcePost?.post) {
+      translationOfTitle = sourcePost.post.title;
+      const sourceCatSlugs = sourcePost.post.categorySlugs || [];
+      // Match source categories' translation groups with targetLanguage categories
+      const sourceGroupIds = categories
+        .filter((c) => sourceCatSlugs.includes(c.slug) && c.translationGroupId)
+        .map((c) => c.translationGroupId);
+
+      const targetMatchingCats = categories.filter(
+        (c) =>
+          c.languageCode === targetLanguage &&
+          c.translationGroupId &&
+          sourceGroupIds.includes(c.translationGroupId)
+      );
+
+      if (targetMatchingCats.length > 0) {
+        initialCategories = targetMatchingCats.map((c) => c.slug);
+      }
+    }
+  }
 
   return (
     <AdminShell>
@@ -67,6 +84,7 @@ export default async function NewPostPage({ searchParams }: NewPostProps) {
         <ClassicPostEditor
           action={savePostAction}
           categories={categories}
+          initialCategories={initialCategories}
           tags={tags}
           postType="post"
           languages={langContext.allLanguages}

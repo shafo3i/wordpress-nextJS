@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
-import { formatDate } from "@/components/site/utils";
+import { formatDate, getPostUrl, t } from "@/components/site/utils";
 
 export function RelatedPostsAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
   const isRtl = direction === "rtl";
@@ -98,17 +98,17 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
       <div className="flex items-center gap-1.5 text-[var(--theme-primary,#2271b1)] mb-1">
         <Sparkles className="size-3.5" />
         <span className="text-[10px] font-bold uppercase tracking-wider">
-          {isRtl ? "قصص موصى بها" : "Contextual Feed"}
+          {t("site.contextual_feed", theme, "Contextual Feed")}
         </span>
       </div>
       <h4 className="theme-widget-title text-xs font-bold text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))] mb-2.5">
-        {item.title || (isRtl ? "مقالات ذات صلة" : "Related Stories")}
+        {item.title || t("site.related_stories", theme, "Related Stories")}
       </h4>
       <div className="space-y-2">
         {displayPosts.map((p) => (
           <Link
             key={p.id}
-            href={`/posts/${p.slug}`}
+            href={getPostUrl(p.slug, theme)}
             className="flex items-center gap-2.5 p-2 rounded-lg bg-[var(--theme-bg,#f8f7f4)] border border-[var(--theme-border,#e2e8f0)] hover:border-[var(--theme-primary,#2271b1)] transition-colors group"
           >
             {showThumbnail && p.imageUrl && (
@@ -121,14 +121,14 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
             )}
             <div className="flex-1 min-w-0">
               <span className="text-[9px] uppercase font-bold text-[var(--theme-primary,#2271b1)] block truncate">
-                {p.categories?.[0] || "Featured"}
+                {p.categories?.[0] || t("site.featured_story", theme, "Featured")}
               </span>
               <span className="text-xs font-bold text-[var(--theme-heading,#0f172a)] line-clamp-2 mt-0.5 group-hover:text-[var(--theme-primary,#2271b1)] transition-colors">
                 {p.title}
               </span>
               {showDate && (
                 <span className="text-[9px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5">
-                  {formatDate(p.date)}
+                  {formatDate(p.date, theme?.locale)}
                 </span>
               )}
             </div>

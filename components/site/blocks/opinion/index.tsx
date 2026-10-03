@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME } from "@/components/site/utils";
+import { DEFAULT_THEME, getPostUrl, t } from "@/components/site/utils";
 
 /**
  * 11. EDITORIAL OPINION & COLUMNISTS
@@ -14,11 +14,17 @@ export function OpinionBlock({
   title,
   theme = DEFAULT_THEME,
   postCount = 3,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
   theme?: FrontEndThemeContext;
   postCount?: number;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   if (!posts.length) return null;
 
@@ -28,7 +34,9 @@ export function OpinionBlock({
     <section className="space-y-4">
       <ThemeSectionHeader
         title={title}
-        subtitle="Commentary"
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
       <div className="grid gap-6 md:grid-cols-3">
@@ -49,24 +57,26 @@ export function OpinionBlock({
                 }}
                 className="size-10 rounded-full flex items-center justify-center font-bold text-xs shadow-xs"
               >
-                {item.authorName.charAt(0)}
+                {item.authorName ? item.authorName.charAt(0) : "•"}
               </div>
               <div>
                 <span
                   style={{ color: "var(--theme-heading, #0f172a)" }}
                   className="font-bold text-xs block"
                 >
-                  {item.authorName}
+                  {theme.dict?.[item.authorName] || item.authorName}
                 </span>
-                <span
-                  style={{ color: "var(--theme-muted, #64748b)" }}
-                  className="text-[10px]"
-                >
-                  Newsroom Columnist
-                </span>
+                {item.categories?.[0] && (
+                  <span
+                    style={{ color: "var(--theme-muted, #64748b)" }}
+                    className="text-[10px]"
+                  >
+                    {item.categories[0]}
+                  </span>
+                )}
               </div>
             </div>
-            <Link href={`/posts/${item.slug}`} className="hover:underline">
+            <Link href={getPostUrl(item.slug, theme)} className="hover:underline">
               <h4
                 style={{ color: "var(--theme-heading, #0f172a)" }}
                 className="font-serif text-base font-bold leading-snug"

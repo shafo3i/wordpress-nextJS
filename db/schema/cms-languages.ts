@@ -14,6 +14,7 @@ import { createInsertSchema, createUpdateSchema } from "drizzle-orm/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 import { wpPosts } from "./cms-posts";
+import { wpTermTaxonomy } from "./cms-taxonomy";
 
 // ---------------------------------------------------------------------------
 // cms_languages — Supported platform languages
@@ -79,6 +80,30 @@ export const postTranslationsTable = pgTable(
         uniqueIndex("cms_post_trans_post_idx").on(table.postId),
         index("cms_post_trans_group_idx").on(table.translationGroupId),
         index("cms_post_trans_lang_group_idx").on(table.translationGroupId, table.languageCode),
+    ]
+);
+
+// ---------------------------------------------------------------------------
+// cms_term_translations — Links taxonomy terms to languages and translation groups
+// ---------------------------------------------------------------------------
+export const termTranslationsTable = pgTable(
+    "cms_term_translations",
+    {
+        id: bigserial("id", { mode: "bigint" }).primaryKey(),
+        termTaxonomyId: bigint("term_taxonomy_id", { mode: "bigint" })
+            .notNull()
+            .references(() => wpTermTaxonomy.termTaxonomyId, { onDelete: "cascade" }),
+        languageCode: varchar("language_code", { length: 10 })
+            .notNull()
+            .references(() => languagesTable.code, { onDelete: "cascade" }),
+        translationGroupId: varchar("translation_group_id", { length: 64 }).notNull(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+        updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    },
+    (table) => [
+        uniqueIndex("cms_term_trans_tax_idx").on(table.termTaxonomyId),
+        index("cms_term_trans_group_idx").on(table.translationGroupId),
+        index("cms_term_trans_lang_group_idx").on(table.translationGroupId, table.languageCode),
     ]
 );
 

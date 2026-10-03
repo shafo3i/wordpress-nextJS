@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Mail, CheckCircle2, Sparkles, Loader2 } from "lucide-react";
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
+import { t } from "@/components/site/utils";
 
 export function NewsletterAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
   const isRtl = direction === "rtl";
@@ -103,7 +104,7 @@ export function NewsletterRender({ item, theme }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
   const heading = item.config?.heading || item.title || (isRtl ? "نشرة الموجز اليومي" : "Daily Morning Briefing");
   const description = item.content || item.config?.description || (isRtl ? "انضم لأكثر من 50,000 قارئ واحصل على أبرز الأخبار والتحليلات مباشرة في بريدك." : "Receive curated investigative reporting directly in your inbox.");
-  const buttonText = item.config?.buttonText || (isRtl ? "اشتراك مجاني" : "Subscribe");
+  const buttonText = item.config?.buttonText || t("site.subscribe", theme, "Subscribe");
   const privacyNote = item.config?.privacyNote || (isRtl ? "نحترم خصوصيتك، بدون أي رسائل مزعجة." : "No spam. Unsubscribe anytime.");
   const actionUrl = item.config?.actionUrl || "/api/newsletter/subscribe";
 
@@ -145,7 +146,7 @@ export function NewsletterRender({ item, theme }: WidgetRenderProps) {
       <div className="flex items-center gap-1.5 text-[var(--theme-primary,#2271b1)] text-xs font-bold uppercase tracking-wider mb-1.5">
         <Sparkles className="size-3.5" />
         <span className="theme-widget-title text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))]">
-          {item.title || (isRtl ? "النشرة الإخبارية" : "Newsletter")}
+          {item.title || t("site.newsletter", theme, "Newsletter")}
         </span>
       </div>
 
@@ -160,7 +161,7 @@ export function NewsletterRender({ item, theme }: WidgetRenderProps) {
       {subscribed ? (
         <div className="flex items-center gap-2 rounded-lg bg-[#00a32a]/10 border border-[#00a32a]/20 p-3 text-xs font-semibold text-[#00a32a]">
           <CheckCircle2 className="size-4 text-[#00a32a] flex-shrink-0" />
-          <span>{isRtl ? "تم الاشتراك بنجاح! تفقد بريدك الإلكتروني لتأكيد التسجيل." : "Subscribed successfully! Check your inbox."}</span>
+          <span>{t("site.subscribe_success", theme, "Subscribed successfully! Check your inbox.")}</span>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2">

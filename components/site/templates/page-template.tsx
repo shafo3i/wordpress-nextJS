@@ -7,7 +7,7 @@ import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
 import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
-import { DEFAULT_THEME, isDarkTheme, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, isDarkTheme, isSerifHeading, t } from "@/components/site/utils";
 
 /**
  * Dynamic Page Template supporting multiple layouts:
@@ -37,8 +37,8 @@ export function PageTemplate({
   const isSerif = isSerifHeading(theme);
   const template = page.template || "default";
   const isRtl = theme.direction === "rtl";
-  const pageBadge = theme.dict?.["site.page"] || (theme.locale === "ar" ? "صفحة" : "Page");
-  const editorialBadge = theme.dict?.["site.editorial_page"] || (theme.locale === "ar" ? "صفحة تحريرية" : "Editorial Page");
+  const pageBadge = t("site.page", theme, "Page");
+  const editorialBadge = t("site.editorial_page", theme, "Editorial Page");
 
   return (
     <div

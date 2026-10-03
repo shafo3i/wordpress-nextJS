@@ -5,6 +5,8 @@ import { Search } from "lucide-react";
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
 
+import { t } from "@/components/site/utils";
+
 export function SearchAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
   const isRtl = direction === "rtl";
   const placeholder = item.config?.placeholder || (isRtl ? "ابحث في الأخبار والتقارير..." : "Search news & reports...");
@@ -39,12 +41,12 @@ export function SearchAdminForm({ item, onChange, dict, direction }: WidgetAdmin
 
 export function SearchRender({ item, theme }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
-  const placeholder = item.config?.placeholder || (isRtl ? "ابحث في الأخبار..." : "Search news...");
+  const placeholder = item.config?.placeholder || t("site.search_news", theme, "Search news...");
 
   return (
     <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
       <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))] mb-2.5">
-        {item.title || (isRtl ? "البحث" : "Search")}
+        {item.title || t("site.search", theme, "Search")}
       </h4>
       <form
         onSubmit={(e) => {
@@ -70,7 +72,7 @@ export function SearchRender({ item, theme }: WidgetRenderProps) {
           type="submit"
           style={{ backgroundColor: theme?.primaryColor || "var(--theme-primary, #2271b1)" }}
           className="h-9 px-3 rounded-lg text-white hover:opacity-90 transition-opacity flex items-center justify-center flex-shrink-0 cursor-pointer"
-          title={isRtl ? "بحث" : "Search"}
+          title={t("site.search", theme, "Search")}
         >
           <Search className="size-4" />
         </button>

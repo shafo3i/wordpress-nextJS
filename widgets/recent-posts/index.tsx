@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps, WidgetDisplayStyle } from "../types";
-import { formatDate, getExcerpt, isSerifHeading } from "@/components/site/utils";
+import { formatDate, getExcerpt, isSerifHeading, getPostUrl, t } from "@/components/site/utils";
 
 const STYLE_OPTIONS = [
   { id: "list", label: "Classic List", desc: "Detailed vertical list" },
@@ -133,7 +133,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
           {item.title}
         </h4>
         <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono">
-          {displayPosts.length} stories
+          {displayPosts.length} {t("site.stories", theme, "stories")}
         </span>
       </div>
 
@@ -150,7 +150,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
               </span>
               <div className="flex-1 min-w-0">
                 <Link
-                  href={`/posts/${post.slug}`}
+                  href={getPostUrl(post.slug, theme)}
                   className={`text-xs font-bold leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] line-clamp-2 transition-colors ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
@@ -159,7 +159,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
                 </Link>
                 {item.showDate !== false && (
                   <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5">
-                    {formatDate(post.date)}
+                    {formatDate(post.date, theme?.locale)}
                   </span>
                 )}
               </div>
@@ -171,14 +171,14 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
           {displayPosts.map((post) => (
             <div key={post.id} className="pt-2 first:pt-0">
               <Link
-                href={`/posts/${post.slug}`}
+                href={getPostUrl(post.slug, theme)}
                 className="text-xs font-medium leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] transition-colors"
               >
                 • {post.title}
               </Link>
               {item.showDate !== false && (
                 <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5 ml-2">
-                  {formatDate(post.date)}
+                  {formatDate(post.date, theme?.locale)}
                 </span>
               )}
             </div>
@@ -201,7 +201,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
                 </div>
               )}
               <Link
-                href={`/posts/${post.slug}`}
+                href={getPostUrl(post.slug, theme)}
                 className={`text-xs font-semibold leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] line-clamp-2 transition-colors ${
                   isSerif ? "font-serif" : "font-sans"
                 }`}
@@ -215,7 +215,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
               )}
               {item.showDate !== false && (
                 <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-1">
-                  {formatDate(post.date)}
+                  {formatDate(post.date, theme?.locale)}
                 </span>
               )}
             </div>
@@ -235,7 +235,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
               )}
               <div className="flex-1 min-w-0">
                 <Link
-                  href={`/posts/${post.slug}`}
+                  href={getPostUrl(post.slug, theme)}
                   className={`text-xs font-bold leading-snug hover:underline block text-[var(--theme-heading,#0f172a)] hover:text-[var(--theme-primary,#2271b1)] line-clamp-2 transition-colors ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
@@ -249,7 +249,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
                 )}
                 {item.showDate !== false && (
                   <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5">
-                    {formatDate(post.date)}
+                    {formatDate(post.date, theme?.locale)}
                   </span>
                 )}
               </div>

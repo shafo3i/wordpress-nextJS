@@ -5,6 +5,7 @@ import { ArrowUp } from "lucide-react";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import type { WidgetItem } from "@/widgets/types";
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
+import { t, localizePath } from "@/components/site/utils";
 
 interface SiteFooterProps {
   theme: FrontEndThemeContext;
@@ -87,9 +88,11 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
               ))
             ) : (
               <div>
-                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">About Newsroom</h4>
+                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
+                  {t("site.about_newsroom", theme, "About Newsroom")}
+                </h4>
                 <p style={{ color: footerTextColor }} className="text-xs leading-relaxed opacity-90">
-                  Operating with verifiable editorial integrity, original investigative reporting, and real-time market telemetry.
+                  {t("site.about_newsroom_desc", theme, "Operating with verifiable editorial integrity, original investigative reporting, and real-time market telemetry.")}
                 </p>
               </div>
             )}
@@ -103,11 +106,25 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
               ))
             ) : (
               <div>
-                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Key Desks</h4>
+                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
+                  {t("site.key_desks", theme, "Key Desks")}
+                </h4>
                 <ul className="text-xs space-y-2">
-                  <li><Link href="/category/news" style={{ color: footerLinkColor }} className="hover:opacity-80">National Wire</Link></li>
-                  <li><Link href="/category/business" style={{ color: footerLinkColor }} className="hover:opacity-80">Commercial Briefings</Link></li>
-                  <li><Link href="/category/technology" style={{ color: footerLinkColor }} className="hover:opacity-80">Silicon & Artificial Systems</Link></li>
+                  <li>
+                    <Link href={localizePath("/category/news", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
+                      {t("site.national_wire", theme, "National Wire")}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href={localizePath("/category/business", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
+                      {t("site.commercial_briefings", theme, "Commercial Briefings")}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href={localizePath("/category/technology", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
+                      {t("site.silicon_systems", theme, "Silicon & Artificial Systems")}
+                    </Link>
+                  </li>
                 </ul>
               </div>
             )}
@@ -122,11 +139,25 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
                 ))
               ) : (
                 <div>
-                  <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Governance</h4>
+                  <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
+                    {t("site.governance", theme, "Governance")}
+                  </h4>
                   <ul className="text-xs space-y-2">
-                    <li><Link href="/editorial-standards" style={{ color: footerLinkColor }} className="hover:opacity-80">Verification Code</Link></li>
-                    <li><Link href="/corrections" style={{ color: footerLinkColor }} className="hover:opacity-80">Corrections Protocol</Link></li>
-                    <li><Link href="/privacy" style={{ color: footerLinkColor }} className="hover:opacity-80">Privacy Rights</Link></li>
+                    <li>
+                      <Link href={localizePath("/editorial-standards", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
+                        {t("site.verification_code", theme, "Verification Code")}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href={localizePath("/corrections", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
+                        {t("site.corrections_protocol", theme, "Corrections Protocol")}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href={localizePath("/privacy", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
+                        {t("site.privacy_rights", theme, "Privacy Rights")}
+                      </Link>
+                    </li>
                   </ul>
                 </div>
               )}
@@ -136,9 +167,11 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
           {/* Column 4 */}
           {cols >= 4 && (
             <div>
-              <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">Broadcast Stream</h4>
+              <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
+                {t("site.broadcast_stream", theme, "Broadcast Stream")}
+              </h4>
               <p style={{ color: footerTextColor }} className="text-xs leading-relaxed opacity-90">
-                Daily audio dispatches published every weekday at 06:00 UTC.
+                {t("site.broadcast_stream_desc", theme, "Daily audio dispatches published every weekday at 06:00 UTC.")}
               </p>
             </div>
           )}
@@ -166,7 +199,7 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
                 style={{ color: subFooterText }}
                 className="flex items-center gap-1.5 text-xs hover:opacity-100 opacity-80 transition-opacity"
               >
-                <ArrowUp className="size-3.5" /> Back to Top
+                <ArrowUp className="size-3.5" /> {t("site.back_to_top", theme, "Back to Top")}
               </button>
             )}
           </div>

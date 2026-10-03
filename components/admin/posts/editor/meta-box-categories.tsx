@@ -4,20 +4,26 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 export type CategoryItem = {
+  id?: string;
   slug: string;
   name: string;
+  termTaxonomyId?: string;
+  languageCode?: string;
+  translationGroupId?: string;
 };
 
 export function MetaBoxCategories({
   categories,
   selectedCategories,
   onToggleCategory,
+  currentLanguage = "en",
   dict,
   direction = "ltr",
 }: {
   categories: CategoryItem[];
   selectedCategories: string[];
   onToggleCategory: (slug: string, checked: boolean) => void;
+  currentLanguage?: string;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
 }) {
@@ -25,19 +31,34 @@ export function MetaBoxCategories({
   const [activeTab, setActiveTab] = useState<"all" | "popular">("all");
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [showAllLanguages, setShowAllLanguages] = useState(false);
   const [localCategories, setLocalCategories] = useState(categories);
 
   const handleAddNew = () => {
     const trimmed = newCatName.trim();
     if (!trimmed) return;
-    const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const slug =
+      trimmed
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}0-9_-]+/gu, "-")
+        .replace(/^-+|-+$/g, "") || `category-${Date.now()}`;
     if (!localCategories.some((c) => c.slug === slug)) {
-      setLocalCategories([...localCategories, { name: trimmed, slug }]);
+      setLocalCategories([
+        ...localCategories,
+        { name: trimmed, slug, languageCode: currentLanguage },
+      ]);
       onToggleCategory(slug, true);
     }
     setNewCatName("");
     setIsAddingNew(false);
   };
+
+  const displayedCategories = localCategories.filter((cat) => {
+    if (showAllLanguages) return true;
+    if (selectedCategories.includes(cat.slug)) return true;
+    if (!currentLanguage || currentLanguage === "all") return true;
+    return !cat.languageCode || cat.languageCode === currentLanguage;
+  });
 
   return (
     <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-start" dir={direction}>
@@ -81,8 +102,8 @@ export function MetaBoxCategories({
 
           {/* Checklist */}
           <div className="max-h-48 overflow-y-auto rounded-[3px] border border-[#dcdcde] bg-white p-2">
-            {localCategories.length ? (
-              localCategories.map((cat) => (
+            {displayedCategories.length ? (
+              displayedCategories.map((cat) => (
                 <label
                   className="flex items-center gap-2 py-1 text-xs hover:bg-[#f0f6fc]"
                   key={cat.slug}
@@ -94,6 +115,11 @@ export function MetaBoxCategories({
                     type="checkbox"
                   />
                   <span className="text-[#2c3338]">{cat.name}</span>
+                  {showAllLanguages && cat.languageCode && (
+                    <span className="ms-auto text-[10px] uppercase font-bold text-[#8c8f94]">
+                      {cat.languageCode}
+                    </span>
+                  )}
                 </label>
               ))
             ) : (
@@ -101,6 +127,26 @@ export function MetaBoxCategories({
                 {dict?.["admin.posts.categories.no_categories"] || "No categories available."}
               </span>
             )}
+          </div>
+
+          {/* Language filter toggle */}
+          <div className="mt-1.5 flex items-center justify-between text-[11px] text-[#646970]">
+            <span>
+              {currentLanguage && (
+                <span className="font-semibold uppercase text-[#50575e]">
+                  {currentLanguage}
+                </span>
+              )}
+            </span>
+            <button
+              className="text-[#2271b1] hover:underline cursor-pointer"
+              onClick={() => setShowAllLanguages(!showAllLanguages)}
+              type="button"
+            >
+              {showAllLanguages
+                ? dict?.["admin.categories.show_filtered"] || `Filter by ${currentLanguage.toUpperCase()}`
+                : dict?.["admin.categories.show_all_languages"] || "Show all languages"}
+            </button>
           </div>
 
           {/* Add New Category Toggle */}

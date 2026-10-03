@@ -5,7 +5,7 @@ import { Clock, ArrowRight } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, getPostUrl } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, getPostUrl, getCategoryUrl, t } from "@/components/site/utils";
 
 /**
  * 1. BENTO MEGA-GRID BLOCK (1 Hero Left + 4 Cards Right)
@@ -18,6 +18,9 @@ export function MagazineBentoBlock({
   showAuthor = true,
   showDate = true,
   showCategory = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -26,21 +29,26 @@ export function MagazineBentoBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   const isSerif = isSerifHeading(theme);
+  const isRtl = theme?.direction === "rtl";
 
   if (!posts.length) return null;
 
   const [lead, ...gridItems] = posts;
   const fourCards = gridItems.slice(0, 4);
+  const readingMinutes = Math.max(1, Math.ceil((lead.content || lead.excerpt || "").split(/\s+/).length / 200));
 
   return (
     <section className="space-y-4">
       <ThemeSectionHeader
         title={title}
-        subtitle="Exclusive"
-        linkText="Explore All"
-        linkHref="/category/news"
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
 
@@ -56,17 +64,17 @@ export function MagazineBentoBlock({
 
             <div className="relative z-10 space-y-3.5">
               <div className="flex items-center gap-2">
-                {showCategory && (
+                {showCategory && lead.categories?.[0] && (
                   <span
                     style={{ backgroundColor: theme.primaryColor }}
                     className="rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-sm flex items-center gap-1.5"
                   >
                     <span className="size-1.5 rounded-full bg-white animate-pulse" />
-                    {lead.categories[0] || "Featured Story"}
+                    {lead.categories[0]}
                   </span>
                 )}
                 <span className="text-xs text-slate-300 font-mono flex items-center gap-1">
-                  <Clock className="size-3" /> 5 min read
+                  <Clock className="size-3" /> {readingMinutes} {t("site.min_read", theme, "min read")}
                 </span>
               </div>
 
@@ -94,8 +102,8 @@ export function MagazineBentoBlock({
                     </div>
                   )}
                   <div>
-                    {showAuthor && <span className="font-semibold text-white block text-xs">{lead.authorName}</span>}
-                    {showDate && <span className="text-[10px] text-slate-400 font-mono">{formatDate(lead.date)}</span>}
+                    {showAuthor && <span className="font-semibold text-white block text-xs">{theme.dict?.[lead.authorName] || lead.authorName}</span>}
+                    {showDate && <span className="text-[10px] text-slate-400 font-mono">{formatDate(lead.date, theme.locale)}</span>}
                   </div>
                 </div>
 
@@ -104,7 +112,7 @@ export function MagazineBentoBlock({
                   style={{ color: "#ffffff" }}
                   className="rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md px-3.5 py-1.5 font-bold text-xs transition-colors flex items-center gap-1.5"
                 >
-                  Read Story <ArrowRight className="size-3.5" />
+                  {t("site.read_story", theme, "Read Story")} <ArrowRight className={`size-3.5 ${isRtl ? "rotate-180" : ""}`} />
                 </Link>
               </div>
             </div>
@@ -127,7 +135,7 @@ export function MagazineBentoBlock({
               <div className="relative z-10 space-y-1.5">
                 {showCategory && (
                   <span className="rounded bg-black/50 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-200 inline-block">
-                    {item.categories[0] || "News"}
+                    {item.categories[0]}
                   </span>
                 )}
 
@@ -142,8 +150,8 @@ export function MagazineBentoBlock({
                 </Link>
 
                 <div className="flex items-center justify-between text-[10px] text-slate-300 pt-1">
-                  {showAuthor && <span>{item.authorName}</span>}
-                  {showDate && <span className="font-mono">{formatDate(item.date)}</span>}
+                  {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
+                  {showDate && <span className="font-mono">{formatDate(item.date, theme.locale)}</span>}
                 </div>
               </div>
             </div>

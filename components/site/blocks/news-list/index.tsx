@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading } from "@/components/site/utils";
+import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, getPostUrl, t } from "@/components/site/utils";
 
 /**
  * 5. NEWS LIST VIEW BLOCK (Supports Thumbnail Left OR Thumbnail Right)
@@ -18,6 +18,9 @@ export function NewsListViewBlock({
   showAuthor = true,
   showDate = true,
   showCategory = true,
+  subtitle,
+  linkText,
+  linkHref,
 }: {
   posts: ContentItem[];
   title: string;
@@ -27,6 +30,9 @@ export function NewsListViewBlock({
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
 }) {
   const isSerif = isSerifHeading(theme);
 
@@ -36,7 +42,9 @@ export function NewsListViewBlock({
     <section className="space-y-4">
       <ThemeSectionHeader
         title={title}
-        subtitle="Chronological"
+        subtitle={subtitle}
+        linkText={linkText}
+        linkHref={linkHref}
         theme={theme}
       />
 
@@ -68,7 +76,7 @@ export function NewsListViewBlock({
                       style={{ color: "var(--theme-primary, #2271b1)" }}
                       className="text-[10px] font-bold uppercase tracking-wider"
                     >
-                      {item.categories[0] || "News"}
+                      {item.categories[0]}
                     </span>
                   )}
                   {showDate && (
@@ -78,13 +86,13 @@ export function NewsListViewBlock({
                         style={{ color: "var(--theme-muted, #94a3b8)" }}
                         className="text-[11px] font-mono"
                       >
-                        {formatDate(item.date)}
+                        {formatDate(item.date, theme.locale)}
                       </time>
                     </>
                   )}
                 </div>
 
-                <Link href={`/posts/${item.slug}`} className="block">
+                <Link href={getPostUrl(item.slug, theme)} className="block">
                   <h3
                     style={{ color: "var(--theme-heading, #0f172a)" }}
                     className={`text-base sm:text-lg font-bold leading-snug hover:underline ${
@@ -114,15 +122,15 @@ export function NewsListViewBlock({
                     style={{ color: "var(--theme-muted, #64748b)" }}
                     className="font-medium"
                   >
-                    By {item.authorName}
+                    {t("site.by", theme, "By")} {theme.dict?.[item.authorName] || item.authorName}
                   </span>
                 )}
                 <Link
-                  href={`/posts/${item.slug}`}
+                  href={getPostUrl(item.slug, theme)}
                   style={{ color: "var(--theme-primary, #2271b1)" }}
                   className="font-semibold text-xs hover:underline"
                 >
-                  Read Story →
+                  {t("site.read_story", theme, "Read Story")} {theme.direction === "rtl" ? "←" : "→"}
                 </Link>
               </div>
             </div>

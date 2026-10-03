@@ -79,6 +79,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -94,6 +97,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -109,6 +115,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -124,6 +133,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -139,6 +151,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -154,6 +169,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -169,6 +187,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -183,6 +204,13 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
+            showColumnHeaders={block.showColumnHeaders}
+            col1Title={block.col1Title}
+            col2Title={block.col2Title}
+            col3Title={block.col3Title}
           />
         );
 
@@ -195,6 +223,9 @@ export function renderEditorialBlock({
             theme={theme}
             showExcerpt={block.showExcerpt}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -208,6 +239,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
 
@@ -222,6 +256,9 @@ export function renderEditorialBlock({
             showAuthor={block.showAuthor}
             showDate={block.showDate}
             showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
           />
         );
     }
@@ -240,6 +277,9 @@ export function renderEditorialBlock({
           showAuthor={block.showAuthor}
           showDate={block.showDate}
           showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 
@@ -254,6 +294,13 @@ export function renderEditorialBlock({
           showAuthor={block.showAuthor}
           showDate={block.showDate}
           showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
+          showColumnHeaders={block.showColumnHeaders}
+          col1Title={block.col1Title}
+          col2Title={block.col2Title}
+          col3Title={block.col3Title}
         />
       );
 
@@ -266,6 +313,9 @@ export function renderEditorialBlock({
           theme={theme}
           showExcerpt={block.showExcerpt}
           showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 
@@ -282,6 +332,9 @@ export function renderEditorialBlock({
           showAuthor={block.showAuthor}
           showDate={block.showDate}
           showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 
@@ -296,6 +349,9 @@ export function renderEditorialBlock({
           showAuthor={block.showAuthor}
           showDate={block.showDate}
           showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 
@@ -309,6 +365,9 @@ export function renderEditorialBlock({
           showAuthor={block.showAuthor}
           showDate={block.showDate}
           showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 
@@ -324,6 +383,9 @@ export function renderEditorialBlock({
           showAuthor={block.showAuthor}
           showDate={block.showDate}
           showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 
@@ -356,6 +418,9 @@ export function renderEditorialBlock({
           title={block.title}
           theme={theme}
           postCount={block.postCount || 3}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 

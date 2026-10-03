@@ -136,6 +136,19 @@ export function EditorialBlockDrawer({
             />
           </div>
 
+          <div>
+            <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+              {t("admin.theme_settings.subtitle", "Subtitle / Eyebrow (Optional)", "العنوان الفرعي للقسم (اختياري)")}
+            </label>
+            <input
+              type="text"
+              value={block.subtitle || ""}
+              placeholder={t("admin.theme_settings.subtitle_placeholder", "e.g. Special Focus", "مثال: تركيز خاص")}
+              onChange={(e) => onUpdate({ subtitle: e.target.value })}
+              className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
+            />
+          </div>
+
         {(block.type === "category_grid" ||
           block.type === "magazine_bento" ||
           block.type === "broadsheet_3col" ||
@@ -165,7 +178,67 @@ export function EditorialBlockDrawer({
               </select>
             </div>
           )}
+
+          <div>
+            <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+              {t("admin.theme_settings.link_text", "Header Link Label (Optional)", "نص الرابط الجانبي (اختياري)")}
+            </label>
+            <input
+              type="text"
+              value={block.linkText || ""}
+              placeholder={t("admin.theme_settings.link_text_placeholder", "e.g. Explore All", "مثال: استكشف المزيد")}
+              onChange={(e) => onUpdate({ linkText: e.target.value })}
+              className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
+            />
+          </div>
       </div>
+
+      {/* Broadsheet Column Titles */}
+      {(block.type === "broadsheet_3col" || block.displayStyle === "broadsheet_wire") && (
+        <div className="border-t border-[#e5e7eb] pt-3">
+          <label className="block text-[12px] font-semibold text-[#1d2327] mb-2">
+            {t("admin.theme_settings.col_headers", "Column Headers (Optional - Leave blank to hide):", "عناوين الأعمدة (اختياري - اتركها فارغة للإخفاء):")}
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <label className="block text-[11px] text-[#6b7280] mb-0.5">
+                {t("admin.theme_settings.col1", "Column 1 Header", "عنوان العمود 1")}
+              </label>
+              <input
+                type="text"
+                value={block.col1Title || ""}
+                placeholder="e.g. Regional"
+                onChange={(e) => onUpdate({ col1Title: e.target.value })}
+                className="h-[28px] w-full rounded border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-[#6b7280] mb-0.5">
+                {t("admin.theme_settings.col2", "Column 2 Header", "عنوان العمود 2")}
+              </label>
+              <input
+                type="text"
+                value={block.col2Title || ""}
+                placeholder="e.g. Lead Feature"
+                onChange={(e) => onUpdate({ col2Title: e.target.value })}
+                className="h-[28px] w-full rounded border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-[#6b7280] mb-0.5">
+                {t("admin.theme_settings.col3", "Column 3 Header", "عنوان العمود 3")}
+              </label>
+              <input
+                type="text"
+                value={block.col3Title || ""}
+                placeholder="e.g. News Wire"
+                onChange={(e) => onUpdate({ col3Title: e.target.value })}
+                className="h-[28px] w-full rounded border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. NEWS DISPLAY LAYOUT SELECTOR (Module Style Wireframe Grid) */}
       {block.type !== "multimedia" && block.type !== "newsletter" && (

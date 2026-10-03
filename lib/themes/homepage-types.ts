@@ -45,6 +45,13 @@ export type HomepageBlock = {
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
+  subtitle?: string;
+  linkText?: string;
+  linkHref?: string;
+  showColumnHeaders?: boolean;
+  col1Title?: string;
+  col2Title?: string;
+  col3Title?: string;
 };
 
 export type ColumnWidth = "12/12" | "6/12" | "8/12" | "4/12" | "3/12";
