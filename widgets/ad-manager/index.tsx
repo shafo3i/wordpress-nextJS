@@ -17,7 +17,7 @@ export function AdManagerAdminForm({ item, onChange, dict, direction }: WidgetAd
   return (
     <div className="space-y-3 text-start">
       <div>
-        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
           {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة (اختياري)" : "Widget Title (Optional)")}
         </label>
         <input
@@ -25,12 +25,12 @@ export function AdManagerAdminForm({ item, onChange, dict, direction }: WidgetAd
           value={item.title}
           placeholder={isRtl ? "مساحة إعلانية" : "Sponsored Placement"}
           onChange={(e) => onChange({ title: e.target.value })}
-          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[0.8125rem] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "نوع الإعلان" : "Advertisement Format"}
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -62,7 +62,7 @@ export function AdManagerAdminForm({ item, onChange, dict, direction }: WidgetAd
       {adType === "banner" ? (
         <div className="space-y-2 pt-2 border-t border-[#f0f0f1]">
           <div>
-            <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+            <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
               {isRtl ? "رابط صورة البانر (Image URL)" : "Banner Image URL"}
             </label>
             <input
@@ -75,7 +75,7 @@ export function AdManagerAdminForm({ item, onChange, dict, direction }: WidgetAd
           </div>
 
           <div>
-            <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+            <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
               {isRtl ? "رابط الوجهة المقصودة عند النقر (Target URL)" : "Destination Click URL"}
             </label>
             <input
@@ -88,7 +88,7 @@ export function AdManagerAdminForm({ item, onChange, dict, direction }: WidgetAd
           </div>
 
           <div>
-            <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+            <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
               {isRtl ? "اسم المعلن / النص البديل" : "Sponsor Name / Alt Text"}
             </label>
             <input
@@ -124,7 +124,7 @@ export function AdManagerAdminForm({ item, onChange, dict, direction }: WidgetAd
       ) : (
         <div className="space-y-2 pt-2 border-t border-[#f0f0f1]">
           <div>
-            <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+            <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
               {isRtl ? "كود التضمين أو برمجية الإعلان" : "Ad Code or Embed Script"}
             </label>
             <textarea
@@ -132,7 +132,7 @@ export function AdManagerAdminForm({ item, onChange, dict, direction }: WidgetAd
               value={rawHtml}
               placeholder="<!-- Google AdSense or HTML banner code -->"
               onChange={(e) => onChange({ content: e.target.value })}
-              className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 font-mono text-[11px] text-[#2c3338]"
+              className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 font-mono text-[0.6875rem] text-[#2c3338]"
             />
           </div>
         </div>
@@ -160,12 +160,12 @@ export function AdManagerRender({ item, theme }: WidgetRenderProps) {
     .join(" ");
 
   return (
-    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-3 shadow-sm text-center overflow-hidden">
-      <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-[var(--theme-border,#e2e8f0)]">
-        <span className="text-[9px] uppercase tracking-widest text-[var(--theme-muted,#64748b)] font-mono">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-3 shadow-sm text-center overflow-hidden">
+      <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-[var(--theme-border)]">
+        <span className="text-[0.5625rem] uppercase tracking-widest text-[var(--theme-muted)] font-mono">
           {isRtl ? "إعلان ممول" : "Advertisement"}
         </span>
-        <span className="text-[9px] text-[var(--theme-muted,#64748b)] font-medium">
+        <span className="text-[0.5625rem] text-[var(--theme-muted)] font-medium">
           {sponsorName}
         </span>
       </div>
@@ -185,20 +185,20 @@ export function AdManagerRender({ item, theme }: WidgetRenderProps) {
           />
         </a>
       ) : adType === "banner" ? (
-        <div className="p-6 border border-dashed border-[var(--theme-border,#e2e8f0)] rounded-lg bg-[var(--theme-bg,#f8f7f4)] text-center">
+        <div className="p-6 border border-dashed border-[var(--theme-border)] rounded-lg bg-[var(--theme-bg)] text-center">
           <span className="text-xl mb-1 block">📢</span>
-          <h5 className="theme-widget-title text-xs font-bold text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))] mb-0.5">
+          <h5 className="theme-widget-title text-xs font-bold text-[var(--theme-widget-title-color,var(--theme-heading))] mb-0.5">
             {item.title || (isRtl ? "مساحة إعلانية شاغرة" : "Sponsor Slot")}
           </h5>
-          <p className="text-[10px] text-[var(--theme-muted,#64748b)]">
+          <p className="text-[0.625rem] text-[var(--theme-muted)]">
             {isRtl ? "تواصل معنا لحجز هذا الموقع الإعلاني" : "Contact our sales desk to feature your campaign"}
           </p>
         </div>
       ) : (
         <div
-          className="text-xs text-[var(--theme-text,#1d2327)] font-medium leading-relaxed overflow-hidden"
+          className="text-xs text-[var(--theme-text)] font-medium leading-relaxed overflow-hidden"
           dangerouslySetInnerHTML={{
-            __html: rawHtml || '<div class="p-4 text-xs text-[var(--theme-muted,#64748b)]">No ad code configured.</div>',
+            __html: rawHtml || '<div class="p-4 text-xs text-[var(--theme-muted)]">No ad code configured.</div>',
           }}
         />
       )}

@@ -53,12 +53,12 @@ export function CardsGridBlock({
           <article
             key={item.id}
             style={{
-              backgroundColor: "var(--theme-surface, #ffffff)",
-              borderColor: "var(--theme-border, #e2e8f0)",
+              backgroundColor: "var(--theme-surface)",
+              borderColor: "var(--theme-border)",
             }}
-            className="group rounded-2xl border transition-all overflow-hidden shadow-sm flex flex-col hover:border-[#2271b1] hover:shadow-md"
+            className="group rounded-2xl border transition-all overflow-hidden theme-card flex flex-col hover:border-theme-primary"
           >
-            <div className="relative overflow-hidden w-full h-44 bg-slate-100 dark:bg-slate-800">
+            <div className="relative overflow-hidden w-full h-44 bg-theme-border/40">
               <img
                 src={item.imageUrl}
                 alt={item.title}
@@ -70,15 +70,15 @@ export function CardsGridBlock({
               <div>
                 {showCategory && (
                   <span
-                    style={{ color: "var(--theme-primary, #2271b1)" }}
-                    className="text-[10px] font-bold uppercase tracking-wider block mb-1"
+                    style={{ color: "var(--theme-primary)" }}
+                    className="text-[0.625rem] font-bold uppercase tracking-wider block mb-1"
                   >
                     {item.categories[0]}
                   </span>
                 )}
                 <Link href={getPostUrl(item.slug, theme)} className="block">
                   <h4
-                    style={{ color: "var(--theme-heading, #0f172a)" }}
+                    style={{ color: "var(--theme-heading)" }}
                     className={`font-bold leading-snug line-clamp-2 hover:underline text-sm ${
                       isSerif ? "font-serif" : "font-sans"
                     }`}
@@ -88,7 +88,7 @@ export function CardsGridBlock({
                 </Link>
                 {showExcerpt && (
                   <p
-                    style={{ color: "var(--theme-muted, #64748b)" }}
+                    style={{ color: "var(--theme-muted)" }}
                     className="mt-1.5 text-xs line-clamp-2 leading-relaxed"
                   >
                     {getExcerpt(item, 100)}
@@ -97,17 +97,17 @@ export function CardsGridBlock({
               </div>
 
               <div
-                style={{ borderColor: "var(--theme-border, #e2e8f0)" }}
-                className="mt-3 flex items-center justify-between text-[10px] pt-2 border-t"
+                style={{ borderColor: "var(--theme-border)" }}
+                className="mt-3 flex items-center justify-between text-[0.625rem] pt-2 border-t"
               >
                 {showAuthor && (
-                  <span style={{ color: "var(--theme-muted, #64748b)" }}>
+                  <span style={{ color: "var(--theme-muted)" }}>
                     {theme.dict?.[item.authorName] || item.authorName}
                   </span>
                 )}
                 {showDate && (
                   <span
-                    style={{ color: "var(--theme-muted, #94a3b8)" }}
+                    style={{ color: "var(--theme-muted)" }}
                     className="font-mono"
                   >
                     {formatDate(item.date, theme.locale)}

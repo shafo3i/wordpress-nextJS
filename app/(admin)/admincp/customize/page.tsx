@@ -25,6 +25,8 @@ export default async function CustomizePage({
       initialData={data}
       dict={dict}
       direction={direction}
+      languages={langContext.allLanguages.map(({ code, name, nativeName }) => ({ code, name, nativeName }))}
+      defaultPreviewLang={langContext.code}
     />
   );
 }

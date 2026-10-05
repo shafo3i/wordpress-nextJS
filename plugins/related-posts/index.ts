@@ -30,11 +30,11 @@ export function init() {
     const cardsHtml = relatedStories
       .map(
         (story) => `
-    <a href="/posts/${story.slug}" class="block p-3 bg-white border border-slate-200 rounded-lg hover:border-[#2271b1] hover:shadow-sm transition-all group">
-      <span class="text-[10px] text-[#2271b1] font-bold uppercase tracking-wider block mb-1">${
+    <a href="/posts/${story.slug}" class="block p-3 bg-theme-surface border border-theme-border rounded-lg hover:border-theme-primary hover:shadow-sm transition-all group">
+      <span class="text-[10px] text-theme-link font-bold uppercase tracking-wider block mb-1">${
         story.categories?.[0] || "Analysis"
       }</span>
-      <p class="font-bold text-slate-900 group-hover:text-[#2271b1] transition-colors line-clamp-2 leading-snug">${
+      <p class="font-bold text-theme-heading group-hover:text-theme-link-hover transition-colors line-clamp-2 leading-snug">${
         story.title
       }</p>
     </a>`
@@ -42,8 +42,8 @@ export function init() {
       .join("");
 
     const relatedBox = `
-<div class="wp-plugin-related-posts not-prose my-8 p-5 bg-slate-50 border border-slate-200 rounded-xl">
-  <h4 class="text-xs uppercase tracking-wider font-bold text-slate-500 mb-3 flex items-center gap-1.5">
+<div class="wp-plugin-related-posts not-prose my-8 p-5 bg-theme-surface border border-theme-border rounded-xl">
+  <h4 class="text-xs uppercase tracking-wider font-bold text-theme-muted mb-3 flex items-center gap-1.5">
     <span>📌</span> Recommended Follow-ups & Next Reads
   </h4>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">

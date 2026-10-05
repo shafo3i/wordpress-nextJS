@@ -12,15 +12,15 @@ export function init() {
     const uniqueFormId = `nl-form-${Math.random().toString(36).substring(2, 7)}`;
 
     const signupCard = `
-<div class="wp-plugin-newsletter not-prose my-10 p-6 bg-slate-900 text-white rounded-lg border border-slate-800 shadow-md">
+<div class="wp-plugin-newsletter not-prose my-10 p-6 bg-theme-footer text-theme-footer-heading rounded-lg border border-theme-footer-border shadow-md">
   <div class="flex items-start gap-4">
-    <div class="hidden sm:flex w-10 h-10 rounded-full bg-[#2271b1]/20 items-center justify-center text-xl text-[#72aee6] flex-shrink-0">
+    <div class="hidden sm:flex w-10 h-10 rounded-full bg-theme-footer-heading/10 items-center justify-center text-xl text-theme-footer-link flex-shrink-0">
       ✉️
     </div>
     <div class="flex-1">
-      <span class="text-[11px] uppercase tracking-wider font-semibold text-[#72aee6]">Daily Digest</span>
-      <h4 class="text-lg font-bold text-white mt-0.5 mb-1">${brandName}</h4>
-      <p class="text-xs text-slate-300 leading-relaxed mb-4">
+      <span class="text-[11px] uppercase tracking-wider font-semibold text-theme-footer-link">Daily Digest</span>
+      <h4 class="text-lg font-bold text-theme-footer-heading mt-0.5 mb-1">${brandName}</h4>
+      <p class="text-xs text-theme-muted leading-relaxed mb-4">
         ${pitch}
       </p>
       <div id="${uniqueFormId}-container">
@@ -45,7 +45,7 @@ export function init() {
             .then(function(data) {
               if (data.success) {
                 var container = document.getElementById('${uniqueFormId}-container');
-                container.innerHTML = '<div class=\\'flex items-center gap-2 rounded bg-emerald-950/80 border border-emerald-800 p-3 text-xs text-emerald-300 font-semibold\\'><span>✓</span> <span>' + (data.message || 'Subscribed successfully!') + '</span></div>';
+                container.innerHTML = '<div class=\\'flex items-center gap-2 rounded bg-theme-success/15 border border-theme-success/40 p-3 text-xs text-theme-success font-semibold\\'><span>✓</span> <span>' + (data.message || 'Subscribed successfully!') + '</span></div>';
               } else {
                 alert(data.error || 'Subscription failed. Please try again.');
                 btn.disabled = false;
@@ -63,11 +63,11 @@ export function init() {
             type="email"
             placeholder="Enter your work email"
             required
-            class="px-3.5 py-2 text-xs bg-slate-800 border border-slate-700 rounded text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#72aee6] flex-1"
+            class="px-3.5 py-2 text-xs bg-theme-footer-heading/10 border border-theme-footer-border rounded text-theme-footer-heading placeholder-theme-footer-text focus:outline-none focus:ring-1 focus:ring-theme-footer-link flex-1"
           />
           <button
             type="submit"
-            class="px-4 py-2 text-xs font-semibold bg-[#2271b1] hover:bg-[#135e96] text-white rounded transition-colors disabled:opacity-50"
+            class="px-4 py-2 text-xs font-semibold bg-theme-button hover:bg-theme-button-hover text-theme-button-text rounded transition-colors disabled:opacity-50"
           >
             ${buttonText}
           </button>

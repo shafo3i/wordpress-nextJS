@@ -17,19 +17,19 @@ export function NewsletterAdminForm({ item, onChange, dict, direction }: WidgetA
   return (
     <div className="space-y-3 text-start">
       <div>
-        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
           {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة" : "Widget Title")}
         </label>
         <input
           type="text"
           value={item.title}
           onChange={(e) => onChange({ title: e.target.value })}
-          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[0.8125rem] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "العنوان الترويجي الرئيسي" : "Headline Pitch"}
         </label>
         <input
@@ -42,7 +42,7 @@ export function NewsletterAdminForm({ item, onChange, dict, direction }: WidgetA
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "الوصف ودعوة الاشتراك" : "Description & Value Proposition"}
         </label>
         <textarea
@@ -54,13 +54,13 @@ export function NewsletterAdminForm({ item, onChange, dict, direction }: WidgetA
               config: { ...item.config, description: e.target.value },
             });
           }}
-          className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[12px] text-[#2c3338]"
+          className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[0.75rem] text-[#2c3338]"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "نص زر الإرسال" : "Button Text"}
           </label>
           <input
@@ -72,7 +72,7 @@ export function NewsletterAdminForm({ item, onChange, dict, direction }: WidgetA
           />
         </div>
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "رابط نقطة الاشتراك (API / Webhook)" : "Action / Webhook URL"}
           </label>
           <input
@@ -86,7 +86,7 @@ export function NewsletterAdminForm({ item, onChange, dict, direction }: WidgetA
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "ملاحظة الخصوصية" : "Privacy Note"}
         </label>
         <input
@@ -142,53 +142,52 @@ export function NewsletterRender({ item, theme }: WidgetRenderProps) {
   };
 
   return (
-    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
-      <div className="flex items-center gap-1.5 text-[var(--theme-primary,#2271b1)] text-xs font-bold uppercase tracking-wider mb-1.5">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">
+      <div className="flex items-center gap-1.5 text-[var(--theme-primary)] text-xs font-bold uppercase tracking-wider mb-1.5">
         <Sparkles className="size-3.5" />
-        <span className="theme-widget-title text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))]">
+        <span className="theme-widget-title text-[var(--theme-widget-title-color,var(--theme-heading))]">
           {item.title || t("site.newsletter", theme, "Newsletter")}
         </span>
       </div>
 
-      <h4 className="text-sm font-bold font-serif text-[var(--theme-heading,#0f172a)] leading-snug mb-1">
+      <h4 className="text-sm font-bold font-serif text-[var(--theme-heading)] leading-snug mb-1">
         {heading}
       </h4>
 
-      <p className="text-xs text-[var(--theme-muted,#64748b)] leading-relaxed mb-3">
+      <p className="text-xs text-[var(--theme-muted)] leading-relaxed mb-3">
         {description}
       </p>
 
       {subscribed ? (
-        <div className="flex items-center gap-2 rounded-lg bg-[#00a32a]/10 border border-[#00a32a]/20 p-3 text-xs font-semibold text-[#00a32a]">
-          <CheckCircle2 className="size-4 text-[#00a32a] flex-shrink-0" />
+        <div className="flex items-center gap-2 rounded-lg bg-theme-success/10 border border-theme-success/30 p-3 text-xs font-semibold text-theme-success">
+          <CheckCircle2 className="size-4 text-theme-success flex-shrink-0" />
           <span>{t("site.subscribe_success", theme, "Subscribed successfully! Check your inbox.")}</span>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2">
           <div className="relative">
-            <Mail className="size-4 text-[var(--theme-muted,#64748b)] opacity-60 absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Mail className="size-4 text-[var(--theme-muted)] opacity-60 absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={isRtl ? "أدخل بريدك الإلكتروني..." : "Enter your email address..."}
-              className="h-9 w-full rounded-lg border border-[var(--theme-border,#e2e8f0)] bg-[var(--theme-surface,#ffffff)] ps-9 pe-3 text-xs text-[var(--theme-text,#1d2327)] placeholder:opacity-60 focus:border-[var(--theme-primary,#2271b1)] focus:outline-none"
+              className="h-9 w-full rounded-lg theme-input ps-9 pe-3 text-xs text-[var(--theme-text)] placeholder:opacity-60 focus:border-[var(--theme-primary)] focus:outline-none"
             />
           </div>
 
-          {error && <span className="text-[10px] text-[#d63638] block">{error}</span>}
+          {error && <span className="text-[0.625rem] text-theme-danger block">{error}</span>}
 
           <button
             type="submit"
             disabled={loading}
-            style={{ backgroundColor: theme?.primaryColor || "var(--theme-primary, #2271b1)" }}
-            className="w-full h-9 rounded-lg text-white text-xs font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+            className="theme-btn w-full h-9 rounded-lg  text-xs font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {loading ? <Loader2 className="size-3.5 animate-spin" /> : buttonText}
           </button>
 
-          <span className="text-[10px] text-[var(--theme-muted,#64748b)] opacity-70 block text-center mt-1">
+          <span className="text-[0.625rem] text-[var(--theme-muted)] opacity-70 block text-center mt-1">
             {privacyNote}
           </span>
         </form>

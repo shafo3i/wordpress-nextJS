@@ -6,6 +6,7 @@ import type { FrontEndThemeContext } from "@/lib/site-theme";
 import type { WidgetItem } from "@/widgets/types";
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
 import { t, localizePath } from "@/components/site/utils";
+import { SocialLinks } from "@/components/site/social-links";
 
 interface SiteFooterProps {
   theme: FrontEndThemeContext;
@@ -16,10 +17,15 @@ interface SiteFooterProps {
   };
 }
 
+const FOOTER_GRID: Record<number, string> = {
+  1: "lg:grid-cols-1",
+  2: "lg:grid-cols-2",
+  3: "lg:grid-cols-3",
+  4: "lg:grid-cols-4",
+};
+
 export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
   const mods = theme.mods || {};
-  const isDark = theme.darkMode;
-  const primaryColor = mods.primaryColor || theme.primaryColor || "#2271b1";
   const cols = mods.footerColumns || 4;
 
   const col1Items = footerWidgets?.col1 || [];
@@ -32,12 +38,12 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
     }
   };
 
-  const footerBg = mods.footerBg || (isDark ? "#030712" : "#0f172a");
-  const footerTextColor = mods.footerTextColor || "#94a3b8";
-  const footerHeadingColor = mods.footerHeadingColor || "#ffffff";
-  const footerLinkColor = mods.footerLinkColor || footerTextColor;
-  const footerBorder = mods.footerBorderColor || mods.borderColor || (isDark ? "#1f2937" : "#e2e8f0");
-  const subFooterText = mods.subFooterTextColor || footerTextColor;
+  const footerBg = "var(--theme-footer-bg)";
+  const footerTextColor = "var(--theme-footer-text)";
+  const footerHeadingColor = "var(--theme-footer-heading)";
+  const footerLinkColor = "var(--theme-footer-link)";
+  const footerBorder = "var(--theme-footer-border)";
+  const subFooterText = "var(--theme-subfooter-text)";
 
   return (
     <footer
@@ -51,7 +57,7 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
       <div className="mx-auto theme-container px-6 py-12">
         {/* Top Header inside Footer */}
         <div
-          style={{ borderColor: isDark ? "#1f2937" : "rgba(255,255,255,0.1)" }}
+          style={{ borderColor: footerBorder }}
           className="flex flex-col md:flex-row items-center justify-between gap-6 border-b pb-8"
         >
           <div>
@@ -79,7 +85,7 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
         </div>
 
         {/* Multi-Column Layout */}
-        <div data-footer-widgets="true" className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-${cols} gap-8 py-8 items-start`}>
+        <div data-footer-widgets="true" className={`grid grid-cols-1 sm:grid-cols-2 ${FOOTER_GRID[cols] ?? FOOTER_GRID[4]} gap-8 py-8 items-start`}>
           {/* Column 1 */}
           <div className="space-y-4">
             {col1Items.length > 0 ? (
@@ -181,18 +187,16 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
         <div
           style={{
             borderColor: footerBorder,
-            backgroundColor: mods.subFooterBg || undefined,
+            backgroundColor: "var(--theme-subfooter-bg)",
           }}
-          className={`border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs ${
-            mods.subFooterBg ? "-mx-6 px-6 pb-6 mt-6 rounded-b" : ""
-          }`}
+          className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs -mx-6 px-6 pb-6 mt-6 rounded-b"
         >
           <p style={{ color: subFooterText }} className="opacity-90">
-            {mods.footerCopyright || theme.footerCopyright || "© 2026 PressForge. All rights reserved."}
+            {mods.footerCopyright || theme.footerCopyright}
           </p>
 
           <div className="flex items-center gap-4">
-            {mods.showBackToTop !== false && (
+            {mods.showFooterSocials !== false && <SocialLinks mods={mods} />}$([Environment]::NewLine)            {mods.showBackToTop !== false && (
               <button
                 type="button"
                 onClick={scrollToTop}

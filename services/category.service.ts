@@ -637,6 +637,23 @@ export async function bulkDeleteCategories(
   return { success: true, count: safeTermIds.length };
 }
 
+
+export async function getAllCategoriesWithPosts(
+  languageCode?: string,
+  page: number = 1,
+  limit: number = 20,
+  orderBy: "name" | "count" | "id" = "name",
+  order: "asc" | "desc" = "desc",
+  database: DB = db
+) {
+  const categoryWithPosts = await db.query.wpTermTaxonomy.findMany({
+    where: {
+      taxonomy: "category",
+    }
+  });
+  return categoryWithPosts;
+}
+
 // ---------------------------------------------------------------------------
 // Consolidated Category Service Export
 // ---------------------------------------------------------------------------
@@ -653,4 +670,5 @@ export const categoryService = {
   delete: deleteCategory,
   bulkDelete: bulkDeleteCategories,
   syncCount: syncCategoryCount,
+  getAllWithPosts: getAllCategoriesWithPosts,
 };

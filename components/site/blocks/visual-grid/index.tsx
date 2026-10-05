@@ -49,25 +49,25 @@ export function VisualGridBlock({
         {posts.map((item) => (
           <article
             key={item.id}
-            className="group relative rounded-2xl overflow-hidden h-80 flex flex-col justify-end p-6 text-white shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
+            className="group relative rounded-2xl overflow-hidden h-80 flex flex-col justify-end p-6 text-theme-overlay shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
           >
             <img
               src={item.imageUrl}
               alt={item.title}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-theme-scrim/95 via-theme-scrim/40 to-transparent" />
 
             <div className="relative z-10 space-y-2">
               {showCategory && (
-                <span className="rounded bg-white/20 backdrop-blur-sm px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white inline-block">
+                <span className="rounded bg-theme-overlay/20 backdrop-blur-sm px-2.5 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider text-theme-overlay inline-block">
                   {item.categories[0] || t("site.photo_feature", theme, "Photo Feature")}
                 </span>
               )}
 
               <Link href={getPostUrl(item.slug, theme)} className="block">
                 <h3
-                  className={`text-lg font-bold leading-snug text-white hover:underline ${
+                  className={`text-lg font-bold leading-snug text-theme-overlay hover:underline ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
                 >
@@ -75,7 +75,7 @@ export function VisualGridBlock({
                 </h3>
               </Link>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-300 pt-2 border-t border-white/20">
+              <div className="flex items-center justify-between text-[0.6875rem] text-theme-overlay-muted pt-2 border-t border-theme-overlay/20">
                 {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
                 {showDate && <span className="font-mono">{formatDate(item.date, theme.locale)}</span>}
               </div>

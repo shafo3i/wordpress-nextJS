@@ -54,33 +54,33 @@ export function MagazineBentoBlock({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {lead && (
-          <div className="lg:col-span-7 group relative rounded-2xl overflow-hidden min-h-[460px] sm:min-h-[520px] flex flex-col justify-end p-6 sm:p-10 text-white shadow-xl transition-all">
+          <div className="lg:col-span-7 group relative rounded-2xl overflow-hidden min-h-[460px] sm:min-h-[520px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl transition-all">
             <img
               src={lead.imageUrl}
               alt={lead.title}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-t from-theme-scrim via-theme-scrim/50 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
 
             <div className="relative z-10 space-y-3.5">
               <div className="flex items-center gap-2">
                 {showCategory && lead.categories?.[0] && (
                   <span
                     style={{ backgroundColor: theme.primaryColor }}
-                    className="rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white shadow-sm flex items-center gap-1.5"
+                    className="rounded-full px-3 py-1 text-[0.625rem] font-extrabold uppercase tracking-widest text-theme-on-primary shadow-sm flex items-center gap-1.5"
                   >
-                    <span className="size-1.5 rounded-full bg-white animate-pulse" />
+                    <span className="size-1.5 rounded-full bg-theme-overlay animate-pulse" />
                     {lead.categories[0]}
                   </span>
                 )}
-                <span className="text-xs text-slate-300 font-mono flex items-center gap-1">
+                <span className="text-xs text-theme-overlay-muted font-mono flex items-center gap-1">
                   <Clock className="size-3" /> {readingMinutes} {t("site.min_read", theme, "min read")}
                 </span>
               </div>
 
               <Link href={getPostUrl(lead.slug, theme)} className="block">
                 <h3
-                  className={`text-2xl sm:text-4xl lg:text-5xl font-black leading-[1.1] tracking-tight text-white hover:underline drop-shadow-md ${
+                  className={`text-2xl sm:text-4xl lg:text-5xl font-black leading-[1.1] tracking-tight text-theme-overlay hover:underline drop-shadow-md ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
                 >
@@ -89,28 +89,27 @@ export function MagazineBentoBlock({
               </Link>
 
               {showExcerpt && (
-                <p className="text-xs sm:text-sm text-slate-200 line-clamp-3 leading-relaxed max-w-xl">
+                <p className="text-xs sm:text-sm text-theme-overlay-muted line-clamp-3 leading-relaxed max-w-xl">
                   {getExcerpt(lead, 200)}
                 </p>
               )}
 
-              <div className="flex items-center justify-between pt-4 border-t border-white/20 text-xs text-slate-300">
+              <div className="flex items-center justify-between pt-4 border-t border-theme-overlay/20 text-xs text-theme-overlay-muted">
                 <div className="flex items-center gap-2.5">
                   {showAuthor && (
-                    <div className="size-7 rounded-full bg-white text-black font-bold flex items-center justify-center text-[10px]">
+                    <div className="size-7 rounded-full bg-theme-overlay text-theme-scrim font-bold flex items-center justify-center text-[0.625rem]">
                       {lead.authorName.charAt(0)}
                     </div>
                   )}
                   <div>
-                    {showAuthor && <span className="font-semibold text-white block text-xs">{theme.dict?.[lead.authorName] || lead.authorName}</span>}
-                    {showDate && <span className="text-[10px] text-slate-400 font-mono">{formatDate(lead.date, theme.locale)}</span>}
+                    {showAuthor && <span className="font-semibold text-theme-overlay block text-xs">{theme.dict?.[lead.authorName] || lead.authorName}</span>}
+                    {showDate && <span className="text-[0.625rem] text-theme-overlay-muted font-mono">{formatDate(lead.date, theme.locale)}</span>}
                   </div>
                 </div>
 
                 <Link
                   href={getPostUrl(lead.slug, theme)}
-                  style={{ color: "#ffffff" }}
-                  className="rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md px-3.5 py-1.5 font-bold text-xs transition-colors flex items-center gap-1.5"
+                  className="text-theme-overlay rounded-full bg-theme-overlay/20 hover:bg-theme-overlay/30 backdrop-blur-md px-3.5 py-1.5 font-bold text-xs transition-colors flex items-center gap-1.5"
                 >
                   {t("site.read_story", theme, "Read Story")} <ArrowRight className={`size-3.5 ${isRtl ? "rotate-180" : ""}`} />
                 </Link>
@@ -123,25 +122,25 @@ export function MagazineBentoBlock({
           {fourCards.map((item) => (
             <div
               key={item.id}
-              className="group relative rounded-xl overflow-hidden min-h-[240px] flex flex-col justify-end p-4 text-white shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
+              className="group relative rounded-xl overflow-hidden min-h-[240px] flex flex-col justify-end p-4 text-theme-overlay shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
             >
               <img
                 src={item.imageUrl}
                 alt={item.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-theme-scrim/90 via-theme-scrim/40 to-transparent" />
 
               <div className="relative z-10 space-y-1.5">
                 {showCategory && (
-                  <span className="rounded bg-black/50 backdrop-blur-sm px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-200 inline-block">
+                  <span className="rounded bg-theme-scrim/50 backdrop-blur-sm px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider text-theme-overlay-muted inline-block">
                     {item.categories[0]}
                   </span>
                 )}
 
                 <Link href={getPostUrl(item.slug, theme)} className="block">
                   <h4
-                    className={`text-xs sm:text-sm font-bold leading-snug text-white line-clamp-2 hover:underline ${
+                    className={`text-xs sm:text-sm font-bold leading-snug text-theme-overlay line-clamp-2 hover:underline ${
                       isSerif ? "font-serif" : "font-sans"
                     }`}
                   >
@@ -149,7 +148,7 @@ export function MagazineBentoBlock({
                   </h4>
                 </Link>
 
-                <div className="flex items-center justify-between text-[10px] text-slate-300 pt-1">
+                <div className="flex items-center justify-between text-[0.625rem] text-theme-overlay-muted pt-1">
                   {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
                   {showDate && <span className="font-mono">{formatDate(item.date, theme.locale)}</span>}
                 </div>

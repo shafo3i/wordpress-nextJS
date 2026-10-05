@@ -5,8 +5,8 @@ export function init() {
     if (!content) return content;
 
     const shareBar = `
-<div class="wp-plugin-social-share not-prose my-6 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-sm">
-  <span class="font-semibold text-slate-500 uppercase tracking-wider text-[11px] mr-2">Share story:</span>
+<div class="wp-plugin-social-share not-prose my-6 flex flex-wrap items-center gap-2 rounded-lg border border-theme-border bg-theme-surface p-3 text-xs shadow-sm">
+  <span class="font-semibold text-theme-muted uppercase tracking-wider text-[11px] mr-2">Share story:</span>
   <button
     type="button"
     onclick="window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(document.title) + '&url=' + encodeURIComponent(window.location.href), '_blank')"
@@ -31,7 +31,7 @@ export function init() {
   <button
     type="button"
     onclick="navigator.clipboard.writeText(window.location.href); alert('Story link copied to clipboard!');"
-    class="inline-flex items-center gap-1.5 rounded border border-slate-300 bg-slate-100 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-200 transition-colors"
+    class="inline-flex items-center gap-1.5 rounded border border-theme-border bg-theme-border/40 px-3 py-1.5 font-medium text-theme-text hover:bg-theme-border transition-colors"
   >
     📋 Copy Link
   </button>

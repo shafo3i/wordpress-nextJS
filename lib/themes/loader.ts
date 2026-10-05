@@ -1,56 +1,10 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { wpOptions } from "@/db/schema";
-import { Theme } from "./types";
+import type { Theme } from "./types";
+import { THEME_MODULES, getThemeModule, resolveThemeSlug } from "@/themes/registry";
 
-export const AVAILABLE_THEMES: Theme[] = [
-  {
-    slug: "pressforge-broadsheet",
-    name: "PressForge Broadsheet",
-    description: "The flagship newspaper of record layout with a distinguished masthead, classic serif headlines, and a multi-column front page.",
-    version: "2.0.0",
-    author: "PressForge Community",
-    authorUrl: "https://github.com/pressforge/pressforge",
-    themeUrl: "https://github.com/pressforge/pressforge",
-    screenshot: "/themes/ledger-classic/screenshot.png",
-    tags: "news, newspaper, two-columns, custom-header, editorial",
-  },
-  {
-    slug: "pressforge-magazine",
-    name: "PressForge Magazine",
-    description: "A high-impact digital magazine layout featuring bento grid hero cards, trending story grids, and multimedia highlights.",
-    version: "2.1.0",
-    author: "PressForge Community",
-    authorUrl: "https://github.com/pressforge/pressforge",
-    themeUrl: "https://github.com/pressforge/pressforge",
-    screenshot: "/themes/ledger-magazine/screenshot.png",
-    tags: "magazine, visual, grid-layout, trending-widgets",
-  },
-  {
-    slug: "pressforge-midnight",
-    name: "PressForge Midnight",
-    description: "A sleek high-contrast dark theme designed for night-time digital journalism, financial terminals, and tech publications.",
-    version: "1.0.0",
-    author: "PressForge Community",
-    authorUrl: "https://github.com/pressforge/pressforge",
-    themeUrl: "https://github.com/pressforge/pressforge",
-    screenshot: "/themes/ledger-dark/screenshot.png",
-    tags: "dark-mode, news, modern, high-contrast",
-  },
-  {
-    slug: "pressforge-longform",
-    name: "PressForge Longform",
-    description: "A distraction-free reading theme with generous white-space, elegant typography, and focused single-column storytelling.",
-    version: "1.0.2",
-    author: "PressForge Community",
-    authorUrl: "https://github.com/pressforge/pressforge",
-    themeUrl: "https://github.com/pressforge/pressforge",
-    screenshot: "/themes/ledger-reader/screenshot.png",
-    tags: "news, clean, one-column, longform, accessibility-ready",
-  },
-];
-
-const DEFAULT_THEME_SLUG = "pressforge-broadsheet";
+export const AVAILABLE_THEMES: Theme[] = THEME_MODULES.map((mod) => mod.manifest);
 
 /**
  * Get the active stylesheet slug from wp_options
@@ -63,15 +17,10 @@ export async function getActiveThemeSlug(): Promise<string> {
       .where(eq(wpOptions.optionName, "stylesheet"))
       .limit(1);
 
-    const val = row[0]?.value;
-    if (val === "ledger-classic") return "pressforge-broadsheet";
-    if (val === "ledger-magazine") return "pressforge-magazine";
-    if (val === "ledger-dark") return "pressforge-midnight";
-    if (val === "ledger-reader") return "pressforge-longform";
-    return val ?? DEFAULT_THEME_SLUG;
+    return resolveThemeSlug(row[0]?.value);
   } catch (err) {
     console.error("Failed to read active theme slug:", err);
-    return DEFAULT_THEME_SLUG;
+    return resolveThemeSlug();
   }
 }
 
@@ -86,10 +35,10 @@ export async function getActiveThemeName(): Promise<string> {
       .where(eq(wpOptions.optionName, "current_theme"))
       .limit(1);
 
-    return row[0]?.value || "Ledger Classic";
+    return row[0]?.value || getThemeModule().manifest.name;
   } catch (err) {
     console.error("Failed to read current_theme:", err);
-    return "Ledger Classic";
+    return getThemeModule().manifest.name;
   }
 }
 

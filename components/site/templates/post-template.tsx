@@ -92,7 +92,7 @@ export function PostTemplate({
       <aside className="space-y-6">
         {/* Topics Widget */}
         <div className="theme-widget rounded-2xl border p-5 shadow-sm">
-          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
+          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-3">
             {theme.dict?.["site.topics_categories"] || (theme.locale === "ar" ? "المواضيع والتصنيفات" : "Topics & Categories")}
           </h2>
           <div className="flex flex-wrap gap-1.5">
@@ -100,7 +100,7 @@ export function PostTemplate({
               <Link
                 key={topic}
                 href={getCategoryUrl(topic.toLowerCase(), theme)}
-                className="theme-badge rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase transition-opacity hover:opacity-85"
+                className="theme-badge rounded-md px-2.5 py-1 text-[0.6875rem] font-semibold uppercase transition-opacity hover:opacity-85"
               >
                 {topic}
               </Link>
@@ -110,7 +110,7 @@ export function PostTemplate({
 
         {/* Related Stories Widget */}
         <div className="theme-widget rounded-2xl border p-5 shadow-sm">
-          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">
+          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-3">
             {t("site.more_from_newsroom", theme, "More from Newsroom")}
           </h2>
           <div className="space-y-3">
@@ -118,7 +118,7 @@ export function PostTemplate({
               <Link
                 key={story.id}
                 href={getPostUrl(story.slug, theme)}
-                className="flex gap-2.5 rounded-lg p-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                className="flex gap-2.5 rounded-lg p-2 hover:bg-theme-border/30 transition-colors group"
               >
                 {story.imageUrl && (
                   <img
@@ -128,7 +128,7 @@ export function PostTemplate({
                   />
                 )}
                 <div className="min-w-0">
-                  <span className="text-[10px] font-semibold uppercase text-slate-400 block truncate">
+                  <span className="text-[0.625rem] font-semibold uppercase text-theme-muted block truncate">
                     {story.categories[0] ?? t("site.dispatch", theme, "Dispatch")}
                   </span>
                   <h3 className="mt-0.5 text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[var(--theme-primary)] transition-colors">
@@ -147,31 +147,25 @@ export function PostTemplate({
     <div
       dir={theme.direction || "ltr"}
       lang={theme.locale || "en"}
-      className={`min-h-screen transition-colors ${
-        isDark
-          ? "bg-[#0a0f1d] text-slate-100"
-          : theme.themeSlug?.includes("reader") || theme.themeSlug?.includes("longform")
-          ? "bg-[#fbf9f5] text-stone-900"
-          : "bg-[#f8f7f4] text-slate-900"
-      }`}
+      className="min-h-screen transition-colors bg-theme-bg text-theme-text"
     >
-      {theme.mods && <ThemeDynamicStyles mods={theme.mods} />}
+      {theme.mods && <ThemeDynamicStyles mods={theme.mods} themeSlug={theme.themeSlug} />}
       <SiteHeader theme={theme} />
 
       <main className={`${containerClass} py-10`}>
         {/* Article Masthead */}
-        <div className="mb-8 border-b border-slate-200/70 dark:border-slate-800 pb-8">
+        <div className="mb-8 border-b border-theme-border pb-8">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {article.categories.map((category) => (
               <span
                 key={`${article.id}-${category}`}
-                className="theme-badge rounded px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider"
+                className="theme-badge rounded px-2.5 py-1 text-[0.6875rem] font-bold uppercase tracking-wider"
               >
                 {category}
               </span>
             ))}
             {showReadingTime && (
-              <span className="flex items-center gap-1 text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">
+              <span className="flex items-center gap-1 text-[0.6875rem] font-mono text-theme-muted bg-theme-border/40 px-2 py-0.5 rounded">
                 <Clock className="size-3" /> {readingMinutes} {t("site.min_read", theme, "min read")}
               </span>
             )}
@@ -186,24 +180,24 @@ export function PostTemplate({
           </h1>
 
           {article.excerpt && (
-            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mb-4 font-normal">
+            <p className="text-base sm:text-lg text-theme-text leading-relaxed max-w-3xl mb-4 font-normal">
               {article.excerpt}
             </p>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-200/40 dark:border-slate-800/60 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-theme-border/60 text-xs text-theme-muted">
             <div className="flex items-center gap-3">
               {showAuthorAvatar && (
-                <div className="size-8 rounded-full bg-[var(--theme-primary,#2271b1)] text-white flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
+                <div className="size-8 rounded-full bg-theme-primary text-(--theme-on-primary) flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
                   {article.authorName ? article.authorName.slice(0, 2) : "ED"}
                 </div>
               )}
               <div>
-                <span className="font-semibold text-slate-900 dark:text-slate-100 block">
+                <span className="font-semibold text-theme-heading block">
                   {article.authorName ? (theme.dict?.[article.authorName] || article.authorName) : t("site.editorial_staff", theme, "Editorial Staff")}
                 </span>
                 {showDate && (
-                  <time dateTime={article.date.toISOString()} className="text-[11px] text-slate-400 block font-mono">
+                  <time dateTime={article.date.toISOString()} className="text-[0.6875rem] text-theme-muted block font-mono">
                     {formatDate(article.date, theme.locale)}
                   </time>
                 )}
@@ -213,7 +207,7 @@ export function PostTemplate({
             {/* Social Share Buttons */}
             {showShareButtons && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium mr-1 text-slate-400 hidden sm:inline">
+                <span className="text-[0.6875rem] font-medium mr-1 text-theme-muted hidden sm:inline">
                   {t("site.share", theme, "Share")}:
                 </span>
                 <button
@@ -227,7 +221,7 @@ export function PostTemplate({
                       );
                     }
                   }}
-                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  className="rounded p-1.5 border border-theme-border bg-theme-surface hover:opacity-80 text-theme-text transition-colors cursor-pointer"
                   title="Share on X (Twitter)"
                 >
                   <span className="text-xs font-bold px-0.5">𝕏</span>
@@ -235,10 +229,10 @@ export function PostTemplate({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="rounded p-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="rounded p-1.5 border border-theme-border bg-theme-surface hover:opacity-80 text-theme-text transition-colors flex items-center gap-1 cursor-pointer"
                   title={t("site.copy_link", theme, "Copy Link")}
                 >
-                  {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                  {copied ? <Check className="size-3.5 text-theme-primary" /> : <Copy className="size-3.5" />}
                 </button>
               </div>
             )}
@@ -247,7 +241,7 @@ export function PostTemplate({
 
         {/* Featured Image */}
         {showFeaturedImage && article.imageUrl && (
-          <div className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-800">
+          <div className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-theme-border">
             <img
               src={article.imageUrl}
               alt={article.title}
@@ -259,7 +253,7 @@ export function PostTemplate({
         {/* Layout Grid Switching */}
         {singleLayout === "sidebar-right" && (
           <div className="grid gap-8 lg:grid-cols-12">
-            <article className="lg:col-span-8 prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+            <article className="lg:col-span-8 prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
             </article>
             <div className="lg:col-span-4">{renderSidebar()}</div>
@@ -269,7 +263,7 @@ export function PostTemplate({
         {singleLayout === "sidebar-left" && (
           <div className="grid gap-8 lg:grid-cols-12">
             <div className="lg:col-span-4 order-2 lg:order-1">{renderSidebar()}</div>
-            <article className="lg:col-span-8 order-1 lg:order-2 prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+            <article className="lg:col-span-8 order-1 lg:order-2 prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
             </article>
           </div>
@@ -284,7 +278,7 @@ export function PostTemplate({
                   : singleContentWidth === "standard"
                   ? "max-w-[900px] mx-auto"
                   : "w-full"
-              } prose max-w-none rounded-2xl border p-6 sm:p-10 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.1rem] prose-p:leading-8`}
+              } prose max-w-none rounded-2xl border p-6 sm:p-10 shadow-sm bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.1rem] prose-p:leading-8`}
             >
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
             </article>
@@ -300,7 +294,7 @@ export function PostTemplate({
                   : singleContentWidth === "standard"
                   ? "max-w-[900px]"
                   : "w-full"
-              } prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm bg-[var(--theme-surface,#ffffff)] border-[var(--theme-border,#e2e8f0)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8`}
+              } prose max-w-none rounded-2xl border p-6 sm:p-8 shadow-sm bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8`}
             >
               <div dangerouslySetInnerHTML={{ __html: article.content }} />
             </article>

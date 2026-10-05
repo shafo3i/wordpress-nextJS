@@ -1,0 +1,14 @@
+{
+    "slug":  "pressforge-longform",
+    "name":  "PressForge Longform",
+    "description":  "A distraction-free reading theme with generous white-space, elegant typography, and focused single-column storytelling.",
+    "version":  "1.0.2",
+    "author":  "PressForge Community",
+    "authorUrl":  "https://github.com/pressforge/pressforge",
+    "themeUrl":  "https://github.com/pressforge/pressforge",
+    "screenshot":  "/themes/ledger-reader/screenshot.png",
+    "tags":  "news, clean, one-column, longform, accessibility-ready",
+    "legacySlugs":  [
+                        "ledger-reader"
+                    ]
+}

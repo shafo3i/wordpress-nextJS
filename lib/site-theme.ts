@@ -4,6 +4,10 @@ import { getMenuWithItems, getNavMenuLocations } from "@/lib/menus/db";
 import { MenuItem } from "@/lib/menus/types";
 
 import { ThemeMods } from "@/lib/themes/types";
+import { getFontKind } from "@/lib/customizer/fonts";
+import { resolveColor } from "@/lib/customizer/resolve";
+import { getThemeModule } from "@/themes/registry";
+import { getActivePluginSlugs } from "@/lib/plugins/loader";
 import {
   getActiveLanguages,
   getDefaultLanguage,
@@ -28,6 +32,9 @@ export type FrontEndThemeContext = {
   primaryColor: string;
   headerLayout: "classic" | "minimal" | "magazine" | "centered";
   headingFont: "serif" | "sans";
+  sectionStyle: "classic" | "magazine" | "terminal" | "minimal";
+  /** Slugs of active plugins, used to gate plugin owned UI such as the breaking ticker. */
+  activePlugins: string[];
   darkMode: boolean;
   footerCopyright: string;
   primaryNav: MenuItem[];
@@ -49,12 +56,13 @@ export async function getFrontEndThemeContext(options?: {
   postTranslations?: LinkedPostTranslation[];
   currentPath?: string;
 }): Promise<FrontEndThemeContext> {
-  const [themeSlug, customizer, locations, activeLanguages, defaultLang] = await Promise.all([
+  const [themeSlug, customizer, locations, activeLanguages, defaultLang, activePlugins] = await Promise.all([
     getActiveThemeSlug(),
     getCustomizerData(),
     getNavMenuLocations(),
     getActiveLanguages().catch(() => []),
     getDefaultLanguage().catch(() => null),
+    getActivePluginSlugs(),
   ]);
 
   const defaultLocale = defaultLang?.code || "en";
@@ -130,24 +138,19 @@ export async function getFrontEndThemeContext(options?: {
 
   const mods = customizer.mods;
 
-  // Let mods take precedence over theme defaults
-  const isDark = mods.darkMode !== undefined
-    ? Boolean(mods.darkMode)
-    : themeSlug.includes("dark") || themeSlug.includes("midnight");
-
-  const isSerifTheme = themeSlug.includes("reader") || themeSlug.includes("longform") || themeSlug.includes("classic") || themeSlug.includes("broadsheet");
-  const font = mods.headingFont || (isSerifTheme ? "serif" : "sans");
-
-  const layout = mods.headerLayout || (themeSlug.includes("magazine") ? "magazine" : (themeSlug.includes("reader") || themeSlug.includes("longform")) ? "minimal" : "classic");
+  // Mods are fully resolved (core -> theme -> stored), so no slug sniffing is needed.
+  const supports = getThemeModule(themeSlug).supports;
 
   return {
     themeSlug,
     siteTitle: customizer.siteTitle || "PressForge News",
     siteTagline: customizer.siteTagline || "Open-Source Editorial Engine & Newsroom",
-    primaryColor: mods.primaryColor || (isDark ? "#10b981" : "#2271b1"),
-    headerLayout: layout,
-    headingFont: font,
-    darkMode: isDark,
+    primaryColor: resolveColor(mods, "primaryColor"),
+    headerLayout: mods.headerLayout ?? "classic",
+    headingFont: getFontKind(mods.headingFontFamily),
+    sectionStyle: supports?.sectionStyle ?? "minimal",
+    activePlugins,
+    darkMode: Boolean(mods.darkMode),
     footerCopyright: mods.footerCopyright || "© 2026 PressForge. All rights reserved.",
     primaryNav,
     footerNav,

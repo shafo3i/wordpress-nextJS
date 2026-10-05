@@ -24,8 +24,8 @@ export async function saveCustomizerAction(
     revalidatePath("/posts/[slug]", "page");
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to save customizer data:", error);
-    return { success: false, error: error?.message || "Failed to publish customizer settings." };
+    return { success: false, error: error instanceof Error ? error.message : "Failed to publish customizer settings." };
   }
 }

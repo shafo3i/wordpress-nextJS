@@ -16,20 +16,20 @@ export function AuthorBioAdminForm({ item, onChange, dict, direction }: WidgetAd
   return (
     <div className="space-y-3 text-start">
       <div>
-        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
           {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة" : "Widget Title")}
         </label>
         <input
           type="text"
           value={item.title}
           onChange={(e) => onChange({ title: e.target.value })}
-          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[0.8125rem] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "اسم الكاتب / الصحفي" : "Author Name"}
           </label>
           <input
@@ -45,7 +45,7 @@ export function AuthorBioAdminForm({ item, onChange, dict, direction }: WidgetAd
           />
         </div>
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "الصفة التحريرية / المنصب" : "Title / Designation"}
           </label>
           <input
@@ -63,7 +63,7 @@ export function AuthorBioAdminForm({ item, onChange, dict, direction }: WidgetAd
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "رابط الصورة الشخصية (Avatar Image URL)" : "Avatar Image URL"}
         </label>
         <input
@@ -77,13 +77,13 @@ export function AuthorBioAdminForm({ item, onChange, dict, direction }: WidgetAd
           }
           className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
         />
-        <p className="text-[10px] text-[#646970] mt-0.5">
+        <p className="text-[0.625rem] text-[#646970] mt-0.5">
           {isRtl ? "اترك الحقل فارغاً لاستخدام الأحرف الأولى تلقائياً." : "Leave empty to auto-generate styled monogram initials."}
         </p>
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "نبذة السيرة الذاتية (Bio)" : "Biography Summary"}
         </label>
         <textarea
@@ -95,12 +95,12 @@ export function AuthorBioAdminForm({ item, onChange, dict, direction }: WidgetAd
               config: { ...item.config, bio: e.target.value },
             });
           }}
-          className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[12px] text-[#2c3338]"
+          className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[0.75rem] text-[#2c3338]"
         />
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "رابط الملف الشخصي أو أرشيف الكاتب" : "Profile / Archive Link"}
         </label>
         <input
@@ -135,12 +135,12 @@ export function AuthorBioRender({ item, theme }: WidgetRenderProps) {
     .toUpperCase();
 
   return (
-    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
-      <div className="flex items-center justify-between border-b border-[var(--theme-border,#e2e8f0)] pb-2 mb-3">
-        <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))]">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">
+      <div className="flex items-center justify-between border-b border-[var(--theme-border)] pb-2 mb-3">
+        <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading))]">
           {item.title || (isRtl ? "عن الكاتب" : "About the Author")}
         </h4>
-        <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono">
+        <span className="text-[0.625rem] text-[var(--theme-muted)] font-mono">
           {isRtl ? "طاقم التحرير" : "Newsroom"}
         </span>
       </div>
@@ -150,37 +150,36 @@ export function AuthorBioRender({ item, theme }: WidgetRenderProps) {
           <img
             src={avatarUrl}
             alt={authorName}
-            className="size-11 rounded-full object-cover border border-[var(--theme-border,#e2e8f0)] shadow-sm flex-shrink-0"
+            className="size-11 rounded-full object-cover border border-[var(--theme-border)] shadow-sm flex-shrink-0"
             loading="lazy"
           />
         ) : (
           <div
-            style={{ backgroundColor: theme?.primaryColor || "var(--theme-primary, #2271b1)" }}
-            className="size-11 rounded-full flex items-center justify-center text-white font-black text-sm shadow-sm flex-shrink-0"
+            className="theme-btn size-11 rounded-full flex items-center justify-center  font-black text-sm shadow-sm flex-shrink-0"
           >
             {initials || "ED"}
           </div>
         )}
 
         <div className="flex-1 min-w-0">
-          <span className="text-xs font-bold block text-[var(--theme-heading,#0f172a)] truncate">
+          <span className="text-xs font-bold block text-[var(--theme-heading)] truncate">
             {authorName}
           </span>
-          <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-medium block">
+          <span className="text-[0.625rem] text-[var(--theme-muted)] font-medium block">
             {authorRole}
           </span>
         </div>
       </div>
 
-      <p className="text-xs text-[var(--theme-muted,#64748b)] leading-relaxed mb-3">
+      <p className="text-xs text-[var(--theme-muted)] leading-relaxed mb-3">
         {bio}
       </p>
 
       {profileUrl && (
-        <div className="pt-2 border-t border-[var(--theme-border,#e2e8f0)]">
+        <div className="pt-2 border-t border-[var(--theme-border)]">
           <Link
             href={profileUrl}
-            className="text-[11px] font-bold text-[var(--theme-primary,#2271b1)] hover:underline inline-flex items-center gap-1"
+            className="text-[0.6875rem] font-bold text-[var(--theme-primary)] hover:underline inline-flex items-center gap-1"
           >
             <span>{isRtl ? "عرض جميع مقالات الكاتب ←" : "View all stories by author →"}</span>
           </Link>

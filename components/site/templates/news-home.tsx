@@ -93,7 +93,7 @@ export function NewsHome({
   const renderSidebar = (items: WidgetItem[]) => {
     if (!items.length) {
       return (
-        <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-800 p-4 text-center text-xs text-slate-400">
+        <div className="rounded-xl border border-dashed border-theme-border p-4 text-center text-xs text-theme-muted">
           No widgets placed in this sidebar yet.
         </div>
       );
@@ -112,14 +112,9 @@ export function NewsHome({
     <div
       dir={theme.direction || "ltr"}
       lang={theme.locale || "en"}
-      className={`min-h-screen transition-colors ${isDark
-        ? "bg-[#0a0f1d] text-slate-100"
-        : (theme.themeSlug?.includes("reader") || theme.themeSlug?.includes("longform"))
-          ? "bg-[#fbf9f5] text-stone-900"
-          : "bg-[#f8f7f4] text-slate-900"
-        }`}
+      className="min-h-screen transition-colors bg-theme-bg text-theme-text"
     >
-      {theme.mods && <ThemeDynamicStyles mods={theme.mods} />}
+      {theme.mods && <ThemeDynamicStyles mods={theme.mods} themeSlug={theme.themeSlug} />}
       <SiteHeader theme={theme} />
 
       {hasSections ? (
@@ -148,8 +143,8 @@ export function NewsHome({
           {activeLayout === "dual_sidebar" && (
             <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
               <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
-                <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5 mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="border-b border-theme-border pb-1.5 mb-3">
+                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
                     Left Column
                   </span>
                 </div>
@@ -159,8 +154,8 @@ export function NewsHome({
               <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
 
               <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
-                <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5 mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="border-b border-theme-border pb-1.5 mb-3">
+                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
                     Right Column
                   </span>
                 </div>
@@ -197,8 +192,8 @@ export function NewsHome({
           {activeLayout === "dual_sidebar" && (
             <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
               <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
-                <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5 mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="border-b border-theme-border pb-1.5 mb-3">
+                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
                     Left Column
                   </span>
                 </div>
@@ -210,8 +205,8 @@ export function NewsHome({
               </div>
 
               <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
-                <div className="border-b border-slate-200 dark:border-slate-800 pb-1.5 mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="border-b border-theme-border pb-1.5 mb-3">
+                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
                     Right Column
                   </span>
                 </div>

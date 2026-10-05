@@ -1,5 +1,6 @@
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
+import { resolveMods } from "@/lib/customizer/resolve";
 
 export function formatDate(value: Date | string | number, locale = "en") {
   try {
@@ -63,17 +64,11 @@ export function getExcerpt(item: ContentItem, maxChars = 140) {
 }
 
 export function isSerifHeading(theme?: FrontEndThemeContext): boolean {
-  if (!theme) return true;
-  if (theme.headingFont) return theme.headingFont === "serif";
-  const slug = theme.themeSlug || "";
-  return slug.includes("classic") || slug.includes("broadsheet") || slug.includes("reader") || slug.includes("longform");
+  return theme ? theme.headingFont === "serif" : true;
 }
 
 export function isDarkTheme(theme?: FrontEndThemeContext): boolean {
-  if (!theme) return false;
-  if (theme.darkMode !== undefined) return Boolean(theme.darkMode);
-  const slug = theme.themeSlug || "";
-  return slug.includes("dark") || slug.includes("midnight");
+  return Boolean(theme?.darkMode);
 }
 
 export const DEFAULT_THEME: FrontEndThemeContext = {
@@ -83,9 +78,11 @@ export const DEFAULT_THEME: FrontEndThemeContext = {
   primaryColor: "#2271b1",
   headerLayout: "classic",
   headingFont: "serif",
+  sectionStyle: "classic",
+  activePlugins: [],
   darkMode: false,
   footerCopyright: "© 2026 PressForge. Open Source Editorial Engine.",
-  mods: {},
+  mods: resolveMods("pressforge-broadsheet"),
   primaryNav: [
     { id: "1", title: "Home", url: "/", order: 1 },
     { id: "2", title: "Business", url: "/category/business", order: 2 },

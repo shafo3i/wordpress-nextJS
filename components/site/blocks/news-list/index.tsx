@@ -53,14 +53,14 @@ export function NewsListViewBlock({
           <article
             key={item.id}
             style={{
-              backgroundColor: "var(--theme-surface, #ffffff)",
-              borderColor: "var(--theme-border, #e2e8f0)",
+              backgroundColor: "var(--theme-surface)",
+              borderColor: "var(--theme-border)",
             }}
-            className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row gap-5 transition-all shadow-sm hover:border-[#2271b1] ${
+            className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row gap-5 transition-all theme-card hover:border-theme-primary ${
               thumbRight ? "sm:flex-row-reverse" : ""
             }`}
           >
-            <div className="w-full sm:w-48 h-36 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800">
+            <div className="w-full sm:w-48 h-36 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 bg-theme-border/40">
               <img
                 src={item.imageUrl}
                 alt={item.title}
@@ -73,18 +73,18 @@ export function NewsListViewBlock({
                 <div className="flex items-center gap-2 mb-1">
                   {showCategory && (
                     <span
-                      style={{ color: "var(--theme-primary, #2271b1)" }}
-                      className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{ color: "var(--theme-primary)" }}
+                      className="text-[0.625rem] font-bold uppercase tracking-wider"
                     >
                       {item.categories[0]}
                     </span>
                   )}
                   {showDate && (
                     <>
-                      <span style={{ color: "var(--theme-muted, #94a3b8)" }}>•</span>
+                      <span style={{ color: "var(--theme-muted)" }}>•</span>
                       <time
-                        style={{ color: "var(--theme-muted, #94a3b8)" }}
-                        className="text-[11px] font-mono"
+                        style={{ color: "var(--theme-muted)" }}
+                        className="text-[0.6875rem] font-mono"
                       >
                         {formatDate(item.date, theme.locale)}
                       </time>
@@ -94,7 +94,7 @@ export function NewsListViewBlock({
 
                 <Link href={getPostUrl(item.slug, theme)} className="block">
                   <h3
-                    style={{ color: "var(--theme-heading, #0f172a)" }}
+                    style={{ color: "var(--theme-heading)" }}
                     className={`text-base sm:text-lg font-bold leading-snug hover:underline ${
                       isSerif ? "font-serif" : "font-sans"
                     }`}
@@ -105,7 +105,7 @@ export function NewsListViewBlock({
 
                 {showExcerpt && (
                   <p
-                    style={{ color: "var(--theme-text, #334155)" }}
+                    style={{ color: "var(--theme-text)" }}
                     className="mt-1.5 text-xs line-clamp-2 leading-relaxed"
                   >
                     {getExcerpt(item, 160)}
@@ -114,12 +114,12 @@ export function NewsListViewBlock({
               </div>
 
               <div
-                style={{ borderColor: "var(--theme-border, #e2e8f0)" }}
+                style={{ borderColor: "var(--theme-border)" }}
                 className="mt-3 flex items-center justify-between text-xs pt-2 border-t"
               >
                 {showAuthor && (
                   <span
-                    style={{ color: "var(--theme-muted, #64748b)" }}
+                    style={{ color: "var(--theme-muted)" }}
                     className="font-medium"
                   >
                     {t("site.by", theme, "By")} {theme.dict?.[item.authorName] || item.authorName}
@@ -127,7 +127,7 @@ export function NewsListViewBlock({
                 )}
                 <Link
                   href={getPostUrl(item.slug, theme)}
-                  style={{ color: "var(--theme-primary, #2271b1)" }}
+                  style={{ color: "var(--theme-primary)" }}
                   className="font-semibold text-xs hover:underline"
                 >
                   {t("site.read_story", theme, "Read Story")} {theme.direction === "rtl" ? "←" : "→"}

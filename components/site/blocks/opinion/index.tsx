@@ -44,16 +44,16 @@ export function OpinionBlock({
           <div
             key={item.id}
             style={{
-              backgroundColor: "var(--theme-surface, #faf8f5)",
-              borderColor: "var(--theme-border, #e2e8f0)",
+              backgroundColor: "var(--theme-surface)",
+              borderColor: "var(--theme-border)",
             }}
-            className="rounded-2xl border p-5 shadow-sm transition-all"
+            className="rounded-2xl border p-5 theme-card transition-all"
           >
             <div className="flex items-center gap-3 mb-3">
               <div
                 style={{
-                  backgroundColor: "var(--theme-primary, #2271b1)",
-                  color: "#ffffff",
+                  backgroundColor: "var(--theme-primary)",
+                  color: "var(--theme-on-primary)",
                 }}
                 className="size-10 rounded-full flex items-center justify-center font-bold text-xs shadow-xs"
               >
@@ -61,15 +61,15 @@ export function OpinionBlock({
               </div>
               <div>
                 <span
-                  style={{ color: "var(--theme-heading, #0f172a)" }}
+                  style={{ color: "var(--theme-heading)" }}
                   className="font-bold text-xs block"
                 >
                   {theme.dict?.[item.authorName] || item.authorName}
                 </span>
                 {item.categories?.[0] && (
                   <span
-                    style={{ color: "var(--theme-muted, #64748b)" }}
-                    className="text-[10px]"
+                    style={{ color: "var(--theme-muted)" }}
+                    className="text-[0.625rem]"
                   >
                     {item.categories[0]}
                   </span>
@@ -78,7 +78,7 @@ export function OpinionBlock({
             </div>
             <Link href={getPostUrl(item.slug, theme)} className="hover:underline">
               <h4
-                style={{ color: "var(--theme-heading, #0f172a)" }}
+                style={{ color: "var(--theme-heading)" }}
                 className="font-serif text-base font-bold leading-snug"
               >
                 "{item.title}"

@@ -30,38 +30,38 @@ export function TrendingBlock({
   return (
     <section
       style={{
-        backgroundColor: "var(--theme-surface, #ffffff)",
-        borderColor: "var(--theme-border, #e2e8f0)",
+        backgroundColor: "var(--theme-surface)",
+        borderColor: "var(--theme-border)",
       }}
-      className="rounded-2xl border p-5 shadow-sm transition-all"
+      className="rounded-2xl border p-5 theme-card transition-all"
     >
       <div className="flex items-center gap-2 mb-4">
         <Flame
-          style={{ color: "var(--theme-primary, #e11d48)" }}
+          style={{ color: "var(--theme-primary)" }}
           className="size-4"
         />
         <h3
-          style={{ color: "var(--theme-heading, #0f172a)" }}
+          style={{ color: "var(--theme-heading)" }}
           className={`text-base font-bold uppercase tracking-wider ${isSerif ? "font-serif" : "font-sans"}`}
         >
           {title}
         </h3>
       </div>
       <div
-        style={{ borderColor: "var(--theme-border, #e2e8f0)" }}
+        style={{ borderColor: "var(--theme-border)" }}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-theme-border"
       >
         {trendingItems.map((item, idx) => (
           <div key={item.id} className="pt-3 sm:pt-0 sm:px-3 first:pl-0 last:pr-0">
             <span
-              style={{ color: "var(--theme-primary, #2271b1)" }}
+              style={{ color: "var(--theme-primary)" }}
               className="font-mono text-xl font-black block leading-none mb-1.5"
             >
               0{idx + 1}
             </span>
             <Link href={getPostUrl(item.slug, theme)} className="block hover:underline">
               <h4
-                style={{ color: "var(--theme-heading, #0f172a)" }}
+                style={{ color: "var(--theme-heading)" }}
                 className="text-xs font-bold leading-snug line-clamp-3"
               >
                 {item.title}

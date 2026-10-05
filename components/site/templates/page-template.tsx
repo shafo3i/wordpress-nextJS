@@ -44,16 +44,14 @@ export function PageTemplate({
     <div
       dir={theme.direction || "ltr"}
       lang={theme.locale || "en"}
-      className={`min-h-screen transition-colors ${
-        isDark ? "bg-[#0a0f1d] text-slate-100" : "bg-[#f8f7f4] text-slate-900"
-      }`}
+      className="min-h-screen transition-colors bg-theme-bg text-theme-text"
     >
-      {theme.mods && <ThemeDynamicStyles mods={theme.mods} />}
+      {theme.mods && <ThemeDynamicStyles mods={theme.mods} themeSlug={theme.themeSlug} />}
       <SiteHeader theme={theme} />
 
       {template === "landing" ? (
         /* Landing Page Layout: Seamless full-bleed canvas */
-        <main className="mx-auto container px-4 py-16 md:px-8">
+        <main className="mx-auto theme-container px-4 py-16 md:px-8">
           <div className="text-center mb-12">
             <h1
               className={`text-4xl sm:text-6xl font-extrabold tracking-tight ${isSerif ? "font-serif" : "font-sans"
@@ -72,13 +70,12 @@ export function PageTemplate({
         </main>
       ) : template === "with-sidebar" ? (
         /* With Sidebar Layout: 2-Column content + sidebar widgets */
-        <main className="mx-auto container px-4 py-12 md:px-6">
+        <main className="mx-auto theme-container px-4 py-12 md:px-6">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
             <article
-              className={`rounded-2xl border p-8 sm:p-12 shadow-sm ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"
-                }`}
+              className={`rounded-2xl border p-8 sm:p-12 theme-card border-theme-border bg-theme-surface`}
             >
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{pageBadge}</p>
+              <p className="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-theme-muted">{pageBadge}</p>
               <h1
                 className={`mt-2 text-3xl sm:text-5xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"
                   }`}
@@ -106,8 +103,7 @@ export function PageTemplate({
                 ))
               ) : (
                 <div
-                  className={`rounded-xl border p-6 text-center text-xs text-slate-400 ${isDark ? "border-slate-800 bg-slate-900/40" : "border-slate-200 bg-white"
-                    }`}
+                  className={`rounded-xl border p-6 text-center text-xs text-theme-muted border-theme-border bg-theme-surface`}
                 >
                   No widgets configured for the sidebar.
                 </div>
@@ -117,12 +113,11 @@ export function PageTemplate({
         </main>
       ) : template === "full-width" ? (
         /* Full Width Layout: Expansive max-w-7xl container */
-        <main className="mx-auto container px-4 py-12 md:px-6">
+        <main className="mx-auto theme-container px-4 py-12 md:px-6">
           <article
-            className={`rounded-2xl border p-8 sm:p-12 shadow-sm ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"
-              }`}
+            className={`rounded-2xl border p-8 sm:p-12 theme-card border-theme-border bg-theme-surface`}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{pageBadge}</p>
+            <p className="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-theme-muted">{pageBadge}</p>
             <h1
               className={`mt-2 text-3xl sm:text-5xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"
                 }`}
@@ -142,10 +137,9 @@ export function PageTemplate({
         /* Default Layout: Standard centered editorial container (max-w-4xl) */
         <main className="mx-auto max-w-4xl px-4 py-12 md:px-6">
           <article
-            className={`rounded-2xl border p-8 sm:p-12 shadow-sm ${isDark ? "border-slate-800 bg-slate-900/60" : "border-slate-200 bg-white"
-              }`}
+            className={`rounded-2xl border p-8 sm:p-12 theme-card border-theme-border bg-theme-surface`}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">{editorialBadge}</p>
+            <p className="text-[0.6875rem] font-bold uppercase tracking-[0.2em] text-theme-muted">{editorialBadge}</p>
             <h1
               className={`mt-2 text-3xl sm:text-5xl font-bold tracking-tight ${isSerif ? "font-serif" : "font-sans"
                 }`}

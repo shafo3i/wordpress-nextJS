@@ -1,0 +1,14 @@
+{
+    "slug":  "pressforge-midnight",
+    "name":  "PressForge Midnight",
+    "description":  "A sleek high-contrast dark theme designed for night-time digital journalism, financial terminals, and tech publications.",
+    "version":  "1.0.0",
+    "author":  "PressForge Community",
+    "authorUrl":  "https://github.com/pressforge/pressforge",
+    "themeUrl":  "https://github.com/pressforge/pressforge",
+    "screenshot":  "/themes/ledger-dark/screenshot.png",
+    "tags":  "dark-mode, news, modern, high-contrast",
+    "legacySlugs":  [
+                        "ledger-dark"
+                    ]
+}

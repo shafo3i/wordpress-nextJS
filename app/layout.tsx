@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toast";
 import { getSiteMetadata } from "@/services/settings.service";
+import { getActiveFaviconUrl } from "@/lib/themes/customizer";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -14,7 +15,8 @@ const fontMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  return await getSiteMetadata();
+  const [metadata, favicon] = await Promise.all([getSiteMetadata(), getActiveFaviconUrl()]);
+  return favicon ? { ...metadata, icons: { icon: favicon } } : metadata;
 }
 
 export default function RootLayout({

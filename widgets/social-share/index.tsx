@@ -123,19 +123,19 @@ export function SocialShareAdminForm({ item, onChange, dict, direction }: Widget
   return (
     <div className="space-y-3 text-start">
       <div>
-        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
           {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة" : "Widget Title")}
         </label>
         <input
           type="text"
           value={item.title}
           onChange={(e) => onChange({ title: e.target.value })}
-          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[0.8125rem] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "نمط العرض" : "Display Layout Style"}
         </label>
         <select
@@ -150,10 +150,10 @@ export function SocialShareAdminForm({ item, onChange, dict, direction }: Widget
       </div>
 
       <div className="space-y-2 pt-2 border-t border-[#f0f0f1]">
-        <label className="block text-[11px] font-bold text-[#50575e] uppercase tracking-wider">
+        <label className="block text-[0.6875rem] font-bold text-[#50575e] uppercase tracking-wider">
           {isRtl ? "روابط المنصات الاجتماعية الرسمية" : "Official Social Channels & URLs"}
         </label>
-        <p className="text-[10px] text-[#646970]">
+        <p className="text-[0.625rem] text-[#646970]">
           {isRtl ? "اترك الحقل فارغاً لإخفاء أي منصة لا تستخدمها." : "Leave blank to hide any platform you do not use."}
         </p>
 
@@ -162,7 +162,7 @@ export function SocialShareAdminForm({ item, onChange, dict, direction }: Widget
           const count = counts[p.key] || "";
           return (
             <div key={p.key} className="flex items-center gap-2">
-              <span className="w-24 text-[11px] font-semibold text-[#1d2327] flex-shrink-0 flex items-center gap-1.5">
+              <span className="w-24 text-[0.6875rem] font-semibold text-[#1d2327] flex-shrink-0 flex items-center gap-1.5">
                 <span style={{ color: p.color }}>{p.iconSvg}</span>
                 {p.name.split(" ")[0]}
               </span>
@@ -179,7 +179,7 @@ export function SocialShareAdminForm({ item, onChange, dict, direction }: Widget
                 placeholder={isRtl ? "العداد" : "Count"}
                 title={isRtl ? "شارة المتابعين (مثال: 50K)" : "Follower badge text (e.g. 50K)"}
                 onChange={(e) => updateCount(p.key, e.target.value)}
-                className="h-[28px] w-14 rounded-[3px] border border-[#8c8f94] bg-white px-1.5 text-[11px] text-center text-[#2c3338]"
+                className="h-[28px] w-14 rounded-[3px] border border-[#8c8f94] bg-white px-1.5 text-[0.6875rem] text-center text-[#2c3338]"
               />
             </div>
           );
@@ -207,12 +207,12 @@ export function SocialShareRender({ item, theme }: WidgetRenderProps) {
   const platformsToRender = activePlatforms.length > 0 ? activePlatforms : PLATFORMS.slice(0, 3);
 
   return (
-    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
-      <div className="flex items-center justify-between border-b border-[var(--theme-border,#e2e8f0)] pb-2 mb-3">
-        <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))]">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">
+      <div className="flex items-center justify-between border-b border-[var(--theme-border)] pb-2 mb-3">
+        <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading))]">
           {item.title || (isRtl ? "قنوات التواصل" : "Official Channels")}
         </h4>
-        <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono">
+        <span className="text-[0.625rem] text-[var(--theme-muted)] font-mono">
           {isRtl ? "متابعة مباشرة" : "Official"}
         </span>
       </div>
@@ -228,7 +228,7 @@ export function SocialShareRender({ item, theme }: WidgetRenderProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={p.name}
-                className="size-9 rounded-lg border border-[var(--theme-border,#e2e8f0)] bg-[var(--theme-bg,#f8f7f4)] flex items-center justify-center text-[var(--theme-text,#1d2327)] hover:border-[var(--theme-primary,#2271b1)] hover:scale-105 transition-all"
+                className="size-9 rounded-lg border border-theme-border bg-theme-surface flex items-center justify-center text-[var(--theme-text)] hover:border-[var(--theme-primary)] hover:scale-105 transition-all"
                 style={{ color: p.color }}
               >
                 {p.iconSvg}
@@ -247,14 +247,14 @@ export function SocialShareRender({ item, theme }: WidgetRenderProps) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-between rounded-lg border border-[var(--theme-border,#e2e8f0)] p-2.5 bg-[var(--theme-bg,#f8f7f4)] hover:border-[var(--theme-primary,#2271b1)] text-xs font-semibold text-[var(--theme-text,#1d2327)] transition-colors group"
+                className="w-full flex items-center justify-between rounded-lg border border-[var(--theme-border)] p-2.5 bg-[var(--theme-bg)] hover:border-[var(--theme-primary)] text-xs font-semibold text-[var(--theme-text)] transition-colors group"
               >
                 <span className="flex items-center gap-2">
                   <span style={{ color: p.color }}>{p.iconSvg}</span>
                   <span>{p.name}</span>
                 </span>
                 {count && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--theme-surface,#ffffff)] border border-[var(--theme-border,#e2e8f0)] text-[var(--theme-muted,#64748b)]">
+                  <span className="text-[0.625rem] font-mono px-2 py-0.5 rounded border border-theme-border bg-theme-surface text-[var(--theme-muted)]">
                     {count}
                   </span>
                 )}
@@ -274,15 +274,15 @@ export function SocialShareRender({ item, theme }: WidgetRenderProps) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg border border-[var(--theme-border,#e2e8f0)] p-2.5 hover:border-[var(--theme-primary,#2271b1)] bg-[var(--theme-bg,#f8f7f4)] font-semibold flex items-center justify-between transition-all group"
+                className="rounded-lg border border-[var(--theme-border)] p-2.5 hover:border-[var(--theme-primary)] bg-[var(--theme-bg)] font-semibold flex items-center justify-between transition-all group"
               >
                 <div className="flex items-center gap-2">
                   <span style={{ color: p.color }}>{p.iconSvg}</span>
-                  <span className="text-[11px] text-[var(--theme-heading,#0f172a)] font-bold truncate">
+                  <span className="text-[0.6875rem] text-[var(--theme-heading)] font-bold truncate">
                     {p.name.split(" ")[0]}
                   </span>
                 </div>
-                <span className="text-[9px] font-mono font-bold text-[var(--theme-muted,#64748b)] bg-[var(--theme-surface,#ffffff)] border border-[var(--theme-border,#e2e8f0)] px-1.5 py-0.5 rounded">
+                <span className="text-[0.5625rem] font-mono font-bold text-[var(--theme-muted)] border border-theme-border bg-theme-surface px-1.5 py-0.5 rounded">
                   {count}
                 </span>
               </a>

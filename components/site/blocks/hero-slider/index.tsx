@@ -58,32 +58,32 @@ export function HeroSliderBlock({
         theme={theme}
       />
 
-      <div className="relative rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex flex-col justify-end p-6 sm:p-10 text-white shadow-xl group">
+      <div className="relative rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl group">
         <img
           src={current.imageUrl}
           alt={current.title}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-theme-scrim via-theme-scrim/50 to-transparent" />
 
         <div className="relative z-10 space-y-3 max-w-3xl">
           <div className="flex items-center gap-2">
             {showCategory && (
               <span
                 style={{ backgroundColor: theme.primaryColor }}
-                className="rounded-full px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
+                className="rounded-full px-3 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider text-theme-on-primary"
               >
                 {current.categories[0] || t("site.spotlight", theme, "Spotlight")}
               </span>
             )}
-            <span className="text-xs text-slate-300 font-mono">
+            <span className="text-xs text-theme-overlay-muted font-mono">
               {formatDate(current.date, theme.locale)}
             </span>
           </div>
 
           <Link href={getPostUrl(current.slug, theme)} className="block">
             <h3
-              className={`text-2xl sm:text-4xl font-black leading-tight tracking-tight text-white hover:underline ${
+              className={`text-2xl sm:text-4xl font-black leading-tight tracking-tight text-theme-overlay hover:underline ${
                 isSerif ? "font-serif" : "font-sans"
               }`}
             >
@@ -92,7 +92,7 @@ export function HeroSliderBlock({
           </Link>
 
           {showExcerpt && (
-            <p className="text-xs sm:text-sm text-slate-200 line-clamp-2 leading-relaxed">
+            <p className="text-xs sm:text-sm text-theme-overlay-muted line-clamp-2 leading-relaxed">
               {getExcerpt(current, 170)}
             </p>
           )}
@@ -102,14 +102,14 @@ export function HeroSliderBlock({
           <button
             type="button"
             onClick={handlePrev}
-            className="size-9 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-colors"
+            className="size-9 rounded-full bg-theme-scrim/40 hover:bg-theme-scrim/70 backdrop-blur-sm border border-theme-overlay/20 flex items-center justify-center text-theme-overlay transition-colors"
           >
             <ChevronLeft className="size-5" />
           </button>
           <button
             type="button"
             onClick={handleNext}
-            className="size-9 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white transition-colors"
+            className="size-9 rounded-full bg-theme-scrim/40 hover:bg-theme-scrim/70 backdrop-blur-sm border border-theme-overlay/20 flex items-center justify-center text-theme-overlay transition-colors"
           >
             <ChevronRight className="size-5" />
           </button>
@@ -126,11 +126,11 @@ export function HeroSliderBlock({
               onClick={() => setCurrentIndex(idx)}
               className={`rounded-xl border p-2.5 flex items-center gap-3 text-left transition-all ${
                 isActive
-                  ? "border-[#2271b1] ring-2 ring-[#2271b1] bg-blue-50/50 dark:bg-slate-800"
-                  : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 opacity-70 hover:opacity-100"
+                  ? "border-theme-primary ring-2 ring-theme-primary bg-theme-surface"
+                  : "border-theme-border bg-theme-surface  opacity-70 hover:opacity-100"
               }`}
             >
-              <div className="w-14 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200 dark:bg-slate-800">
+              <div className="w-14 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-theme-border/60">
                 <img
                   src={item.imageUrl}
                   alt={item.title}
@@ -138,8 +138,8 @@ export function HeroSliderBlock({
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-[9px] font-mono text-slate-400 block">0{idx + 1}</span>
-                <h5 className="text-[11px] font-bold leading-tight truncate text-slate-900 dark:text-white">
+                <span className="text-[0.5625rem] font-mono text-theme-muted block">0{idx + 1}</span>
+                <h5 className="text-[0.6875rem] font-bold leading-tight truncate text-theme-heading">
                   {item.title}
                 </h5>
               </div>

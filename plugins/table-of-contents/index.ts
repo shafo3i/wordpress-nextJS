@@ -11,22 +11,22 @@ export function init() {
       .slice(0, 6)
       .map((match, idx) => {
         const title = match[2].replace(/<[^>]*>/g, "").trim();
-        return `<li class="hover:text-[#2271b1] cursor-pointer">
-          <span class="text-[#2271b1] font-mono mr-1.5">${idx + 1}.</span>
+        return `<li class="hover:text-theme-link-hover cursor-pointer">
+          <span class="text-theme-link font-mono mr-1.5">${idx + 1}.</span>
           <span>${title}</span>
         </li>`;
       })
       .join("");
 
     const tocBox = `
-<div class="wp-plugin-toc not-prose my-6 rounded-lg border border-slate-200 bg-slate-50 p-4 font-sans text-xs shadow-sm">
-  <div class="mb-2 flex items-center justify-between font-semibold text-slate-800 border-b border-slate-200 pb-2">
-    <span class="flex items-center gap-1.5 uppercase tracking-wider text-[11px] text-slate-600">
+<div class="wp-plugin-toc not-prose my-6 rounded-lg border border-theme-border bg-theme-surface p-4 font-sans text-xs shadow-sm">
+  <div class="mb-2 flex items-center justify-between font-semibold text-theme-heading border-b border-theme-border pb-2">
+    <span class="flex items-center gap-1.5 uppercase tracking-wider text-[11px] text-theme-text">
       <span>📑</span> Table of Contents
     </span>
-    <span class="text-[10px] text-slate-400">Quick Navigation</span>
+    <span class="text-[10px] text-theme-muted">Quick Navigation</span>
   </div>
-  <ul class="space-y-1.5 text-slate-600 pl-1">
+  <ul class="space-y-1.5 text-theme-text pl-1">
     ${items}
   </ul>
 </div>`;

@@ -1,0 +1,14 @@
+{
+    "slug":  "pressforge-magazine",
+    "name":  "PressForge Magazine",
+    "description":  "A high-impact digital magazine layout featuring bento grid hero cards, trending story grids, and multimedia highlights.",
+    "version":  "2.1.0",
+    "author":  "PressForge Community",
+    "authorUrl":  "https://github.com/pressforge/pressforge",
+    "themeUrl":  "https://github.com/pressforge/pressforge",
+    "screenshot":  "/themes/ledger-magazine/screenshot.png",
+    "tags":  "magazine, visual, grid-layout, trending-widgets",
+    "legacySlugs":  [
+                        "ledger-magazine"
+                    ]
+}

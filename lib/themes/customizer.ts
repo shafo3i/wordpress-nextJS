@@ -2,11 +2,17 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { wpOptions } from "@/db/schema";
 import { AVAILABLE_THEMES, getActiveThemeSlug } from "./loader";
-import { CustomizerPayload, DEFAULT_MODS, Theme, ThemeMods } from "./types";
+import type { CustomizerPayload, ThemeMods } from "./types";
 import { getMenuWithItems, getNavMenuLocations } from "@/lib/menus/db";
 import { MenuItem } from "@/lib/menus/types";
+import { resolveMods, sanitizeMods } from "@/lib/customizer/resolve";
+import { buildSections, getPluginSections } from "@/lib/customizer/registry";
+import type { CustomizerSection } from "@/lib/customizer/types";
+import { applyFilters } from "@/lib/plugins/hooks";
+import { getActivePluginSlugs } from "@/lib/plugins/loader";
+import { getThemeModule, hasTheme, resolveThemeSlug } from "@/themes/registry";
 
-export { type CustomizerPayload, DEFAULT_MODS };
+export type { CustomizerPayload };
 
 
 async function getOption(name: string, fallback = ""): Promise<string> {
@@ -55,23 +61,21 @@ export async function getCustomizerData(targetThemeSlug?: string): Promise<Custo
     getNavMenuLocations(),
   ]);
 
-  const slug = targetThemeSlug || activeSlug;
-  const currentTheme = AVAILABLE_THEMES.find((t) => t.slug === slug) || AVAILABLE_THEMES[0];
-  const activeTheme = AVAILABLE_THEMES.find((t) => t.slug === activeSlug) || AVAILABLE_THEMES[0];
+  const slug = resolveThemeSlug(targetThemeSlug || activeSlug);
+  const currentTheme = getThemeModule(slug).manifest;
+  const activeTheme = getThemeModule(activeSlug).manifest;
 
   const modsRaw = await getOption(`theme_mods_${slug}`, "");
 
-  const defaultThemeMods = DEFAULT_MODS[slug] || DEFAULT_MODS["pressforge-broadsheet"];
-  let mods: ThemeMods = { ...defaultThemeMods };
-
+  let stored: Record<string, unknown> | null = null;
   if (modsRaw) {
     try {
-      const parsed = JSON.parse(modsRaw);
-      mods = { ...mods, ...parsed };
+      stored = JSON.parse(modsRaw);
     } catch (e) {
       console.error(`Failed to parse theme_mods_${slug}:`, e);
     }
   }
+  const mods: ThemeMods = resolveMods(slug, stored);
 
   // Load primary nav items for live preview
   let primaryNav: MenuItem[] = [
@@ -122,6 +126,15 @@ export async function getCustomizerData(targetThemeSlug?: string): Promise<Custo
 }
 
 /**
+ * Customizer sections for a theme: core + theme sections, extended by plugins through
+ * the `customizer_sections` filter (plugins must be initialised by the caller).
+ */
+export async function getCustomizerSections(themeSlug: string): Promise<CustomizerSection[]> {
+  const sections = buildSections(themeSlug, getPluginSections(await getActivePluginSlugs()));
+  return applyFilters<CustomizerSection[]>("customizer_sections", sections, { themeSlug });
+}
+
+/**
  * Persist customizer adjustments into wp_options
  */
 export async function saveCustomizerData(
@@ -130,8 +143,12 @@ export async function saveCustomizerData(
   identity: { siteTitle: string; siteTagline: string },
   activate = false
 ): Promise<void> {
+  if (!hasTheme(stylesheet)) {
+    throw new Error(`Theme '${stylesheet}' not found`);
+  }
+
   const updates = [
-    setOption(`theme_mods_${stylesheet}`, JSON.stringify(mods)),
+    setOption(`theme_mods_${stylesheet}`, JSON.stringify(sanitizeMods(stylesheet, mods as Record<string, unknown>))),
     setOption("blogname", identity.siteTitle.trim()),
     setOption("blogdescription", identity.siteTagline.trim()),
   ];
@@ -146,4 +163,16 @@ export async function saveCustomizerData(
   }
 
   await Promise.all(updates);
+}
+
+/** Favicon chosen in the active theme's customizer settings, if it is a usable URL. */
+export async function getActiveFaviconUrl(): Promise<string | null> {
+  try {
+    const slug = await getActiveThemeSlug();
+    const raw = await getOption(`theme_mods_${slug}`, "");
+    const url = String(JSON.parse(raw || "{}").faviconUrl ?? "").trim();
+    return /^(https?:\/\/|\/)/.test(url) ? url : null;
+  } catch {
+    return null;
+  }
 }

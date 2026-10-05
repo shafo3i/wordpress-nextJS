@@ -55,13 +55,13 @@ export function BigLeadSideListBlock({
         {lead && (
           <article
             style={{
-              backgroundColor: "var(--theme-surface, #ffffff)",
-              borderColor: "var(--theme-border, #e2e8f0)",
-              color: "var(--theme-text, #1d2327)",
+              backgroundColor: "var(--theme-surface)",
+              borderColor: "var(--theme-border)",
+              color: "var(--theme-text)",
             }}
-            className={`rounded-2xl border overflow-hidden shadow-sm transition-all ${reverse ? "lg:col-start-2" : ""}`}
+            className={`rounded-2xl border overflow-hidden theme-card transition-all ${reverse ? "lg:col-start-2" : ""}`}
           >
-            <div className="h-64 sm:h-80 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+            <div className="h-64 sm:h-80 w-full overflow-hidden bg-theme-border/40">
               <img
                 src={lead.imageUrl}
                 alt={lead.title}
@@ -72,17 +72,17 @@ export function BigLeadSideListBlock({
               <div className="mb-2 flex items-center gap-2">
                 {showCategory && lead.categories?.[0] && (
                   <span
-                    style={{ color: "var(--theme-primary, #2271b1)" }}
-                    className="font-bold text-[11px] uppercase tracking-wider"
+                    style={{ color: "var(--theme-primary)" }}
+                    className="font-bold text-[0.6875rem] uppercase tracking-wider"
                   >
                     {lead.categories[0]}
                   </span>
                 )}
                 {showDate && (
                   <>
-                    <span style={{ color: "var(--theme-muted, #94a3b8)" }}>•</span>
+                    <span style={{ color: "var(--theme-muted)" }}>•</span>
                     <time
-                      style={{ color: "var(--theme-muted, #94a3b8)" }}
+                      style={{ color: "var(--theme-muted)" }}
                       className="text-xs font-mono"
                     >
                       {formatDate(lead.date, theme.locale)}
@@ -93,7 +93,7 @@ export function BigLeadSideListBlock({
 
               <Link href={getPostUrl(lead.slug, theme)} className="block">
                 <h3
-                  style={{ color: "var(--theme-heading, #0f172a)" }}
+                  style={{ color: "var(--theme-heading)" }}
                   className={`text-2xl sm:text-3xl font-black tracking-tight leading-snug hover:underline ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
@@ -104,7 +104,7 @@ export function BigLeadSideListBlock({
 
               {showExcerpt && (
                 <p
-                  style={{ color: "var(--theme-text, #334155)" }}
+                  style={{ color: "var(--theme-text)" }}
                   className="mt-3 text-sm leading-relaxed"
                 >
                   {getExcerpt(lead, 200)}
@@ -112,12 +112,12 @@ export function BigLeadSideListBlock({
               )}
 
               <div
-                style={{ borderColor: "var(--theme-border, #e2e8f0)" }}
+                style={{ borderColor: "var(--theme-border)" }}
                 className="mt-5 flex items-center justify-between text-xs border-t pt-3"
               >
                 {showAuthor && (
                   <span
-                    style={{ color: "var(--theme-muted, #64748b)" }}
+                    style={{ color: "var(--theme-muted)" }}
                     className="font-semibold"
                   >
                     {theme.dict?.[lead.authorName] || lead.authorName}
@@ -126,7 +126,7 @@ export function BigLeadSideListBlock({
                 {linkText && (
                   <Link
                     href={getPostUrl(lead.slug, theme)}
-                    style={{ color: "var(--theme-primary, #2271b1)" }}
+                    style={{ color: "var(--theme-primary)" }}
                     className="font-bold hover:underline"
                   >
                     {linkText} {theme.direction === "rtl" ? "←" : "→"}
@@ -142,24 +142,24 @@ export function BigLeadSideListBlock({
             <div
               key={item.id}
               style={{
-                backgroundColor: "var(--theme-surface, #ffffff)",
-                borderColor: "var(--theme-border, #e2e8f0)",
+                backgroundColor: "var(--theme-surface)",
+                borderColor: "var(--theme-border)",
               }}
-              className="rounded-xl border p-3.5 flex gap-4 transition-all shadow-sm hover:border-[#2271b1]"
+              className="rounded-xl border p-3.5 flex gap-4 transition-all theme-card hover:border-theme-primary"
             >
               <div className="flex-1 min-w-0 flex flex-col justify-between">
                 <div>
                   {showCategory && (
                     <span
-                      style={{ color: "var(--theme-primary, #2271b1)" }}
-                      className="text-[10px] font-bold uppercase tracking-wider"
+                      style={{ color: "var(--theme-primary)" }}
+                      className="text-[0.625rem] font-bold uppercase tracking-wider"
                     >
                       {item.categories[0]}
                     </span>
                   )}
                   <Link href={getPostUrl(item.slug, theme)} className="block mt-0.5">
                     <h4
-                      style={{ color: "var(--theme-heading, #0f172a)" }}
+                      style={{ color: "var(--theme-heading)" }}
                       className={`text-sm font-bold leading-snug line-clamp-2 hover:underline ${
                         isSerif ? "font-serif" : "font-sans"
                       }`}
@@ -169,15 +169,15 @@ export function BigLeadSideListBlock({
                   </Link>
                 </div>
                 <div
-                  style={{ color: "var(--theme-muted, #94a3b8)" }}
-                  className="flex items-center justify-between text-[11px] font-mono mt-2"
+                  style={{ color: "var(--theme-muted)" }}
+                  className="flex items-center justify-between text-[0.6875rem] font-mono mt-2"
                 >
                   {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
                   {showDate && <span>{formatDate(item.date, theme.locale)}</span>}
                 </div>
               </div>
 
-              <div className="w-28 sm:w-32 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-slate-100 dark:bg-slate-800">
+              <div className="w-28 sm:w-32 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-theme-border/40">
                 <img
                   src={item.imageUrl}
                   alt={item.title}

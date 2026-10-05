@@ -17,7 +17,7 @@ export function RelatedPostsAdminForm({ item, onChange, dict, direction }: Widge
   return (
     <div className="space-y-3 text-start">
       <div>
-        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
           {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة" : "Widget Title")}
         </label>
         <input
@@ -25,13 +25,13 @@ export function RelatedPostsAdminForm({ item, onChange, dict, direction }: Widge
           value={item.title || ""}
           placeholder={dict?.["admin.widgets.descriptor.plugin_related_posts.name"] || manifest.name}
           onChange={(e) => onChange({ title: e.target.value })}
-          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[0.8125rem] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "تصفية حسب قسم معين" : "Category Filter"}
           </label>
           <input
@@ -43,7 +43,7 @@ export function RelatedPostsAdminForm({ item, onChange, dict, direction }: Widge
           />
         </div>
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "عدد المقالات" : "Number of Stories"}
           </label>
           <input
@@ -94,14 +94,14 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
   const displayPosts = (filtered.length > 0 ? filtered : posts).slice(0, count);
 
   return (
-    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
-      <div className="flex items-center gap-1.5 text-[var(--theme-primary,#2271b1)] mb-1">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">
+      <div className="flex items-center gap-1.5 text-[var(--theme-primary)] mb-1">
         <Sparkles className="size-3.5" />
-        <span className="text-[10px] font-bold uppercase tracking-wider">
+        <span className="text-[0.625rem] font-bold uppercase tracking-wider">
           {t("site.contextual_feed", theme, "Contextual Feed")}
         </span>
       </div>
-      <h4 className="theme-widget-title text-xs font-bold text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))] mb-2.5">
+      <h4 className="theme-widget-title text-xs font-bold text-[var(--theme-widget-title-color,var(--theme-heading))] mb-2.5">
         {item.title || t("site.related_stories", theme, "Related Stories")}
       </h4>
       <div className="space-y-2">
@@ -109,7 +109,7 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
           <Link
             key={p.id}
             href={getPostUrl(p.slug, theme)}
-            className="flex items-center gap-2.5 p-2 rounded-lg bg-[var(--theme-bg,#f8f7f4)] border border-[var(--theme-border,#e2e8f0)] hover:border-[var(--theme-primary,#2271b1)] transition-colors group"
+            className="flex items-center gap-2.5 p-2 rounded-lg border border-theme-border bg-theme-surface hover:border-[var(--theme-primary)] transition-colors group"
           >
             {showThumbnail && p.imageUrl && (
               <img
@@ -120,14 +120,14 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
               />
             )}
             <div className="flex-1 min-w-0">
-              <span className="text-[9px] uppercase font-bold text-[var(--theme-primary,#2271b1)] block truncate">
+              <span className="text-[0.5625rem] uppercase font-bold text-[var(--theme-primary)] block truncate">
                 {p.categories?.[0] || t("site.featured_story", theme, "Featured")}
               </span>
-              <span className="text-xs font-bold text-[var(--theme-heading,#0f172a)] line-clamp-2 mt-0.5 group-hover:text-[var(--theme-primary,#2271b1)] transition-colors">
+              <span className="text-xs font-bold text-[var(--theme-heading)] line-clamp-2 mt-0.5 group-hover:text-[var(--theme-primary)] transition-colors">
                 {p.title}
               </span>
               {showDate && (
-                <span className="text-[9px] text-[var(--theme-muted,#64748b)] font-mono block mt-0.5">
+                <span className="text-[0.5625rem] text-[var(--theme-muted)] font-mono block mt-0.5">
                   {formatDate(p.date, theme?.locale)}
                 </span>
               )}

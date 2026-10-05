@@ -1,0 +1,14 @@
+{
+    "slug":  "pressforge-broadsheet",
+    "name":  "PressForge Broadsheet",
+    "description":  "The flagship newspaper of record layout with a distinguished masthead, classic serif headlines, and a multi-column front page.",
+    "version":  "2.0.0",
+    "author":  "PressForge Community",
+    "authorUrl":  "https://github.com/pressforge/pressforge",
+    "themeUrl":  "https://github.com/pressforge/pressforge",
+    "screenshot":  "/themes/ledger-classic/screenshot.png",
+    "tags":  "news, newspaper, two-columns, custom-header, editorial",
+    "legacySlugs":  [
+                        "ledger-classic"
+                    ]
+}

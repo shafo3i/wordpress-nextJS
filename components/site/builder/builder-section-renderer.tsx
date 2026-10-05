@@ -41,7 +41,7 @@ export function BuilderSectionRenderer({
       <div className={containerClass}>
         {section.title && (
           <div className="mb-4">
-            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h2 className="text-xl font-bold tracking-tight text-theme-heading">
               {section.title}
             </h2>
           </div>

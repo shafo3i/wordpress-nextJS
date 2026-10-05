@@ -16,16 +16,16 @@ export function init() {
     const urgency = config.urgency || "urgent";
 
     const colorClasses = {
-      urgent: "border-rose-300 bg-rose-50/90 text-rose-950",
-      developing: "border-amber-300 bg-amber-50/90 text-amber-950",
-      alert: "border-blue-300 bg-blue-50/90 text-blue-950",
-    }[urgency as "urgent" | "developing" | "alert"] || "border-rose-300 bg-rose-50/90 text-rose-950";
+      urgent: "border-theme-danger/40 bg-theme-danger/10 text-theme-text",
+      developing: "border-theme-warning/40 bg-theme-warning/10 text-theme-text",
+      alert: "border-theme-info/40 bg-theme-info/10 text-theme-text",
+    }[urgency as "urgent" | "developing" | "alert"] || "border-theme-danger/40 bg-theme-danger/10 text-theme-text";
 
     const badgeBg = {
-      urgent: "bg-rose-600",
-      developing: "bg-amber-600",
-      alert: "bg-blue-600",
-    }[urgency as "urgent" | "developing" | "alert"] || "bg-rose-600";
+      urgent: "bg-theme-danger",
+      developing: "bg-theme-warning",
+      alert: "bg-theme-info",
+    }[urgency as "urgent" | "developing" | "alert"] || "bg-theme-danger";
 
     const banner = `
 <div class="wp-plugin-breaking-news not-prose mb-6 flex items-center justify-between gap-3 rounded-xl border ${colorClasses} px-4 py-3 text-xs shadow-sm">

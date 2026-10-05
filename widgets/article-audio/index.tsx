@@ -17,7 +17,7 @@ export function ArticleAudioAdminForm({ item, onChange, dict, direction }: Widge
   return (
     <div className="space-y-3 text-start">
       <div>
-        <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
           {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة" : "Widget Title")}
         </label>
         <input
@@ -25,12 +25,12 @@ export function ArticleAudioAdminForm({ item, onChange, dict, direction }: Widge
           value={item.title || ""}
           placeholder={dict?.["admin.widgets.descriptor.plugin_audio.name"] || manifest.name}
           onChange={(e) => onChange({ title: e.target.value })}
-          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+          className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[0.8125rem] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
         />
       </div>
 
       <div>
-        <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+        <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
           {isRtl ? "رابط ملف الصوت أو البث المباشر (MP3 / Audio URL)" : "Audio Stream / MP3 File URL"}
         </label>
         <input
@@ -44,7 +44,7 @@ export function ArticleAudioAdminForm({ item, onChange, dict, direction }: Widge
           }
           className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
         />
-        <p className="text-[10px] text-[#646970] mt-0.5">
+        <p className="text-[0.625rem] text-[#646970] mt-0.5">
           {isRtl
             ? "يدعم روابط MP3 و M4A وبث راديو Icecast/HLS المباشر."
             : "Supports MP3, M4A, and live radio Icecast/HLS streams."}
@@ -53,7 +53,7 @@ export function ArticleAudioAdminForm({ item, onChange, dict, direction }: Widge
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "اسم المحطة / البودكاست" : "Show / Station Name"}
           </label>
           <input
@@ -68,7 +68,7 @@ export function ArticleAudioAdminForm({ item, onChange, dict, direction }: Widge
           />
         </div>
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "عنوان الحلقة أو الفقرة" : "Episode / Segment Title"}
           </label>
           <input
@@ -86,7 +86,7 @@ export function ArticleAudioAdminForm({ item, onChange, dict, direction }: Widge
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "المقدم / المذيع" : "Presenter / Host"}
           </label>
           <input
@@ -101,7 +101,7 @@ export function ArticleAudioAdminForm({ item, onChange, dict, direction }: Widge
           />
         </div>
         <div>
-          <label className="block text-[11px] font-medium text-[#50575e] mb-1">
+          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "مدة التسجيل التقديرية" : "Duration Display"}
           </label>
           <input
@@ -179,7 +179,7 @@ export function ArticleAudioRender({ item, theme }: WidgetRenderProps) {
   };
 
   return (
-    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border,#e2e8f0))] bg-[var(--theme-widget-bg,var(--theme-surface,#ffffff))] text-[var(--theme-widget-text,var(--theme-text,#1d2327))] p-4 shadow-sm text-start">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">
       {audioUrl && (
         <audio
           ref={audioRef}
@@ -194,18 +194,17 @@ export function ArticleAudioRender({ item, theme }: WidgetRenderProps) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           {isLiveStream ? (
-            <span className="flex items-center gap-1 rounded bg-[#d63638] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white animate-pulse">
+            <span className="flex items-center gap-1 rounded bg-theme-danger px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider text-white animate-pulse">
               <Radio className="size-3" /> {isRtl ? "مباشر" : "Live"}
             </span>
           ) : (
             <span
-              style={{ backgroundColor: theme?.primaryColor || "var(--theme-primary, #2271b1)" }}
-              className="flex items-center gap-1 rounded px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white"
+              className="theme-btn flex items-center gap-1 rounded px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider "
             >
               <Disc className={`size-3 ${isPlaying ? "animate-spin" : ""}`} /> {isRtl ? "صوت" : "Audio"}
             </span>
           )}
-          <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-medium truncate max-w-[140px]">
+          <span className="text-[0.625rem] text-[var(--theme-muted)] font-medium truncate max-w-[140px]">
             {stationName}
           </span>
         </div>
@@ -213,19 +212,19 @@ export function ArticleAudioRender({ item, theme }: WidgetRenderProps) {
         <button
           type="button"
           onClick={toggleMute}
-          className="text-[var(--theme-muted,#64748b)] hover:text-[var(--theme-text,#1d2327)] transition-colors cursor-pointer"
+          className="text-[var(--theme-muted)] hover:text-[var(--theme-text)] transition-colors cursor-pointer"
           title={isMuted ? (isRtl ? "إلغاء الكتم" : "Unmute") : (isRtl ? "كتم الصوت" : "Mute")}
         >
-          {isMuted ? <VolumeX className="size-3.5 text-[#d63638]" /> : <Volume2 className="size-3.5" />}
+          {isMuted ? <VolumeX className="size-3.5 text-theme-danger" /> : <Volume2 className="size-3.5" />}
         </button>
       </div>
 
       {/* Title & Host */}
       <div className="my-2">
-        <h4 className="theme-widget-title text-sm font-bold font-serif leading-snug line-clamp-2 text-[var(--theme-widget-title-color,var(--theme-heading,#0f172a))]">
+        <h4 className="theme-widget-title text-sm font-bold font-serif leading-snug line-clamp-2 text-[var(--theme-widget-title-color,var(--theme-heading))]">
           {episodeTitle}
         </h4>
-        <span className="text-[11px] text-[var(--theme-muted,#64748b)] block mt-0.5">
+        <span className="text-[0.6875rem] text-[var(--theme-muted)] block mt-0.5">
           {isRtl ? `تقديم: ${host}` : `Hosted by ${host}`}
         </span>
       </div>
@@ -237,8 +236,8 @@ export function ArticleAudioRender({ item, theme }: WidgetRenderProps) {
             key={i}
             className={`w-1 rounded-full transition-all duration-300 ${
               isPlaying
-                ? "bg-[var(--theme-primary,#2271b1)] animate-pulse"
-                : "bg-[var(--theme-border,#cbd5e1)]"
+                ? "bg-[var(--theme-primary)] animate-pulse"
+                : "bg-[var(--theme-border)]"
             }`}
             style={{
               height: isPlaying ? `${Math.max(15, (h * (i % 2 === 0 ? 1 : 0.7)))}%` : "20%",
@@ -249,23 +248,22 @@ export function ArticleAudioRender({ item, theme }: WidgetRenderProps) {
       </div>
 
       {/* Controls Bar */}
-      <div className="flex items-center justify-between pt-2 border-t border-[var(--theme-border,#e2e8f0)]">
+      <div className="flex items-center justify-between pt-2 border-t border-[var(--theme-border)]">
         <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={togglePlay}
-            style={{ backgroundColor: theme?.primaryColor || "var(--theme-primary, #2271b1)" }}
-            className="size-8 rounded-full text-white flex items-center justify-center transition-all shadow-sm hover:opacity-90 hover:scale-105 cursor-pointer"
+            className="theme-btn size-8 rounded-full  flex items-center justify-center transition-all shadow-sm hover:opacity-90 hover:scale-105 cursor-pointer"
             title={isPlaying ? (isRtl ? "إيقاف مؤقت" : "Pause") : (isRtl ? "تشغيل" : "Play")}
           >
             {isPlaying ? <Pause className="size-4" /> : <Play className="size-4 ml-0.5" />}
           </button>
-          <span className="text-[11px] text-[var(--theme-text,#1d2327)] font-mono font-medium">
+          <span className="text-[0.6875rem] text-[var(--theme-text)] font-mono font-medium">
             {isPlaying && duration > 0 ? formatSecs(currentTime) : durationText}
           </span>
         </div>
 
-        <span className="text-[10px] text-[var(--theme-muted,#64748b)] font-mono">
+        <span className="text-[0.625rem] text-[var(--theme-muted)] font-mono">
           {isLiveStream ? "320 kbps HD" : "Stereo 48kHz"}
         </span>
       </div>

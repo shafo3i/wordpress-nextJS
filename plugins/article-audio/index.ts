@@ -13,13 +13,13 @@ export function init() {
     const uniqueId = `audio-player-${Math.random().toString(36).substring(2, 7)}`;
 
     const audioWidget = `
-<div class="wp-plugin-audio not-prose my-5 rounded-xl border border-slate-700/60 bg-gradient-to-r from-slate-900 to-slate-800 p-3.5 text-white shadow-sm" id="${uniqueId}">
+<div class="wp-plugin-audio not-prose my-5 rounded-xl border border-theme-footer-border bg-theme-footer p-3.5 text-theme-footer-heading shadow-sm" id="${uniqueId}">
   <div class="flex items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <button
         type="button"
         id="${uniqueId}-btn"
-        class="flex size-9 items-center justify-center rounded-full bg-[#2271b1] text-sm text-white hover:bg-[#135e96] transition-transform hover:scale-105 cursor-pointer shadow"
+        class="flex size-9 items-center justify-center rounded-full bg-theme-button text-sm text-theme-button-text hover:bg-theme-button-hover transition-transform hover:scale-105 cursor-pointer shadow"
         onclick="
           var btn = this;
           var audioEl = document.getElementById('${uniqueId}-audio');
@@ -50,12 +50,12 @@ export function init() {
         ▶
       </button>
       <div>
-        <span class="block text-xs font-semibold text-white">Listen to this story</span>
-        <span class="block text-[10px] text-slate-400 font-mono">${stationName} • ${host} • ${duration}</span>
+        <span class="block text-xs font-semibold text-theme-footer-heading">Listen to this story</span>
+        <span class="block text-[10px] text-theme-muted font-mono">${stationName} • ${host} • ${duration}</span>
       </div>
     </div>
     <div class="hidden sm:flex items-center gap-2">
-      <span class="text-[10px] uppercase tracking-wider font-semibold rounded bg-slate-700/60 px-2 py-0.5 text-slate-300">
+      <span class="text-[10px] uppercase tracking-wider font-semibold rounded bg-theme-footer-heading/10 px-2 py-0.5 text-theme-footer-text">
         ${audioUrl ? "Live Audio Feed" : "Speech Narration"}
       </span>
     </div>
