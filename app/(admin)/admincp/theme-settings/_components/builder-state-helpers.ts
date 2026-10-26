@@ -204,3 +204,51 @@ export function reorderArray<T>(list: T[], startIndex: number, endIndex: number)
   result.splice(endIndex, 0, removed);
   return result;
 }
+
+export function duplicateBlockInSections(
+  sections: PageBuilderSection[],
+  blockId: string
+): { updatedSections: PageBuilderSection[]; newBlockId: string | null } {
+  let newBlockId: string | null = null;
+
+  const updatedSections = sections.map((sec) => ({
+    ...sec,
+    rows: sec.rows.map((row) => ({
+      ...row,
+      columns: row.columns.map((col) => {
+        const itemIdx = col.items.findIndex(
+          (it) => it.type === "block" && it.block && it.block.id === blockId
+        );
+        if (itemIdx === -1) return col;
+
+        const originalItem = col.items[itemIdx];
+        if (originalItem.type !== "block" || !originalItem.block) return col;
+
+        const generatedId = `block-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+        newBlockId = generatedId;
+
+        const duplicatedBlock: HomepageBlock = {
+          ...JSON.parse(JSON.stringify(originalItem.block)),
+          id: generatedId,
+        };
+
+        const duplicatedItem: BuilderItem = {
+          id: `item-${generatedId}`,
+          type: "block",
+          block: duplicatedBlock,
+        };
+
+        const newItems = [...col.items];
+        newItems.splice(itemIdx + 1, 0, duplicatedItem);
+
+        return {
+          ...col,
+          items: newItems,
+        };
+      }),
+    })),
+  }));
+
+  return { updatedSections, newBlockId };
+}
+

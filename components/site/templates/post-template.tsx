@@ -73,10 +73,15 @@ export function PostTemplate({
       : "theme-container mx-auto px-4 sm:px-6"; // sidebar-right, sidebar-left, full-container
 
   const renderSidebar = () => {
-    if (sidebarWidgets && sidebarWidgets.length > 0) {
+    const activeLocale = theme?.locale || theme?.defaultLocale || "en";
+    const visibleWidgets = (sidebarWidgets || []).filter(
+      (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+    );
+
+    if (visibleWidgets.length > 0) {
       return (
         <aside className="space-y-6">
-          {sidebarWidgets.map((item) => (
+          {visibleWidgets.map((item) => (
             <SidebarWidgetRenderer
               key={item.id}
               item={item}

@@ -43,7 +43,7 @@ export {
  * Dispatches and renders any of the 12+ editorial blocks cleanly based on block.type and block.displayStyle
  */
 export function renderEditorialBlock({
-  block,
+  block: rawBlock,
   posts,
   theme,
 }: {
@@ -51,7 +51,24 @@ export function renderEditorialBlock({
   posts: ContentItem[];
   theme: FrontEndThemeContext;
 }): React.ReactNode {
-  if (!block.enabled) return null;
+  if (!rawBlock.enabled) return null;
+
+  const activeLocale = theme.locale || theme.defaultLocale || "en";
+  const localizedTitle =
+    (rawBlock.titles && rawBlock.titles[activeLocale]) ||
+    rawBlock.title ||
+    "";
+  const localizedSubtitle =
+    (rawBlock.subtitles && rawBlock.subtitles[activeLocale]) ||
+    rawBlock.subtitle;
+
+  const block: HomepageBlock = {
+    ...rawBlock,
+    title: rawBlock.showTitle === false ? "" : localizedTitle,
+    subtitle: rawBlock.showTitle === false ? undefined : localizedSubtitle,
+    linkText: rawBlock.showTitle === false ? undefined : rawBlock.linkText,
+    linkHref: rawBlock.showTitle === false ? undefined : rawBlock.linkHref,
+  };
 
   // Filter posts by category if specified
   const filteredPosts =

@@ -38,12 +38,14 @@ interface BuilderRowCardProps {
   onMoveRowDown: () => void;
   onDeleteRow: () => void;
   onUpdateBlock: (blockId: string, updates: Partial<HomepageBlock>) => void;
+  onDuplicateBlock: (blockId: string) => void;
   onToggleBlockEnabled: (blockId: string) => void;
   onRemoveItem: (columnId: string, itemId: string) => void;
   onUpdateWidget?: (columnId: string, itemId: string, updates: Partial<BuilderItem>) => void;
   onAddItemToColumn: (columnId: string, type: "block" | "widget", payload: string) => void;
   availableBlockTypes: HomepageBlockType[];
   availableWidgets: { type: string; name: string; desc?: string }[];
+  languages?: { code: string; name: string; nativeName?: string | null }[];
 }
 
 export function BuilderRowCard({
@@ -60,12 +62,14 @@ export function BuilderRowCard({
   onMoveRowDown,
   onDeleteRow,
   onUpdateBlock,
+  onDuplicateBlock,
   onToggleBlockEnabled,
   onRemoveItem,
   onUpdateWidget,
   onAddItemToColumn,
   availableBlockTypes,
   availableWidgets,
+  languages = [],
 }: BuilderRowCardProps) {
   const isRtl = direction === "rtl";
   const [modalCol, setModalCol] = useState<{ id: string; title: string } | null>(null);
@@ -225,11 +229,13 @@ export function BuilderRowCard({
                         categories={categories}
                         dict={dict}
                         direction={direction}
+                        languages={languages}
                         onToggleExpand={() =>
                           onSetExpandedBlockId(expandedBlockId === item.block.id ? null : item.block.id)
                         }
                         onToggleEnabled={() => onToggleBlockEnabled(item.block.id)}
                         onUpdate={(updates) => onUpdateBlock(item.block.id, updates)}
+                        onDuplicate={() => onDuplicateBlock(item.block.id)}
                         onRemove={() => onRemoveItem(col.id, item.id)}
                       />
                     );

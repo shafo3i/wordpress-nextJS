@@ -32,6 +32,12 @@ export function BuilderSectionRenderer({
       ? "py-12"
       : "py-6";
 
+  const activeLocale = theme.locale || theme.defaultLocale || "en";
+  const sectionTitle =
+    (section.titles && section.titles[activeLocale]) ||
+    section.title ||
+    "";
+
   return (
     <section
       key={section.id}
@@ -39,10 +45,10 @@ export function BuilderSectionRenderer({
       className={`${paddingClass} transition-colors`}
     >
       <div className={containerClass}>
-        {section.title && (
+        {sectionTitle.trim() && (
           <div className="mb-4">
             <h2 className="text-xl font-bold tracking-tight text-theme-heading">
-              {section.title}
+              {sectionTitle}
             </h2>
           </div>
         )}

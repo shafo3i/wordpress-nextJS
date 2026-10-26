@@ -7,6 +7,7 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronUp,
+  Copy,
   GripVertical,
   Plus,
   Trash2,
@@ -30,6 +31,7 @@ interface WidgetsManagerShellProps {
   availableWidgets: AvailableWidgetDescriptor[];
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  languages?: { code: string; name: string; nativeName?: string | null }[];
 }
 
 export function WidgetsManagerShell({
@@ -37,6 +39,7 @@ export function WidgetsManagerShell({
   availableWidgets,
   dict,
   direction = "ltr",
+  languages = [],
 }: WidgetsManagerShellProps) {
   const [areas, setAreas] = useState<WidgetArea[]>(initialAreas);
   const [openAreaId, setOpenAreaId] = useState<string>(initialAreas[0]?.id || "sidebar_primary");
@@ -226,6 +229,25 @@ export function WidgetsManagerShell({
     setAreas((curr) =>
       curr.map((a) => (a.id === currentArea.id ? { ...a, items: updatedItems } : a))
     );
+  };
+
+  const duplicateWidget = (id: string, index: number) => {
+    if (!currentArea) return;
+    const widgetToClone = currentArea.items.find((w) => w.id === id);
+    if (!widgetToClone) return;
+
+    const clonedWidget: WidgetItem = {
+      ...JSON.parse(JSON.stringify(widgetToClone)),
+      id: `w-${widgetToClone.type}-${Date.now()}`,
+    };
+
+    const updatedItems = [...currentArea.items];
+    updatedItems.splice(index + 1, 0, clonedWidget);
+
+    setAreas((curr) =>
+      curr.map((a) => (a.id === currentArea.id ? { ...a, items: updatedItems } : a))
+    );
+    setExpandedWidgetId(clonedWidget.id);
   };
 
   const handleSaveArea = () => {
@@ -527,6 +549,11 @@ export function WidgetsManagerShell({
                                   </div>
 
                                   <span className="font-semibold text-[#1d2327]">{itemTitle}</span>
+                                  {item.locale && item.locale !== "all" && (
+                                    <span className="rounded bg-sky-100 text-sky-800 text-[10px] px-1.5 py-0.5 font-bold uppercase tracking-wider">
+                                      {item.locale.toUpperCase()}
+                                    </span>
+                                  )}
                                   {isPlugin ? (
                                     <span className="rounded bg-purple-100 text-purple-800 text-[9px] px-1.5 py-0.2 font-bold uppercase">
                                       {direction === "rtl" ? "إضافة" : "Plugin"}
@@ -538,20 +565,54 @@ export function WidgetsManagerShell({
                                   )}
                                 </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setExpandedWidgetId(isExpanded ? null : item.id)
-                                  }
-                                  className="p-1 text-[#646970] hover:text-[#2271b1]"
-                                >
-                                  {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-                                </button>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      duplicateWidget(item.id, index);
+                                    }}
+                                    className="p-1 text-[#646970] hover:text-[#2271b1] rounded hover:bg-[#f0f0f1]"
+                                    title={direction === "rtl" ? "تكرار هذه الأداة" : "Duplicate widget"}
+                                  >
+                                    <Copy className="size-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setExpandedWidgetId(isExpanded ? null : item.id)
+                                    }
+                                    className="p-1 text-[#646970] hover:text-[#2271b1]"
+                                  >
+                                    {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Expanded Form */}
                               {isExpanded && (
                                 <div className="border-t border-[#dcdcde] bg-white p-3.5 space-y-3">
+                                  {/* Language Assignment Dropdown */}
+                                  <div className="rounded border border-[#dcdcde] bg-[#f6f7f7] p-2.5">
+                                    <label className="block text-[11px] font-semibold text-[#50575e] uppercase tracking-wide mb-1">
+                                      {dict?.["admin.widgets.language"] || (direction === "rtl" ? "اللغة المعروضة بها" : "Display on Language")}
+                                    </label>
+                                    <select
+                                      value={item.locale || "all"}
+                                      onChange={(e) => updateWidget(item.id, { locale: e.target.value })}
+                                      className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
+                                    >
+                                      <option value="all">
+                                        {dict?.["admin.widgets.all_languages"] || (direction === "rtl" ? "جميع اللغات" : "All Languages")}
+                                      </option>
+                                      {languages?.map((lang) => (
+                                        <option key={lang.code} value={lang.code}>
+                                          {lang.nativeName ? `${lang.nativeName} (${lang.name})` : lang.name} [{lang.code.toUpperCase()}]
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
                                   {(() => {
                                     const widgetMod = getWidget(item.type);
                                     if (widgetMod?.AdminForm) {
@@ -594,14 +655,25 @@ export function WidgetsManagerShell({
                                   })()}
 
                                   <div className="flex items-center justify-between pt-2 border-t border-[#f0f0f1]">
-                                    <button
-                                      type="button"
-                                      onClick={() => removeWidget(item.id)}
-                                      className="text-[12px] text-[#b32d2e] hover:underline flex items-center gap-1"
-                                    >
-                                      <Trash2 className="size-3" />{" "}
-                                      {dict?.["admin.widgets.delete"] || "Delete"}
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => removeWidget(item.id)}
+                                        className="text-[12px] text-[#b32d2e] hover:underline flex items-center gap-1"
+                                      >
+                                        <Trash2 className="size-3" />{" "}
+                                        {dict?.["admin.widgets.delete"] || "Delete"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => duplicateWidget(item.id, index)}
+                                        className="text-[12px] text-[#2271b1] hover:underline flex items-center gap-1 font-medium"
+                                        title={direction === "rtl" ? "تكرار هذه الأداة" : "Duplicate this widget"}
+                                      >
+                                        <Copy className="size-3" />{" "}
+                                        {dict?.["admin.widgets.duplicate"] || (direction === "rtl" ? "تكرار" : "Duplicate")}
+                                      </button>
+                                    </div>
                                     <button
                                       type="button"
                                       onClick={() => setExpandedWidgetId(null)}

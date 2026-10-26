@@ -1,5 +1,6 @@
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { getActiveLanguages } from "@/services/language.service";
 import { getWidgetsQuery } from "./query";
 import { WidgetsManagerShell } from "./_components";
 
@@ -12,7 +13,10 @@ export default async function WidgetsPage() {
   const dict = langContext.dict;
   const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
-  const { areas, availableWidgets } = await getWidgetsQuery();
+  const [{ areas, availableWidgets }, activeLanguages] = await Promise.all([
+    getWidgetsQuery(),
+    getActiveLanguages().catch(() => []),
+  ]);
 
   return (
     <AdminShell>
@@ -21,6 +25,7 @@ export default async function WidgetsPage() {
         availableWidgets={availableWidgets}
         dict={dict}
         direction={direction}
+        languages={activeLanguages}
       />
     </AdminShell>
   );

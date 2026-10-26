@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Copy, GripVertical } from "lucide-react";
 import { HomepageBlock } from "@/lib/themes/homepage-types";
 import { BlockWireframeIcon } from "./block-wireframes";
 import { EditorialBlockDrawer } from "./editorial-block-drawer";
@@ -21,7 +21,9 @@ interface EditorialBlockCardProps {
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onUpdate: (updates: Partial<HomepageBlock>) => void;
+  onDuplicate?: () => void;
   onRemove: () => void;
+  languages?: { code: string; name: string; nativeName?: string | null }[];
   dragProps?: {
     draggable?: boolean;
     onDragStart?: (e: React.DragEvent) => void;
@@ -41,11 +43,13 @@ export function EditorialBlockCard({
   categories,
   dict,
   direction = "ltr",
+  languages = [],
   onToggleExpand,
   onToggleEnabled,
   onMoveUp,
   onMoveDown,
   onUpdate,
+  onDuplicate,
   onRemove,
   dragProps = {},
 }: EditorialBlockCardProps) {
@@ -59,14 +63,9 @@ export function EditorialBlockCard({
   const blockName = dict?.[`admin.theme_settings.block.${block.type}.name`] || block.type;
   const currentDisplayStyle = block.displayStyle || "grid_3";
 
-  const isDefaultOrOppositeLang =
-    !block.title ||
-    block.title === block.type ||
-    block.title === blockName ||
-    (!isRtl && /[\u0600-\u06FF]/.test(block.title)) ||
-    (isRtl && /^[A-Za-z0-9\s•\-+()]+$/.test(block.title));
-
-  const displayTitle = isDefaultOrOppositeLang ? blockName : block.title;
+  const adminLang = isRtl ? "ar" : "en";
+  const localizedTitle = (block.titles && block.titles[adminLang]) || block.title;
+  const displayTitle = localizedTitle && localizedTitle.trim() ? localizedTitle : blockName;
 
   return (
     <div
@@ -123,6 +122,11 @@ export function EditorialBlockCard({
 
           <div>
             <strong className="text-[#1d2327] text-[13px]">{displayTitle}</strong>
+            {block.showTitle === false && (
+              <span className="text-[10px] bg-gray-100 text-gray-500 rounded px-1.5 py-0.5 ms-2 font-medium">
+                {isRtl ? "العنوان مخفي" : "Title Hidden"}
+              </span>
+            )}
             {block.categorySlug && block.categorySlug !== "all" && (
               <span className="text-[11px] text-[#646970] ms-2">
                 ({block.categorySlug})
@@ -131,7 +135,21 @@ export function EditorialBlockCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {onDuplicate && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate();
+              }}
+              className="p-1 text-[#646970] hover:text-[#2271b1] transition-colors"
+              title={t("admin.theme_settings.duplicate_block", "Duplicate Block", "نسخ هذا القسم")}
+            >
+              <Copy className="size-3.5" />
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onToggleEnabled}
@@ -162,7 +180,9 @@ export function EditorialBlockCard({
           categories={categories}
           dict={dict}
           direction={direction}
+          languages={languages}
           onUpdate={onUpdate}
+          onDuplicate={onDuplicate}
           onRemove={onRemove}
           onClose={onToggleExpand}
         />

@@ -91,7 +91,12 @@ export function NewsHome({
   };
 
   const renderSidebar = (items: WidgetItem[]) => {
-    if (!items.length) {
+    const activeLocale = theme?.locale || theme?.defaultLocale || "en";
+    const visibleItems = items.filter(
+      (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+    );
+
+    if (!visibleItems.length) {
       return (
         <div className="rounded-xl border border-dashed border-theme-border p-4 text-center text-xs text-theme-muted">
           No widgets placed in this sidebar yet.
@@ -101,7 +106,7 @@ export function NewsHome({
 
     return (
       <div className="space-y-6">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <SidebarWidgetRenderer key={item.id} item={item} theme={theme} posts={posts} />
         ))}
       </div>

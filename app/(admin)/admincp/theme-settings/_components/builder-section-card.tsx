@@ -29,12 +29,14 @@ interface BuilderSectionCardProps {
   onMoveRow: (rowIndex: number, direction: "up" | "down") => void;
   onDeleteRow: (rowId: string) => void;
   onUpdateBlock: (blockId: string, updates: Partial<HomepageBlock>) => void;
+  onDuplicateBlock: (blockId: string) => void;
   onToggleBlockEnabled: (blockId: string) => void;
   onRemoveItem: (columnId: string, itemId: string) => void;
   onUpdateWidget?: (columnId: string, itemId: string, updates: any) => void;
   onAddItemToColumn: (columnId: string, type: "block" | "widget", payload: string) => void;
   availableBlockTypes: HomepageBlockType[];
   availableWidgets: { type: string; name: string; desc?: string }[];
+  languages?: { code: string; name: string; nativeName?: string | null }[];
 }
 
 export function BuilderSectionCard({
@@ -55,33 +57,63 @@ export function BuilderSectionCard({
   onMoveRow,
   onDeleteRow,
   onUpdateBlock,
+  onDuplicateBlock,
   onToggleBlockEnabled,
   onRemoveItem,
   onUpdateWidget,
   onAddItemToColumn,
   availableBlockTypes,
   availableWidgets,
+  languages = [],
 }: BuilderSectionCardProps) {
   const isRtl = direction === "rtl";
+  const [activeSectionLang, setActiveSectionLang] = React.useState<string>(languages[0]?.code || "en");
 
   const t = (key: string, enFallback: string, arFallback: string) => {
     if (isRtl) return dict?.[key] || arFallback;
     return dict?.[key] || enFallback;
   };
 
+  const currentSectionTitle =
+    (section.titles && section.titles[activeSectionLang]) ??
+    (activeSectionLang === (languages[0]?.code || "en") ? section.title || "" : "");
+
   return (
     <div className="rounded-[4px] border border-[#c3c4c7] bg-white shadow-sm space-y-4 p-4 text-start">
       {/* Section Header Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f0f0f1] pb-3">
-        <div className="flex items-center gap-3 flex-1 min-w-[240px]">
+        <div className="flex items-center gap-2 flex-1 min-w-[280px]">
           <span className="size-6 rounded bg-[#2271b1] text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
             {sectionIndex + 1}
           </span>
+          {languages && languages.length > 1 && (
+            <div className="flex items-center rounded border border-[#8c8f94] bg-[#f0f0f1] p-0.5 text-[10px] font-bold">
+              {languages.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  onClick={() => setActiveSectionLang(l.code)}
+                  className={`px-1.5 py-0.5 rounded transition-colors ${
+                    activeSectionLang === l.code ? "bg-[#2271b1] text-white shadow-xs" : "text-[#50575e] hover:text-[#1d2327]"
+                  }`}
+                >
+                  {l.code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
           <input
             type="text"
-            value={section.title || ""}
-            placeholder={t("admin.theme_settings.display_title", "Section Display Title", "عنوان عرض القسم")}
-            onChange={(e) => onUpdateSection({ title: e.target.value })}
+            value={currentSectionTitle}
+            placeholder={`${t("admin.theme_settings.display_title", "Section Display Title", "عنوان عرض القسم")} (${activeSectionLang.toUpperCase()})`}
+            onChange={(e) => {
+              const val = e.target.value;
+              const updatedTitles = { ...(section.titles || {}), [activeSectionLang]: val };
+              onUpdateSection({
+                titles: updatedTitles,
+                title: activeSectionLang === (languages[0]?.code || "en") ? val : (section.title || val),
+              });
+            }}
             className="h-8 flex-1 max-w-sm rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-xs font-semibold text-[#1d2327] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
           />
         </div>
@@ -165,12 +197,14 @@ export function BuilderSectionCard({
             onMoveRowDown={() => onMoveRow(rIdx, "down")}
             onDeleteRow={() => onDeleteRow(row.id)}
             onUpdateBlock={onUpdateBlock}
+            onDuplicateBlock={onDuplicateBlock}
             onToggleBlockEnabled={onToggleBlockEnabled}
             onRemoveItem={onRemoveItem}
             onUpdateWidget={onUpdateWidget}
             onAddItemToColumn={onAddItemToColumn}
             availableBlockTypes={availableBlockTypes}
             availableWidgets={availableWidgets}
+            languages={languages}
           />
         ))}
       </div>

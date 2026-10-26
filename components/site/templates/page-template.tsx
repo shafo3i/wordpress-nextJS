@@ -92,22 +92,31 @@ export function PageTemplate({
             </article>
 
             <aside className="space-y-6">
-              {sidebarWidgets.length > 0 ? (
-                sidebarWidgets.map((item) => (
-                  <SidebarWidgetRenderer
-                    key={item.id}
-                    item={item}
-                    posts={relatedPosts}
-                    theme={theme}
-                  />
-                ))
-              ) : (
-                <div
-                  className={`rounded-xl border p-6 text-center text-xs text-theme-muted border-theme-border bg-theme-surface`}
-                >
-                  No widgets configured for the sidebar.
-                </div>
-              )}
+              {(() => {
+                const activeLocale = theme?.locale || theme?.defaultLocale || "en";
+                const visibleWidgets = (sidebarWidgets || []).filter(
+                  (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+                );
+
+                if (visibleWidgets.length > 0) {
+                  return visibleWidgets.map((item) => (
+                    <SidebarWidgetRenderer
+                      key={item.id}
+                      item={item}
+                      posts={relatedPosts}
+                      theme={theme}
+                    />
+                  ));
+                }
+
+                return (
+                  <div
+                    className="rounded-xl border p-6 text-center text-xs text-theme-muted border-theme-border bg-theme-surface"
+                  >
+                    No widgets configured for the sidebar.
+                  </div>
+                );
+              })()}
             </aside>
           </div>
         </main>

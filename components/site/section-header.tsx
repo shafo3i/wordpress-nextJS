@@ -25,6 +25,11 @@ export function ThemeSectionHeader({
   const effectiveLinkHref = linkHref ? localizePath(linkHref, theme.locale, theme.defaultLocale) : undefined;
   const arrowChar = isRtl ? "←" : "→";
 
+  // If there is no title, subtitle, or link to display, do not render any section header
+  if (!displayTitle?.trim() && !displaySubtitle && !displayLinkText) {
+    return null;
+  }
+
   const style = theme.sectionStyle;
   const isClassic = style === "classic";
   const isMag = style === "magazine";

@@ -34,6 +34,7 @@ export type HomepageBlock = {
   id: string;
   type: HomepageBlockType;
   title: string;
+  titles?: Record<string, string>;
   enabled: boolean;
   categorySlug?: string;
   postCount?: number;
@@ -41,11 +42,13 @@ export type HomepageBlock = {
   // News Display Presentation Controls
   displayStyle?: BlockDisplayStyle;
   imageRatio?: ImageRatio;
+  showTitle?: boolean;
   showExcerpt?: boolean;
   showAuthor?: boolean;
   showDate?: boolean;
   showCategory?: boolean;
   subtitle?: string;
+  subtitles?: Record<string, string>;
   linkText?: string;
   linkHref?: string;
   showColumnHeaders?: boolean;
@@ -77,6 +80,7 @@ export interface PageBuilderRow {
 export interface PageBuilderSection {
   id: string;
   title?: string;
+  titles?: Record<string, string>;
   container: "boxed" | "full";
   paddingY: "none" | "sm" | "md" | "lg";
   backgroundColor?: string;

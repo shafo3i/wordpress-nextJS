@@ -28,9 +28,16 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
   const mods = theme.mods || {};
   const cols = mods.footerColumns || 4;
 
-  const col1Items = footerWidgets?.col1 || [];
-  const col2Items = footerWidgets?.col2 || [];
-  const col3Items = footerWidgets?.col3 || [];
+  const activeLocale = theme.locale || theme.defaultLocale || "en";
+  const col1Items = (footerWidgets?.col1 || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
+  const col2Items = (footerWidgets?.col2 || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
+  const col3Items = (footerWidgets?.col3 || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
 
   const scrollToTop = () => {
     if (typeof window !== "undefined") {

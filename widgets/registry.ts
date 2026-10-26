@@ -205,5 +205,6 @@ export function createDefaultWidgetItem(desc: AvailableWidgetDescriptor): Widget
     showExcerpt: false,
     count: desc.type === "recent_posts" ? 5 : undefined,
     config: desc.type === "weather" ? { city: "London", temp: "18", condition: "Sunny" } : undefined,
+    locale: "all",
   };
 }

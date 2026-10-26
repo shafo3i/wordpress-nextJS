@@ -1,6 +1,6 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, countDistinct } from "drizzle-orm";
 import { db } from "@/db";
-import { wpPosts, wpPostmeta, wpTermRelationships, wpTermTaxonomy, wpTerms, user, postTranslationsTable, languagesTable } from "@/db/schema";
+import { wpPosts, wpPostmeta, wpTermRelationships, wpTermTaxonomy, wpTerms, user, postTranslationsTable, languagesTable, termTranslationsTable } from "@/db/schema";
 import { getDefaultLanguage } from "@/services/language.service";
 
 export type ContentItem = {
@@ -309,4 +309,204 @@ export async function getPublishedPageBySlug(slug: string, locale?: string) {
 export async function getPublishedPostBySlug(slug: string, locale?: string) {
   const posts = await getPublishedContent("post", slug, 1, locale);
   return posts.length ? posts[0] : null;
+}
+
+export interface CategoryPostsResult {
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    count: number;
+    termTaxonomyId: string;
+  } | null;
+  posts: ContentItem[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+}
+
+export async function getPublishedPostsByCategory(
+  categorySlug: string,
+  page: number = 1,
+  limit: number = 10,
+  locale?: string
+): Promise<CategoryPostsResult> {
+  let effectiveLocale = locale;
+  if (!effectiveLocale) {
+    const defaultLang = await getDefaultLanguage().catch(() => null);
+    effectiveLocale = defaultLang?.code || "en";
+  }
+
+  // Find the category term by slug
+  const catRows = await db
+    .select({
+      termId: wpTerms.termId,
+      name: wpTerms.name,
+      slug: wpTerms.slug,
+      description: wpTermTaxonomy.description,
+      termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+      count: wpTermTaxonomy.count,
+    })
+    .from(wpTerms)
+    .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
+    .where(and(eq(wpTerms.slug, categorySlug), eq(wpTermTaxonomy.taxonomy, "category")))
+    .limit(1);
+
+  if (!catRows.length) {
+    return {
+      category: null,
+      posts: [],
+      total: 0,
+      totalPages: 0,
+      currentPage: page,
+    };
+  }
+
+  const cat = catRows[0];
+
+  // Find linked term translations if this category is part of a multilingual translation group
+  const trGroupRows = await db
+    .select({
+      translationGroupId: termTranslationsTable.translationGroupId,
+    })
+    .from(termTranslationsTable)
+    .where(eq(termTranslationsTable.termTaxonomyId, cat.termTaxonomyId))
+    .limit(1);
+
+  let taxIds: bigint[] = [cat.termTaxonomyId];
+  if (trGroupRows[0]?.translationGroupId) {
+    const allTaxRows = await db
+      .select({ termTaxonomyId: termTranslationsTable.termTaxonomyId })
+      .from(termTranslationsTable)
+      .where(eq(termTranslationsTable.translationGroupId, trGroupRows[0].translationGroupId));
+    if (allTaxRows.length) {
+      taxIds = allTaxRows.map((r) => r.termTaxonomyId);
+    }
+  }
+
+  // Count total posts in category for this language
+  const [countResult] = await db
+    .select({ total: countDistinct(wpPosts.id) })
+    .from(wpPosts)
+    .innerJoin(wpTermRelationships, eq(wpPosts.id, wpTermRelationships.objectId))
+    .innerJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
+    .where(
+      and(
+        eq(wpPosts.postType, "post"),
+        eq(wpPosts.postStatus, "publish"),
+        eq(postTranslationsTable.languageCode, effectiveLocale),
+        inArray(wpTermRelationships.termTaxonomyId, taxIds)
+      )
+    );
+
+  const total = Number(countResult?.total ?? 0);
+  const totalPages = Math.ceil(total / limit);
+  const offset = Math.max(0, (page - 1) * limit);
+
+  // Query distinct post IDs matching criteria ordered by postDate
+  const postIdsQuery = await db
+    .select({
+      id: wpPosts.id,
+      date: wpPosts.postDate,
+    })
+    .from(wpPosts)
+    .innerJoin(wpTermRelationships, eq(wpPosts.id, wpTermRelationships.objectId))
+    .innerJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
+    .where(
+      and(
+        eq(wpPosts.postType, "post"),
+        eq(wpPosts.postStatus, "publish"),
+        eq(postTranslationsTable.languageCode, effectiveLocale),
+        inArray(wpTermRelationships.termTaxonomyId, taxIds)
+      )
+    )
+    .groupBy(wpPosts.id, wpPosts.postDate)
+    .orderBy(desc(wpPosts.postDate))
+    .limit(limit)
+    .offset(offset);
+
+  if (!postIdsQuery.length) {
+    return {
+      category: {
+        id: cat.termId.toString(),
+        name: cat.name,
+        slug: cat.slug,
+        description: cat.description || "",
+        count: total,
+        termTaxonomyId: cat.termTaxonomyId.toString(),
+      },
+      posts: [],
+      total,
+      totalPages,
+      currentPage: page,
+    };
+  }
+
+  const postIds = postIdsQuery.map((r) => r.id.toString());
+  const [basePosts, termMap, imageMap, templateMap] = await Promise.all([
+    db
+      .select({
+        id: wpPosts.id,
+        title: wpPosts.postTitle,
+        slug: wpPosts.postName,
+        excerpt: wpPosts.postExcerpt,
+        content: wpPosts.postContent,
+        date: wpPosts.postDate,
+        authorName: user.name,
+        locale: postTranslationsTable.languageCode,
+        direction: languagesTable.direction,
+      })
+      .from(wpPosts)
+      .innerJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
+      .leftJoin(languagesTable, eq(postTranslationsTable.languageCode, languagesTable.code))
+      .leftJoin(user, eq(wpPosts.postAuthor, user.id))
+      .where(inArray(wpPosts.id, postIdsQuery.map((r) => r.id)))
+      .orderBy(desc(wpPosts.postDate)),
+    getTermData(postIds),
+    getImageData(postIds),
+    getPageTemplateData(postIds),
+  ]);
+
+  const posts: ContentItem[] = basePosts.map((item, idx) => {
+    let contentImg = "";
+    const match = item.content.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (match && match[1]) {
+      contentImg = match[1];
+    }
+
+    const attachedImg = imageMap.get(item.id.toString());
+    const resolvedImg = attachedImg || contentImg || getEditorialPhoto(item.id.toString() || idx);
+
+    return {
+      id: item.id.toString(),
+      title: item.title || "Untitled",
+      slug: item.slug || "untitled",
+      excerpt: item.excerpt || item.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180),
+      content: item.content || "",
+      date: item.date,
+      authorName: item.authorName || "Editorial Desk",
+      categories: termMap.get(item.id.toString())?.categories ?? [cat.name],
+      tags: termMap.get(item.id.toString())?.tags ?? [],
+      imageUrl: resolvedImg,
+      template: templateMap.get(item.id.toString()) || "default",
+      locale: item.locale || undefined,
+      direction: (item.direction as "ltr" | "rtl") || undefined,
+    };
+  });
+
+  return {
+    category: {
+      id: cat.termId.toString(),
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description || "",
+      count: total,
+      termTaxonomyId: cat.termTaxonomyId.toString(),
+    },
+    posts,
+    total,
+    totalPages,
+    currentPage: page,
+  };
 }

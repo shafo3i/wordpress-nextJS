@@ -27,6 +27,7 @@ export interface WidgetItem {
   showDate?: boolean;
   showExcerpt?: boolean;
   config?: Record<string, any>;
+  locale?: string;
 }
 
 export interface WidgetArea {

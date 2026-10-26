@@ -31,6 +31,7 @@ export default async function ThemeSettingsPage({
         availableWidgets={availableWidgets}
         dict={dict}
         direction={direction}
+        languages={langContext.allLanguages}
       />
     </AdminShell>
   );

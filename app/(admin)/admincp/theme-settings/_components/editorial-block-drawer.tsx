@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Trash2 } from "lucide-react";
+import { Copy, Trash2 } from "lucide-react";
 import { BlockDisplayStyle, HomepageBlock } from "@/lib/themes/homepage-types";
 import {
   BentoWireframe,
@@ -22,7 +22,9 @@ interface EditorialBlockDrawerProps {
   categories: { id: string; name: string; slug: string }[];
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  languages?: { code: string; name: string; nativeName?: string | null }[];
   onUpdate: (updates: Partial<HomepageBlock>) => void;
+  onDuplicate?: () => void;
   onRemove: () => void;
   onClose: () => void;
 }
@@ -32,11 +34,16 @@ export function EditorialBlockDrawer({
   categories,
   dict,
   direction = "ltr",
+  languages = [],
   onUpdate,
+  onDuplicate,
   onRemove,
   onClose,
 }: EditorialBlockDrawerProps) {
   const isRtl = direction === "rtl";
+
+  const defaultLang = languages.find((l) => l.code === (isRtl ? "ar" : "en"))?.code || languages[0]?.code || (isRtl ? "ar" : "en");
+  const [activeLang, setActiveLang] = React.useState<string>(defaultLang);
 
   const t = (key: string, enFallback: string, arFallback: string) => {
     if (isRtl) return dict?.[key] || arFallback;
@@ -110,44 +117,102 @@ export function EditorialBlockDrawer({
     ];
 
   const currentDisplayStyle = block.displayStyle || "grid_3";
+  const blockName = dict?.[`admin.theme_settings.block.${block.type}.name`] || block.type;
 
-    const blockName = dict?.[`admin.theme_settings.block.${block.type}.name`] || block.type;
-    const isDefaultOrOppositeLang =
-      !block.title ||
-      block.title === block.type ||
-      block.title === blockName ||
-      (!isRtl && /[\u0600-\u06FF]/.test(block.title)) ||
-      (isRtl && /^[A-Za-z0-9\s•\-+()]+$/.test(block.title));
+  const currentTitle =
+    (block.titles && block.titles[activeLang] !== undefined)
+      ? block.titles[activeLang]
+      : (activeLang === defaultLang ? (block.title || "") : "");
 
-    return (
-      <div className="border-t border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4 text-start">
-        {/* 1. Basic Fields: Section Display Title & Category Filter */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+  const currentSubtitle =
+    (block.subtitles && block.subtitles[activeLang] !== undefined)
+      ? block.subtitles[activeLang]
+      : (activeLang === defaultLang ? (block.subtitle || "") : "");
+
+  return (
+    <div className="border-t border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4 text-start">
+      {/* Language Switcher for Translatable Titles */}
+      {languages && languages.length > 1 && (
+        <div className="flex items-center gap-2 pb-2 border-b border-[#e5e7eb]">
+          <span className="text-[11px] font-semibold text-[#50575e]">
+            {t("admin.theme_settings.edit_language", "Editing Language:", "لغة التحرير:")}
+          </span>
+          <div className="flex items-center rounded border border-[#8c8f94] bg-[#f0f0f1] p-0.5 text-[10px] font-bold">
+            {languages.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                onClick={() => setActiveLang(l.code)}
+                className={`px-2 py-0.5 rounded transition-colors ${
+                  activeLang === l.code ? "bg-[#2271b1] text-white shadow-xs" : "text-[#50575e] hover:text-[#1d2327]"
+                }`}
+              >
+                {l.nativeName || l.name} ({l.code.toUpperCase()})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 1. Basic Fields: Section Display Title & Subtitle */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[12px] font-medium text-[#50575e]">
               {t("admin.theme_settings.display_title", "Section Display Title", "عنوان عرض القسم")}
             </label>
-            <input
-              type="text"
-              value={isDefaultOrOppositeLang ? "" : (block.title || "")}
-              placeholder={blockName}
-              onChange={(e) => onUpdate({ title: e.target.value })}
-              className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-              {t("admin.theme_settings.subtitle", "Subtitle / Eyebrow (Optional)", "العنوان الفرعي للقسم (اختياري)")}
+            <label className="flex items-center gap-1.5 text-[11px] text-[#2c3338] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={block.showTitle !== false}
+                onChange={(e) => onUpdate({ showTitle: e.target.checked })}
+                className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+              />
+              <span>{t("admin.theme_settings.show_title", "Show Title", "إظهار العنوان")}</span>
             </label>
-            <input
-              type="text"
-              value={block.subtitle || ""}
-              placeholder={t("admin.theme_settings.subtitle_placeholder", "e.g. Special Focus", "مثال: تركيز خاص")}
-              onChange={(e) => onUpdate({ subtitle: e.target.value })}
-              className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
-            />
           </div>
+          <input
+            type="text"
+            disabled={block.showTitle === false}
+            value={currentTitle}
+            placeholder={
+              block.showTitle === false
+                ? (isRtl ? "(العنوان مخفي)" : "(Title is hidden)")
+                : `${blockName} (${activeLang.toUpperCase()})`
+            }
+            onChange={(e) => {
+              const val = e.target.value;
+              const updatedTitles = { ...(block.titles || {}), [activeLang]: val };
+              onUpdate({
+                titles: updatedTitles,
+                title: activeLang === defaultLang ? val : (block.title || val),
+              });
+            }}
+            className={`h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1] ${
+              block.showTitle === false ? "opacity-50 bg-gray-50 cursor-not-allowed" : ""
+            }`}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[12px] font-medium text-[#50575e] mb-1">
+            {t("admin.theme_settings.subtitle", "Subtitle / Eyebrow (Optional)", "العنوان الفرعي للقسم (اختياري)")}
+          </label>
+          <input
+            type="text"
+            value={currentSubtitle}
+            placeholder={`${t("admin.theme_settings.subtitle_placeholder", "e.g. Special Focus", "مثال: تركيز خاص")} (${activeLang.toUpperCase()})`}
+            onChange={(e) => {
+              const val = e.target.value;
+              const updatedSubtitles = { ...(block.subtitles || {}), [activeLang]: val };
+              onUpdate({
+                subtitles: updatedSubtitles,
+                subtitle: activeLang === defaultLang ? val : (block.subtitle || val),
+              });
+            }}
+            className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
+          />
+        </div>
 
         {(block.type === "category_grid" ||
           block.type === "magazine_bento" ||
@@ -360,14 +425,26 @@ export function EditorialBlockDrawer({
 
       {/* Actions Bottom Bar */}
       <div className="flex items-center justify-between pt-2 border-t border-[#e5e7eb]">
-        <button
-          type="button"
-          onClick={onRemove}
-          className="text-[12px] text-[#b32d2e] hover:underline flex items-center gap-1 font-medium"
-        >
-          <Trash2 className="size-3" />{" "}
-          {t("admin.theme_settings.remove_section", "Remove this section", "إزالة هذا القسم")}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-[12px] text-[#b32d2e] hover:underline flex items-center gap-1 font-medium"
+          >
+            <Trash2 className="size-3" />{" "}
+            {t("admin.theme_settings.remove_section", "Remove this section", "إزالة هذا القسم")}
+          </button>
+          {onDuplicate && (
+            <button
+              type="button"
+              onClick={onDuplicate}
+              className="text-[12px] text-[#2271b1] hover:underline flex items-center gap-1 font-medium"
+            >
+              <Copy className="size-3" />{" "}
+              {t("admin.theme_settings.duplicate_block", "Duplicate section", "نسخ هذا القسم")}
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={onClose}

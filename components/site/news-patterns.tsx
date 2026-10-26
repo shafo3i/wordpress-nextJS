@@ -31,3 +31,5 @@ export {
 export { NewsHome } from "@/components/site/templates/news-home";
 export { PostTemplate } from "@/components/site/templates/post-template";
 export { PageTemplate } from "@/components/site/templates/page-template";
+export { CategoryTemplate } from "@/components/site/templates/category-template";
+

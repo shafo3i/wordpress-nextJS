@@ -45,6 +45,12 @@ export const DEFAULT_WIDGET_AREAS: WidgetArea[] = [
     ],
   },
   {
+    id: "sidebar_category",
+    title: "Category & Archive Sidebar",
+    description: "Appears on category and topic archive pages. If empty, falls back to Main / Right Sidebar.",
+    items: [],
+  },
+  {
     id: "footer_1",
     title: "Footer Column 1",
     description: "First footer column across the site.",
@@ -149,6 +155,18 @@ export async function getAllWidgetAreas(): Promise<WidgetArea[]> {
   if (!hasSecondary) {
     const defaultSecondary = DEFAULT_WIDGET_AREAS.find((a) => a.id === "sidebar_secondary")!;
     areas.splice(1, 0, defaultSecondary);
+  }
+
+  // Ensure sidebar_category exists in the list for category archive pages
+  const hasCategory = areas.some((a) => a.id === "sidebar_category");
+  if (!hasCategory) {
+    const defaultCategory = DEFAULT_WIDGET_AREAS.find((a) => a.id === "sidebar_category") || {
+      id: "sidebar_category",
+      title: "Category & Archive Sidebar",
+      description: "Appears on category and topic archive pages. If empty, falls back to Main / Right Sidebar.",
+      items: [],
+    };
+    areas.splice(2, 0, defaultCategory);
   }
 
   // Check which active plugins are not yet placed in ANY widget area

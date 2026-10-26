@@ -36,6 +36,7 @@ import {
   createDefaultSection,
   deleteRowFromSections,
   deleteSectionFromList,
+  duplicateBlockInSections,
   reorderArray,
   removeItemFromColumn,
   toggleBlockEnabledInSections,
@@ -52,6 +53,7 @@ interface ThemeSettingsShellProps {
   availableWidgets?: AvailableWidgetDescriptor[];
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  languages?: { code: string; name: string; nativeName?: string | null }[];
 }
 
 export function ThemeSettingsShell({
@@ -63,6 +65,7 @@ export function ThemeSettingsShell({
   availableWidgets: availableWidgetsProp = [],
   dict,
   direction = "ltr",
+  languages = [],
 }: ThemeSettingsShellProps) {
   const isRtl = direction === "rtl";
   const router = useRouter();
@@ -298,6 +301,16 @@ export function ThemeSettingsShell({
 
   const handleToggleBlockEnabled = (blockId: string) => {
     setSections((prev) => toggleBlockEnabledInSections(prev, blockId));
+  };
+
+  const handleDuplicateBlock = (blockId: string) => {
+    setSections((prev) => {
+      const { updatedSections, newBlockId } = duplicateBlockInSections(prev, blockId);
+      if (newBlockId) {
+        setExpandedBlockId(newBlockId);
+      }
+      return updatedSections;
+    });
   };
 
   const handleRemoveItem = (columnId: string, itemId: string) => {
@@ -588,12 +601,14 @@ export function ThemeSettingsShell({
                     onMoveRow={(rowIdx, moveDir) => handleMoveRow(sIdx, rowIdx, moveDir)}
                     onDeleteRow={handleDeleteRow}
                     onUpdateBlock={handleUpdateBlock}
+                    onDuplicateBlock={handleDuplicateBlock}
                     onToggleBlockEnabled={handleToggleBlockEnabled}
                     onRemoveItem={handleRemoveItem}
                     onUpdateWidget={handleUpdateWidget}
                     onAddItemToColumn={handleAddItemToColumn}
                     availableBlockTypes={availableBlockTypes}
                     availableWidgets={availableWidgets}
+                    languages={languages}
                   />
                 ))
               ) : (
