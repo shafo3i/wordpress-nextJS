@@ -25,6 +25,11 @@ export type LanguageLink = {
   isDefault: boolean;
 };
 
+import type { ContentItem } from "@/lib/site-content";
+import { getPublishedPosts } from "@/lib/site-content";
+import { localizePath } from "@/components/site/utils";
+export { localizePath };
+
 export type FrontEndThemeContext = {
   themeSlug: string;
   siteTitle: string;
@@ -46,10 +51,8 @@ export type FrontEndThemeContext = {
   direction?: "ltr" | "rtl";
   languages?: LanguageLink[];
   dict?: Record<string, string>;
+  breakingPosts?: ContentItem[];
 };
-
-import { localizePath } from "@/components/site/utils";
-export { localizePath };
 
 export async function getFrontEndThemeContext(options?: {
   locale?: string;
@@ -139,6 +142,19 @@ export async function getFrontEndThemeContext(options?: {
   // Mods are fully resolved (core -> theme -> stored), so no slug sniffing is needed.
   const supports = getThemeModule(themeSlug).supports;
 
+  let breakingPosts: ContentItem[] = [];
+  try {
+    const rawPosts = await getPublishedPosts(10, activeLocale);
+    const tagged = rawPosts.filter((p) =>
+      p.categories?.some((c) => /breaking|عاجل/i.test(c)) ||
+      p.tags?.some((t) => /breaking|عاجل/i.test(t))
+    );
+    const pool = tagged.length > 0 ? tagged : rawPosts;
+    breakingPosts = pool.slice(0, 5);
+  } catch (err) {
+    console.error("Failed to query breaking news posts:", err);
+  }
+
   return {
     themeSlug,
     siteTitle: customizer.siteTitle || "PressForge News",
@@ -159,5 +175,6 @@ export async function getFrontEndThemeContext(options?: {
     direction,
     languages,
     dict,
+    breakingPosts,
   };
 }

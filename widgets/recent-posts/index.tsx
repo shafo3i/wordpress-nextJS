@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps, WidgetDisplayStyle } from "../types";
+import type { ContentItem } from "@/lib/site-content";
 import { formatDate, getExcerpt, isSerifHeading, getPostUrl, t } from "@/components/site/utils";
 
 const STYLE_OPTIONS = [
@@ -119,8 +120,9 @@ export function RecentPostsAdminForm({ item, onChange, dict }: WidgetAdminFormPr
 
 export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps) {
   const activeLocale = item.locale && item.locale !== "all" ? item.locale : (theme?.locale || theme?.defaultLocale);
-  const localePosts = activeLocale ? posts.filter((p) => !p.locale || p.locale === activeLocale) : posts;
-  const pool = localePosts;
+  const localePosts: ContentItem[] = activeLocale ? posts.filter((p) => !p.locale || p.locale === activeLocale) : posts;
+  const pool: ContentItem[] = localePosts.length > 0 ? localePosts : (theme?.breakingPosts ?? []);
+
   const catFilter = item.config?.categoryFilter?.trim().toLowerCase();
   const filteredPosts = catFilter
     ? pool.filter((p) => p.categories?.some((c) => c.toLowerCase().includes(catFilter)))

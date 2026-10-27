@@ -1,8 +1,9 @@
 import { addFilter } from "@/lib/plugins/hooks";
 import { getPluginConfig } from "@/lib/plugins/config";
+import { getPublishedPosts } from "@/lib/site-content";
 
 export function init() {
-  addFilter("the_content", async (content: string) => {
+  addFilter("the_content", async (content: string, context?: { article?: { locale?: string } }) => {
     if (!content) return content;
 
     const config = await getPluginConfig("breaking-news");
@@ -11,8 +12,30 @@ export function init() {
     }
 
     const badgeText = config.badgeText || "BREAKING ALERT";
-    const headline = config.headline || "Special live coverage active — developments will be updated continuously.";
-    const targetUrl = config.targetUrl || "";
+    let headline = config.headline;
+    let targetUrl = config.targetUrl || "";
+
+    if (!headline) {
+      const articleLocale = context?.article?.locale || "en";
+      const posts = await getPublishedPosts(5, articleLocale).catch(() => []);
+      const match =
+        posts.find((p) =>
+          p.categories?.some((c) => /breaking|عاجل/i.test(c)) ||
+          p.tags?.some((t) => /breaking|عاجل/i.test(t))
+        ) || posts[0];
+
+      if (match) {
+        headline = match.title;
+        if (!targetUrl) {
+          targetUrl = articleLocale === "en" ? `/posts/${match.slug}` : `/${articleLocale}/posts/${match.slug}`;
+        }
+      }
+    }
+
+    if (!headline) {
+      return content;
+    }
+
     const urgency = config.urgency || "urgent";
 
     const colorClasses = {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, type CSSProperties } from "react";
 import { Search, Clock } from "lucide-react";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { formatDate, localizePath, t } from "@/components/site/utils";
+import { formatDate, getPostUrl, localizePath, t } from "@/components/site/utils";
 import { SocialLinks } from "@/components/site/social-links";
 
 type CssVars = CSSProperties;
@@ -67,6 +67,11 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
     if (mods.showTopBar === false) return null;
 
     const showTicker = theme.activePlugins?.includes("breaking-news");
+    const latestBreaking = theme.breakingPosts?.[0];
+    const tickerText =
+      latestBreaking?.title ||
+      (mods.topBarTickerText ? (theme.dict?.[mods.topBarTickerText] || mods.topBarTickerText) : null);
+    const tickerUrl = latestBreaking ? getPostUrl(latestBreaking.slug, theme) : undefined;
 
     return (
       <div
@@ -74,7 +79,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         className="px-4 sm:px-6 py-1.5 text-xs border-b border-black/10"
       >
         <div className="mx-auto flex theme-container items-center justify-between">
-          {showTicker ? (
+          {showTicker && tickerText ? (
             <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
               <span
                 style={{
@@ -85,11 +90,18 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               >
                 {t("site.breaking", theme, "Breaking")}
               </span>
-              <span className="text-xs font-medium truncate max-w-xl">
-                {mods.topBarTickerText
-                  ? theme.dict?.[mods.topBarTickerText] || mods.topBarTickerText
-                  : ""}
-              </span>
+              {tickerUrl ? (
+                <Link
+                  href={tickerUrl}
+                  className="text-xs font-medium truncate max-w-xl hover:underline"
+                >
+                  {tickerText}
+                </Link>
+              ) : (
+                <span className="text-xs font-medium truncate max-w-xl">
+                  {tickerText}
+                </span>
+              )}
             </div>
           ) : (
             <span />

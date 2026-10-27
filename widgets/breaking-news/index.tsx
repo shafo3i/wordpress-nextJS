@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Radio, AlertCircle, ArrowUpRight } from "lucide-react";
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
+import type { ContentItem } from "@/lib/site-content";
+import { getPostUrl } from "@/components/site/utils";
 
 export function BreakingNewsAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
   const isRtl = direction === "rtl";
@@ -103,12 +105,37 @@ export function BreakingNewsAdminForm({ item, onChange, dict, direction }: Widge
   );
 }
 
-export function BreakingNewsRender({ item, theme }: WidgetRenderProps) {
+export function BreakingNewsRender({ item, theme, posts = [] }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
-  const dispatchText = item.content || item.config?.dispatchText;
+  const activeLocale = item.locale && item.locale !== "all" ? item.locale : (theme?.locale || theme?.defaultLocale || "en");
+
+  // Query candidate posts matching activeLocale from passed posts or theme.breakingPosts
+  const candidatePosts: ContentItem[] = (posts && posts.length > 0)
+    ? posts.filter((p) => !p.locale || p.locale === activeLocale)
+    : (theme?.breakingPosts ?? []);
+
+  const breakingPost =
+    candidatePosts.find((p) =>
+      p.categories?.some((c) => /breaking|عاجل/i.test(c)) ||
+      p.tags?.some((t) => /breaking|عاجل/i.test(t))
+    ) || candidatePosts[0];
+
+  const dispatchText =
+    item.content?.trim() ||
+    item.config?.dispatchText?.trim() ||
+    breakingPost?.excerpt ||
+    breakingPost?.title;
+
   if (!dispatchText) return null;
 
-  const targetUrl = item.config?.targetUrl;
+  const targetUrl =
+    item.config?.targetUrl ||
+    (breakingPost ? getPostUrl(breakingPost.slug, theme) : undefined);
+
+  const title =
+    item.title?.trim() ||
+    breakingPost?.title;
+
   const urgency = item.config?.urgency || "urgent";
   const badgeText = item.config?.badgeText || (isRtl ? "عاجل" : "Breaking Alert");
   const enablePulse = item.config?.enablePulse !== false;
@@ -139,9 +166,15 @@ export function BreakingNewsRender({ item, theme }: WidgetRenderProps) {
         </div>
       </div>
 
-      {item.title && (
+      {title && (
         <h4 className="theme-widget-title text-xs font-black leading-snug mb-1 text-[var(--theme-widget-title-color,var(--theme-heading))]">
-          {item.title}
+          {targetUrl ? (
+            <Link href={targetUrl} className="hover:underline">
+              {title}
+            </Link>
+          ) : (
+            title
+          )}
         </h4>
       )}
 
