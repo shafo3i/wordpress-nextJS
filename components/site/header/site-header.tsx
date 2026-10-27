@@ -88,7 +88,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               <span className="text-xs font-medium truncate max-w-xl">
                 {mods.topBarTickerText
                   ? theme.dict?.[mods.topBarTickerText] || mods.topBarTickerText
-                  : t("site.ticker_default", theme, "Editorial dispatch: Global supply chains adjust to new infrastructure corridors")}
+                  : ""}
               </span>
             </div>
           ) : (
@@ -127,6 +127,10 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
 
   // Nav Items
   const renderNavLinks = () => {
+    if (!theme.primaryNav || theme.primaryNav.length === 0) {
+      return null;
+    }
+
     const justify =
       mods.navAlignment === "center"
         ? "justify-center"
@@ -204,7 +208,9 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               ))}
           </div>
 
-          <nav className="hidden items-center gap-6 text-sm font-medium md:flex">{renderNavLinks()}</nav>
+          {theme.primaryNav && theme.primaryNav.length > 0 && (
+            <nav className="hidden items-center gap-6 text-sm font-medium md:flex">{renderNavLinks()}</nav>
+          )}
 
           <div className="flex items-center gap-3">
             {showSocialsInNav && <SocialLinks mods={mods} className="hidden sm:flex" />}
@@ -213,13 +219,6 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
                 <Search className="size-4" />
               </button>
             )}
-            <Link
-              href={localizePath("/about", theme.locale, theme.defaultLocale)}
-              style={{ borderColor: "var(--theme-primary)", color: "var(--theme-primary)" }}
-              className="rounded-full border px-4 py-1.5 text-xs font-semibold hover:opacity-80 transition-opacity"
-            >
-              {t("site.about", theme, "About")}
-            </Link>
           </div>
         </div>
       </header>
@@ -264,12 +263,14 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           </div>
         </div>
 
-        <div style={navStyle}>
-          <div className="mx-auto flex theme-container items-center justify-between px-6 py-3">
-            {renderNavLinks()}
-            {renderSearchIcon()}
+        {theme.primaryNav && theme.primaryNav.length > 0 && (
+          <div style={navStyle}>
+            <div className="mx-auto flex theme-container items-center justify-between px-6 py-3">
+              {renderNavLinks()}
+              {renderSearchIcon()}
+            </div>
           </div>
-        </div>
+        )}
       </header>
     );
   }
@@ -298,9 +299,11 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           )}
         </div>
 
-        <nav style={navStyle} className="px-6 py-2.5">
-          <div className="mx-auto theme-container flex items-center justify-center">{renderNavLinks()}</div>
-        </nav>
+        {theme.primaryNav && theme.primaryNav.length > 0 && (
+          <nav style={navStyle} className="px-6 py-2.5">
+            <div className="mx-auto theme-container flex items-center justify-center">{renderNavLinks()}</div>
+          </nav>
+        )}
       </header>
     );
   }
@@ -337,12 +340,14 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         )}
       </div>
 
-      <nav style={navStyle} className="px-6 py-2.5">
-        <div className="mx-auto theme-container flex items-center justify-between">
-          {renderNavLinks()}
-          {renderSearchIcon()}
-        </div>
-      </nav>
+      {theme.primaryNav && theme.primaryNav.length > 0 && (
+        <nav style={navStyle} className="px-6 py-2.5">
+          <div className="mx-auto theme-container flex items-center justify-between">
+            {renderNavLinks()}
+            {renderSearchIcon()}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

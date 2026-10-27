@@ -30,6 +30,7 @@ export function PostTemplate({
     col1?: WidgetItem[];
     col2?: WidgetItem[];
     col3?: WidgetItem[];
+    col4?: WidgetItem[];
   };
 }) {
   const [copied, setCopied] = useState(false);
@@ -72,78 +73,27 @@ export function PostTemplate({
         : "theme-container mx-auto px-4 sm:px-6" // Wide: full container
       : "theme-container mx-auto px-4 sm:px-6"; // sidebar-right, sidebar-left, full-container
 
-  const renderSidebar = () => {
-    const activeLocale = theme?.locale || theme?.defaultLocale || "en";
-    const visibleWidgets = (sidebarWidgets || []).filter(
-      (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
-    );
+  const activeLocale = theme?.locale || theme?.defaultLocale || "en";
+  const visibleWidgets = (sidebarWidgets || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
+  const hasSidebar = visibleWidgets.length > 0;
 
-    if (visibleWidgets.length > 0) {
-      return (
-        <aside className="space-y-6">
-          {visibleWidgets.map((item) => (
-            <SidebarWidgetRenderer
-              key={item.id}
-              item={item}
-              theme={theme}
-              posts={relatedPosts}
-            />
-          ))}
-        </aside>
-      );
+  const renderSidebar = () => {
+    if (!hasSidebar) {
+      return null;
     }
 
     return (
       <aside className="space-y-6">
-        {/* Topics Widget */}
-        <div className="theme-widget rounded-2xl border p-5 shadow-sm">
-          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-3">
-            {theme.dict?.["site.topics_categories"] || (theme.locale === "ar" ? "المواضيع والتصنيفات" : "Topics & Categories")}
-          </h2>
-          <div className="flex flex-wrap gap-1.5">
-            {sidebarCategories.map((topic) => (
-              <Link
-                key={topic}
-                href={getCategoryUrl(topic.toLowerCase(), theme)}
-                className="theme-badge rounded-md px-2.5 py-1 text-[0.6875rem] font-semibold uppercase transition-opacity hover:opacity-85"
-              >
-                {topic}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Related Stories Widget */}
-        <div className="theme-widget rounded-2xl border p-5 shadow-sm">
-          <h2 className="theme-widget-title text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-3">
-            {t("site.more_from_newsroom", theme, "More from Newsroom")}
-          </h2>
-          <div className="space-y-3">
-            {relatedPosts.map((story) => (
-              <Link
-                key={story.id}
-                href={getPostUrl(story.slug, theme)}
-                className="flex gap-2.5 rounded-lg p-2 hover:bg-theme-border/30 transition-colors group"
-              >
-                {story.imageUrl && (
-                  <img
-                    src={story.imageUrl}
-                    alt={story.title}
-                    className="w-14 h-14 object-cover rounded flex-shrink-0"
-                  />
-                )}
-                <div className="min-w-0">
-                  <span className="text-[0.625rem] font-semibold uppercase text-theme-muted block truncate">
-                    {story.categories[0] ?? t("site.dispatch", theme, "Dispatch")}
-                  </span>
-                  <h3 className="mt-0.5 text-xs font-semibold leading-snug line-clamp-2 group-hover:text-[var(--theme-primary)] transition-colors">
-                    {story.title}
-                  </h3>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
+        {visibleWidgets.map((item) => (
+          <SidebarWidgetRenderer
+            key={item.id}
+            item={item}
+            theme={theme}
+            posts={relatedPosts}
+          />
+        ))}
       </aside>
     );
   };
@@ -257,21 +207,37 @@ export function PostTemplate({
 
         {/* Layout Grid Switching */}
         {singleLayout === "sidebar-right" && (
-          <div className="grid gap-8 lg:grid-cols-12">
-            <article className="lg:col-span-8 prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
-              <div dangerouslySetInnerHTML={{ __html: article.content }} />
-            </article>
-            <div className="lg:col-span-4">{renderSidebar()}</div>
-          </div>
+          hasSidebar ? (
+            <div className="grid gap-8 lg:grid-cols-12">
+              <article className="lg:col-span-8 prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+                <div dangerouslySetInnerHTML={{ __html: article.content }} />
+              </article>
+              <div className="lg:col-span-4">{renderSidebar()}</div>
+            </div>
+          ) : (
+            <div className="w-full">
+              <article className="w-full prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+                <div dangerouslySetInnerHTML={{ __html: article.content }} />
+              </article>
+            </div>
+          )
         )}
 
         {singleLayout === "sidebar-left" && (
-          <div className="grid gap-8 lg:grid-cols-12">
-            <div className="lg:col-span-4 order-2 lg:order-1">{renderSidebar()}</div>
-            <article className="lg:col-span-8 order-1 lg:order-2 prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
-              <div dangerouslySetInnerHTML={{ __html: article.content }} />
-            </article>
-          </div>
+          hasSidebar ? (
+            <div className="grid gap-8 lg:grid-cols-12">
+              <div className="lg:col-span-4 order-2 lg:order-1">{renderSidebar()}</div>
+              <article className="lg:col-span-8 order-1 lg:order-2 prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+                <div dangerouslySetInnerHTML={{ __html: article.content }} />
+              </article>
+            </div>
+          ) : (
+            <div className="w-full">
+              <article className="w-full prose max-w-none rounded-2xl border p-6 sm:p-8 theme-card bg-[var(--theme-surface)] border-[var(--theme-border)] prose-headings:font-bold prose-p:text-[1.05rem] prose-p:leading-8">
+                <div dangerouslySetInnerHTML={{ __html: article.content }} />
+              </article>
+            </div>
+          )
         )}
 
         {singleLayout === "full-container" && (

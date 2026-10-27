@@ -108,13 +108,11 @@ export async function getFrontEndThemeContext(options?: {
 
   const primaryMenuId =
     locations[`primary_${activeLocale}`] ||
-    (activeLocale === defaultLocale ? locations.primary : undefined) ||
-    locations.primary;
+    (activeLocale === defaultLocale ? locations.primary : undefined);
 
   const footerMenuId =
     locations[`footer_${activeLocale}`] ||
-    (activeLocale === defaultLocale ? locations.footer : undefined) ||
-    locations.footer;
+    (activeLocale === defaultLocale ? locations.footer : undefined);
 
   if (primaryMenuId) {
     const pMenu = await getMenuWithItems(primaryMenuId);

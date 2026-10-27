@@ -31,6 +31,7 @@ export function PageTemplate({
     col1?: WidgetItem[];
     col2?: WidgetItem[];
     col3?: WidgetItem[];
+    col4?: WidgetItem[];
   };
 }) {
   const isDark = isDarkTheme(theme);
@@ -39,6 +40,12 @@ export function PageTemplate({
   const isRtl = theme.direction === "rtl";
   const pageBadge = t("site.page", theme, "Page");
   const editorialBadge = t("site.editorial_page", theme, "Editorial Page");
+
+  const activeLocale = theme?.locale || theme?.defaultLocale || "en";
+  const visibleWidgets = (sidebarWidgets || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
+  const hasSidebar = visibleWidgets.length > 0;
 
   return (
     <div
@@ -71,7 +78,7 @@ export function PageTemplate({
       ) : template === "with-sidebar" ? (
         /* With Sidebar Layout: 2-Column content + sidebar widgets */
         <main className="mx-auto theme-container px-4 py-12 md:px-6">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+          <div className={hasSidebar ? "grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]" : "w-full"}>
             <article
               className={`rounded-2xl border p-8 sm:p-12 theme-card border-theme-border bg-theme-surface`}
             >
@@ -91,33 +98,18 @@ export function PageTemplate({
               </div>
             </article>
 
-            <aside className="space-y-6">
-              {(() => {
-                const activeLocale = theme?.locale || theme?.defaultLocale || "en";
-                const visibleWidgets = (sidebarWidgets || []).filter(
-                  (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
-                );
-
-                if (visibleWidgets.length > 0) {
-                  return visibleWidgets.map((item) => (
-                    <SidebarWidgetRenderer
-                      key={item.id}
-                      item={item}
-                      posts={relatedPosts}
-                      theme={theme}
-                    />
-                  ));
-                }
-
-                return (
-                  <div
-                    className="rounded-xl border p-6 text-center text-xs text-theme-muted border-theme-border bg-theme-surface"
-                  >
-                    No widgets configured for the sidebar.
-                  </div>
-                );
-              })()}
-            </aside>
+            {hasSidebar && (
+              <aside className="space-y-6">
+                {visibleWidgets.map((item) => (
+                  <SidebarWidgetRenderer
+                    key={item.id}
+                    item={item}
+                    posts={relatedPosts}
+                    theme={theme}
+                  />
+                ))}
+              </aside>
+            )}
           </div>
         </main>
       ) : template === "full-width" ? (

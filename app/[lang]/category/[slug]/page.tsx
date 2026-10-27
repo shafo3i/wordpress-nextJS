@@ -94,6 +94,7 @@ export default async function LocalizedCategoryPage({
     col1: widgetAreas.find((a) => a.id === "footer_1")?.items || [],
     col2: widgetAreas.find((a) => a.id === "footer_2")?.items || [],
     col3: widgetAreas.find((a) => a.id === "footer_3")?.items || [],
+    col4: widgetAreas.find((a) => a.id === "footer_4")?.items || [],
   };
 
   return (

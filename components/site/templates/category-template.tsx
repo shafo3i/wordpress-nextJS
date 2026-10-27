@@ -40,6 +40,7 @@ export interface CategoryTemplateProps {
     col1?: WidgetItem[];
     col2?: WidgetItem[];
     col3?: WidgetItem[];
+    col4?: WidgetItem[];
   };
 }
 
@@ -59,13 +60,13 @@ export function CategoryTemplate({
   const isRtl = theme.direction === "rtl";
   const activeLocale = theme.locale || theme.defaultLocale || "en";
 
-  // Option B: Prefer dedicated category widgets if populated, otherwise fall back to primary sidebar
-  const effectiveWidgets =
-    categoryWidgets && categoryWidgets.length > 0 ? categoryWidgets : sidebarWidgets;
+  // Dedicated category widgets only - NO fallback to primary sidebar
+  const effectiveWidgets = categoryWidgets || [];
 
   const activeSidebarWidgets = effectiveWidgets.filter(
     (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
   );
+  const hasSidebar = activeSidebarWidgets.length > 0;
 
   const leadPost = posts[0];
   const gridPosts = posts.slice(1);
@@ -133,10 +134,10 @@ export function CategoryTemplate({
           )}
         </header>
 
-        {/* 12-Column Layout: Main Content (8 cols) + Option B Sidebar (4 cols) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+        {/* Main Content + Optional Sidebar Layout */}
+        <div className={hasSidebar ? "grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start" : "w-full"}>
           {/* Main Editorial Content Stream */}
-          <div className="lg:col-span-8 space-y-10">
+          <div className={hasSidebar ? "lg:col-span-8 space-y-10" : "w-full space-y-10"}>
             {posts.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[var(--theme-border)] p-12 text-center bg-[var(--theme-surface)]">
                 <BookOpen className="size-12 mx-auto text-[var(--theme-muted)] mb-3 opacity-50" />
@@ -329,16 +330,18 @@ export function CategoryTemplate({
           </div>
 
           {/* Option B: Sidebar Column */}
-          <aside className="lg:col-span-4 space-y-6">
-            {activeSidebarWidgets.map((widget) => (
-              <SidebarWidgetRenderer
-                key={widget.id}
-                item={widget}
-                theme={theme}
-                posts={posts}
-              />
-            ))}
-          </aside>
+          {hasSidebar && (
+            <aside className="lg:col-span-4 space-y-6">
+              {activeSidebarWidgets.map((widget) => (
+                <SidebarWidgetRenderer
+                  key={widget.id}
+                  item={widget}
+                  theme={theme}
+                  posts={posts}
+                />
+              ))}
+            </aside>
+          )}
         </div>
       </main>
 

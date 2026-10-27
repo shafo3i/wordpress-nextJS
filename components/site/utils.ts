@@ -83,18 +83,7 @@ export const DEFAULT_THEME: FrontEndThemeContext = {
   darkMode: false,
   footerCopyright: "© 2026 PressForge. Open Source Editorial Engine.",
   mods: resolveMods("pressforge-broadsheet"),
-  primaryNav: [
-    { id: "1", title: "Home", url: "/", order: 1 },
-    { id: "2", title: "Business", url: "/category/business", order: 2 },
-    { id: "3", title: "Technology", url: "/category/technology", order: 3 },
-    { id: "4", title: "Markets", url: "/category/markets", order: 4 },
-    { id: "5", title: "Opinion", url: "/category/opinion", order: 5 },
-    { id: "6", title: "About", url: "/about", order: 6 },
-  ],
-  footerNav: [
-    { id: "f1", title: "About", url: "/about", order: 1 },
-    { id: "f2", title: "Contact", url: "/contact", order: 2 },
-    { id: "f3", title: "Editorial Standards", url: "/editorial-standards", order: 3 },
-    { id: "f4", title: "Privacy Policy", url: "/privacy", order: 4 },
-  ],
+  primaryNav: [],
+  footerNav: [],
 };
+

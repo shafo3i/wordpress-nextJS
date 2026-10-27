@@ -38,6 +38,7 @@ export function NewsHome({
     col1?: WidgetItem[];
     col2?: WidgetItem[];
     col3?: WidgetItem[];
+    col4?: WidgetItem[];
   };
 }) {
   const isDark = isDarkTheme(theme);
@@ -77,31 +78,28 @@ export function NewsHome({
 
     return (
       <div className="space-y-12">
-        {activeBlocks.length > 0
-          ? activeBlocks.map(renderBlock)
-          : renderBlock({
-            id: "default-bento",
-            type: "magazine_bento",
-            title: "Top Stories",
-            enabled: true,
-            order: 1,
-          })}
+        {activeBlocks.map(renderBlock)}
       </div>
     );
   };
 
+  const activeLocale = theme?.locale || theme?.defaultLocale || "en";
+  const visiblePrimary = (primarySidebar || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
+  const visibleSecondary = (secondarySidebar || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
+  const hasPrimary = visiblePrimary.length > 0;
+  const hasSecondary = visibleSecondary.length > 0;
+
   const renderSidebar = (items: WidgetItem[]) => {
-    const activeLocale = theme?.locale || theme?.defaultLocale || "en";
     const visibleItems = items.filter(
       (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
     );
 
     if (!visibleItems.length) {
-      return (
-        <div className="rounded-xl border border-dashed border-theme-border p-4 text-center text-xs text-theme-muted">
-          No widgets placed in this sidebar yet.
-        </div>
-      );
+      return null;
     }
 
     return (
@@ -125,99 +123,125 @@ export function NewsHome({
       {hasSections ? (
         /* Dynamic Multi-Section Page Builder Layout */
         <main className="w-full min-h-[60vh] pb-12">
-          {activeLayout === "full_width" && renderContent()}
-
-          {activeLayout === "right_sidebar" && (
-            <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
-              <div className="min-w-0">{renderContent()}</div>
-              <aside className="space-y-6 lg:sticky lg:top-6">
-                {renderSidebar(primarySidebar)}
-              </aside>
-            </div>
-          )}
-
-          {activeLayout === "left_sidebar" && (
-            <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
-              <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
-                {renderSidebar(primarySidebar)}
-              </aside>
-              <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
-            </div>
-          )}
-
-          {activeLayout === "dual_sidebar" && (
-            <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
-              <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
-                <div className="border-b border-theme-border pb-1.5 mb-3">
-                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
-                    Left Column
-                  </span>
-                </div>
-                {renderSidebar(secondarySidebar)}
-              </aside>
-
-              <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
-
-              <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
-                <div className="border-b border-theme-border pb-1.5 mb-3">
-                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
-                    Right Column
-                  </span>
-                </div>
-                {renderSidebar(primarySidebar)}
-              </aside>
-            </div>
+          {(!hasPrimary && !hasSecondary) || activeLayout === "full_width" ? (
+            renderContent()
+          ) : activeLayout === "right_sidebar" ? (
+            hasPrimary ? (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
+                <div className="min-w-0">{renderContent()}</div>
+                <aside className="space-y-6 lg:sticky lg:top-6">
+                  {renderSidebar(primarySidebar)}
+                </aside>
+              </div>
+            ) : (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8">{renderContent()}</div>
+            )
+          ) : activeLayout === "left_sidebar" ? (
+            hasPrimary ? (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
+                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+                  {renderSidebar(primarySidebar)}
+                </aside>
+                <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
+              </div>
+            ) : (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8">{renderContent()}</div>
+            )
+          ) : activeLayout === "dual_sidebar" ? (
+            hasPrimary && hasSecondary ? (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
+                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+                  {renderSidebar(secondarySidebar)}
+                </aside>
+                <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
+                <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
+                  {renderSidebar(primarySidebar)}
+                </aside>
+              </div>
+            ) : hasPrimary ? (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
+                <div className="min-w-0">{renderContent()}</div>
+                <aside className="space-y-6 lg:sticky lg:top-6">
+                  {renderSidebar(primarySidebar)}
+                </aside>
+              </div>
+            ) : hasSecondary ? (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
+                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+                  {renderSidebar(secondarySidebar)}
+                </aside>
+                <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
+              </div>
+            ) : (
+              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8">{renderContent()}</div>
+            )
+          ) : (
+            renderContent()
           )}
         </main>
       ) : (
         /* Flat Editorial Blocks Layout */
         <main className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {activeLayout === "full_width" && renderContent()}
-
-          {activeLayout === "right_sidebar" && (
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
-              <div className="min-w-0">{renderContent()}</div>
-              <aside className="space-y-6 lg:sticky lg:top-6">
-                {renderSidebar(primarySidebar)}
-              </aside>
-            </div>
-          )}
-
-          {activeLayout === "left_sidebar" && (
-            <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
-              <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
-                {renderSidebar(primarySidebar)}
-              </aside>
-              <div className="space-y-12 min-w-0 order-1 lg:order-2">
-                {activeBlocks.length > 0 ? activeBlocks.map(renderBlock) : null}
+          {(!hasPrimary && !hasSecondary) || activeLayout === "full_width" ? (
+            renderContent()
+          ) : activeLayout === "right_sidebar" ? (
+            hasPrimary ? (
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
+                <div className="min-w-0">{renderContent()}</div>
+                <aside className="space-y-6 lg:sticky lg:top-6">
+                  {renderSidebar(primarySidebar)}
+                </aside>
               </div>
-            </div>
-          )}
-
-          {activeLayout === "dual_sidebar" && (
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
-              <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
-                <div className="border-b border-theme-border pb-1.5 mb-3">
-                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
-                    Left Column
-                  </span>
+            ) : (
+              renderContent()
+            )
+          ) : activeLayout === "left_sidebar" ? (
+            hasPrimary ? (
+              <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
+                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+                  {renderSidebar(primarySidebar)}
+                </aside>
+                <div className="space-y-12 min-w-0 order-1 lg:order-2">
+                  {renderContent()}
                 </div>
-                {renderSidebar(secondarySidebar)}
-              </aside>
-
-              <div className="space-y-12 min-w-0 order-1 lg:order-2">
-                {activeBlocks.length > 0 ? activeBlocks.map(renderBlock) : null}
               </div>
-
-              <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
-                <div className="border-b border-theme-border pb-1.5 mb-3">
-                  <span className="text-[0.625rem] font-bold uppercase tracking-wider text-theme-muted">
-                    Right Column
-                  </span>
+            ) : (
+              renderContent()
+            )
+          ) : activeLayout === "dual_sidebar" ? (
+            hasPrimary && hasSecondary ? (
+              <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
+                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+                  {renderSidebar(secondarySidebar)}
+                </aside>
+                <div className="space-y-12 min-w-0 order-1 lg:order-2">
+                  {renderContent()}
                 </div>
-                {renderSidebar(primarySidebar)}
-              </aside>
-            </div>
+                <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
+                  {renderSidebar(primarySidebar)}
+                </aside>
+              </div>
+            ) : hasPrimary ? (
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
+                <div className="min-w-0">{renderContent()}</div>
+                <aside className="space-y-6 lg:sticky lg:top-6">
+                  {renderSidebar(primarySidebar)}
+                </aside>
+              </div>
+            ) : hasSecondary ? (
+              <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
+                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+                  {renderSidebar(secondarySidebar)}
+                </aside>
+                <div className="space-y-12 min-w-0 order-1 lg:order-2">
+                  {renderContent()}
+                </div>
+              </div>
+            ) : (
+              renderContent()
+            )
+          ) : (
+            renderContent()
           )}
         </main>
       )}

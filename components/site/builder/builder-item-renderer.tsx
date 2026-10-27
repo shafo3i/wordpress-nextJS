@@ -24,6 +24,14 @@ export function BuilderItemRenderer({ item, posts, theme }: BuilderItemRendererP
   }
 
   if (item.type === "widget" && item.widgetId) {
+    const activeLocale = theme?.locale || theme?.defaultLocale || "en";
+    const widgetLocale = item.locale || item.config?.locale || "all";
+
+    // If assigned to a specific language, only show when that language is active
+    if (widgetLocale !== "all" && widgetLocale !== activeLocale) {
+      return null;
+    }
+
     const widgetItem: WidgetItem = {
       id: item.id,
       type: item.widgetId,
@@ -32,6 +40,7 @@ export function BuilderItemRenderer({ item, posts, theme }: BuilderItemRendererP
       count: item.config?.count,
       displayStyle: item.config?.displayStyle,
       config: item.config,
+      locale: widgetLocale,
     };
     return (
       <div key={item.id} className="w-full">

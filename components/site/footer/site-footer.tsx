@@ -14,6 +14,7 @@ interface SiteFooterProps {
     col1?: WidgetItem[];
     col2?: WidgetItem[];
     col3?: WidgetItem[];
+    col4?: WidgetItem[];
   };
 }
 
@@ -38,6 +39,12 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
   const col3Items = (footerWidgets?.col3 || []).filter(
     (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
   );
+  const col4Items = (footerWidgets?.col4 || []).filter(
+    (item) => !item.locale || item.locale === "all" || item.locale === activeLocale
+  );
+
+  const hasAnyFooterWidgets =
+    col1Items.length > 0 || col2Items.length > 0 || col3Items.length > 0 || col4Items.length > 0;
 
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
@@ -77,118 +84,65 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
             <p style={{ color: footerTextColor }} className="text-xs mt-0.5 opacity-80">{theme.siteTagline}</p>
           </div>
 
-          <nav className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium">
-            {theme.footerNav.map((item) => (
-              <Link
-                key={item.id}
-                href={item.url}
-                style={{ color: footerLinkColor }}
-                className="hover:opacity-80 transition-opacity"
-              >
-                {item.title}
-              </Link>
-            ))}
-          </nav>
+          {theme.footerNav && theme.footerNav.length > 0 && (
+            <nav className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium">
+              {theme.footerNav.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.url}
+                  style={{ color: footerLinkColor }}
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  {item.title}
+                </Link>
+              ))}
+            </nav>
+          )}
         </div>
 
-        {/* Multi-Column Layout */}
-        <div data-footer-widgets="true" className={`grid grid-cols-1 sm:grid-cols-2 ${FOOTER_GRID[cols] ?? FOOTER_GRID[4]} gap-8 py-8 items-start`}>
-          {/* Column 1 */}
-          <div className="space-y-4">
-            {col1Items.length > 0 ? (
-              col1Items.map((item) => (
-                <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
-              ))
-            ) : (
-              <div>
-                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
-                  {t("site.about_newsroom", theme, "About Newsroom")}
-                </h4>
-                <p style={{ color: footerTextColor }} className="text-xs leading-relaxed opacity-90">
-                  {t("site.about_newsroom_desc", theme, "Operating with verifiable editorial integrity, original investigative reporting, and real-time market telemetry.")}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Column 2 */}
-          <div className="space-y-4">
-            {col2Items.length > 0 ? (
-              col2Items.map((item) => (
-                <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
-              ))
-            ) : (
-              <div>
-                <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
-                  {t("site.key_desks", theme, "Key Desks")}
-                </h4>
-                <ul className="text-xs space-y-2">
-                  <li>
-                    <Link href={localizePath("/category/news", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
-                      {t("site.national_wire", theme, "National Wire")}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href={localizePath("/category/business", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
-                      {t("site.commercial_briefings", theme, "Commercial Briefings")}
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href={localizePath("/category/technology", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
-                      {t("site.silicon_systems", theme, "Silicon & Artificial Systems")}
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            )}
-          </div>
-
-          {/* Column 3 */}
-          {cols >= 3 && (
-            <div className="space-y-4">
-              {col3Items.length > 0 ? (
-                col3Items.map((item) => (
+        {/* Dynamic Multi-Column Widgets Layout - completely empty if no widgets/plugins placed */}
+        {hasAnyFooterWidgets && (
+          <div
+            data-footer-widgets="true"
+            className={`grid grid-cols-1 sm:grid-cols-2 ${FOOTER_GRID[cols] ?? FOOTER_GRID[4]} gap-8 py-8 items-start`}
+          >
+            {/* Column 1 */}
+            {col1Items.length > 0 && (
+              <div className="space-y-4">
+                {col1Items.map((item) => (
                   <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
-                ))
-              ) : (
-                <div>
-                  <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
-                    {t("site.governance", theme, "Governance")}
-                  </h4>
-                  <ul className="text-xs space-y-2">
-                    <li>
-                      <Link href={localizePath("/editorial-standards", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
-                        {t("site.verification_code", theme, "Verification Code")}
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href={localizePath("/corrections", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
-                        {t("site.corrections_protocol", theme, "Corrections Protocol")}
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href={localizePath("/privacy", theme.locale, theme.defaultLocale)} style={{ color: footerLinkColor }} className="hover:opacity-80">
-                        {t("site.privacy_rights", theme, "Privacy Rights")}
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
 
-          {/* Column 4 */}
-          {cols >= 4 && (
-            <div>
-              <h4 style={{ color: footerHeadingColor }} className="font-bold text-xs uppercase tracking-wider mb-3">
-                {t("site.broadcast_stream", theme, "Broadcast Stream")}
-              </h4>
-              <p style={{ color: footerTextColor }} className="text-xs leading-relaxed opacity-90">
-                {t("site.broadcast_stream_desc", theme, "Daily audio dispatches published every weekday at 06:00 UTC.")}
-              </p>
-            </div>
-          )}
-        </div>
+            {/* Column 2 */}
+            {col2Items.length > 0 && (
+              <div className="space-y-4">
+                {col2Items.map((item) => (
+                  <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
+                ))}
+              </div>
+            )}
+
+            {/* Column 3 */}
+            {cols >= 3 && col3Items.length > 0 && (
+              <div className="space-y-4">
+                {col3Items.map((item) => (
+                  <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
+                ))}
+              </div>
+            )}
+
+            {/* Column 4 */}
+            {cols >= 4 && col4Items.length > 0 && (
+              <div className="space-y-4">
+                {col4Items.map((item) => (
+                  <SidebarWidgetRenderer key={item.id} item={item} theme={theme} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Bottom Bar with Copyright & Back-to-Top */}
         <div
@@ -203,7 +157,8 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
           </p>
 
           <div className="flex items-center gap-4">
-            {mods.showFooterSocials !== false && <SocialLinks mods={mods} />}$([Environment]::NewLine)            {mods.showBackToTop !== false && (
+            {mods.showFooterSocials !== false && <SocialLinks mods={mods} />}
+            {mods.showBackToTop !== false && (
               <button
                 type="button"
                 onClick={scrollToTop}

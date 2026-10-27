@@ -145,11 +145,19 @@ export function AdManagerRender({ item, theme }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
   const adType = item.config?.adType || "banner";
   const imageUrl = item.config?.imageUrl;
+  const rawHtml = item.content;
+
+  if (adType === "banner" && !imageUrl) {
+    return null;
+  }
+  if (adType !== "banner" && !rawHtml?.trim()) {
+    return null;
+  }
+
   const targetUrl = item.config?.targetUrl || "#";
   const sponsorName = item.config?.sponsorName || (isRtl ? "شريك إعلاني" : "Official Partner");
   const openNewTab = item.config?.openNewTab !== false;
   const relSponsored = item.config?.relSponsored !== false;
-  const rawHtml = item.content;
 
   const relAttribute = [
     relSponsored ? "sponsored" : null,
@@ -184,21 +192,11 @@ export function AdManagerRender({ item, theme }: WidgetRenderProps) {
             loading="lazy"
           />
         </a>
-      ) : adType === "banner" ? (
-        <div className="p-6 border border-dashed border-[var(--theme-border)] rounded-lg bg-[var(--theme-bg)] text-center">
-          <span className="text-xl mb-1 block">📢</span>
-          <h5 className="theme-widget-title text-xs font-bold text-[var(--theme-widget-title-color,var(--theme-heading))] mb-0.5">
-            {item.title || (isRtl ? "مساحة إعلانية شاغرة" : "Sponsor Slot")}
-          </h5>
-          <p className="text-[0.625rem] text-[var(--theme-muted)]">
-            {isRtl ? "تواصل معنا لحجز هذا الموقع الإعلاني" : "Contact our sales desk to feature your campaign"}
-          </p>
-        </div>
       ) : (
         <div
           className="text-xs text-[var(--theme-text)] font-medium leading-relaxed overflow-hidden"
           dangerouslySetInnerHTML={{
-            __html: rawHtml || '<div class="p-4 text-xs text-[var(--theme-muted)]">No ad code configured.</div>',
+            __html: rawHtml!,
           }}
         />
       )}

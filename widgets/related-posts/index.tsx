@@ -83,15 +83,19 @@ export function RelatedPostsAdminForm({ item, onChange, dict, direction }: Widge
 
 export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
+  const activeLocale = item.locale && item.locale !== "all" ? item.locale : (theme?.locale || theme?.defaultLocale);
+  const localePosts = activeLocale ? posts.filter((p) => !p.locale || p.locale === activeLocale) : posts;
+  const pool = localePosts;
   const count = item.config?.count || 3;
   const categoryFilter = item.config?.categoryFilter?.trim().toLowerCase();
   const showThumbnail = item.config?.showThumbnail !== false;
   const showDate = item.config?.showDate !== false;
 
   const filtered = categoryFilter
-    ? posts.filter((p) => p.categories?.some((c) => c.toLowerCase().includes(categoryFilter)))
-    : posts;
-  const displayPosts = (filtered.length > 0 ? filtered : posts).slice(0, count);
+    ? pool.filter((p) => p.categories?.some((c) => c.toLowerCase().includes(categoryFilter)))
+    : pool;
+  const displayPosts = filtered.slice(0, count);
+  if (!displayPosts.length) return null;
 
   return (
     <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">

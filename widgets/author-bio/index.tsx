@@ -121,13 +121,16 @@ export function AuthorBioAdminForm({ item, onChange, dict, direction }: WidgetAd
 
 export function AuthorBioRender({ item, theme }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
-  const authorName = item.config?.authorName || (isRtl ? "فريق التحرير" : "Editorial Bureau");
-  const authorRole = item.config?.authorRole || (isRtl ? "محرر شؤون الأخبار" : "Senior News Editor");
+  const authorName = item.config?.authorName;
+  const bio = item.content || item.config?.bio;
+
+  if (!authorName && !bio) return null;
+
+  const authorRole = item.config?.authorRole || "";
   const avatarUrl = item.config?.avatarUrl;
-  const bio = item.content || item.config?.bio || (isRtl ? "تغطية إخبارية مستقلة وتحليلات معمقة وفق أعلى المعايير التحريرية." : "Independent investigative reporting and market intelligence.");
   const profileUrl = item.config?.profileUrl;
 
-  const initials = authorName
+  const initials = (authorName || "ED")
     .split(" ")
     .slice(0, 2)
     .map((w: string) => w[0])

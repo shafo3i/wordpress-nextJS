@@ -9,6 +9,7 @@ interface BuilderWidgetCardProps {
   item: BuilderItem;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  languages?: { code: string; name: string; nativeName?: string | null }[];
   onUpdate?: (updates: Partial<BuilderItem>) => void;
   onRemove: () => void;
 }
@@ -17,6 +18,7 @@ export function BuilderWidgetCard({
   item,
   dict,
   direction = "ltr",
+  languages = [],
   onUpdate,
   onRemove,
 }: BuilderWidgetCardProps) {
@@ -45,6 +47,7 @@ export function BuilderWidgetCard({
   const displayTitle = isDefaultOrOppositeLang ? widgetName : item.title;
   const desc = dict?.[`admin.widgets.descriptor.${widgetId}.desc`] || manifest?.description || "";
   const AdminForm = mod?.AdminForm;
+  const itemLocale = item.locale || "all";
 
   return (
     <div className="rounded-[4px] border border-[#c3c4c7] bg-white shadow-sm hover:border-[#8c8f94] transition-all overflow-hidden">
@@ -58,7 +61,20 @@ export function BuilderWidgetCard({
             <Puzzle className="size-4" />
           </div>
           <div className="min-w-0">
-            <strong className="text-[12px] font-semibold text-[#1d2327] block truncate">{displayTitle}</strong>
+            <div className="flex items-center gap-2">
+              <strong className="text-[12px] font-semibold text-[#1d2327] block truncate">{displayTitle}</strong>
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${
+                  itemLocale === "ar"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : itemLocale === "en"
+                    ? "bg-blue-50 text-blue-700 border border-blue-200"
+                    : "bg-slate-100 text-slate-600 border border-slate-200"
+                }`}
+              >
+                {itemLocale.toUpperCase()}
+              </span>
+            </div>
             {desc && <span className="text-[10px] text-[#646970] block truncate max-w-[200px]">{desc}</span>}
           </div>
         </div>
@@ -100,6 +116,27 @@ export function BuilderWidgetCard({
             </span>
           </div>
 
+          {/* Language Assignment Dropdown */}
+          <div className="rounded border border-[#dcdcde] bg-[#f6f7f7] p-2.5 mb-3">
+            <label className="block text-[11px] font-semibold text-[#50575e] uppercase tracking-wide mb-1">
+              {dict?.["admin.widgets.language"] || (isRtl ? "اللغة المعروضة بها" : "Display on Language")}
+            </label>
+            <select
+              value={itemLocale}
+              onChange={(e) => onUpdate?.({ locale: e.target.value })}
+              className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none cursor-pointer"
+            >
+              <option value="all">
+                {dict?.["admin.widgets.all_languages"] || (isRtl ? "جميع اللغات" : "All Languages")}
+              </option>
+              {languages?.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.nativeName ? `${lang.nativeName} (${lang.name})` : lang.name} [{lang.code.toUpperCase()}]
+                </option>
+              ))}
+            </select>
+          </div>
+
           {AdminForm ? (
             <AdminForm
               item={{
@@ -110,6 +147,7 @@ export function BuilderWidgetCard({
                 count: item.config?.count,
                 displayStyle: item.config?.displayStyle,
                 config: item.config || {},
+                locale: itemLocale,
               }}
               onChange={(updates) => {
                 const newConfig: Record<string, any> = {
@@ -122,6 +160,7 @@ export function BuilderWidgetCard({
 
                 onUpdate?.({
                   title: updates.title !== undefined ? updates.title : item.title,
+                  locale: updates.locale !== undefined ? updates.locale : item.locale,
                   config: newConfig,
                 });
               }}

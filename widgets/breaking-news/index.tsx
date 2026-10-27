@@ -105,7 +105,9 @@ export function BreakingNewsAdminForm({ item, onChange, dict, direction }: Widge
 
 export function BreakingNewsRender({ item, theme }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
-  const dispatchText = item.content || item.config?.dispatchText || (isRtl ? "متابعة مستمرة لآخر التطورات والأخبار العاجلة على مدار الساعة." : "Live breaking dispatch coverage developing across bureaus.");
+  const dispatchText = item.content || item.config?.dispatchText;
+  if (!dispatchText) return null;
+
   const targetUrl = item.config?.targetUrl;
   const urgency = item.config?.urgency || "urgent";
   const badgeText = item.config?.badgeText || (isRtl ? "عاجل" : "Breaking Alert");

@@ -39,7 +39,7 @@ export default async function CustomizePreviewPage({
       homepageSettings={homepageSettings}
       primarySidebar={area("sidebar_primary")}
       secondarySidebar={area("sidebar_secondary")}
-      footerWidgets={{ col1: area("footer_1"), col2: area("footer_2"), col3: area("footer_3") }}
+      footerWidgets={{ col1: area("footer_1"), col2: area("footer_2"), col3: area("footer_3"), col4: area("footer_4") }}
     />
   );
 }

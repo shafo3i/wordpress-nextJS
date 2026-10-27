@@ -89,6 +89,7 @@ export function CategoriesRender({ item, theme, posts = [] }: WidgetRenderProps)
   }
 
   const categoryEntries = Object.entries(counts).slice(0, limit);
+  if (!categoryEntries.length) return null;
 
   return (
     <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">

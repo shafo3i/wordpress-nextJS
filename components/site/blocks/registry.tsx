@@ -80,7 +80,7 @@ export function renderEditorialBlock({
         )
       : posts;
 
-  const displayPosts = filteredPosts.length ? filteredPosts : posts;
+  const displayPosts = filteredPosts;
 
   // 1. Style override takes highest priority if specified
   if (block.displayStyle) {

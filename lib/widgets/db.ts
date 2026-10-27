@@ -21,68 +21,43 @@ export const DEFAULT_WIDGET_AREAS: WidgetArea[] = [
     id: "sidebar_primary",
     title: "Main / Right Sidebar",
     description: "Appears on the right side of the homepage and single article pages.",
-    items: [
-      { id: "w-search", type: "search", title: "Search News" },
-      { id: "w-recent", type: "recent_posts", title: "Recent Stories", count: 5 },
-      { id: "w-newsletter", type: "plugin_newsletter", title: "Morning Dispatch", pluginSlug: "newsletter" },
-      { id: "w-cats", type: "categories", title: "Explore Topics" },
-      {
-        id: "w-bio",
-        type: "author_bio",
-        title: "About the Newsroom",
-        content: "Independent financial, investigative, and digital reporting operating with editorial integrity.",
-      },
-    ],
+    items: [],
   },
   {
     id: "sidebar_secondary",
     title: "Left Sidebar (Dual Sidebar)",
     description: "Appears on the left side of the homepage when Dual Sidebar layout is selected.",
-    items: [
-      { id: "w-audio", type: "plugin_audio", title: "Newsroom Daily Audio", pluginSlug: "article-audio" },
-      { id: "w-cats-left", type: "categories", title: "Quick Sections" },
-      { id: "w-factcheck", type: "plugin_factcheck", title: "Claim Verification", pluginSlug: "fact-check" },
-    ],
+    items: [],
   },
   {
     id: "sidebar_category",
     title: "Category & Archive Sidebar",
-    description: "Appears on category and topic archive pages. If empty, falls back to Main / Right Sidebar.",
+    description: "Appears on category and topic archive pages.",
     items: [],
   },
   {
     id: "footer_1",
     title: "Footer Column 1",
     description: "First footer column across the site.",
-    items: [
-      {
-        id: "w-foot-about",
-        type: "custom_html",
-        title: "About Signal News",
-        content: "Delivering daily global news and independent investigative analysis since 2026.",
-      },
-    ],
+    items: [],
   },
   {
     id: "footer_2",
     title: "Footer Column 2",
     description: "Second footer column across the site.",
-    items: [
-      { id: "w-foot-topics", type: "categories", title: "Quick Links" },
-    ],
+    items: [],
   },
   {
     id: "footer_3",
     title: "Footer Column 3",
     description: "Third footer column across the site.",
-    items: [
-      {
-        id: "w-foot-ad",
-        type: "custom_html",
-        title: "Newsroom Mission",
-        content: "Supported by subscriber contributions and independent enterprise readers.",
-      },
-    ],
+    items: [],
+  },
+  {
+    id: "footer_4",
+    title: "Footer Column 4",
+    description: "Fourth footer column across the site.",
+    items: [],
   },
 ];
 
@@ -163,48 +138,21 @@ export async function getAllWidgetAreas(): Promise<WidgetArea[]> {
     const defaultCategory = DEFAULT_WIDGET_AREAS.find((a) => a.id === "sidebar_category") || {
       id: "sidebar_category",
       title: "Category & Archive Sidebar",
-      description: "Appears on category and topic archive pages. If empty, falls back to Main / Right Sidebar.",
+      description: "Appears on category and topic archive pages.",
       items: [],
     };
     areas.splice(2, 0, defaultCategory);
   }
 
-  // Check which active plugins are not yet placed in ANY widget area
-  const existingPluginSlugs = new Set<string>();
-  for (const area of areas) {
-    for (const item of area.items) {
-      if (item.pluginSlug) {
-        existingPluginSlugs.add(item.pluginSlug);
-      }
-    }
-  }
-
-  let modified = false;
-  const primaryArea = areas.find((a) => a.id === "sidebar_primary") || areas[0];
-
-  if (primaryArea) {
-    for (const slug of activeSlugs) {
-      if (!existingPluginSlugs.has(slug)) {
-        // Find widget module for this plugin slug
-        const widgetMod = Object.values(REGISTERED_WIDGETS).find((w) => w.manifest.pluginSlug === slug);
-        if (widgetMod) {
-          const newWidget = createDefaultWidgetItem({
-            type: widgetMod.manifest.id,
-            name: widgetMod.manifest.name,
-            desc: widgetMod.manifest.description,
-            isPlugin: true,
-            pluginSlug: slug,
-          });
-          primaryArea.items.push(newWidget);
-          existingPluginSlugs.add(slug);
-          modified = true;
-        }
-      }
-    }
-  }
-
-  if (modified) {
-    await setOption("sidebars_widgets", JSON.stringify(areas));
+  // Ensure footer_4 exists in the list for 4-column footers
+  const hasFooter4 = areas.some((a) => a.id === "footer_4");
+  if (!hasFooter4) {
+    areas.push({
+      id: "footer_4",
+      title: "Footer Column 4",
+      description: "Fourth footer column across the site.",
+      items: [],
+    });
   }
 
   return areas;

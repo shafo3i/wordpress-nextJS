@@ -248,6 +248,7 @@ export function BuilderRowCard({
                         item={item}
                         dict={dict}
                         direction={direction}
+                        languages={languages}
                         onUpdate={(updates) => onUpdateWidget?.(col.id, item.id, updates)}
                         onRemove={() => onRemoveItem(col.id, item.id)}
                       />

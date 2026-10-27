@@ -149,11 +149,21 @@ function getWeatherMeta(code: number, isRtl: boolean) {
 
 export function WeatherRender({ item, theme }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
-  const city = item.config?.city || (isRtl ? "الرياض" : "London");
-  const unit = item.config?.unit || "C";
-  const manualTemp = item.config?.manualTemp ?? "24";
-  const manualCondition = item.config?.manualCondition || (isRtl ? "مشمس" : "Sunny");
+  const city = item.config?.city?.trim();
+  const manualTemp = item.config?.manualTemp;
   const useLiveApi = item.config?.useLiveApi !== false;
+
+  if (useLiveApi && !city) {
+    return null;
+  }
+  if (!useLiveApi && manualTemp === undefined && !city) {
+    return null;
+  }
+
+  const unit = item.config?.unit || "C";
+  const manualCondition = item.config?.manualCondition || (isRtl ? "مشمس" : "Sunny");
+  const effectiveTemp = manualTemp ?? "24";
+
 
   const [liveData, setLiveData] = useState<{
     temp: number;
@@ -213,7 +223,7 @@ export function WeatherRender({ item, theme }: WidgetRenderProps) {
     };
   }, [city, unit, useLiveApi]);
 
-  const displayTemp = liveData ? liveData.temp : manualTemp;
+  const displayTemp = liveData ? liveData.temp : effectiveTemp;
   const weatherMeta = liveData
     ? getWeatherMeta(liveData.weatherCode, isRtl)
     : { label: manualCondition, icon: CloudSun, color: "text-amber-500" };

@@ -21,7 +21,7 @@ interface PreviewHostProps {
   homepageSettings: HomepageSettings;
   primarySidebar: WidgetItem[];
   secondarySidebar: WidgetItem[];
-  footerWidgets: { col1: WidgetItem[]; col2: WidgetItem[]; col3: WidgetItem[] };
+  footerWidgets: { col1: WidgetItem[]; col2: WidgetItem[]; col3: WidgetItem[]; col4?: WidgetItem[] };
 }
 
 /** Lives inside the customizer iframe: renders the real templates and applies state posted by the editor. */

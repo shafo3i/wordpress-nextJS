@@ -38,7 +38,7 @@ export function CustomHtmlAdminForm({ item, onChange, dict, direction }: WidgetA
 }
 
 export function CustomHtmlRender({ item, theme }: WidgetRenderProps) {
-  const isRtl = theme?.direction === "rtl";
+  if (!item.content?.trim()) return null;
 
   return (
     <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">
@@ -50,11 +50,7 @@ export function CustomHtmlRender({ item, theme }: WidgetRenderProps) {
       <div
         className="text-xs text-theme-text overflow-hidden"
         dangerouslySetInnerHTML={{
-          __html:
-            item.content ||
-            `<div class="p-3 bg-theme-border/40 text-center rounded text-xs text-theme-muted">${
-              isRtl ? "كتلة HTML مخصصة" : "Custom HTML Block"
-            }</div>`,
+          __html: item.content,
         }}
       />
     </div>

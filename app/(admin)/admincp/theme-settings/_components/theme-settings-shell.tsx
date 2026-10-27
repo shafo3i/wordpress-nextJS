@@ -257,6 +257,7 @@ export function ThemeSettingsShell({
           type: "widget",
           widgetId: payload,
           title: "",
+          locale: "all",
         })
       );
     }
@@ -290,6 +291,7 @@ export function ThemeSettingsShell({
         type: "widget",
         widgetId: payload,
         title: "",
+        locale: "all",
       });
       setSections(updated);
     }

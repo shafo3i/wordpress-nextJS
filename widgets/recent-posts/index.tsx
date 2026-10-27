@@ -118,13 +118,19 @@ export function RecentPostsAdminForm({ item, onChange, dict }: WidgetAdminFormPr
 }
 
 export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps) {
+  const activeLocale = item.locale && item.locale !== "all" ? item.locale : (theme?.locale || theme?.defaultLocale);
+  const localePosts = activeLocale ? posts.filter((p) => !p.locale || p.locale === activeLocale) : posts;
+  const pool = localePosts;
   const catFilter = item.config?.categoryFilter?.trim().toLowerCase();
   const filteredPosts = catFilter
-    ? posts.filter((p) => p.categories?.some((c) => c.toLowerCase().includes(catFilter)))
-    : posts;
-  const displayPosts = (filteredPosts.length > 0 ? filteredPosts : posts).slice(0, item.count || 5);
+    ? pool.filter((p) => p.categories?.some((c) => c.toLowerCase().includes(catFilter)))
+    : pool;
+  const displayPosts = filteredPosts.slice(0, item.count || 5);
+  if (!displayPosts.length) return null;
+
   const isSerif = theme ? isSerifHeading(theme) : false;
   const style = item.displayStyle || "list";
+
 
   return (
     <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">

@@ -134,7 +134,7 @@ export function updateWidgetInColumn(
   sections: PageBuilderSection[],
   columnId: string,
   itemId: string,
-  updates: { title?: string; config?: Record<string, any> }
+  updates: { title?: string; config?: Record<string, any>; locale?: string }
 ): PageBuilderSection[] {
   return sections.map((sec) => ({
     ...sec,

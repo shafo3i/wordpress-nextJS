@@ -63,7 +63,14 @@ export type RowPreset = "1/1" | "1/2_1/2" | "2/3_1/3" | "1/3_2/3" | "1/3_1/3_1/3
 
 export type BuilderItem =
   | { id: string; type: "block"; block: HomepageBlock }
-  | { id: string; type: "widget"; widgetId: string; title?: string; config?: Record<string, any> };
+  | {
+      id: string;
+      type: "widget";
+      widgetId: string;
+      title?: string;
+      config?: Record<string, any>;
+      locale?: string;
+    };
 
 export interface PageBuilderColumn {
   id: string;
