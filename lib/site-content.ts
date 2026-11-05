@@ -2,6 +2,9 @@ import { and, desc, eq, inArray, countDistinct } from "drizzle-orm";
 import { db } from "@/db";
 import { wpPosts, wpPostmeta, wpTermRelationships, wpTermTaxonomy, wpTerms, user, postTranslationsTable, languagesTable, termTranslationsTable } from "@/db/schema";
 import { getDefaultLanguage } from "@/services/language.service";
+import { parseStudioDocument } from "@/lib/studio/tree-helpers";
+import type { StudioDocumentData } from "@/lib/studio/types";
+import type { StudioContentSnapshot } from "@/lib/studio/content";
 
 export type ContentItem = {
   id: string;
@@ -14,9 +17,13 @@ export type ContentItem = {
   categories: string[];
   tags: string[];
   imageUrl: string;
+  isFeatured?: boolean;
   template?: string;
   locale?: string;
   direction?: "ltr" | "rtl";
+  studioEnabled?: boolean;
+  studioDocument?: StudioDocumentData;
+  studioContent?: StudioContentSnapshot;
 };
 
 // Curated high-resolution editorial broadsheet photos
@@ -120,6 +127,33 @@ async function getImageData(postIds: bigint[] | string[]) {
   }
 }
 
+async function getFeaturedPostFlags(postIds: bigint[] | string[]) {
+  if (!postIds.length) return new Set<string>();
+  try {
+    const metas = await db
+      .select({
+        postId: wpPostmeta.postId,
+        metaValue: wpPostmeta.metaValue,
+      })
+      .from(wpPostmeta)
+      .where(
+        and(
+          inArray(wpPostmeta.postId, postIds.map((id) => BigInt(id))),
+          eq(wpPostmeta.metaKey, "_is_featured")
+        )
+      );
+    const set = new Set<string>();
+    for (const m of metas) {
+      if (m.metaValue === "1") {
+        set.add(m.postId.toString());
+      }
+    }
+    return set;
+  } catch {
+    return new Set<string>();
+  }
+}
+
 async function getPageTemplateData(postIds: bigint[] | string[]) {
   if (!postIds.length) return new Map<string, string>();
   try {
@@ -145,6 +179,47 @@ async function getPageTemplateData(postIds: bigint[] | string[]) {
     return map;
   } catch {
     return new Map<string, string>();
+  }
+}
+
+async function getStudioPageData(postIds: bigint[] | string[]) {
+  if (!postIds.length) {
+    return new Map<string, { enabled: boolean; document: StudioDocumentData }>();
+  }
+  try {
+    const metas = await db
+      .select({
+        postId: wpPostmeta.postId,
+        metaKey: wpPostmeta.metaKey,
+        metaValue: wpPostmeta.metaValue,
+      })
+      .from(wpPostmeta)
+      .where(
+        and(
+          inArray(wpPostmeta.postId, postIds.map((id) => BigInt(id))),
+          inArray(wpPostmeta.metaKey, ["_studio_edit_mode", "_studio_data"])
+        )
+      );
+
+    const map = new Map<string, { enabled: boolean; document: StudioDocumentData }>();
+    for (const id of postIds) {
+      const idStr = id.toString();
+      const modeRow = metas.find(
+        (m) => m.postId.toString() === idStr && m.metaKey === "_studio_edit_mode"
+      );
+      const dataRow = metas.find(
+        (m) => m.postId.toString() === idStr && m.metaKey === "_studio_data"
+      );
+      if (modeRow?.metaValue === "builder" || dataRow?.metaValue) {
+        map.set(idStr, {
+          enabled: modeRow?.metaValue === "builder",
+          document: parseStudioDocument(dataRow?.metaValue),
+        });
+      }
+    }
+    return map;
+  } catch {
+    return new Map<string, { enabled: boolean; document: StudioDocumentData }>();
   }
 }
 
@@ -188,10 +263,12 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
   }
 
   const postIds = base.map((item) => item.id.toString());
-  const [termMap, imageMap, templateMap] = await Promise.all([
+  const [termMap, imageMap, templateMap, studioMap, featuredSet] = await Promise.all([
     getTermData(postIds),
     getImageData(postIds),
     getPageTemplateData(postIds),
+    type === "page" ? getStudioPageData(postIds) : Promise.resolve(new Map()),
+    type === "post" ? getFeaturedPostFlags(postIds) : Promise.resolve(new Set<string>()),
   ]);
 
   return base.map((item, idx) => {
@@ -202,23 +279,33 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
       contentImg = match[1];
     }
 
-    const attachedImg = imageMap.get(item.id.toString());
-    const resolvedImg = attachedImg || contentImg || getEditorialPhoto(item.id.toString() || idx);
+    const idStr = item.id.toString();
+    const attachedImg = imageMap.get(idStr);
+    const resolvedImg = attachedImg || contentImg || getEditorialPhoto(idStr || idx);
+    const studioInfo = studioMap.get(idStr);
+    const cats = termMap.get(idStr)?.categories ?? ["News"];
+    const postTags = termMap.get(idStr)?.tags ?? [];
+    const isFeaturedByTerm =
+      cats.some((c) => /featured|spotlight|مميز|بارز/i.test(c)) ||
+      postTags.some((t) => /featured|spotlight|مميز|بارز/i.test(t));
 
     return {
-      id: item.id.toString(),
+      id: idStr,
       title: item.title || "Untitled",
       slug: item.slug || "untitled",
       excerpt: item.excerpt || item.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180),
       content: item.content || "",
       date: item.date,
       authorName: item.authorName || "Editorial Desk",
-      categories: termMap.get(item.id.toString())?.categories ?? ["News"],
-      tags: termMap.get(item.id.toString())?.tags ?? [],
+      categories: cats,
+      tags: postTags,
       imageUrl: resolvedImg,
-      template: templateMap.get(item.id.toString()) || "default",
+      isFeatured: featuredSet.has(idStr) || isFeaturedByTerm,
+      template: templateMap.get(idStr) || "default",
       locale: item.locale || undefined,
       direction: (item.direction as "ltr" | "rtl") || undefined,
+      studioEnabled: studioInfo?.enabled ?? false,
+      studioDocument: studioInfo?.document,
     };
   });
 }
@@ -230,6 +317,78 @@ export async function getPublishedPosts(limit = 12, locale?: string) {
 export async function getPublishedPageBySlug(slug: string, locale?: string) {
   const pages = await getPublishedContent("page", slug, 1, locale);
   return pages.length ? pages[0] : null;
+}
+
+export async function getPublishedPageById(
+  id: string | number | bigint,
+  locale?: string
+): Promise<ContentItem | null> {
+  if (!id) return null;
+  let targetId: bigint;
+  try {
+    targetId = BigInt(id);
+  } catch {
+    return null;
+  }
+
+  // If a locale is requested, check if the page has a translation in that locale
+  if (locale) {
+    const transRows = await db
+      .select({
+        translationGroupId: postTranslationsTable.translationGroupId,
+        languageCode: postTranslationsTable.languageCode,
+      })
+      .from(postTranslationsTable)
+      .where(eq(postTranslationsTable.postId, targetId))
+      .limit(1);
+
+    if (
+      transRows[0]?.translationGroupId &&
+      transRows[0].languageCode !== locale
+    ) {
+      const sibling = await db
+        .select({ postId: postTranslationsTable.postId })
+        .from(postTranslationsTable)
+        .innerJoin(wpPosts, eq(postTranslationsTable.postId, wpPosts.id))
+        .where(
+          and(
+            eq(
+              postTranslationsTable.translationGroupId,
+              transRows[0].translationGroupId
+            ),
+            eq(postTranslationsTable.languageCode, locale),
+            eq(wpPosts.postStatus, "publish")
+          )
+        )
+        .limit(1);
+
+      if (sibling[0]?.postId) {
+        targetId = sibling[0].postId;
+      }
+    }
+  }
+
+  const rows = await db
+    .select({
+      slug: wpPosts.postName,
+      locale: postTranslationsTable.languageCode,
+    })
+    .from(wpPosts)
+    .leftJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
+    .where(
+      and(
+        eq(wpPosts.id, targetId),
+        eq(wpPosts.postType, "page"),
+        eq(wpPosts.postStatus, "publish")
+      )
+    )
+    .limit(1);
+
+  if (!rows.length) return null;
+  return await getPublishedPageBySlug(
+    rows[0].slug,
+    rows[0].locale || locale || "en"
+  );
 }
 
 export async function getPublishedPostBySlug(slug: string, locale?: string) {

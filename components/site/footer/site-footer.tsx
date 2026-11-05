@@ -75,12 +75,12 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
           className="flex flex-col md:flex-row items-center justify-between gap-6 border-b pb-8"
         >
           <div>
-            <span
+            {mods.logoUrl ? <Link href={localizePath("/", theme.locale, theme.defaultLocale)}><img src={mods.logoUrl} alt={theme.siteTitle} style={{ width: `${mods.logoWidth || 180}px`, maxWidth: "100%", maxHeight: "96px", objectFit: "contain" }} /></Link> : <span
               style={{ color: footerHeadingColor }}
               className="text-2xl font-black tracking-tight font-serif"
             >
               {theme.siteTitle}
-            </span>
+            </span>}
             <p style={{ color: footerTextColor }} className="text-xs mt-0.5 opacity-80">{theme.siteTagline}</p>
           </div>
 

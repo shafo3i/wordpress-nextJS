@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { saveSettingsAction, sendTestEmailAction } from "../action";
 import type { SettingsMap } from "@/services/settings.service";
 import { MediaSelectModal } from "@/components/admin/media-select-modal";
+import { SettingsLogo } from "./settings-logo";
 import {
   Globe,
   Search,
@@ -24,10 +25,14 @@ import {
 
 export function SettingsForm({
   initialSettings,
+  initialLogoUrl = "",
+  pages = [],
   dict = {},
   direction = "ltr",
 }: {
   initialSettings: SettingsMap;
+  initialLogoUrl?: string;
+  pages?: { id: string; title: string }[];
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
 }) {
@@ -184,6 +189,7 @@ export function SettingsForm({
         {/* ========================================================================= */}
         {activeTab === "general" && (
           <div className="space-y-6">
+            <SettingsLogo initialUrl={initialLogoUrl} dict={dict} />
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
                 {dict["admin.settings.general_heading"] || "General Site Settings"}
@@ -316,6 +322,76 @@ export function SettingsForm({
                     <option value="Europe/London">Europe/London (UTC+0 / BST)</option>
                     <option value="America/New_York">America/New_York (UTC-5)</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Homepage Displays (WordPress Reading Settings) */}
+              <div className="grid grid-cols-1 gap-2 border-t border-[#dcdcde] pt-4 md:grid-cols-[220px_1fr]">
+                <span className="text-[13px] font-semibold text-[#1d2327]">
+                  {dict["admin.settings.your_homepage_displays"] || "Your homepage displays"}
+                </span>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name="show_on_front"
+                        value="posts"
+                        checked={(settings.show_on_front || "posts") === "posts"}
+                        onChange={() => handleChange("show_on_front", "posts")}
+                        className="size-4 border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                      />
+                      <span className="text-[13px] text-[#2c3338]">
+                        {dict["admin.settings.show_on_front_posts"] || "Your latest posts (Theme Default Layout)"}
+                      </span>
+                    </label>
+
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name="show_on_front"
+                        value="page"
+                        checked={settings.show_on_front === "page"}
+                        onChange={() => handleChange("show_on_front", "page")}
+                        className="size-4 border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
+                      />
+                      <span className="text-[13px] text-[#2c3338]">
+                        {dict["admin.settings.show_on_front_page"] || "A static page (or Studio Builder page)"}
+                      </span>
+                    </label>
+                  </div>
+
+                  {settings.show_on_front === "page" && (
+                    <div className="ms-6 flex flex-wrap items-center gap-3 rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] p-3">
+                      <label htmlFor="page_on_front" className="text-[12px] font-semibold text-[#1d2327]">
+                        {dict["admin.settings.homepage_page"] || "Homepage:"}
+                      </label>
+                      <select
+                        id="page_on_front"
+                        value={settings.page_on_front ?? ""}
+                        onChange={(e) => handleChange("page_on_front", e.target.value)}
+                        className="h-[30px] min-w-[220px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] focus:border-[#2271b1] focus:outline-none"
+                      >
+                        <option value="">
+                          {dict["admin.settings.select_page"] || "— Select a Page —"}
+                        </option>
+                        {pages.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.title}
+                          </option>
+                        ))}
+                      </select>
+                      {settings.page_on_front && (
+                        <a
+                          href={`/admincp/studio/${settings.page_on_front}`}
+                          className="inline-flex items-center gap-1.5 rounded-[3px] bg-[#2563eb] px-3 py-1 text-[12px] font-semibold text-white hover:bg-[#1d4ed8]"
+                        >
+                          <span>S</span>
+                          <span>{dict["admin.studio.edit_with_studio"] || "Edit with Studio"}</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

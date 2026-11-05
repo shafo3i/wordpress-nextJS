@@ -1,0 +1,71 @@
+{
+  "locales": {
+    "en": { "name": "English", "nativeName": "English", "direction": "ltr", "home": "Home", "about": "About the newsroom", "businessHub": "Business desk", "latest": "Latest stories", "featured": "Featured coverage", "context": "Context and analysis", "note": "This is a fictional development article created to test the bilingual newsroom. It is not a report of a real event.", "aboutText": "PressForge's development newsroom demonstrates independent English and Arabic publishing, linked translations, category feeds, and visual page layouts.", "author": "Maya Hassan" },
+    "ar": { "name": "Arabic", "nativeName": "العربية", "direction": "rtl", "home": "الرئيسية", "about": "عن غرفة الأخبار", "businessHub": "قسم الأعمال", "latest": "أحدث الأخبار", "featured": "تغطيات مميزة", "context": "السياق والتحليل", "note": "هذه مادة تجريبية خيالية لاختبار غرفة الأخبار باللغتين، وليست تقريراً عن حدث حقيقي.", "aboutText": "تعرض غرفة أخبار بريس فورج التجريبية النشر المستقل بالإنجليزية والعربية، وربط الترجمات، وأخبار التصنيفات، وتخطيطات الصفحات المرئية.", "author": "مايا حسن" }
+  },
+  "categories": [
+    { "key": "business", "color": "#165c91", "en": { "name": "Business", "slug": "business", "summary": "A practical look at how businesses plan investment, respond to customers, and build resilient operations." }, "ar": { "name": "الأعمال", "slug": "اعمال", "summary": "نظرة عملية إلى تخطيط الاستثمارات والاستجابة للعملاء وبناء أعمال قادرة على التكيف." }, "topics": [
+      ["How small retailers plan a stronger trading season", "كيف يخطط تجار التجزئة الصغار لموسم أقوى"],
+      ["The changing economics of neighbourhood shops", "اقتصاديات المتاجر المحلية في ظل التحولات"],
+      ["What founders should know before their first investment round", "ما الذي ينبغي للمؤسسين معرفته قبل جولة التمويل الأولى"],
+      ["Why supply-chain visibility matters to local manufacturers", "لماذا تهم شفافية سلاسل الإمداد المصنّعين المحليين"],
+      ["Inside a cooperative approach to community finance", "نموذج تعاوني لتمويل المشروعات المجتمعية"],
+      ["A guide to measuring growth beyond headline revenue", "دليل لقياس النمو بعيداً عن أرقام الإيرادات"],
+      ["How independent cafés evaluate expansion", "كيف تقيّم المقاهي المستقلة فرص التوسع"],
+      ["The skills shaping the next generation of family businesses", "مهارات تشكّل الجيل المقبل من الشركات العائلية"],
+      ["Making digital payments work for small enterprises", "توظيف المدفوعات الرقمية لخدمة المشروعات الصغيرة"],
+      ["What sustainable procurement means in practice", "ماذا تعني المشتريات المستدامة عملياً"],
+      ["Building a realistic budget for a new venture", "بناء ميزانية واقعية لمشروع جديد"],
+      ["How business districts can support independent traders", "كيف تدعم المناطق التجارية أصحاب المتاجر المستقلة"]
+    ] },
+    { "key": "technology", "color": "#6941a5", "en": { "name": "Technology", "slug": "technology", "summary": "Exploring useful technology, responsible design, and the infrastructure behind everyday digital services." }, "ar": { "name": "التقنية", "slug": "تقنية", "summary": "استكشاف التقنيات المفيدة والتصميم المسؤول والبنية التحتية للخدمات الرقمية اليومية." }, "topics": [
+      ["Designing digital services that everyone can use", "تصميم خدمات رقمية يستطيع الجميع استخدامها"],
+      ["What a reliable community broadband network needs", "متطلبات شبكة إنترنت محلية موثوقة"],
+      ["A practical introduction to privacy-first product design", "مدخل عملي لتصميم المنتجات مع أولوية الخصوصية"],
+      ["How open standards help teams work together", "كيف تساعد المعايير المفتوحة الفرق على التعاون"],
+      ["The trade-offs behind smaller and more efficient devices", "الموازنة بين حجم الأجهزة وكفاءتها"],
+      ["Keeping public digital archives accessible over time", "الحفاظ على إتاحة الأرشيفات الرقمية العامة بمرور الوقت"]
+    ] },
+    { "key": "world", "color": "#28785a", "en": { "name": "World", "slug": "world", "summary": "Understanding international cooperation, urban change, and the connections between local and global communities." }, "ar": { "name": "العالم", "slug": "العالم", "summary": "فهم التعاون الدولي وتحولات المدن والروابط بين المجتمعات المحلية والعالمية." }, "topics": [
+      ["How cities share solutions for cleaner transport", "كيف تتبادل المدن حلول النقل الأنظف"],
+      ["The role of public libraries in welcoming new communities", "دور المكتبات العامة في استقبال المجتمعات الجديدة"],
+      ["Understanding the work behind international research partnerships", "فهم العمل وراء الشراكات البحثية الدولية"],
+      ["What coastal communities can learn from one another", "ما الذي تتعلمه المجتمعات الساحلية من بعضها"],
+      ["Tracing the journey of everyday goods across borders", "تتبّع رحلة السلع اليومية عبر الحدود"],
+      ["Why local knowledge matters in global conversations", "لماذا تهم المعرفة المحلية في النقاشات العالمية"]
+    ] },
+    { "key": "culture", "color": "#a65328", "en": { "name": "Culture", "slug": "culture", "summary": "Stories about creative work, shared heritage, and the places where communities exchange ideas." }, "ar": { "name": "الثقافة", "slug": "ثقافة", "summary": "موضوعات عن العمل الإبداعي والتراث المشترك والأماكن التي تتبادل فيها المجتمعات الأفكار." }, "topics": [
+      ["The quiet craft of restoring a neighbourhood theatre", "حرفة ترميم مسرح الحي بهدوء وعناية"],
+      ["How independent publishers discover new voices", "كيف يكتشف الناشرون المستقلون أصواتاً جديدة"],
+      ["Documenting oral histories across generations", "توثيق التاريخ الشفهي بين الأجيال"],
+      ["What makes a public exhibition welcoming", "ما الذي يجعل المعرض العام مساحة مرحّبة"],
+      ["A closer look at the work of community arts spaces", "نظرة أقرب إلى عمل المساحات الفنية المجتمعية"],
+      ["Bringing local archives into the digital age", "نقل الأرشيفات المحلية إلى العصر الرقمي"]
+    ] },
+    { "key": "politics", "color": "#44566f", "en": { "name": "Politics", "slug": "politics", "summary": "Explainers on public decision-making, accountability, and meaningful participation in civic life." }, "ar": { "name": "السياسة", "slug": "سياسة", "summary": "شروحات عن اتخاذ القرارات العامة والمساءلة والمشاركة الفاعلة في الحياة المدنية." }, "topics": [
+      ["How to follow a local government budget", "كيف تتابع ميزانية الإدارة المحلية"],
+      ["Making public consultations easier to understand", "جعل المشاورات العامة أسهل فهماً"],
+      ["The everyday work of transparent decision-making", "العمل اليومي من أجل اتخاذ قرارات شفافة"],
+      ["A reader's guide to evaluating policy proposals", "دليل القارئ لتقييم مقترحات السياسات"],
+      ["Why accessible meeting records support accountability", "كيف تدعم سجلات الاجتماعات المتاحة مبدأ المساءلة"],
+      ["Building trust through clear public communication", "بناء الثقة من خلال تواصل عام واضح"]
+    ] },
+    { "key": "health", "color": "#177b87", "en": { "name": "Health", "slug": "health", "summary": "Development explainers about community wellbeing, accessible services, and how people understand health information." }, "ar": { "name": "الصحة", "slug": "صحة", "summary": "مواد تجريبية عن رفاه المجتمع وإتاحة الخدمات وفهم المعلومات الصحية." }, "topics": [
+      ["Making community wellbeing information easier to find", "تسهيل الوصول إلى معلومات رفاه المجتمع"],
+      ["How neighbourhood design supports everyday activity", "كيف يدعم تصميم الأحياء النشاط اليومي"],
+      ["The value of clear language in public health communication", "أهمية اللغة الواضحة في التواصل الصحي العام"],
+      ["Planning welcoming spaces for community support", "تخطيط مساحات مرحّبة للدعم المجتمعي"],
+      ["Understanding how public service feedback is collected", "فهم آليات جمع الملاحظات عن الخدمات العامة"],
+      ["Connecting local organisations around shared wellbeing goals", "ربط المؤسسات المحلية حول أهداف مشتركة للرفاه"]
+    ] },
+    { "key": "sports", "color": "#9a3d65", "en": { "name": "Sport", "slug": "sport", "summary": "The people, facilities, and practical choices that make grassroots sport possible." }, "ar": { "name": "الرياضة", "slug": "رياضة", "summary": "الأشخاص والمرافق والخيارات العملية التي تتيح ممارسة الرياضة المجتمعية." }, "topics": [
+      ["What makes a grassroots club welcoming to beginners", "ما الذي يجعل النادي المجتمعي مرحّباً بالمبتدئين"],
+      ["The volunteers behind a community sports weekend", "المتطوعون وراء عطلة رياضية مجتمعية"],
+      ["How shared facilities expand access to sport", "كيف توسّع المرافق المشتركة فرص ممارسة الرياضة"],
+      ["Planning a season for a neighbourhood team", "تخطيط موسم لفريق الحي"],
+      ["Celebrating the work of youth sports organisers", "الاحتفاء بجهود منظمي رياضة الشباب"],
+      ["Making match-day information useful for supporters", "جعل معلومات يوم المباراة مفيدة للجمهور"]
+    ] },
+    { "key": "education", "color": "#57612c", "en": { "name": "Education", "slug": "education", "summary": "An intentionally empty category for testing honest empty states." }, "ar": { "name": "التعليم", "slug": "تعليم", "summary": "تصنيف فارغ عمداً لاختبار عرض حالة عدم وجود محتوى." }, "topics": [] }
+  ]
+}

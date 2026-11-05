@@ -1,3 +1,4 @@
+import { resolveStudioPageContent } from '@/services/studio-content.service';
 import { notFound, redirect } from "next/navigation";
 import { PageTemplate } from "@/components/site/news-patterns";
 import { getPublishedPageBySlug, getPublishedPosts } from "@/lib/site-content";
@@ -38,7 +39,7 @@ export default async function LocalizedStaticPage({
       locale: lang,
       currentPath: `/${lang}/${slug}`,
     }),
-    getPublishedPosts(5, lang),
+    getPublishedPosts(20, lang),
     getAllWidgetAreas(),
   ]);
 
@@ -66,7 +67,7 @@ export default async function LocalizedStaticPage({
 
   return (
     <PageTemplate
-      page={page}
+      page={await resolveStudioPageContent(page, theme.locale || page.locale || "")}
       relatedPosts={relatedPosts.filter((post) => post.slug !== slug)}
       sidebarWidgets={primarySidebar}
       theme={theme}

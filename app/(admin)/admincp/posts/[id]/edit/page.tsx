@@ -69,6 +69,7 @@ export default async function EditPostPage({ params }: EditPostProps) {
           initialContent={post.content}
           initialExcerpt={post.excerpt}
           initialFeaturedImageId={post.featuredImageId}
+          initialIsFeatured={post.isFeatured}
           initialStatus={post.status}
           initialCategories={post.categorySlugs}
           initialTags={post.tags.join(", ")}

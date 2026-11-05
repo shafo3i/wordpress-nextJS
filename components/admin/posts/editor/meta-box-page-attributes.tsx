@@ -91,6 +91,8 @@ export function MetaBoxPageAttributes({
               value={selectedTemplate}
             >
               <option value="default">{dict?.["admin.editor.template_default"] || "Default Template"}</option>
+              <option value="studio_full_width">{dict?.["admin.studio.template_full_width"] || "Studio Full Width"}</option>
+              <option value="studio_canvas">{dict?.["admin.studio.template_canvas"] || "Studio Canvas (No Header/Footer)"}</option>
               <option value="full-width">{dict?.["admin.editor.template_full_width"] || "Full Width Page"}</option>
               <option value="with-sidebar">{dict?.["admin.editor.template_with_sidebar"] || "Page with Sidebar"}</option>
               <option value="landing">{dict?.["admin.editor.template_landing"] || "Landing Page"}</option>

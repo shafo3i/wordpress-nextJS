@@ -70,6 +70,7 @@ export default async function EditPagePage({ params }: EditPageProps) {
           initialPostParent={page.postParent}
           initialStatus={page.status}
           initialTemplate={page.template}
+          initialIsStudioBuilder={page.isStudioBuilder}
           parentPages={parentPages}
           postType="page"
           languages={langContext.allLanguages}

@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Camera, Music } from "lucide-react";
+import {
+  createNewStudioPageAction,
+  switchPageEditorModeAction,
+} from "@/app/(admin)/admincp/studio/[id]/action";
 import { MetaBoxPublish } from "./meta-box-publish";
 import { MetaBoxFormat } from "./meta-box-format";
 import { MetaBoxCategories, type CategoryItem } from "./meta-box-categories";
@@ -33,6 +38,7 @@ export type ClassicPostEditorProps = {
   initialContent?: string;
   initialExcerpt?: string;
   initialFeaturedImageId?: string;
+  initialIsFeatured?: boolean;
   initialStatus?: string;
   initialTemplate?: string;
   initialCategories?: string[];
@@ -50,6 +56,7 @@ export type ClassicPostEditorProps = {
   translations?: TranslationLink[];
   translationOfId?: string;
   translationOfTitle?: string;
+  initialIsStudioBuilder?: boolean;
   onTrash?: () => void;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
@@ -61,6 +68,7 @@ export function ClassicPostEditor({
   initialContent = "",
   initialExcerpt = "",
   initialFeaturedImageId = "",
+  initialIsFeatured = false,
   initialStatus = "draft",
   initialTemplate = "default",
   initialCategories = [],
@@ -78,14 +86,19 @@ export function ClassicPostEditor({
   translations = [],
   translationOfId,
   translationOfTitle,
+  initialIsStudioBuilder = false,
   onTrash,
   dict,
   direction = "ltr",
 }: ClassicPostEditorProps) {
+  const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
+  const [isStudioBuilder, setIsStudioBuilder] = useState(initialIsStudioBuilder);
+  const [isLaunchingStudio, setIsLaunchingStudio] = useState(false);
   const [content, setContent] = useState(initialContent);
   const [excerpt, setExcerpt] = useState(initialExcerpt);
   const [featuredImageId, setFeaturedImageId] = useState(initialFeaturedImageId);
+  const [isFeatured, setIsFeatured] = useState(initialIsFeatured);
   const [status, setStatus] = useState(initialStatus);
   const [template, setTemplate] = useState(initialTemplate);
   const [postParent, setPostParent] = useState(initialPostParent);
@@ -128,6 +141,7 @@ export function ClassicPostEditor({
     formData.set("content", content);
     formData.set("excerpt", excerpt);
     formData.set("featuredImageId", featuredImageId);
+    formData.set("isFeatured", isFeatured ? "1" : "0");
     formData.set("status", finalStatus);
     formData.set("categorySlugs", selectedCategories.join(","));
     formData.set("tags", tagList.join(", "));
@@ -145,12 +159,47 @@ export function ClassicPostEditor({
     });
   };
 
+  const handleLaunchStudio = async () => {
+    setIsLaunchingStudio(true);
+    try {
+      if (postId) {
+        await switchPageEditorModeAction({
+          pageId: postId,
+          enableStudio: true,
+        });
+        router.push(`/admincp/studio/${postId}`);
+      } else {
+        const res = await createNewStudioPageAction({
+          title: title.trim() || dict?.["admin.studio.untitled_page"] || "Studio Page",
+          languageCode,
+          translationOf: translationOfId,
+        });
+        if (res.pageId) {
+          router.push(`/admincp/studio/${res.pageId}`);
+        }
+      }
+    } finally {
+      setIsLaunchingStudio(false);
+    }
+  };
+
+  const handleSwitchToClassic = async () => {
+    setIsStudioBuilder(false);
+    if (postId) {
+      await switchPageEditorModeAction({
+        pageId: postId,
+        enableStudio: false,
+      });
+    }
+  };
+
   return (
     <form dir={direction} className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_280px]" onSubmit={handleSubmit}>
       {postId && <input name="id" type="hidden" value={postId} />}
       <input name="content" type="hidden" value={content} />
       <input name="excerpt" type="hidden" value={excerpt} />
       <input name="featuredImageId" type="hidden" value={featuredImageId} />
+      <input name="isFeatured" type="hidden" value={isFeatured ? "1" : "0"} />
       <input name="status" type="hidden" value={status} />
       <input name="pageTemplate" type="hidden" value={template} />
       <input name="categorySlugs" type="hidden" value={selectedCategories.join(",")} />
@@ -161,6 +210,54 @@ export function ClassicPostEditor({
 
       {/* Main Content Column */}
       <div className="min-w-0 space-y-4">
+        {/* Page Builder Switcher Top Bar (Pages only, matches Screenshot 1) */}
+        {postType === "page" && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[3px] border border-[#c3c4c7] bg-white px-3.5 py-2.5 shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSwitchToClassic}
+                className={`inline-flex items-center gap-2 rounded-[3px] border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  !isStudioBuilder
+                    ? "border-[#2271b1] bg-[#f0f6fc] text-[#1d2327]"
+                    : "border-[#c3c4c7] bg-white text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
+                }`}
+              >
+                <span className="flex size-4 items-center justify-center rounded-full bg-[#1d2327] font-serif text-[10px] font-bold text-white">
+                  W
+                </span>
+                <span>
+                  {dict?.["admin.studio.edit_with_classic"] || "Edit with Classic Editor"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isLaunchingStudio}
+                onClick={handleLaunchStudio}
+                className="inline-flex items-center gap-2 rounded-[3px] bg-[#2563eb] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#1d4ed8] disabled:opacity-60"
+              >
+                <span className="flex size-4 items-center justify-center rounded-full bg-white/20 font-serif text-[10px] font-black text-white">
+                  S
+                </span>
+                <span>
+                  {isLaunchingStudio
+                    ? dict?.["admin.studio.launching"] || "Opening Studio..."
+                    : dict?.["admin.studio.edit_with_studio"] || "Edit with Studio"}
+                </span>
+              </button>
+            </div>
+
+            <div className="hidden items-center gap-1.5 rounded bg-[#f0f0f1] px-4 py-1 text-xs text-[#50575e] sm:flex">
+              <span className="font-semibold text-[#1d2327]">
+                {title || dict?.["admin.studio.untitled"] || "Untitled"}
+              </span>
+              <span>·</span>
+              <span>{dict?.["admin.studio.page_badge"] || "Page"}</span>
+            </div>
+          </div>
+        )}
+
         {/* Title input (Classic WordPress style) */}
         <div>
           <input
@@ -203,87 +300,124 @@ export function ClassicPostEditor({
           </button>
         </div>
 
-        {/* Add Media Row & Visual/Text Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <button
-            className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-xs font-medium text-[#2271b1] shadow-sm hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
-            onClick={() => window.open("/admincp/media", "_blank")}
-            type="button"
-          >
-            <span className="flex items-center text-xs">
-              <Camera className="size-3.5 mr-0.5" />
-              <Music className="size-3" />
-            </span>
-            <span>{dict?.["admin.editor.add_media"] || "Add Media"}</span>
-          </button>
+        {postType === "page" && isStudioBuilder ? (
+          /* Studio Builder Placeholder Canvas (matches Screenshot 1) */
+          <div className="relative flex min-h-[460px] flex-col justify-between rounded-[3px] border border-[#c3c4c7] bg-[#dcdcde] p-8 sm:p-12">
+            <div>
+              <h2 className="font-serif text-3xl font-bold tracking-tight text-[#1d2327]">
+                {title || dict?.["admin.studio.untitled"] || "Untitled"}
+              </h2>
+            </div>
 
-          <div className="flex items-center text-xs">
-            <button
-              className={`rounded-t-[3px] px-3 py-1 font-medium ${editorMode === "visual"
-                  ? "border-x border-t border-[#8c8f94] bg-white text-[#1d2327]"
-                  : "border-b border-[#8c8f94] bg-[#f6f7f7] text-[#2271b1] hover:text-[#135e96]"
-                }`}
-              onClick={() => setEditorMode("visual")}
-              type="button"
-            >
-              {dict?.["admin.editor.visual"] || "Visual"}
-            </button>
-            <button
-              className={`rounded-t-[3px] px-3 py-1 font-medium ${editorMode === "text"
-                  ? "border-x border-t border-[#8c8f94] bg-white text-[#1d2327]"
-                  : "border-b border-[#8c8f94] bg-[#f6f7f7] text-[#2271b1] hover:text-[#135e96]"
-                }`}
-              onClick={() => setEditorMode("text")}
-              type="button"
-            >
-              {dict?.["admin.editor.text"] || "Text"}
-            </button>
+            <div className="my-auto flex flex-col items-center justify-center py-12 text-center">
+              <button
+                type="button"
+                disabled={isLaunchingStudio}
+                onClick={handleLaunchStudio}
+                className="inline-flex items-center gap-2.5 rounded-[4px] bg-[#2563eb] px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:bg-[#1d4ed8] disabled:opacity-60"
+              >
+                <span className="flex size-5 items-center justify-center rounded-full bg-white/20 font-serif text-xs font-black text-white">
+                  S
+                </span>
+                <span>
+                  {isLaunchingStudio
+                    ? dict?.["admin.studio.launching"] || "Opening Studio..."
+                    : dict?.["admin.studio.edit_with_studio"] || "Edit with Studio"}
+                </span>
+              </button>
+              <p className="mt-3 text-xs text-[#50575e]">
+                {dict?.["admin.studio.canvas_hint"] ||
+                  "This page is built with Studio visual builder. Click above to open the full-screen canvas."}
+              </p>
+            </div>
+
+            <div />
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Add Media Row & Visual/Text Tabs */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button
+                className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-xs font-medium text-[#2271b1] shadow-sm hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
+                onClick={() => window.open("/admincp/media", "_blank")}
+                type="button"
+              >
+                <span className="flex items-center text-xs">
+                  <Camera className="size-3.5 mr-0.5" />
+                  <Music className="size-3" />
+                </span>
+                <span>{dict?.["admin.editor.add_media"] || "Add Media"}</span>
+              </button>
 
-        {/* Editor Container */}
-        <div className="overflow-hidden rounded-[3px] border border-[#8c8f94] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset]">
-          {editorMode === "visual" ? (
-            <DynamicEditor
-              init={{
-                height: 440,
-                menubar: false,
-                branding: false,
-                statusbar: false,
-                directionality: direction === "rtl" ? "rtl" : "ltr",
-                plugins: "advlist autolink lists link image table code wordcount",
-                toolbar:
-                  "formatselect | bold italic underline | bullist numlist blockquote | alignleft aligncenter alignright | link unlink | code",
-                toolbar_mode: "floating",
-                resize: false,
-                content_style:
-                  "body { font-family: Georgia, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif; font-size: 16px; line-height: 1.7; color: #23282d; margin: 16px; } p { margin: 0 0 1em; }",
-                skin: "oxide",
-                content_css: false,
-              }}
-              licenseKey="gpl"
-              onEditorChange={setContent}
-              tinymceScriptSrc="/tinymce/tinymce.min.js"
-              value={content}
-            />
-          ) : (
-            <textarea
-              className="h-[440px] w-full resize-none p-4 font-mono text-xs leading-relaxed text-[#2c3338] outline-none"
-              onChange={(e) => setContent(e.target.value)}
-              value={content}
-            />
-          )}
+              <div className="flex items-center text-xs">
+                <button
+                  className={`rounded-t-[3px] px-3 py-1 font-medium ${editorMode === "visual"
+                      ? "border-x border-t border-[#8c8f94] bg-white text-[#1d2327]"
+                      : "border-b border-[#8c8f94] bg-[#f6f7f7] text-[#2271b1] hover:text-[#135e96]"
+                    }`}
+                  onClick={() => setEditorMode("visual")}
+                  type="button"
+                >
+                  {dict?.["admin.editor.visual"] || "Visual"}
+                </button>
+                <button
+                  className={`rounded-t-[3px] px-3 py-1 font-medium ${editorMode === "text"
+                      ? "border-x border-t border-[#8c8f94] bg-white text-[#1d2327]"
+                      : "border-b border-[#8c8f94] bg-[#f6f7f7] text-[#2271b1] hover:text-[#135e96]"
+                    }`}
+                  onClick={() => setEditorMode("text")}
+                  type="button"
+                >
+                  {dict?.["admin.editor.text"] || "Text"}
+                </button>
+              </div>
+            </div>
 
-          {/* Editor Status Bar */}
-          <div className="flex items-center justify-between border-t border-[#dcdcde] bg-[#f6f7f7] px-3 py-1.5 text-[11px] text-[#646970]">
-            <span>
-              {dict?.["admin.editor.word_count"] || "Word count:"} {wordCount}
-            </span>
-            <span>
-              {dict?.["admin.editor.draft_saved_at"] || "Draft saved at"} {lastSaved}.
-            </span>
-          </div>
-        </div>
+            {/* Editor Container */}
+            <div className="overflow-hidden rounded-[3px] border border-[#8c8f94] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset]">
+              {editorMode === "visual" ? (
+                <DynamicEditor
+                  init={{
+                    height: 440,
+                    menubar: false,
+                    branding: false,
+                    statusbar: false,
+                    directionality: direction === "rtl" ? "rtl" : "ltr",
+                    plugins: "advlist autolink lists link image table code wordcount",
+                    toolbar:
+                      "formatselect | bold italic underline | bullist numlist blockquote | alignleft aligncenter alignright | link unlink | code",
+                    toolbar_mode: "floating",
+                    resize: false,
+                    content_style:
+                      "body { font-family: Georgia, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif; font-size: 16px; line-height: 1.7; color: #23282d; margin: 16px; } p { margin: 0 0 1em; }",
+                    skin: "oxide",
+                    content_css: false,
+                  }}
+                  licenseKey="gpl"
+                  onEditorChange={setContent}
+                  tinymceScriptSrc="/tinymce/tinymce.min.js"
+                  value={content}
+                />
+              ) : (
+                <textarea
+                  className="h-[440px] w-full resize-none p-4 font-mono text-xs leading-relaxed text-[#2c3338] outline-none"
+                  onChange={(e) => setContent(e.target.value)}
+                  value={content}
+                />
+              )}
+
+              {/* Editor Status Bar */}
+              <div className="flex items-center justify-between border-t border-[#dcdcde] bg-[#f6f7f7] px-3 py-1.5 text-[11px] text-[#646970]">
+                <span>
+                  {dict?.["admin.editor.word_count"] || "Word count:"} {wordCount}
+                </span>
+                <span>
+                  {dict?.["admin.editor.draft_saved_at"] || "Draft saved at"} {lastSaved}.
+                </span>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Excerpt Meta Box (Can be displayed under editor in classic WP style) */}
         <MetaBoxExcerpt dict={dict} excerpt={excerpt} onChange={setExcerpt} />
@@ -305,6 +439,8 @@ export function ClassicPostEditor({
           dict={dict}
           isExisting={Boolean(postId)}
           isPostTypePage={postType === "page"}
+          isFeatured={isFeatured}
+          onFeaturedChange={setIsFeatured}
           isSaving={isPending}
           onStatusChange={setStatus}
           onTrash={onTrash}

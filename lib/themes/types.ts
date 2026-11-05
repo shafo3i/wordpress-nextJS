@@ -142,6 +142,9 @@ export type ThemeMods = {
   // Header Layout & Components
   headerLayout?: "classic" | "minimal" | "magazine" | "centered";
   stickyHeader?: boolean;
+  mastheadPadding?: number;
+  navHeight?: number;
+  navItemSpacing?: number;
   showTopBar?: boolean;
   topBarTickerText?: string;
   showDateInHeader?: boolean;

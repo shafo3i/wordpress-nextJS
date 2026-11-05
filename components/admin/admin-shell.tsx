@@ -80,6 +80,8 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
           <Link
             className="wp-admin-top-link"
             href="/"
+            title={dict["site.admin_bar.visit_site"]}
+            aria-label={dict["site.admin_bar.visit_site"]}
           >
             <Home aria-hidden="true" className="size-3.5" />
             <span>{context.siteName || "—"}</span>

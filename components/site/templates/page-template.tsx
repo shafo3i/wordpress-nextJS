@@ -7,6 +7,7 @@ import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
 import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
+import { StudioRenderer } from "@/components/site/studio/studio-renderer";
 import { DEFAULT_THEME, isDarkTheme, isSerifHeading, t } from "@/components/site/utils";
 
 /**
@@ -47,16 +48,53 @@ export function PageTemplate({
   );
   const hasSidebar = visibleWidgets.length > 0;
 
+  const isStudio = Boolean(page.studioEnabled && page.studioDocument);
+  const studioTemplate =
+    page.studioDocument?.pageTemplate ||
+    page.studioDocument?.settings?.pageTemplate ||
+    template;
+  const isStudioCanvas = isStudio && studioTemplate === "studio_canvas";
+
   return (
     <div
       dir={theme.direction || "ltr"}
       lang={theme.locale || "en"}
       className="min-h-screen transition-colors bg-theme-bg text-theme-text"
+      style={
+        isStudio && page.studioDocument?.settings?.backgroundColor
+          ? { backgroundColor: page.studioDocument.settings.backgroundColor }
+          : undefined
+      }
     >
       {theme.mods && <ThemeDynamicStyles mods={theme.mods} themeSlug={theme.themeSlug} />}
-      <SiteHeader theme={theme} />
+      {!isStudioCanvas && <SiteHeader theme={theme} />}
 
-      {template === "landing" ? (
+      {isStudio && page.studioDocument ? (
+        <main className={studioTemplate === "studio_full_width" || studioTemplate === "studio_canvas" ? "w-full" : "w-full py-6"}>
+          {!page.studioDocument.settings?.hideTitle &&
+            studioTemplate !== "studio_full_width" &&
+            studioTemplate !== "studio_canvas" && (
+              <div className="mx-auto theme-container px-4 pb-6 md:px-6">
+                <h1
+                  className={`text-3xl sm:text-5xl font-bold tracking-tight ${
+                    isSerif ? "font-serif" : "font-sans"
+                  }`}
+                >
+                  {page.title}
+                </h1>
+              </div>
+            )}
+          <StudioRenderer
+            widgetContent={page.studioContent}
+            contentLocale={theme.locale || page.locale}
+            pageLocale={page.locale}
+            elements={page.studioDocument.elements}
+            posts={relatedPosts}
+            theme={theme}
+            isEditor={false}
+          />
+        </main>
+      ) : template === "landing" ? (
         /* Landing Page Layout: Seamless full-bleed canvas */
         <main className="mx-auto theme-container px-4 py-16 md:px-8">
           <div className="text-center mb-12">
@@ -158,7 +196,7 @@ export function PageTemplate({
         </main>
       )}
 
-      <SiteFooter theme={theme} footerWidgets={footerWidgets} />
+      {!isStudioCanvas && <SiteFooter theme={theme} footerWidgets={footerWidgets} />}
     </div>
   );
 }

@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   timezone_string: "UTC",
   date_format: "F j, Y",
   time_format: "g:i a",
+  show_on_front: "posts",
+  page_on_front: "",
 
   // SEO & Indexing
   blog_public: "1", // 1 = visible to search engines, 0 = noindex

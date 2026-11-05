@@ -1,0 +1,106 @@
+import { defineWidget } from "../widget-definition"
+
+export const MEDIA_WIDGETS = {
+  youtube: defineWidget("youtube", {
+    kind: "widget",
+    icon: "Video",
+    catalogs: ["atomic"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      videoUrl: "",
+      aspectRatio: "16/9",
+      borderRadius: 8,
+    }),
+  }),
+  video: defineWidget("video", {
+    kind: "widget",
+    icon: "Video",
+    catalogs: ["basic"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      videoUrl: "",
+      aspectRatio: "16/9",
+      borderRadius: 8,
+    }),
+  }),
+  google_maps: defineWidget("google_maps", {
+    kind: "widget",
+    icon: "MapPin",
+    catalogs: ["basic"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      mapAddress: "",
+      mapZoom: 12,
+      imageHeight: 320,
+      borderRadius: 8,
+    }),
+  }),
+  icon: defineWidget("icon", {
+    kind: "widget",
+    icon: "Star",
+    catalogs: ["basic"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      iconName: "star",
+      iconSize: 40,
+      align: "center",
+      textColor: "#2563eb",
+    }),
+  }),
+  image_box: defineWidget("image_box", {
+    kind: "widget",
+    icon: "ImageIcon",
+    catalogs: ["general"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      imageUrl: "",
+      text: "",
+      subText: "",
+      align: "center",
+      borderRadius: 12,
+    }),
+  }),
+  icon_box: defineWidget("icon_box", {
+    kind: "widget",
+    icon: "Star",
+    catalogs: ["general"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      iconName: "star",
+      text: "",
+      subText: "",
+      align: "center",
+      textColor: "#2563eb",
+    }),
+  }),
+  image_carousel: defineWidget("image_carousel", {
+    kind: "widget",
+    icon: "GalleryHorizontal",
+    catalogs: ["general"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      galleryImages: [],
+      gridColumns: 3,
+      borderRadius: 8,
+    }),
+  }),
+  basic_gallery: defineWidget("basic_gallery", {
+    kind: "widget",
+    icon: "Images",
+    catalogs: ["general"],
+    renderGroup: "media",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      galleryImages: [],
+      gridColumns: 3,
+      borderRadius: 8,
+    }),
+  }),
+}

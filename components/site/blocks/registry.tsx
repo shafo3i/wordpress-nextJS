@@ -9,6 +9,7 @@ import type { HomepageBlock } from "@/lib/themes/homepage-types";
 import { MagazineBentoBlock } from "./bento";
 import { Broadsheet3ColBlock } from "./broadsheet";
 import { HeroSliderBlock } from "./hero-slider";
+import { HeadlineSliderBlock } from "./headline-slider";
 import { BigLeadSideListBlock } from "./big-lead";
 import { NewsListViewBlock } from "./news-list";
 import { CardsGridBlock } from "./cards-grid";
@@ -20,12 +21,19 @@ import { OpinionBlock } from "./opinion";
 import { MultimediaBlock } from "./multimedia";
 import { NewsletterBlock } from "./newsletter";
 import { CategoryGridBlock } from "./category-grid";
+import { FeaturedHeroSliderBlock } from "./featured-hero-slider";
+import { BreakingTickerBlock } from "./breaking-ticker";
+import { DualCategoryColumnsBlock } from "./dual-category";
+import { CompactNumberedGridBlock } from "./compact-numbered";
+import { SplitHeroFeatureBlock } from "./split-hero";
+import { MultiCardCarouselBlock } from "./multi-carousel";
 
 // Export all individual blocks for direct usage
 export {
   MagazineBentoBlock,
   Broadsheet3ColBlock,
   HeroSliderBlock,
+  FeaturedHeroSliderBlock,
   BigLeadSideListBlock,
   NewsListViewBlock,
   CardsGridBlock,
@@ -37,6 +45,11 @@ export {
   MultimediaBlock,
   NewsletterBlock,
   CategoryGridBlock,
+  BreakingTickerBlock,
+  DualCategoryColumnsBlock,
+  CompactNumberedGridBlock,
+  SplitHeroFeatureBlock,
+  MultiCardCarouselBlock,
 };
 
 /**
@@ -46,10 +59,12 @@ export function renderEditorialBlock({
   block: rawBlock,
   posts,
   theme,
+  preFiltered = false,
 }: {
   block: HomepageBlock;
   posts: ContentItem[];
   theme: FrontEndThemeContext;
+  preFiltered?: boolean;
 }): React.ReactNode {
   if (!rawBlock.enabled) return null;
 
@@ -71,8 +86,8 @@ export function renderEditorialBlock({
   };
 
   // Filter posts by category if specified
-  const filteredPosts =
-    block.categorySlug && block.categorySlug !== "all"
+  const categoryFiltered =
+    !preFiltered && block.categorySlug && block.categorySlug !== "all"
       ? posts.filter((p) =>
           p.categories.some(
             (c) => c.toLowerCase() === block.categorySlug!.toLowerCase()
@@ -80,11 +95,24 @@ export function renderEditorialBlock({
         )
       : posts;
 
-  const displayPosts = filteredPosts;
+  // Filter by featured posts if requested (with graceful fallback to categoryFiltered if none are marked yet)
+  const shouldFilterFeatured = !preFiltered && (
+    block.featuredOnly ||
+    block.type === "featured_hero_slider" ||
+    block.displayStyle === "featured_slider");
+
+  const featuredMatches = shouldFilterFeatured
+    ? categoryFiltered.filter((p) => p.isFeatured)
+    : categoryFiltered;
+
+  const displayPosts =
+    featuredMatches.length > 0 ? featuredMatches : categoryFiltered;
 
   // 1. Style override takes highest priority if specified
   if (block.displayStyle) {
     switch (block.displayStyle) {
+      case "headline_cover":
+        return <HeadlineSliderBlock key={block.id} posts={displayPosts.slice(0, block.postCount || 5)} title={block.title} theme={theme} showDate={block.showDate} showCategory={block.showCategory} showAuthor={block.showAuthor} showExcerpt={block.showExcerpt} autoplay={block.autoplay} interval={block.rotationInterval} />;
       case "bento":
         return (
           <MagazineBentoBlock
@@ -278,6 +306,104 @@ export function renderEditorialBlock({
             linkHref={block.linkHref}
           />
         );
+
+      case "featured_slider":
+        return (
+          <FeaturedHeroSliderBlock
+            key={block.id}
+            posts={displayPosts.slice(0, block.postCount || 5)}
+            title={block.title}
+            theme={theme}
+            showExcerpt={block.showExcerpt}
+            showAuthor={block.showAuthor}
+            showDate={block.showDate}
+            showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
+          />
+        );
+
+      case "breaking_bar":
+        return (
+          <BreakingTickerBlock
+            key={block.id}
+            posts={displayPosts.slice(0, block.postCount || 6)}
+            title={block.title}
+            theme={theme}
+            showDate={block.showDate}
+            showCategory={block.showCategory}
+            autoplay={block.autoplay}
+            interval={block.rotationInterval}
+          />
+        );
+
+      case "dual_columns":
+        return (
+          <DualCategoryColumnsBlock
+            key={block.id}
+            posts={displayPosts.slice(0, block.postCount || 6)}
+            title={block.title}
+            theme={theme}
+            showExcerpt={block.showExcerpt}
+            showAuthor={block.showAuthor}
+            showDate={block.showDate}
+            showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
+            col1Title={block.col1Title}
+            col2Title={block.col2Title}
+          />
+        );
+
+      case "numbered_strip":
+        return (
+          <CompactNumberedGridBlock
+            key={block.id}
+            posts={displayPosts.slice(0, block.postCount || 5)}
+            title={block.title}
+            theme={theme}
+            showDate={block.showDate}
+            showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
+          />
+        );
+
+      case "split_cover":
+        return (
+          <SplitHeroFeatureBlock
+            key={block.id}
+            posts={displayPosts.slice(0, block.postCount || 4)}
+            title={block.title}
+            theme={theme}
+            showExcerpt={block.showExcerpt}
+            showAuthor={block.showAuthor}
+            showDate={block.showDate}
+            showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
+          />
+        );
+
+      case "cards_carousel":
+        return (
+          <MultiCardCarouselBlock
+            key={block.id}
+            posts={displayPosts.slice(0, block.postCount || 8)}
+            title={block.title}
+            theme={theme}
+            showAuthor={block.showAuthor}
+            showDate={block.showDate}
+            showCategory={block.showCategory}
+            subtitle={block.subtitle}
+            linkText={block.linkText}
+            linkHref={block.linkHref}
+          />
+        );
     }
   }
 
@@ -456,6 +582,107 @@ export function renderEditorialBlock({
           key={block.id}
           title={block.title}
           theme={theme}
+        />
+      );
+
+    case "featured_hero_slider":
+      return (
+        <FeaturedHeroSliderBlock
+          key={block.id}
+          posts={displayPosts.slice(0, block.postCount || 5)}
+          title={block.title}
+          theme={theme}
+          showExcerpt={block.showExcerpt}
+          showAuthor={block.showAuthor}
+          showDate={block.showDate}
+          showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
+        />
+      );
+
+    case "headline_slider":
+      return <HeadlineSliderBlock key={block.id} posts={displayPosts.slice(0, block.postCount || 5)} title={block.title} theme={theme} showDate={block.showDate} showCategory={block.showCategory} showAuthor={block.showAuthor} showExcerpt={block.showExcerpt} autoplay={block.autoplay} interval={block.rotationInterval} />;
+
+    case "breaking_ticker":
+      return (
+        <BreakingTickerBlock
+          key={block.id}
+          posts={displayPosts.slice(0, block.postCount || 6)}
+          title={block.title}
+          theme={theme}
+          showDate={block.showDate}
+          showCategory={block.showCategory}
+          autoplay={block.autoplay}
+          interval={block.rotationInterval}
+        />
+      );
+
+    case "dual_category_columns":
+      return (
+        <DualCategoryColumnsBlock
+          key={block.id}
+          posts={displayPosts.slice(0, block.postCount || 6)}
+          title={block.title}
+          theme={theme}
+          showExcerpt={block.showExcerpt}
+          showAuthor={block.showAuthor}
+          showDate={block.showDate}
+          showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
+          col1Title={block.col1Title}
+          col2Title={block.col2Title}
+        />
+      );
+
+    case "compact_numbered_grid":
+      return (
+        <CompactNumberedGridBlock
+          key={block.id}
+          posts={displayPosts.slice(0, block.postCount || 5)}
+          title={block.title}
+          theme={theme}
+          showDate={block.showDate}
+          showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
+        />
+      );
+
+    case "split_hero_feature":
+      return (
+        <SplitHeroFeatureBlock
+          key={block.id}
+          posts={displayPosts.slice(0, block.postCount || 4)}
+          title={block.title}
+          theme={theme}
+          showExcerpt={block.showExcerpt}
+          showAuthor={block.showAuthor}
+          showDate={block.showDate}
+          showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
+        />
+      );
+
+    case "multi_card_carousel":
+      return (
+        <MultiCardCarouselBlock
+          key={block.id}
+          posts={displayPosts.slice(0, block.postCount || 8)}
+          title={block.title}
+          theme={theme}
+          showAuthor={block.showAuthor}
+          showDate={block.showDate}
+          showCategory={block.showCategory}
+          subtitle={block.subtitle}
+          linkText={block.linkText}
+          linkHref={block.linkHref}
         />
       );
 

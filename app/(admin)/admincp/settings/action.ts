@@ -3,6 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { setOptions, type SettingsMap } from "@/services/settings.service";
+import { removeSiteLogo } from "@/services/site-logo.service";
+
+export async function removeSettingsLogoAction(): Promise<SaveSettingsResult> {
+  try {
+    await verifyAdminOrEditor();
+    await removeSiteLogo();
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch { return { success: false, error: "admin.settings.logo.remove_error" }; }
+}
 
 export type SaveSettingsResult =
   | { success: true; message?: string }
@@ -15,7 +25,9 @@ export async function saveSettingsAction(
     await verifyAdminOrEditor();
 
     // Sanitize and save entries
-    await setOptions(entries);
+    const values = { ...entries };
+    delete values.site_logo_id; // Branding has its own mutation; stale form state cannot overwrite it.
+    await setOptions(values);
 
     revalidatePath("/admincp/settings");
     revalidatePath("/admincp/customize");

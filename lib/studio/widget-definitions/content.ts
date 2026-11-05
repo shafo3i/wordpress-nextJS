@@ -1,0 +1,97 @@
+import { defineWidget } from "../widget-definition"
+
+export const CONTENT_WIDGETS = {
+  heading: defineWidget("heading", {
+    kind: "widget",
+    icon: "Heading",
+    catalogs: ["atomic", "basic"],
+    renderGroup: "content",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      text: "",
+      htmlTag: "h2",
+      align: "start",
+      fontSize: 32,
+      fontWeight: "700",
+    }),
+  }),
+  paragraph: defineWidget("paragraph", {
+    kind: "widget",
+    icon: "Type",
+    catalogs: ["atomic"],
+    renderGroup: "content",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      text: "",
+      align: "start",
+      fontSize: 16,
+      lineHeight: 1.7,
+    }),
+  }),
+  text_editor: defineWidget("text_editor", {
+    kind: "widget",
+    icon: "FileText",
+    catalogs: ["basic"],
+    renderGroup: "content",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      text: "",
+      align: "start",
+      fontSize: 16,
+      lineHeight: 1.7,
+    }),
+  }),
+  image: defineWidget("image", {
+    kind: "widget",
+    icon: "ImageIcon",
+    catalogs: ["atomic", "basic"],
+    renderGroup: "content",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      imageUrl: "",
+      imageAlt: "",
+      imageHeight: 360,
+      objectFit: "cover",
+      borderRadius: 8,
+    }),
+  }),
+  button: defineWidget("button", {
+    kind: "widget",
+    icon: "RectangleHorizontal",
+    catalogs: ["atomic", "basic"],
+    renderGroup: "content",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      buttonText: "",
+      buttonUrl: "#",
+      buttonVariant: "primary",
+      buttonSize: "md",
+      align: "start",
+      borderRadius: 6,
+    }),
+  }),
+  divider: defineWidget("divider", {
+    kind: "widget",
+    icon: "Minus",
+    catalogs: ["atomic", "basic"],
+    renderGroup: "content",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      dividerStyle: "solid",
+      dividerWeight: 1,
+      dividerColor: "#e2e8f0",
+      paddingTop: 12,
+      paddingBottom: 12,
+    }),
+  }),
+  spacer: defineWidget("spacer", {
+    kind: "widget",
+    icon: "MoveVertical",
+    catalogs: ["basic"],
+    renderGroup: "content",
+    controlGroup: "atomic",
+    createSettings: () => ({
+      spacerHeight: 48,
+    }),
+  }),
+}

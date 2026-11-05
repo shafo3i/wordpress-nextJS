@@ -96,6 +96,7 @@ export interface PostItem {
   pingStatus: string;
   postPassword: string;
   featuredImageId?: string;
+  isFeatured?: boolean;
   languageCode?: string;
   translationGroupId?: string;
   translations?: PostTranslationLink[];
@@ -156,6 +157,7 @@ export interface CreatePostInput {
   postParent?: string | number;
   menuOrder?: number;
   featuredImageId?: string;
+  isFeatured?: boolean;
   categorySlugs?: string[];
   tags?: string[];
   languageCode?: string;
@@ -176,6 +178,7 @@ export interface UpdatePostInput {
   postParent?: string | number;
   menuOrder?: number;
   featuredImageId?: string;
+  isFeatured?: boolean;
   categorySlugs?: string[];
   tags?: string[];
   languageCode?: string;
@@ -186,6 +189,25 @@ export interface UpdatePostInput {
 // ---------------------------------------------------------------------------
 // Term & Meta Helpers
 // ---------------------------------------------------------------------------
+
+async function syncFeaturedPostFlag(
+  postId: bigint,
+  isFeatured?: boolean,
+  database: DB = db
+) {
+  if (isFeatured === undefined) return;
+  await database
+    .delete(wpPostmeta)
+    .where(and(eq(wpPostmeta.postId, postId), eq(wpPostmeta.metaKey, "_is_featured")));
+
+  if (isFeatured) {
+    await database.insert(wpPostmeta).values({
+      postId,
+      metaKey: "_is_featured",
+      metaValue: "1",
+    });
+  }
+}
 
 async function syncFeaturedImage(
   postId: bigint,
@@ -466,9 +488,18 @@ export async function getPosts(
       .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
       .where(inArray(wpTermRelationships.objectId, postIds)),
     database
-      .select({ postId: wpPostmeta.postId, metaValue: wpPostmeta.metaValue })
+      .select({
+        postId: wpPostmeta.postId,
+        metaKey: wpPostmeta.metaKey,
+        metaValue: wpPostmeta.metaValue,
+      })
       .from(wpPostmeta)
-      .where(and(inArray(wpPostmeta.postId, postIds), eq(wpPostmeta.metaKey, "_thumbnail_id"))),
+      .where(
+        and(
+          inArray(wpPostmeta.postId, postIds),
+          inArray(wpPostmeta.metaKey, ["_thumbnail_id", "_is_featured"])
+        )
+      ),
     database
       .select({
         postId: postTranslationsTable.postId,
@@ -506,7 +537,12 @@ export async function getPosts(
     const terms = termRows.filter((t) => t.objectId === post.id);
     const catTerms = terms.filter((t) => t.taxonomy === "category");
     const tagTerms = terms.filter((t) => t.taxonomy === "post_tag");
-    const thumb = metaRows.find((m) => m.postId === post.id);
+    const thumb = metaRows.find(
+      (m) => m.postId === post.id && m.metaKey === "_thumbnail_id"
+    );
+    const featuredRow = metaRows.find(
+      (m) => m.postId === post.id && m.metaKey === "_is_featured"
+    );
     const transInfo = postTransRows.find((t) => t.postId === post.id);
 
     let translations: PostTranslationLink[] | undefined;
@@ -535,6 +571,7 @@ export async function getPosts(
       pingStatus: post.pingStatus,
       postPassword: post.postPassword,
       featuredImageId: thumb?.metaValue ?? undefined,
+      isFeatured: featuredRow?.metaValue === "1",
       languageCode: transInfo?.languageCode,
       translationGroupId: transInfo?.translationGroupId,
       translations,
@@ -603,6 +640,7 @@ export async function getPostById(
     pingStatus: string;
     postPassword: string;
     featuredImageId: string;
+    isFeatured: boolean;
     categorySlugs: string[];
     tags: string[];
     languageCode?: string;
@@ -636,7 +674,7 @@ export async function getPostById(
       .where(
         and(
           eq(wpPostmeta.postId, postId),
-          inArray(wpPostmeta.metaKey, ["_thumbnail_id", ...SEO_META_KEYS])
+          inArray(wpPostmeta.metaKey, ["_thumbnail_id", "_is_featured", ...SEO_META_KEYS])
         )
       ),
     database
@@ -656,6 +694,7 @@ export async function getPostById(
   if (!postRows.length) return null;
   const p = postRows[0];
   const thumb = metaRows.find((m) => m.metaKey === "_thumbnail_id");
+  const isFeatured = metaRows.find((m) => m.metaKey === "_is_featured")?.metaValue === "1";
   const seoTitle = metaRows.find((m) => m.metaKey === "_seo_title")?.metaValue ?? undefined;
   const seoDescription = metaRows.find((m) => m.metaKey === "_seo_description")?.metaValue ?? undefined;
   const seoOgImage = metaRows.find((m) => m.metaKey === "_seo_og_image")?.metaValue ?? undefined;
@@ -677,6 +716,7 @@ export async function getPostById(
       pingStatus: p.pingStatus,
       postPassword: p.postPassword,
       featuredImageId: thumb?.metaValue ?? "",
+      isFeatured,
       categorySlugs: catSlugs,
       tags: tagNames,
       languageCode: langInfo?.languageCode,
@@ -819,6 +859,7 @@ export async function createPost(
   const newId = inserted[0].id;
 
   await syncFeaturedImage(newId, featuredImageId, database);
+  await syncFeaturedPostFlag(newId, input.isFeatured, database);
   await syncPostTerms(newId, categorySlugs, tags, database);
 
   if (input.seo) {
@@ -886,6 +927,9 @@ export async function updatePost(
 
   if (input.featuredImageId !== undefined) {
     await syncFeaturedImage(postId, input.featuredImageId, database);
+  }
+  if (input.isFeatured !== undefined) {
+    await syncFeaturedPostFlag(postId, input.isFeatured, database);
   }
 
   if (input.categorySlugs !== undefined || input.tags !== undefined) {

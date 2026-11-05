@@ -6,6 +6,8 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 export function MetaBoxPublish({
   status,
   onStatusChange,
+  isFeatured = false,
+  onFeaturedChange,
   isPostTypePage = false,
   isExisting = false,
   onTrash,
@@ -15,6 +17,8 @@ export function MetaBoxPublish({
 }: {
   status: string;
   onStatusChange: (status: string) => void;
+  isFeatured?: boolean;
+  onFeaturedChange?: (featured: boolean) => void;
   isPostTypePage?: boolean;
   isExisting?: boolean;
   onTrash?: () => void;
@@ -206,6 +210,21 @@ export function MetaBoxPublish({
                 {dict?.["admin.editor.publish_immediately"] || "Publish immediately"}
               </span>
             </div>
+
+            {/* Featured Post Toggle (Posts only) */}
+            {!isPostTypePage && onFeaturedChange && (
+              <label className="mt-2 flex items-center gap-2 rounded border border-amber-200 bg-amber-50/70 px-2.5 py-2 text-xs font-medium text-amber-900 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => onFeaturedChange(e.target.checked)}
+                  className="rounded border-amber-400 text-amber-600 focus:ring-amber-500"
+                />
+                <span>
+                  ★ {dict?.["admin.editor.featured_post"] || "Featured Post (Hero Slider)"}
+                </span>
+              </label>
+            )}
           </div>
 
           {/* Bottom Actions: Move to Trash & Publish Button */}

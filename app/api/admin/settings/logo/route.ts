@@ -1,0 +1,70 @@
+import { NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
+import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { SITE_LOGO_MAX_BYTES } from "@/db/schema/cms-site-logo"
+import { SiteLogoError, uploadSiteLogo } from "@/services/site-logo.service"
+
+export const runtime = "nodejs"
+const response = (body: unknown, status = 200) =>
+  NextResponse.json(body, {
+    status,
+    headers: { "Cache-Control": "private, no-store", Vary: "Cookie" },
+  })
+
+export async function POST(request: Request) {
+  let userId: string
+  try {
+    userId = (await verifyAdminOrEditor()).user.id
+  } catch {
+    return response({ error: "admin.settings.logo.unauthorized" }, 401)
+  }
+  const origin = request.headers.get("origin")
+  if (
+    (origin && origin !== new URL(request.url).origin) ||
+    request.headers.get("sec-fetch-site") === "cross-site"
+  )
+    return response({ error: "admin.settings.logo.unauthorized" }, 403)
+  try {
+    // Bound the actual request stream, including requests without Content-Length.
+    const maxBody = SITE_LOGO_MAX_BYTES + 64 * 1024
+    const reader = request.body?.getReader()
+    if (!reader) throw new SiteLogoError("admin.settings.logo.invalid_file")
+    const chunks: Uint8Array[] = []
+    let length = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      length += value.byteLength
+      if (length > maxBody) {
+        await reader.cancel()
+        throw new SiteLogoError("admin.settings.logo.invalid_file")
+      }
+      chunks.push(value)
+    }
+    const form = await new Request(request.url, {
+      method: "POST",
+      headers: { "Content-Type": request.headers.get("content-type") || "" },
+      body: Buffer.concat(chunks),
+    })
+      .formData()
+      .catch(() => {
+        throw new SiteLogoError("admin.settings.logo.invalid_file")
+      })
+    const files = form.getAll("file")
+    if (files.length !== 1 || !(files[0] instanceof File))
+      throw new SiteLogoError("admin.settings.logo.invalid_file")
+    const logo = await uploadSiteLogo(files[0], userId)
+    revalidatePath("/", "layout")
+    return response({ logo })
+  } catch (error) {
+    return response(
+      {
+        error:
+          error instanceof SiteLogoError
+            ? error.message
+            : "admin.settings.logo.upload_error",
+      },
+      error instanceof SiteLogoError ? 400 : 500
+    )
+  }
+}

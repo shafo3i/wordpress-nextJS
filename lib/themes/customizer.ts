@@ -11,6 +11,7 @@ import type { CustomizerSection } from "@/lib/customizer/types";
 import { applyFilters } from "@/lib/plugins/hooks";
 import { getActivePluginSlugs } from "@/lib/plugins/loader";
 import { getThemeModule, hasTheme, resolveThemeSlug } from "@/themes/registry";
+import { getGlobalSiteLogo } from "@/services/site-logo.service";
 
 export type { CustomizerPayload };
 
@@ -75,7 +76,8 @@ export async function getCustomizerData(targetThemeSlug?: string): Promise<Custo
       console.error(`Failed to parse theme_mods_${slug}:`, e);
     }
   }
-  const mods: ThemeMods = resolveMods(slug, stored);
+  const globalLogo = await getGlobalSiteLogo();
+  const mods: ThemeMods = { ...resolveMods(slug, stored), ...(globalLogo ? { logoUrl: globalLogo.url } : {}) };
 
   // Load primary nav items for live preview
   let primaryNav: MenuItem[] = [
@@ -131,7 +133,9 @@ export async function getCustomizerData(targetThemeSlug?: string): Promise<Custo
  */
 export async function getCustomizerSections(themeSlug: string): Promise<CustomizerSection[]> {
   const sections = buildSections(themeSlug, getPluginSections(await getActivePluginSlugs()));
-  return applyFilters<CustomizerSection[]>("customizer_sections", sections, { themeSlug });
+  const globalLogo = await getGlobalSiteLogo();
+  const visible = globalLogo ? sections.map(section => ({ ...section, groups: section.groups.map(group => ({ ...group, settings: group.settings.filter(setting => setting.id !== "logoUrl") })) })) : sections;
+  return applyFilters<CustomizerSection[]>("customizer_sections", visible, { themeSlug });
 }
 
 /**

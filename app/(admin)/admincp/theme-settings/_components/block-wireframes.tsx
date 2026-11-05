@@ -6,6 +6,13 @@ interface WireframeProps {
   active?: boolean;
 }
 
+export function HeadlineCoverWireframe({ className = "w-9 h-6", active = false }: WireframeProps) {
+  return <svg viewBox="0 0 36 24" fill="none" className={className} aria-hidden="true">
+    <rect x="1" y="1" width="34" height="22" fill={active ? "#bfdbfe" : "#cbd5e1"} stroke={active ? "#2271b1" : "#64748b"} />
+    <path d="M4 7h14M4 10h17M4 13h12M26 5h6M26 8h6M26 11h6M26 14h6M26 17h6M4 20h8" stroke={active ? "#2271b1" : "#64748b"} />
+  </svg>
+}
+
 /**
  * Visual Layout Wireframe Diagrams for WordPress Magazine Blocks
  * These render geometric layout wireframes showing exact article placement
@@ -356,6 +363,99 @@ export function NewsletterWireframe({ className = "w-9 h-6", active = false }: W
   );
 }
 
+// Featured Hero Slider + Right Spotlight Stack
+export function FeaturedSliderWireframe({ className = "w-9 h-6", active = false }: WireframeProps) {
+  const stroke = active ? "#2271b1" : "#64748b";
+  const heroFill = active ? "#1e293b" : "#334155";
+  const starFill = "#f59e0b";
+  const sideFill = active ? "#bfdbfe" : "#cbd5e1";
+
+  return (
+    <svg viewBox="0 0 36 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="34" height="22" rx="2" stroke={stroke} strokeWidth="1" />
+      {/* Left Hero Slide with Star Badge */}
+      <rect x="3" y="3" width="20" height="18" rx="1.5" fill={heroFill} />
+      <circle cx="6.5" cy="6.5" r="2" fill={starFill} />
+      <rect x="5" y="15" width="14" height="2" rx="0.5" fill="#ffffff" />
+      <rect x="5" y="18" width="9" height="1.5" rx="0.5" fill="#94a3b8" />
+      {/* Right 3 Featured Queue Items */}
+      <rect x="24.5" y="3" width="8.5" height="5" rx="1" fill={sideFill} />
+      <rect x="24.5" y="9.5" width="8.5" height="5" rx="1" fill={sideFill} />
+      <rect x="24.5" y="16" width="8.5" height="5" rx="1" fill={sideFill} />
+    </svg>
+  );
+}
+
+// Breaking News Ticker Bar
+export function BreakingBarWireframe({ className = "w-9 h-6", active = false }: WireframeProps) {
+  const stroke = active ? "#2271b1" : "#64748b";
+  const badgeFill = active ? "#2271b1" : "#dc2626";
+  const lineFill = active ? "#93c5fd" : "#94a3b8";
+
+  return (
+    <svg viewBox="0 0 36 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="34" height="22" rx="2" stroke={stroke} strokeWidth="1" />
+      <rect x="3" y="8" width="30" height="8" rx="1.5" fill="#f8fafc" stroke={stroke} strokeWidth="0.8" />
+      <rect x="4.5" y="9.5" width="7" height="5" rx="1" fill={badgeFill} />
+      <rect x="13" y="11" width="15" height="2" rx="0.5" fill={lineFill} />
+    </svg>
+  );
+}
+
+// Dual Category Split (2 Side-by-Side Columns)
+export function DualColumnsWireframe({ className = "w-9 h-6", active = false }: WireframeProps) {
+  const stroke = active ? "#2271b1" : "#64748b";
+  const leadFill = active ? "#2271b1" : "#64748b";
+  const subFill = active ? "#bfdbfe" : "#cbd5e1";
+
+  return (
+    <svg viewBox="0 0 36 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="34" height="22" rx="2" stroke={stroke} strokeWidth="1" />
+      <rect x="3" y="3" width="14" height="8" rx="1" fill={leadFill} />
+      <rect x="3" y="12.5" width="14" height="3.5" rx="0.5" fill={subFill} />
+      <rect x="3" y="17" width="14" height="3.5" rx="0.5" fill={subFill} />
+
+      <rect x="19" y="3" width="14" height="8" rx="1" fill={leadFill} opacity="0.85" />
+      <rect x="19" y="12.5" width="14" height="3.5" rx="0.5" fill={subFill} />
+      <rect x="19" y="17" width="14" height="3.5" rx="0.5" fill={subFill} />
+    </svg>
+  );
+}
+
+// Split 50/50 Cover Story
+export function SplitCoverWireframe({ className = "w-9 h-6", active = false }: WireframeProps) {
+  const stroke = active ? "#2271b1" : "#64748b";
+  const imgFill = active ? "#2271b1" : "#475569";
+  const textFill = active ? "#93c5fd" : "#cbd5e1";
+
+  return (
+    <svg viewBox="0 0 36 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="34" height="22" rx="2" stroke={stroke} strokeWidth="1" />
+      <rect x="3" y="3" width="16" height="18" rx="1" fill={imgFill} />
+      <rect x="21" y="5" width="11" height="2.5" rx="0.5" fill={imgFill} />
+      <rect x="21" y="9" width="11" height="2" rx="0.5" fill={textFill} />
+      <rect x="21" y="12" width="9" height="2" rx="0.5" fill={textFill} />
+      <rect x="21" y="16.5" width="7" height="3" rx="1" fill={imgFill} />
+    </svg>
+  );
+}
+
+// Multi-Card Horizontal Carousel
+export function CardsCarouselWireframe({ className = "w-9 h-6", active = false }: WireframeProps) {
+  const stroke = active ? "#2271b1" : "#64748b";
+  const cardFill = active ? "#2271b1" : "#475569";
+
+  return (
+    <svg viewBox="0 0 36 24" fill="none" className={className} xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="34" height="22" rx="2" stroke={stroke} strokeWidth="1" />
+      <rect x="3" y="4" width="6.5" height="16" rx="1" fill={cardFill} />
+      <rect x="10.8" y="4" width="6.5" height="16" rx="1" fill={cardFill} opacity="0.85" />
+      <rect x="18.6" y="4" width="6.5" height="16" rx="1" fill={cardFill} opacity="0.7" />
+      <rect x="26.4" y="4" width="6.5" height="16" rx="1" fill={cardFill} opacity="0.55" />
+    </svg>
+  );
+}
+
 /**
  * Helper to render the appropriate wireframe for a block type or display style
  */
@@ -373,6 +473,9 @@ export function BlockWireframeIcon({
   const style = displayStyle || (type as unknown as BlockDisplayStyle);
 
   switch (style) {
+    case "headline_cover":
+    case "headline_slider" as unknown:
+      return <HeadlineCoverWireframe className={className} active={active} />;
     case "bento":
     case "magazine_bento" as unknown:
       return <BentoWireframe className={className} active={active} />;
@@ -397,6 +500,24 @@ export function BlockWireframeIcon({
       return <Broadsheet3ColWireframe className={className} active={active} />;
     case "hero_slider":
       return <HeroSliderWireframe className={className} active={active} />;
+    case "featured_slider":
+    case "featured_hero_slider" as unknown:
+      return <FeaturedSliderWireframe className={className} active={active} />;
+    case "breaking_bar":
+    case "breaking_ticker" as unknown:
+      return <BreakingBarWireframe className={className} active={active} />;
+    case "dual_columns":
+    case "dual_category_columns" as unknown:
+      return <DualColumnsWireframe className={className} active={active} />;
+    case "numbered_strip":
+    case "compact_numbered_grid" as unknown:
+      return <TrendingWireframe className={className} active={active} />;
+    case "split_cover":
+    case "split_hero_feature" as unknown:
+      return <SplitCoverWireframe className={className} active={active} />;
+    case "cards_carousel":
+    case "multi_card_carousel" as unknown:
+      return <CardsCarouselWireframe className={className} active={active} />;
     case "overlay_cards":
     case "visual_grid" as unknown:
       return <OverlayCardsWireframe className={className} active={active} />;

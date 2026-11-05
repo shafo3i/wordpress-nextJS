@@ -22,6 +22,8 @@ export type PageRowData = {
     postId: string;
     title: string;
   }[];
+  isStudioBuilder?: boolean;
+  isFrontPage?: boolean;
 };
 
 function formatPageDate(value: string) {
@@ -104,6 +106,16 @@ export function PageRowItem({
               {" "}— {dict["admin.common.private"] || "Private"}
             </span>
           )}
+          {page.isFrontPage && (
+            <span className="text-[13px] font-semibold text-[#1d2327]">
+              {" "}— {dict["admin.pages.front_page"] || "Front Page"}
+            </span>
+          )}
+          {page.isStudioBuilder && (
+            <span className="text-[13px] font-semibold text-[#2563eb]">
+              {" "}— {dict["admin.studio.badge"] || "Studio"}
+            </span>
+          )}
         </div>
 
         {/* WordPress Row Actions on Hover */}
@@ -115,6 +127,13 @@ export function PageRowItem({
                 href={`${basePath}/${page.id}/edit`}
               >
                 {dict["admin.common.edit"] || "Edit"}
+              </Link>
+              <span>|</span>
+              <Link
+                className="font-medium text-[#2563eb] hover:text-[#1d4ed8] hover:underline"
+                href={`/admincp/studio/${page.id}`}
+              >
+                {dict["admin.studio.edit_with_studio"] || "Edit with Studio"}
               </Link>
               <span>|</span>
               <button

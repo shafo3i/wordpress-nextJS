@@ -1,6 +1,6 @@
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getSettingsQuery } from "./query";
+import { getSettingsQuery, getSettingsPagesQuery, getSettingsLogoQuery } from "./query";
 import { SettingsForm } from "./_components/settings-form";
 
 export const dynamic = "force-dynamic";
@@ -8,9 +8,11 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   await verifyAdminOrEditor();
 
-  const [langContext, settings] = await Promise.all([
+  const [langContext, settings, pages, logo] = await Promise.all([
     getAdminLanguageContext(),
     getSettingsQuery(),
+    getSettingsPagesQuery(),
+    getSettingsLogoQuery(),
   ]);
 
   const dict = langContext.dict;
@@ -37,6 +39,8 @@ export default async function SettingsPage() {
         {/* Settings Form */}
         <SettingsForm
           initialSettings={settings}
+          initialLogoUrl={logo.url}
+          pages={pages}
           dict={dict}
           direction={direction}
         />

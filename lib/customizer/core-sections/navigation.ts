@@ -10,6 +10,8 @@ export const navigationSection: CustomizerSection = {
     {
       id: "nav",
       settings: [
+        { id: "navHeight", type: "range", label: "", labelKey: "admin.customizer.setting.navHeight", default: 56, min: 40, max: 88, step: 2, unit: "px", cssVar: "--theme-nav-height", cssUnit: "px" },
+        { id: "navItemSpacing", type: "range", label: "", labelKey: "admin.customizer.setting.navItemSpacing", default: 16, min: 8, max: 32, step: 1, unit: "px", cssVar: "--theme-nav-item-spacing", cssUnit: "px" },
         {
           id: "navAlignment",
           type: "button-group",

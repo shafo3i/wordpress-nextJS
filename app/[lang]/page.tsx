@@ -1,10 +1,17 @@
+import { PublicAdminBar } from "@/components/site/admin/public-admin-bar";
+import { resolveStudioPageContent } from '@/services/studio-content.service';
 import { notFound, redirect } from "next/navigation";
 import { NewsHome, PageTemplate } from "@/components/site/news-patterns";
-import { getPublishedPageBySlug, getPublishedPosts } from "@/lib/site-content";
+import {
+  getPublishedPageById,
+  getPublishedPageBySlug,
+  getPublishedPosts,
+} from "@/lib/site-content";
 import { getFrontEndThemeContext } from "@/lib/site-theme";
 import { getHomepageSettings } from "@/lib/themes/homepage-blocks";
 import { getAllWidgetAreas } from "@/lib/widgets/db";
 import { getActiveLanguages, getDefaultLanguage, getPostTranslations } from "@/services/language.service";
+import { getOptions } from "@/services/settings.service";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +43,12 @@ export default async function LocalizedRootRoute({
       redirect("/");
     }
 
-    const [posts, theme, settings, widgetAreas] = await Promise.all([
+    const [posts, theme, settings, widgetAreas, frontOptions] = await Promise.all([
       getPublishedPosts(20, lang),
       getFrontEndThemeContext({ locale: lang, currentPath: `/${lang}` }),
       getHomepageSettings(),
       getAllWidgetAreas(),
+      getOptions(["show_on_front", "page_on_front"]),
     ]);
 
     const primarySidebar = widgetAreas.find((a) => a.id === "sidebar_primary")?.items || [];
@@ -52,8 +60,26 @@ export default async function LocalizedRootRoute({
       col4: widgetAreas.find((a) => a.id === "footer_4")?.items || [],
     };
 
+    if (frontOptions.show_on_front === "page" && frontOptions.page_on_front) {
+      const frontPage = await getPublishedPageById(frontOptions.page_on_front, lang);
+      if (frontPage) {
+        return (
+          <PublicAdminBar pageId={frontPage.id} siteTitle={theme.siteTitle}>
+        <PageTemplate
+            page={await resolveStudioPageContent(frontPage, theme.locale || frontPage.locale || "")}
+            relatedPosts={posts}
+            sidebarWidgets={primarySidebar}
+            theme={theme}
+            footerWidgets={footerWidgets}
+          />
+      </PublicAdminBar>
+        );
+      }
+    }
+
     return (
-      <NewsHome
+      <PublicAdminBar siteTitle={theme.siteTitle}>
+    <NewsHome
         posts={posts}
         theme={theme}
         settings={settings}
@@ -61,6 +87,7 @@ export default async function LocalizedRootRoute({
         secondarySidebar={secondarySidebar}
         footerWidgets={footerWidgets}
       />
+      </PublicAdminBar>
     );
   }
 
@@ -76,7 +103,7 @@ export default async function LocalizedRootRoute({
       locale: defaultLocale,
       currentPath: `/${lang}`,
     }),
-    getPublishedPosts(5, defaultLocale),
+    getPublishedPosts(20, defaultLocale),
     getAllWidgetAreas(),
   ]);
 
@@ -102,7 +129,7 @@ export default async function LocalizedRootRoute({
 
   return (
     <PageTemplate
-      page={page}
+      page={await resolveStudioPageContent(page, theme.locale || page.locale || "")}
       relatedPosts={relatedPosts.filter((post) => post.slug !== lang)}
       sidebarWidgets={primarySidebar}
       theme={theme}

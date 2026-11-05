@@ -10,6 +10,9 @@ import {
   setPostLanguage,
   type LinkedPostTranslation,
 } from "./language.service";
+import { getOption } from "./settings.service";
+import { parseStudioDocument } from "@/lib/studio/tree-helpers";
+import type { StudioDocumentData } from "@/lib/studio/types";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -84,6 +87,8 @@ export interface PageItem {
   languageCode?: string;
   translationGroupId?: string;
   translations?: PageTranslationLink[];
+  isStudioBuilder?: boolean;
+  isFrontPage?: boolean;
 }
 
 export interface GetPagesOptions {
@@ -253,11 +258,24 @@ export async function getPages(
   }
 
   // Comments count
-  const commentRows = await database
-    .select({ postId: wpComments.commentPostId, count: count() })
-    .from(wpComments)
-    .where(inArray(wpComments.commentPostId, pageIds))
-    .groupBy(wpComments.commentPostId);
+  const [commentRows, studioMetaRows, showOnFront, pageOnFront] = await Promise.all([
+    database
+      .select({ postId: wpComments.commentPostId, count: count() })
+      .from(wpComments)
+      .where(inArray(wpComments.commentPostId, pageIds))
+      .groupBy(wpComments.commentPostId),
+    database
+      .select({ postId: wpPostmeta.postId, metaValue: wpPostmeta.metaValue })
+      .from(wpPostmeta)
+      .where(
+        and(
+          inArray(wpPostmeta.postId, pageIds),
+          eq(wpPostmeta.metaKey, "_studio_edit_mode")
+        )
+      ),
+    getOption("show_on_front", "posts", database),
+    getOption("page_on_front", "", database),
+  ]);
 
   // Translation mapping for these pages
   const postTransRows = await database
@@ -294,6 +312,7 @@ export async function getPages(
   const pages: PageItem[] = rows.map((pageItem) => {
     const comment = commentRows.find((c) => c.postId === pageItem.id);
     const transInfo = postTransRows.find((t) => t.postId === pageItem.id);
+    const studioMeta = studioMetaRows.find((m) => m.postId === pageItem.id);
 
     const relatedTranslations: PageTranslationLink[] = [];
     if (transInfo?.translationGroupId) {
@@ -308,8 +327,10 @@ export async function getPages(
         });
     }
 
+    const idStr = pageItem.id.toString();
+
     return {
-      id: pageItem.id.toString(),
+      id: idStr,
       title: pageItem.title,
       slug: pageItem.slug,
       status: pageItem.status,
@@ -323,6 +344,8 @@ export async function getPages(
       languageCode: transInfo?.languageCode,
       translationGroupId: transInfo?.translationGroupId,
       translations: relatedTranslations,
+      isStudioBuilder: studioMeta?.metaValue === "builder",
+      isFrontPage: showOnFront === "page" && pageOnFront === idStr,
     };
   });
 
@@ -387,13 +410,16 @@ export async function getPageById(
     featuredImageId: string;
     languageCode?: string;
     translationGroupId?: string;
+    isStudioBuilder: boolean;
+    studioData: StudioDocumentData;
+    isFrontPage: boolean;
   };
   translations: LinkedPostTranslation[];
 } | null> {
   const pageId = toBigInt(id);
   if (pageId <= BigInt(0)) return null;
 
-  const [pageRows, metaRows, langInfo, translations] = await Promise.all([
+  const [pageRows, metaRows, langInfo, translations, showOnFront, pageOnFront] = await Promise.all([
     database
       .select({
         id: wpPosts.id,
@@ -416,21 +442,32 @@ export async function getPageById(
       .where(
         and(
           eq(wpPostmeta.postId, pageId),
-          inArray(wpPostmeta.metaKey, ["_thumbnail_id", "_wp_page_template"])
+          inArray(wpPostmeta.metaKey, [
+            "_thumbnail_id",
+            "_wp_page_template",
+            "_studio_edit_mode",
+            "_studio_data",
+          ])
         )
       ),
     getPostLanguage(pageId, database),
     getPostTranslations(pageId, database),
+    getOption("show_on_front", "posts", database),
+    getOption("page_on_front", "", database),
   ]);
 
   if (!pageRows.length) return null;
   const p = pageRows[0];
   const thumbRow = metaRows.find((m) => m.metaKey === "_thumbnail_id");
   const templateRow = metaRows.find((m) => m.metaKey === "_wp_page_template");
+  const studioModeRow = metaRows.find((m) => m.metaKey === "_studio_edit_mode");
+  const studioDataRow = metaRows.find((m) => m.metaKey === "_studio_data");
+
+  const idStr = p.id.toString();
 
   return {
     page: {
-      id: p.id.toString(),
+      id: idStr,
       title: p.title,
       content: p.content,
       excerpt: p.excerpt,
@@ -444,6 +481,9 @@ export async function getPageById(
       featuredImageId: thumbRow?.metaValue || "",
       languageCode: langInfo?.languageCode,
       translationGroupId: langInfo?.translationGroupId,
+      isStudioBuilder: studioModeRow?.metaValue === "builder",
+      studioData: parseStudioDocument(studioDataRow?.metaValue),
+      isFrontPage: showOnFront === "page" && pageOnFront === idStr,
     },
     translations,
   };
@@ -750,4 +790,51 @@ export async function deletePages(
     // Delete pages
     await tx.delete(wpPosts).where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "page")));
   });
+}
+
+// ---------------------------------------------------------------------------
+// Studio Builder Services
+// ---------------------------------------------------------------------------
+
+export { saveStudioPageData, setPageStudioMode } from "./studio-document.service";
+
+export async function createDraftStudioPage(
+  input: {
+    title: string;
+    languageCode?: string;
+    translationOf?: string;
+    userId?: string;
+  },
+  database: DB = db
+): Promise<string> {
+  const title = (input.title || "").trim() || "Studio Page";
+  const newIdStr = await createPage(
+    {
+      title,
+      status: "draft",
+      template: "studio_full_width",
+      languageCode: input.languageCode,
+      translationOf: input.translationOf,
+      userId: input.userId,
+    },
+    database
+  );
+
+  const pageId = toBigInt(newIdStr);
+  const initialDoc = parseStudioDocument(null);
+
+  await database.insert(wpPostmeta).values([
+    {
+      postId: pageId,
+      metaKey: "_studio_edit_mode",
+      metaValue: "builder",
+    },
+    {
+      postId: pageId,
+      metaKey: "_studio_data",
+      metaValue: JSON.stringify(initialDoc),
+    },
+  ]);
+
+  return newIdStr;
 }

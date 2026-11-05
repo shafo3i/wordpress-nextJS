@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toast";
 import { getSiteMetadata } from "@/services/settings.service";
 import { getActiveFaviconUrl } from "@/lib/themes/customizer";
+import TanStackProvider from "../components/providers/tanstack-provider"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -31,7 +32,9 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <TanStackProvider>{children}</TanStackProvider>
+        </ThemeProvider>
         <Toaster />
       </body>
     </html>

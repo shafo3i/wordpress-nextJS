@@ -1,6 +1,7 @@
 export type HomepageLayout = "full_width" | "right_sidebar" | "left_sidebar" | "dual_sidebar";
 
 export type BlockDisplayStyle =
+  | "headline_cover"
   | "bento"
   | "lead_side_list"
   | "lead_right_side_list"
@@ -9,16 +10,24 @@ export type BlockDisplayStyle =
   | "list_thumb_left"
   | "list_thumb_right"
   | "hero_slider"
+  | "featured_slider"
   | "broadsheet_wire"
   | "overlay_cards"
-  | "minimal_text";
+  | "minimal_text"
+  | "breaking_bar"
+  | "dual_columns"
+  | "numbered_strip"
+  | "split_cover"
+  | "cards_carousel";
 
 export type ImageRatio = "landscape" | "square" | "portrait" | "none";
 
 export type HomepageBlockType =
+  | "headline_slider"
   | "magazine_bento"
   | "broadsheet_3col"
   | "hero_slider"
+  | "featured_hero_slider"
   | "big_lead_side_list"
   | "news_list"
   | "visual_grid"
@@ -28,6 +37,11 @@ export type HomepageBlockType =
   | "opinion"
   | "newsletter"
   | "multimedia"
+  | "breaking_ticker"
+  | "dual_category_columns"
+  | "compact_numbered_grid"
+  | "split_hero_feature"
+  | "multi_card_carousel"
   | "hero"; // backwards compatibility alias for big_lead_side_list
 
 export type HomepageBlock = {
@@ -37,6 +51,12 @@ export type HomepageBlock = {
   titles?: Record<string, string>;
   enabled: boolean;
   categorySlug?: string;
+  categoryId?: string;
+  contentLocale?: string;
+  sortOrder?: "newest" | "oldest";
+  autoplay?: boolean;
+  rotationInterval?: number;
+  featuredOnly?: boolean;
   postCount?: number;
   order: number;
   // News Display Presentation Controls

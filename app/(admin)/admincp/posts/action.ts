@@ -47,6 +47,7 @@ function parsePostFormData(formData: FormData) {
 
   const postPassword = String(formData.get("postPassword") ?? "");
   const featuredImageId = String(formData.get("featuredImageId") ?? "").trim();
+  const isFeatured = formData.get("isFeatured") === "1";
 
   const categorySlugs = String(formData.get("categorySlugs") ?? "")
     .split(",")
@@ -76,6 +77,7 @@ function parsePostFormData(formData: FormData) {
     pingStatus,
     postPassword,
     featuredImageId,
+    isFeatured,
     categorySlugs,
     tags,
     languageCode,

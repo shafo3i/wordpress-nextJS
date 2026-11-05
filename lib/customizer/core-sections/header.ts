@@ -10,6 +10,7 @@ export const headerSection: CustomizerSection = {
     {
       id: "layout",
       settings: [
+        { id: "mastheadPadding", type: "range", label: "", labelKey: "admin.customizer.setting.mastheadPadding", default: 24, min: 8, max: 64, step: 2, unit: "px", cssVar: "--theme-masthead-padding", cssUnit: "px" },
         {
           id: "headerLayout",
           type: "radio-cards",
