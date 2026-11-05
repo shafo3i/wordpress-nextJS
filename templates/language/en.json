@@ -2051,10 +2051,11 @@
   "admin.settings.logo.upload": "Upload and apply logo",
   "admin.settings.logo.remove": "Remove logo",
   "admin.settings.logo.saving": "Saving logo?",
-  "admin.settings.logo.help": "PNG, JPEG or WebP, up to 2 MB. Logo changes apply immediately and are saved separately from other settings. Adjust display width in the theme customizer.",
+  "admin.settings.logo.help": "PNG, JPEG or WebP, up to 2 MB. Save Changes uploads the selected logo along with your settings. You can also apply the logo immediately using the upload button. Adjust display width in the theme customizer.",
   "admin.settings.logo.saved": "Site logo updated.",
   "admin.settings.logo.invalid_file": "Choose a valid PNG, JPEG or WebP image under 2 MB. Animated images and SVG are not supported.",
   "admin.settings.logo.upload_error": "The logo could not be uploaded. Please try again.",
   "admin.settings.logo.remove_error": "The logo could not be removed. Please try again.",
-  "admin.settings.logo.unauthorized": "You must be signed in as an administrator or editor."
+  "admin.settings.logo.unauthorized": "You must be signed in as an administrator or editor.",
+  "admin.settings.logo.pending": "Logo selected ? use Save Changes or Upload and apply logo to publish it:"
 }

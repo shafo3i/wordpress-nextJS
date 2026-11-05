@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import {
@@ -9,16 +9,12 @@ import {
 } from "@/db/schema/cms-site-logo"
 import { removeSettingsLogoAction } from "../action"
 
-export function SettingsLogo({
-  initialUrl,
-  dict,
-}: {
-  initialUrl: string
-  dict: Record<string, string>
-}) {
+export function useSettingsLogo(
+  initialUrl: string,
+  onSelectionChange?: () => void
+) {
   const [url, setUrl] = useState(initialUrl)
   const [file, setFile] = useState<File | null>(null)
-  const input = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const mutation = useMutation({
     mutationFn: async (file: File | null) => {
@@ -44,13 +40,37 @@ export function SettingsLogo({
     onSuccess: (value) => {
       setUrl(value)
       setFile(null)
-      if (input.current) input.current.value = ""
       router.refresh()
     },
   })
+  return {
+    url,
+    file,
+    mutation,
+    chooseFile: (value: File | null) => {
+      setFile(value)
+      mutation.reset()
+      onSelectionChange?.()
+    },
+    savePending: async () => {
+      if (file) await mutation.mutateAsync(file)
+    },
+  }
+}
+
+export function SettingsLogo({
+  controller,
+  dict,
+  busy = false,
+}: {
+  controller: ReturnType<typeof useSettingsLogo>
+  dict: Record<string, string>
+  busy?: boolean
+}) {
+  const { url, file, mutation, chooseFile } = controller
   return (
     <fieldset
-      disabled={mutation.isPending}
+      disabled={busy || mutation.isPending}
       className="space-y-3 border-b border-[#c3c4c7] pb-6"
     >
       <legend className="text-[16px] font-semibold text-[#1d2327]">
@@ -72,12 +92,11 @@ export function SettingsLogo({
         <label className="space-y-1 text-[13px] text-[#1d2327]">
           <span className="block">{dict["admin.settings.logo.choose"]}</span>
           <input
-            ref={input}
+            key={url}
             type="file"
             accept={SITE_LOGO_ACCEPT}
             onChange={(event) => {
-              setFile(event.target.files?.[0] || null)
-              mutation.reset()
+              chooseFile(event.target.files?.[0] || null)
             }}
             className="block max-w-full text-[13px]"
           />
@@ -111,6 +130,11 @@ export function SettingsLogo({
       <p className="text-[12px] text-[#646970]">
         {dict["admin.settings.logo.help"]}
       </p>
+      {file && (
+        <p role="status" className="text-[13px] text-[#996800]">
+          {dict["admin.settings.logo.pending"]} <strong>{file.name}</strong>
+        </p>
+      )}
       {mutation.isError && (
         <p role="alert" className="text-[13px] text-[#b32d2e]">
           {dict[mutation.error.message] ||

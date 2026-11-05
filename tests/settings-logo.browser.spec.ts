@@ -54,18 +54,29 @@ test("Settings logo uploads, renders in both languages, and removes without chan
     await page
       .getByLabel("Choose a logo image", { exact: true })
       .setInputFiles({ name: "logo-test.png", mimeType: "image/png", buffer })
+    await expect(
+      page.getByRole("status").filter({ hasText: "Logo selected" })
+    ).toBeVisible()
+    // A pending file must survive tab changes and the main form's Save Changes.
+    await page
+      .getByRole("button", { name: "SEO & Indexing", exact: true })
+      .click()
     const uploaded = page.waitForResponse(
       (response) =>
         response.url().endsWith("/api/admin/settings/logo") &&
         response.request().method() === "POST"
     )
     await page
-      .getByRole("button", { name: "Upload and apply logo", exact: true })
+      .getByRole("button", { name: "Save Changes", exact: true })
       .click()
     const response = await uploaded
     expect(response.status()).toBe(200)
     logo = (await response.json()).logo
     expect(logo).toBeTruthy()
+    await expect(
+      page.getByText("Settings saved successfully.", { exact: true })
+    ).toBeVisible()
+    await page.getByRole("button", { name: "General", exact: true }).click()
     await expect(
       page.getByRole("img", { name: "Current site logo", exact: true })
     ).toHaveAttribute("src", logo!.url)
@@ -85,6 +96,27 @@ test("Settings logo uploads, renders in both languages, and removes without chan
     await page.goto(`${baseURL}/`)
     await expect(page.locator("header img")).toHaveCount(0)
     await expect(page.locator("footer img")).toHaveCount(0)
+    await page.goto(`${baseURL}/admincp/settings`)
+    await page
+      .getByLabel("Choose a logo image", { exact: true })
+      .setInputFiles({
+        name: "invalid.png",
+        mimeType: "image/png",
+        buffer: Buffer.from("not an image"),
+      })
+    const rejected = page.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/admin/settings/logo") &&
+        response.request().method() === "POST"
+    )
+    await page
+      .getByRole("button", { name: "Save Changes", exact: true })
+      .click()
+    expect((await rejected).status()).toBe(400)
+    await expect(page.getByRole("group", { name: "Site logo", exact: true }).getByRole("alert")).toBeVisible()
+    await expect(
+      page.getByText("Settings saved successfully.", { exact: true })
+    ).toHaveCount(0)
     expect(
       (
         await client.query(

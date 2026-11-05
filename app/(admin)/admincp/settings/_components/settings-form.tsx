@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { saveSettingsAction, sendTestEmailAction } from "../action";
 import type { SettingsMap } from "@/services/settings.service";
 import { MediaSelectModal } from "@/components/admin/media-select-modal";
-import { SettingsLogo } from "./settings-logo";
+import { SettingsLogo, useSettingsLogo } from "./settings-logo";
 import {
   Globe,
   Search,
@@ -40,6 +40,7 @@ export function SettingsForm({
   const [settings, setSettings] = useState<SettingsMap>(initialSettings);
   const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const logo = useSettingsLogo(initialLogoUrl, () => setNotice(null));
 
   // SMTP Test Email state
   const [testEmail, setTestEmail] = useState("");
@@ -86,19 +87,39 @@ export function SettingsForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (logo.mutation.isPending) return;
     setNotice(null);
 
     startTransition(async () => {
-      const res = await saveSettingsAction(settings);
-      if (res.success) {
-        setNotice({
-          type: "success",
-          message: dict["admin.settings.saved_notice"] || res.message || "Settings saved successfully.",
-        });
-      } else {
+      try {
+        await logo.savePending();
+        const changes = Object.fromEntries(
+          Object.entries(settings).filter(
+            ([key, value]) => initialSettings[key] !== value,
+          ),
+        );
+        const res = await saveSettingsAction(changes);
+        if (res.success) {
+          setNotice({
+            type: "success",
+            message:
+              dict["admin.settings.saved_notice"] ||
+              res.message ||
+              "Settings saved successfully.",
+          });
+        } else {
+          setNotice({
+            type: "error",
+            message: res.error || "Failed to save settings.",
+          });
+        }
+      } catch (error) {
         setNotice({
           type: "error",
-          message: res.error || "Failed to save settings.",
+          message:
+            dict[error instanceof Error ? error.message : ""] ||
+            dict["admin.settings.logo.upload_error"] ||
+            "",
         });
       }
     });
@@ -189,7 +210,7 @@ export function SettingsForm({
         {/* ========================================================================= */}
         {activeTab === "general" && (
           <div className="space-y-6">
-            <SettingsLogo initialUrl={initialLogoUrl} dict={dict} />
+            <SettingsLogo controller={logo} dict={dict} busy={isPending} />
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
                 {dict["admin.settings.general_heading"] || "General Site Settings"}
@@ -1220,10 +1241,10 @@ export function SettingsForm({
         <div className="mt-8 border-t border-[#dcdcde] pt-5">
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || logo.mutation.isPending}
             className="inline-flex items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-[13px] font-medium text-white shadow-sm hover:border-[#135e96] hover:bg-[#135e96] focus:outline-none disabled:opacity-50"
           >
-            {isPending
+            {isPending || logo.mutation.isPending
               ? (dict["admin.common.saving"] || "Saving Changes...")
               : (dict["admin.settings.save_changes"] || "Save Changes")}
           </button>
