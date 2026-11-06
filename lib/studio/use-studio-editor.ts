@@ -13,7 +13,7 @@ export function useStudioEditor(
   const state = useSyncExternalStore(
     store.subscribe,
     store.getSnapshot,
-    store.getSnapshot
+    store.getServerSnapshot
   )
   const isDirty = isStudioEditorDirty(state)
   useEffect(() => {

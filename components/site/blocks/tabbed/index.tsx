@@ -106,7 +106,7 @@ export function TabbedBlock({
             }}
             className="rounded-2xl border p-4 flex gap-4 transition-all theme-card hover:border-theme-primary"
           >
-            <div className="w-28 sm:w-32 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-theme-border/40">
+            <div data-studio-image className="w-28 sm:w-32 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-theme-border/40">
               <img
                 src={item.imageUrl}
                 alt={item.title}
@@ -115,14 +115,14 @@ export function TabbedBlock({
             </div>
             <div className="flex-1 min-w-0 flex flex-col justify-between">
               <div>
-                <span
+                <span data-studio-category
                   style={{ color: "var(--theme-primary)" }}
                   className="text-[0.625rem] font-bold uppercase tracking-wider block"
                 >
                   {item.categories[0]}
                 </span>
                 <Link href={getPostUrl(item.slug, theme)} className="block mt-0.5">
-                  <h4
+                  <h4 data-studio-title
                     style={{ color: "var(--theme-heading)" }}
                     className={`text-sm font-bold leading-snug line-clamp-2 hover:underline ${
                       isSerif ? "font-serif" : "font-sans"

@@ -24,6 +24,15 @@ const successfulSave: StudioSaveFunction = async (request) => ({
 })
 
 describe("Studio editing history", () => {
+  it("keeps a stable initial snapshot for hydration after edits enter the live store", () => {
+    const editor = create()
+    const server = editor.getServerSnapshot()
+    editor.setTitle("Changed before hydration")
+    expect(editor.getSnapshot().past).toHaveLength(1)
+    expect(editor.getServerSnapshot()).toBe(server)
+    expect(editor.getServerSnapshot().past).toHaveLength(0)
+    expect(editor.getServerSnapshot().present.title).toBe("Page")
+  })
   it("preserves sequential updates before React renders and undoes/redoes page attributes", () => {
     const editor = create()
     editor.setTitle("One")

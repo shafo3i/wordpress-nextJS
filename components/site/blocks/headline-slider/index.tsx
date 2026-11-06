@@ -34,7 +34,7 @@ export function HeadlineSliderBlock({
   const current = posts[rotation.index]
   const rtl = theme.direction === "rtl"
   return (
-    <section
+    <section data-studio-card
       className={styles.slider}
       dir={theme.direction}
       aria-label={title || t("site.headline_slider", theme)}
@@ -58,21 +58,21 @@ export function HeadlineSliderBlock({
       <div key={current.id} className={styles.story}>
         <div>
           {showCategory && current.categories[0] && (
-            <p className={styles.category}>{current.categories[0]}</p>
+            <p data-studio-category className={styles.category}>{current.categories[0]}</p>
           )}
           <Link
             href={getPostUrl(current.slug, theme)}
             className={styles.headline}
           >
-            <h2>{current.title}</h2>
+            <h2 data-studio-title>{current.title}</h2>
           </Link>
           {showExcerpt && current.excerpt && (
-            <p className={styles.excerpt}>{current.excerpt}</p>
+            <p data-studio-excerpt className={styles.excerpt}>{current.excerpt}</p>
           )}
         </div>
         <div className={styles.meta}>
           {showDate && (
-            <time dateTime={new Date(current.date).toISOString()}>
+            <time data-studio-meta dateTime={new Date(current.date).toISOString()}>
               <Clock size={20} aria-hidden="true" />
               {formatDate(current.date, theme.locale)}
             </time>
@@ -96,9 +96,9 @@ export function HeadlineSliderBlock({
             className={styles.queueItem}
           >
             {showCategory && post.categories[0] && (
-              <span>{post.categories[0]}</span>
+              <span data-studio-category>{post.categories[0]}</span>
             )}
-            <strong>{post.title}</strong>
+            <strong data-studio-title>{post.title}</strong>
           </button>
         ))}
       </div>

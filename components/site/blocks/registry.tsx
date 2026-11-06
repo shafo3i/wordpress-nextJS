@@ -1,32 +1,34 @@
-"use client";
+"use client"
 
-import React from "react";
-import type { ContentItem } from "@/lib/site-content";
-import type { FrontEndThemeContext } from "@/lib/site-theme";
-import type { HomepageBlock } from "@/lib/themes/homepage-types";
+import React from "react"
+import { CompactPostsBlock } from "./compact-posts"
+import type { StudioDesign } from "@/db/schema/cms-studio-design"
+import type { ContentItem } from "@/lib/site-content"
+import type { FrontEndThemeContext } from "@/lib/site-theme"
+import type { HomepageBlock } from "@/lib/themes/homepage-types"
 
 // Modular block imports
-import { MagazineBentoBlock } from "./bento";
-import { Broadsheet3ColBlock } from "./broadsheet";
-import { HeroSliderBlock } from "./hero-slider";
-import { HeadlineSliderBlock } from "./headline-slider";
-import { BigLeadSideListBlock } from "./big-lead";
-import { NewsListViewBlock } from "./news-list";
-import { CardsGridBlock } from "./cards-grid";
-import { VisualGridBlock } from "./visual-grid";
-import { MinimalTextWireBlock } from "./minimal-text";
-import { TabbedBlock } from "./tabbed";
-import { TrendingBlock } from "./trending";
-import { OpinionBlock } from "./opinion";
-import { MultimediaBlock } from "./multimedia";
-import { NewsletterBlock } from "./newsletter";
-import { CategoryGridBlock } from "./category-grid";
-import { FeaturedHeroSliderBlock } from "./featured-hero-slider";
-import { BreakingTickerBlock } from "./breaking-ticker";
-import { DualCategoryColumnsBlock } from "./dual-category";
-import { CompactNumberedGridBlock } from "./compact-numbered";
-import { SplitHeroFeatureBlock } from "./split-hero";
-import { MultiCardCarouselBlock } from "./multi-carousel";
+import { MagazineBentoBlock } from "./bento"
+import { Broadsheet3ColBlock } from "./broadsheet"
+import { HeroSliderBlock } from "./hero-slider"
+import { HeadlineSliderBlock } from "./headline-slider"
+import { BigLeadSideListBlock } from "./big-lead"
+import { NewsListViewBlock } from "./news-list"
+import { CardsGridBlock } from "./cards-grid"
+import { VisualGridBlock } from "./visual-grid"
+import { MinimalTextWireBlock } from "./minimal-text"
+import { TabbedBlock } from "./tabbed"
+import { TrendingBlock } from "./trending"
+import { OpinionBlock } from "./opinion"
+import { MultimediaBlock } from "./multimedia"
+import { NewsletterBlock } from "./newsletter"
+import { CategoryGridBlock } from "./category-grid"
+import { FeaturedHeroSliderBlock } from "./featured-hero-slider"
+import { BreakingTickerBlock } from "./breaking-ticker"
+import { DualCategoryColumnsBlock } from "./dual-category"
+import { CompactNumberedGridBlock } from "./compact-numbered"
+import { SplitHeroFeatureBlock } from "./split-hero"
+import { MultiCardCarouselBlock } from "./multi-carousel"
 
 // Export all individual blocks for direct usage
 export {
@@ -50,7 +52,7 @@ export {
   CompactNumberedGridBlock,
   SplitHeroFeatureBlock,
   MultiCardCarouselBlock,
-};
+}
 
 /**
  * Dispatches and renders any of the 12+ editorial blocks cleanly based on block.type and block.displayStyle
@@ -60,22 +62,22 @@ export function renderEditorialBlock({
   posts,
   theme,
   preFiltered = false,
+  design,
 }: {
-  block: HomepageBlock;
-  posts: ContentItem[];
-  theme: FrontEndThemeContext;
-  preFiltered?: boolean;
+  block: HomepageBlock
+  posts: ContentItem[]
+  theme: FrontEndThemeContext
+  preFiltered?: boolean
+  design?: StudioDesign
 }): React.ReactNode {
-  if (!rawBlock.enabled) return null;
+  if (!rawBlock.enabled) return null
 
-  const activeLocale = theme.locale || theme.defaultLocale || "en";
+  const activeLocale = theme.locale || theme.defaultLocale || "en"
   const localizedTitle =
-    (rawBlock.titles && rawBlock.titles[activeLocale]) ||
-    rawBlock.title ||
-    "";
+    (rawBlock.titles && rawBlock.titles[activeLocale]) || rawBlock.title || ""
   const localizedSubtitle =
     (rawBlock.subtitles && rawBlock.subtitles[activeLocale]) ||
-    rawBlock.subtitle;
+    rawBlock.subtitle
 
   const block: HomepageBlock = {
     ...rawBlock,
@@ -83,7 +85,7 @@ export function renderEditorialBlock({
     subtitle: rawBlock.showTitle === false ? undefined : localizedSubtitle,
     linkText: rawBlock.showTitle === false ? undefined : rawBlock.linkText,
     linkHref: rawBlock.showTitle === false ? undefined : rawBlock.linkHref,
-  };
+  }
 
   // Filter posts by category if specified
   const categoryFiltered =
@@ -93,26 +95,54 @@ export function renderEditorialBlock({
             (c) => c.toLowerCase() === block.categorySlug!.toLowerCase()
           )
         )
-      : posts;
+      : posts
 
   // Filter by featured posts if requested (with graceful fallback to categoryFiltered if none are marked yet)
-  const shouldFilterFeatured = !preFiltered && (
-    block.featuredOnly ||
-    block.type === "featured_hero_slider" ||
-    block.displayStyle === "featured_slider");
+  const shouldFilterFeatured =
+    !preFiltered &&
+    (block.featuredOnly ||
+      block.type === "featured_hero_slider" ||
+      block.displayStyle === "featured_slider")
 
   const featuredMatches = shouldFilterFeatured
     ? categoryFiltered.filter((p) => p.isFeatured)
-    : categoryFiltered;
+    : categoryFiltered
 
   const displayPosts =
-    featuredMatches.length > 0 ? featuredMatches : categoryFiltered;
+    featuredMatches.length > 0 ? featuredMatches : categoryFiltered
+
+  if (
+    block.displayStyle === "compact_posts" ||
+    (!block.displayStyle &&
+      (block.type === "recent_posts" || block.type === "popular_posts"))
+  )
+    return (
+      <CompactPostsBlock
+        posts={displayPosts.slice(0, block.postCount || 5)}
+        block={block}
+        theme={theme}
+        design={design}
+      />
+    )
 
   // 1. Style override takes highest priority if specified
   if (block.displayStyle) {
     switch (block.displayStyle) {
       case "headline_cover":
-        return <HeadlineSliderBlock key={block.id} posts={displayPosts.slice(0, block.postCount || 5)} title={block.title} theme={theme} showDate={block.showDate} showCategory={block.showCategory} showAuthor={block.showAuthor} showExcerpt={block.showExcerpt} autoplay={block.autoplay} interval={block.rotationInterval} />;
+        return (
+          <HeadlineSliderBlock
+            key={block.id}
+            posts={displayPosts.slice(0, block.postCount || 5)}
+            title={block.title}
+            theme={theme}
+            showDate={block.showDate}
+            showCategory={block.showCategory}
+            showAuthor={block.showAuthor}
+            showExcerpt={block.showExcerpt}
+            autoplay={block.autoplay}
+            interval={block.rotationInterval}
+          />
+        )
       case "bento":
         return (
           <MagazineBentoBlock
@@ -128,7 +158,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "lead_side_list":
         return (
@@ -146,7 +176,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "lead_right_side_list":
         return (
@@ -164,7 +194,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "grid_3":
         return (
@@ -182,7 +212,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "grid_4":
         return (
@@ -200,7 +230,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "list_thumb_left":
         return (
@@ -217,8 +247,9 @@ export function renderEditorialBlock({
             subtitle={block.subtitle}
             linkText={block.linkText}
             linkHref={block.linkHref}
+            excerptLength={design?.excerptLength}
           />
-        );
+        )
 
       case "list_thumb_right":
         return (
@@ -235,8 +266,9 @@ export function renderEditorialBlock({
             subtitle={block.subtitle}
             linkText={block.linkText}
             linkHref={block.linkHref}
+            excerptLength={design?.excerptLength}
           />
-        );
+        )
 
       case "broadsheet_wire":
         return (
@@ -257,7 +289,7 @@ export function renderEditorialBlock({
             col2Title={block.col2Title}
             col3Title={block.col3Title}
           />
-        );
+        )
 
       case "hero_slider":
         return (
@@ -272,7 +304,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "overlay_cards":
         return (
@@ -288,7 +320,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "minimal_text":
         return (
@@ -304,8 +336,9 @@ export function renderEditorialBlock({
             subtitle={block.subtitle}
             linkText={block.linkText}
             linkHref={block.linkHref}
+            excerptLength={design?.excerptLength}
           />
-        );
+        )
 
       case "featured_slider":
         return (
@@ -322,7 +355,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "breaking_bar":
         return (
@@ -336,7 +369,7 @@ export function renderEditorialBlock({
             autoplay={block.autoplay}
             interval={block.rotationInterval}
           />
-        );
+        )
 
       case "dual_columns":
         return (
@@ -355,7 +388,7 @@ export function renderEditorialBlock({
             col1Title={block.col1Title}
             col2Title={block.col2Title}
           />
-        );
+        )
 
       case "numbered_strip":
         return (
@@ -370,7 +403,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "split_cover":
         return (
@@ -387,7 +420,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
 
       case "cards_carousel":
         return (
@@ -403,7 +436,7 @@ export function renderEditorialBlock({
             linkText={block.linkText}
             linkHref={block.linkHref}
           />
-        );
+        )
     }
   }
 
@@ -424,7 +457,7 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "broadsheet_3col":
       return (
@@ -445,7 +478,7 @@ export function renderEditorialBlock({
           col2Title={block.col2Title}
           col3Title={block.col3Title}
         />
-      );
+      )
 
     case "hero_slider":
       return (
@@ -460,7 +493,7 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "big_lead_side_list":
     case "hero":
@@ -479,7 +512,7 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "news_list":
       return (
@@ -495,8 +528,9 @@ export function renderEditorialBlock({
           subtitle={block.subtitle}
           linkText={block.linkText}
           linkHref={block.linkHref}
+          excerptLength={design?.excerptLength}
         />
-      );
+      )
 
     case "visual_grid":
       return (
@@ -512,7 +546,7 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "category_grid":
       return (
@@ -530,7 +564,7 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "tabbed_block":
       return (
@@ -540,7 +574,7 @@ export function renderEditorialBlock({
           title={block.title}
           theme={theme}
         />
-      );
+      )
 
     case "trending":
       return (
@@ -551,7 +585,7 @@ export function renderEditorialBlock({
           theme={theme}
           postCount={block.postCount || 5}
         />
-      );
+      )
 
     case "opinion":
       return (
@@ -565,25 +599,17 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "multimedia":
       return (
-        <MultimediaBlock
-          key={block.id}
-          title={block.title}
-          theme={theme}
-        />
-      );
+        <MultimediaBlock key={block.id} title={block.title} theme={theme} />
+      )
 
     case "newsletter":
       return (
-        <NewsletterBlock
-          key={block.id}
-          title={block.title}
-          theme={theme}
-        />
-      );
+        <NewsletterBlock key={block.id} title={block.title} theme={theme} />
+      )
 
     case "featured_hero_slider":
       return (
@@ -600,10 +626,23 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "headline_slider":
-      return <HeadlineSliderBlock key={block.id} posts={displayPosts.slice(0, block.postCount || 5)} title={block.title} theme={theme} showDate={block.showDate} showCategory={block.showCategory} showAuthor={block.showAuthor} showExcerpt={block.showExcerpt} autoplay={block.autoplay} interval={block.rotationInterval} />;
+      return (
+        <HeadlineSliderBlock
+          key={block.id}
+          posts={displayPosts.slice(0, block.postCount || 5)}
+          title={block.title}
+          theme={theme}
+          showDate={block.showDate}
+          showCategory={block.showCategory}
+          showAuthor={block.showAuthor}
+          showExcerpt={block.showExcerpt}
+          autoplay={block.autoplay}
+          interval={block.rotationInterval}
+        />
+      )
 
     case "breaking_ticker":
       return (
@@ -617,7 +656,7 @@ export function renderEditorialBlock({
           autoplay={block.autoplay}
           interval={block.rotationInterval}
         />
-      );
+      )
 
     case "dual_category_columns":
       return (
@@ -636,7 +675,7 @@ export function renderEditorialBlock({
           col1Title={block.col1Title}
           col2Title={block.col2Title}
         />
-      );
+      )
 
     case "compact_numbered_grid":
       return (
@@ -651,7 +690,7 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "split_hero_feature":
       return (
@@ -668,7 +707,7 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     case "multi_card_carousel":
       return (
@@ -684,9 +723,9 @@ export function renderEditorialBlock({
           linkText={block.linkText}
           linkHref={block.linkHref}
         />
-      );
+      )
 
     default:
-      return null;
+      return null
   }
 }

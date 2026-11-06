@@ -55,7 +55,7 @@ export function SplitHeroFeatureBlock({
         theme={theme}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden border border-theme-border bg-theme-surface shadow-md">
+      <div data-studio-card className="grid grid-cols-1 lg:grid-cols-12 rounded-2xl overflow-hidden border border-theme-border bg-theme-surface shadow-md">
         {/* Left/Start 6 Cols: Editorial Cover Image */}
         <Link
           href={getPostUrl(lead.slug, theme)}
@@ -78,7 +78,7 @@ export function SplitHeroFeatureBlock({
         <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between space-y-5">
           <div className="space-y-3.5">
             {showCategory && lead.categories[0] && (
-              <span
+              <span data-studio-category
                 style={{ backgroundColor: theme.primaryColor }}
                 className="inline-block rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white"
               >
@@ -87,7 +87,7 @@ export function SplitHeroFeatureBlock({
             )}
 
             <Link href={getPostUrl(lead.slug, theme)} className="block">
-              <h3
+              <h3 data-studio-title
                 className={`text-2xl sm:text-3xl font-black leading-tight text-theme-heading hover:text-theme-primary transition-colors ${
                   isSerif ? "font-serif" : "font-sans"
                 }`}
@@ -97,7 +97,7 @@ export function SplitHeroFeatureBlock({
             </Link>
 
             {showExcerpt && (
-              <p className="text-xs sm:text-sm text-theme-text leading-relaxed line-clamp-3">
+              <p data-studio-excerpt className="text-xs sm:text-sm text-theme-text leading-relaxed line-clamp-3">
                 {getExcerpt(lead, 200)}
               </p>
             )}
@@ -131,7 +131,7 @@ export function SplitHeroFeatureBlock({
       {secondary.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
           {secondary.map((item) => (
-            <Link
+            <Link data-studio-card
               key={item.id}
               href={getPostUrl(item.slug, theme)}
               className="flex items-center gap-3 rounded-xl border border-theme-border bg-theme-surface p-3 hover:border-theme-primary transition-colors"
@@ -142,7 +142,7 @@ export function SplitHeroFeatureBlock({
                 className="w-16 h-14 rounded-lg object-cover shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <h5
+                <h5 data-studio-title
                   className={`text-xs font-bold leading-snug line-clamp-2 text-theme-heading ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}

@@ -60,13 +60,13 @@ export function VisualGridBlock({
 
             <div className="relative z-10 space-y-2">
               {showCategory && (
-                <span className="rounded bg-theme-overlay/20 backdrop-blur-sm px-2.5 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider text-theme-overlay inline-block">
+                <span data-studio-category className="rounded bg-theme-overlay/20 backdrop-blur-sm px-2.5 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider text-theme-overlay inline-block">
                   {item.categories[0] || t("site.photo_feature", theme, "Photo Feature")}
                 </span>
               )}
 
               <Link href={getPostUrl(item.slug, theme)} className="block">
-                <h3
+                <h3 data-studio-title
                   className={`text-lg font-bold leading-snug text-theme-overlay hover:underline ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}

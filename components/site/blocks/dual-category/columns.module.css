@@ -1,0 +1,47 @@
+.section {
+  container-type: inline-size;
+  min-width: 0;
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-gap, 24px);
+}
+.card {
+  min-width: 0;
+  border: 1px solid var(--theme-border);
+  border-radius: 12px;
+  background: var(--theme-surface);
+  padding: 16px;
+}
+.leadImage {
+  display: block;
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.leadImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumbnail {
+  display: block;
+  width: 64px;
+  height: 48px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@container (min-width: 650px) {
+  .columns[data-dual-columns="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

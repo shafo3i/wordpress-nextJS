@@ -69,7 +69,7 @@ export function CardsGridBlock({
             <div className="p-4 flex-1 flex flex-col justify-between">
               <div>
                 {showCategory && (
-                  <span
+                  <span data-studio-category
                     style={{ color: "var(--theme-primary)" }}
                     className="text-[0.625rem] font-bold uppercase tracking-wider block mb-1"
                   >
@@ -77,7 +77,7 @@ export function CardsGridBlock({
                   </span>
                 )}
                 <Link href={getPostUrl(item.slug, theme)} className="block">
-                  <h4
+                  <h4 data-studio-title
                     style={{ color: "var(--theme-heading)" }}
                     className={`font-bold leading-snug line-clamp-2 hover:underline text-sm ${
                       isSerif ? "font-serif" : "font-sans"
@@ -87,7 +87,7 @@ export function CardsGridBlock({
                   </h4>
                 </Link>
                 {showExcerpt && (
-                  <p
+                  <p data-studio-excerpt
                     style={{ color: "var(--theme-muted)" }}
                     className="mt-1.5 text-xs line-clamp-2 leading-relaxed"
                   >

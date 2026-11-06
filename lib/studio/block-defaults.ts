@@ -8,6 +8,8 @@ import { generateStudioId } from "./ids"
 const DEFAULT_BLOCK_STYLES: Partial<
   Record<HomepageBlockType, BlockDisplayStyle>
 > = {
+  recent_posts: "compact_posts",
+  popular_posts: "compact_posts",
   headline_slider: "headline_cover",
   magazine_bento: "bento",
   broadsheet_3col: "broadsheet_wire",
@@ -33,11 +35,12 @@ export function createDefaultBlockConfig(
     id: generateStudioId("block"),
     type,
     title: "",
+    sortOrder: type === "popular_posts" ? "popular" : "newest",
     displayStyle: DEFAULT_BLOCK_STYLES[type],
     featuredOnly: type === "featured_hero_slider",
     imageRatio: "landscape",
-    showExcerpt: type !== "headline_slider",
-    showAuthor: type !== "headline_slider",
+    showExcerpt: !["headline_slider", "recent_posts", "popular_posts"].includes(type),
+    showAuthor: !["headline_slider", "recent_posts", "popular_posts"].includes(type),
     showDate: true,
     showCategory: true,
     enabled: true,

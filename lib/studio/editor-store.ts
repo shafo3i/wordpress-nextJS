@@ -43,7 +43,10 @@ export function createStudioEditorStore(
   initial: StudioEditorSnapshot,
   isFrontPage = false
 ) {
-  let state = createStudioEditorState(initial, isFrontPage)
+  // Hydration must read the original server state, even if live commands have
+  // already changed the store before a suspended boundary becomes interactive.
+  const serverSnapshot = createStudioEditorState(initial, isFrontPage)
+  let state = serverSnapshot
   const listeners = new Set<() => void>()
   const dispatch = (action: StudioEditorAction) => {
     const next = studioEditorReducer(state, action)
@@ -63,6 +66,7 @@ export function createStudioEditorStore(
     })
   const store = {
     getSnapshot: () => state,
+    getServerSnapshot: () => serverSnapshot,
     subscribe: (listener: () => void) => {
       listeners.add(listener)
       return () => {

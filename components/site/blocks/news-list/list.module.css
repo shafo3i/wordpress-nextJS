@@ -1,0 +1,45 @@
+.section {
+  container-type: inline-size;
+  min-width: 0;
+}
+.items {
+  display: grid;
+  gap: var(--s-gap, 16px);
+}
+.article {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--theme-border);
+  border-radius: 8px;
+  background: var(--theme-surface);
+  min-width: 0;
+}
+.image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@container (min-width: 520px) {
+  .article {
+    flex-direction: row;
+    gap: 20px;
+  }
+  .reverse {
+    flex-direction: row-reverse;
+  }
+  .image {
+    width: var(--s-thumbnail-width, 176px);
+    aspect-ratio: 4 / 3;
+    align-self: flex-start;
+  }
+}

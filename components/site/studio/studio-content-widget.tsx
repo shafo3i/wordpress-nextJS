@@ -1,3 +1,4 @@
+import { CompactPostsBlock } from "@/components/site/blocks/compact-posts"
 import { useQuery } from "@tanstack/react-query"
 import { renderEditorialBlock } from "@/components/site/blocks/registry"
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer"
@@ -73,6 +74,7 @@ function ResolvedContent({
             isDefaultLocale: result.locale === theme.defaultLocale,
           },
           preFiltered: true,
+          design: element.settings.design,
         })}
       </div>
     )
@@ -88,6 +90,35 @@ function ResolvedContent({
     return null
   if (!settings.widgetId) return null
   const config = sanitizeStudioWidgetConfig(settings.widgetConfig)
+  if (
+    settings.widgetId === "recent_posts" &&
+    (!config.displayStyle ||
+      ["list", "compact"].includes(String(config.displayStyle)))
+  )
+    return (
+      <div dir={result.direction} lang={result.locale}>
+        <CompactPostsBlock
+          posts={result.items}
+          design={settings.design}
+          theme={{
+            ...theme,
+            locale: result.locale,
+            direction: result.direction,
+          }}
+          block={{
+            id: element.id,
+            type: "recent_posts",
+            title: settings.widgetTitle || "",
+            enabled: true,
+            order: 0,
+            imageRatio: config.showThumbnail === false ? "none" : "square",
+            showDate: config.showDate !== false,
+            showExcerpt: Boolean(config.showExcerpt),
+            showCategory: false,
+          }}
+        />
+      </div>
+    )
   const item: WidgetItem = {
     id: element.id,
     type: settings.widgetId,

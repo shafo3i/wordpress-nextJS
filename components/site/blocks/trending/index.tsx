@@ -60,7 +60,7 @@ export function TrendingBlock({
               0{idx + 1}
             </span>
             <Link href={getPostUrl(item.slug, theme)} className="block hover:underline">
-              <h4
+              <h4 data-studio-title
                 style={{ color: "var(--theme-heading)" }}
                 className="text-xs font-bold leading-snug line-clamp-3"
               >

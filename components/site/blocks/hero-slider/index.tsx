@@ -58,7 +58,7 @@ export function HeroSliderBlock({
         theme={theme}
       />
 
-      <div className="relative rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl group">
+      <div data-studio-card className="relative rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl group">
         <img
           src={current.imageUrl}
           alt={current.title}
@@ -69,7 +69,7 @@ export function HeroSliderBlock({
         <div className="relative z-10 space-y-3 max-w-3xl">
           <div className="flex items-center gap-2">
             {showCategory && (
-              <span
+              <span data-studio-category
                 style={{ backgroundColor: theme.primaryColor }}
                 className="rounded-full px-3 py-0.5 text-[0.625rem] font-bold uppercase tracking-wider text-theme-on-primary"
               >
@@ -82,7 +82,7 @@ export function HeroSliderBlock({
           </div>
 
           <Link href={getPostUrl(current.slug, theme)} className="block">
-            <h3
+            <h3 data-studio-title
               className={`text-2xl sm:text-4xl font-black leading-tight tracking-tight text-theme-overlay hover:underline ${
                 isSerif ? "font-serif" : "font-sans"
               }`}
@@ -92,7 +92,7 @@ export function HeroSliderBlock({
           </Link>
 
           {showExcerpt && (
-            <p className="text-xs sm:text-sm text-theme-overlay-muted line-clamp-2 leading-relaxed">
+            <p data-studio-excerpt className="text-xs sm:text-sm text-theme-overlay-muted line-clamp-2 leading-relaxed">
               {getExcerpt(current, 170)}
             </p>
           )}
@@ -130,7 +130,7 @@ export function HeroSliderBlock({
                   : "border-theme-border bg-theme-surface  opacity-70 hover:opacity-100"
               }`}
             >
-              <div className="w-14 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-theme-border/60">
+              <div data-studio-image className="w-14 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-theme-border/60">
                 <img
                   src={item.imageUrl}
                   alt={item.title}
@@ -139,7 +139,7 @@ export function HeroSliderBlock({
               </div>
               <div className="flex-1 min-w-0">
                 <span className="text-[0.5625rem] font-mono text-theme-muted block">0{idx + 1}</span>
-                <h5 className="text-[0.6875rem] font-bold leading-tight truncate text-theme-heading">
+                <h5 data-studio-title className="text-[0.6875rem] font-bold leading-tight truncate text-theme-heading">
                   {item.title}
                 </h5>
               </div>

@@ -85,7 +85,7 @@ export function FeaturedHeroSliderBlock({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         {/* Main Hero Slide Stage (8 cols) */}
-        <div className="lg:col-span-8 relative rounded-2xl overflow-hidden min-h-[400px] sm:min-h-[480px] flex flex-col justify-between p-6 sm:p-10 text-theme-overlay shadow-xl group">
+        <div data-studio-card className="lg:col-span-8 relative rounded-2xl overflow-hidden min-h-[400px] sm:min-h-[480px] flex flex-col justify-between p-6 sm:p-10 text-theme-overlay shadow-xl group">
           <img
             src={current.imageUrl}
             alt={current.title}
@@ -124,7 +124,7 @@ export function FeaturedHeroSliderBlock({
           <div className="relative z-10 space-y-3.5 max-w-3xl">
             <div className="flex flex-wrap items-center gap-2.5 text-xs text-white/80">
               {showCategory && (
-                <span
+                <span data-studio-category
                   style={{ backgroundColor: theme.primaryColor }}
                   className="rounded px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
                 >
@@ -144,7 +144,7 @@ export function FeaturedHeroSliderBlock({
             </div>
 
             <Link href={getPostUrl(current.slug, theme)} className="block">
-              <h3
+              <h3 data-studio-title
                 className={`text-2xl sm:text-4xl font-black leading-tight tracking-tight text-white hover:underline ${
                   isSerif ? "font-serif" : "font-sans"
                 }`}
@@ -154,7 +154,7 @@ export function FeaturedHeroSliderBlock({
             </Link>
 
             {showExcerpt && (
-              <p className="text-xs sm:text-sm text-white/80 line-clamp-2 leading-relaxed">
+              <p data-studio-excerpt className="text-xs sm:text-sm text-white/80 line-clamp-2 leading-relaxed">
                 {getExcerpt(current, 185)}
               </p>
             )}
@@ -207,7 +207,7 @@ export function FeaturedHeroSliderBlock({
                       : "border-transparent hover:border-theme-border hover:bg-theme-bg/60 opacity-80 hover:opacity-100"
                   }`}
                 >
-                  <div className="relative w-16 h-14 rounded-lg overflow-hidden shrink-0 bg-theme-border/50">
+                  <div data-studio-image className="relative w-16 h-14 rounded-lg overflow-hidden shrink-0 bg-theme-border/50">
                     <img
                       src={item.imageUrl}
                       alt={item.title}
@@ -219,11 +219,11 @@ export function FeaturedHeroSliderBlock({
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
                     {showCategory && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary block truncate">
+                      <span data-studio-category className="text-[10px] font-bold uppercase tracking-wider text-theme-primary block truncate">
                         {item.categories[0]}
                       </span>
                     )}
-                    <h4
+                    <h4 data-studio-title
                       className={`text-xs font-bold leading-snug line-clamp-2 text-theme-heading ${
                         isSerif ? "font-serif" : "font-sans"
                       }`}

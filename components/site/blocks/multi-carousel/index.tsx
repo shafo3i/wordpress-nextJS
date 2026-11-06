@@ -106,7 +106,7 @@ export function MultiCardCarouselBlock({
 
             <div className="relative z-10 space-y-2">
               {showCategory && post.categories[0] && (
-                <span
+                <span data-studio-category
                   style={{ backgroundColor: theme.primaryColor }}
                   className="inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
                 >
@@ -115,7 +115,7 @@ export function MultiCardCarouselBlock({
               )}
 
               <Link href={getPostUrl(post.slug, theme)} className="block">
-                <h4
+                <h4 data-studio-title
                   className={`text-base font-extrabold leading-snug line-clamp-2 text-white group-hover:underline ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}

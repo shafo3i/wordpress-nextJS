@@ -1,6 +1,7 @@
 export type HomepageLayout = "full_width" | "right_sidebar" | "left_sidebar" | "dual_sidebar";
 
 export type BlockDisplayStyle =
+  | "compact_posts"
   | "headline_cover"
   | "bento"
   | "lead_side_list"
@@ -23,6 +24,8 @@ export type BlockDisplayStyle =
 export type ImageRatio = "landscape" | "square" | "portrait" | "none";
 
 export type HomepageBlockType =
+  | "recent_posts"
+  | "popular_posts"
   | "headline_slider"
   | "magazine_bento"
   | "broadsheet_3col"
@@ -53,7 +56,7 @@ export type HomepageBlock = {
   categorySlug?: string;
   categoryId?: string;
   contentLocale?: string;
-  sortOrder?: "newest" | "oldest";
+  sortOrder?: "newest" | "oldest" | "popular";
   autoplay?: boolean;
   rotationInterval?: number;
   featuredOnly?: boolean;

@@ -1,10 +1,18 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import type { ContentItem } from "@/lib/site-content";
-import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, getPostUrl, t } from "@/components/site/utils";
+import Link from "next/link"
+import styles from "./list.module.css"
+import type { ContentItem } from "@/lib/site-content"
+import type { FrontEndThemeContext } from "@/lib/site-theme"
+import { ThemeSectionHeader } from "@/components/site/section-header"
+import {
+  DEFAULT_THEME,
+  formatDate,
+  getExcerpt,
+  isSerifHeading,
+  getPostUrl,
+  t,
+} from "@/components/site/utils"
 
 /**
  * 5. NEWS LIST VIEW BLOCK (Supports Thumbnail Left OR Thumbnail Right)
@@ -15,6 +23,7 @@ export function NewsListViewBlock({
   theme = DEFAULT_THEME,
   thumbRight = false,
   showExcerpt = true,
+  excerptLength = 160,
   showAuthor = true,
   showDate = true,
   showCategory = true,
@@ -22,24 +31,25 @@ export function NewsListViewBlock({
   linkText,
   linkHref,
 }: {
-  posts: ContentItem[];
-  title: string;
-  theme?: FrontEndThemeContext;
-  thumbRight?: boolean;
-  showExcerpt?: boolean;
-  showAuthor?: boolean;
-  showDate?: boolean;
-  showCategory?: boolean;
-  subtitle?: string;
-  linkText?: string;
-  linkHref?: string;
+  posts: ContentItem[]
+  title: string
+  theme?: FrontEndThemeContext
+  thumbRight?: boolean
+  showExcerpt?: boolean
+  excerptLength?: number
+  showAuthor?: boolean
+  showDate?: boolean
+  showCategory?: boolean
+  subtitle?: string
+  linkText?: string
+  linkHref?: string
 }) {
-  const isSerif = isSerifHeading(theme);
+  const isSerif = isSerifHeading(theme)
 
-  if (!posts.length) return null;
+  if (!posts.length) return null
 
   return (
-    <section className="space-y-4">
+    <section className={`${styles.section} space-y-4`}>
       <ThemeSectionHeader
         title={title}
         subtitle={subtitle}
@@ -48,7 +58,7 @@ export function NewsListViewBlock({
         theme={theme}
       />
 
-      <div className="space-y-4">
+      <div className={styles.items} data-studio-items>
         {posts.map((item) => (
           <article
             key={item.id}
@@ -56,25 +66,26 @@ export function NewsListViewBlock({
               backgroundColor: "var(--theme-surface)",
               borderColor: "var(--theme-border)",
             }}
-            className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row gap-5 transition-all theme-card hover:border-theme-primary ${
-              thumbRight ? "sm:flex-row-reverse" : ""
-            }`}
+            className={`${styles.article} ${thumbRight ? styles.reverse : ""}`}
           >
-            <div className="w-full sm:w-48 h-36 sm:h-32 rounded-xl overflow-hidden flex-shrink-0 bg-theme-border/40">
+            <div className={styles.image} data-studio-image>
               <img
                 src={item.imageUrl}
                 alt={item.title}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
               />
             </div>
 
-            <div className="flex-1 min-w-0 flex flex-col justify-between">
+            <div className="flex min-w-0 flex-1 flex-col justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-1">
+                <div
+                  data-studio-meta
+                  className="mb-1 flex flex-wrap items-center gap-2"
+                >
                   {showCategory && (
-                    <span
+                    <span data-studio-category
                       style={{ color: "var(--theme-primary)" }}
-                      className="text-[0.625rem] font-bold uppercase tracking-wider"
+                      className="text-[0.625rem] font-bold tracking-wider uppercase"
                     >
                       {item.categories[0]}
                     </span>
@@ -82,9 +93,9 @@ export function NewsListViewBlock({
                   {showDate && (
                     <>
                       <span style={{ color: "var(--theme-muted)" }}>•</span>
-                      <time
+                      <time data-studio-meta
                         style={{ color: "var(--theme-muted)" }}
-                        className="text-[0.6875rem] font-mono"
+                        className="font-mono text-[0.6875rem]"
                       >
                         {formatDate(item.date, theme.locale)}
                       </time>
@@ -93,9 +104,9 @@ export function NewsListViewBlock({
                 </div>
 
                 <Link href={getPostUrl(item.slug, theme)} className="block">
-                  <h3
+                  <h3 data-studio-title
                     style={{ color: "var(--theme-heading)" }}
-                    className={`text-base sm:text-lg font-bold leading-snug hover:underline ${
+                    className={`text-base leading-snug font-bold hover:underline sm:text-lg ${
                       isSerif ? "font-serif" : "font-sans"
                     }`}
                   >
@@ -103,34 +114,37 @@ export function NewsListViewBlock({
                   </h3>
                 </Link>
 
-                {showExcerpt && (
-                  <p
+                {showExcerpt && excerptLength > 0 && (
+                  <p data-studio-excerpt
                     style={{ color: "var(--theme-text)" }}
-                    className="mt-1.5 text-xs line-clamp-2 leading-relaxed"
+                    className="mt-1.5 line-clamp-2 text-xs leading-relaxed"
                   >
-                    {getExcerpt(item, 160)}
+                    {getExcerpt(item, excerptLength)}
                   </p>
                 )}
               </div>
 
               <div
                 style={{ borderColor: "var(--theme-border)" }}
-                className="mt-3 flex items-center justify-between text-xs pt-2 border-t"
+                data-studio-meta
+                className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-xs"
               >
                 {showAuthor && (
                   <span
                     style={{ color: "var(--theme-muted)" }}
                     className="font-medium"
                   >
-                    {t("site.by", theme, "By")} {theme.dict?.[item.authorName] || item.authorName}
+                    {t("site.by", theme, "By")}{" "}
+                    {theme.dict?.[item.authorName] || item.authorName}
                   </span>
                 )}
                 <Link
                   href={getPostUrl(item.slug, theme)}
                   style={{ color: "var(--theme-primary)" }}
-                  className="font-semibold text-xs hover:underline"
+                  className="text-xs font-semibold hover:underline"
                 >
-                  {t("site.read_story", theme, "Read Story")} {theme.direction === "rtl" ? "←" : "→"}
+                  {t("site.read_story", theme, "Read Story")}{" "}
+                  {theme.direction === "rtl" ? "←" : "→"}
                 </Link>
               </div>
             </div>
@@ -138,5 +152,5 @@ export function NewsListViewBlock({
         ))}
       </div>
     </section>
-  );
+  )
 }

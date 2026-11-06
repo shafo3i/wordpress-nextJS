@@ -280,13 +280,17 @@ export function StudioEditorialControls({
                 value={blockConfig.sortOrder || "newest"}
                 onChange={(event) =>
                   updateBlockField({
-                    sortOrder: event.target.value as "newest" | "oldest",
+                    sortOrder: event.target.value as
+                      "newest" | "oldest" | "popular",
                   })
                 }
                 className="w-full rounded border border-slate-300 bg-white px-2.5 py-1.5"
               >
                 <option value="newest">
                   {t("admin.studio.content.newest")}
+                </option>
+                <option value="popular">
+                  {t("admin.studio.content.popular")}
                 </option>
                 <option value="oldest">
                   {t("admin.studio.content.oldest")}
@@ -378,15 +382,46 @@ export function StudioEditorialControls({
             </div>
           )}
 
-          {(blockConfig.type === "headline_slider" || blockConfig.type === "breaking_ticker" || blockConfig.displayStyle === "headline_cover" || blockConfig.displayStyle === "breaking_bar") && (
+          {(blockConfig.type === "headline_slider" ||
+            blockConfig.type === "breaking_ticker" ||
+            blockConfig.displayStyle === "headline_cover" ||
+            blockConfig.displayStyle === "breaking_bar") && (
             <div className="space-y-2 border-t border-slate-200 pt-2.5">
               <label className="flex items-center gap-2">
-                <input type="checkbox" checked={blockConfig.autoplay !== false} onChange={(event) => updateBlockField({ autoplay: event.target.checked })} />
+                <input
+                  type="checkbox"
+                  checked={blockConfig.autoplay !== false}
+                  onChange={(event) =>
+                    updateBlockField({ autoplay: event.target.checked })
+                  }
+                />
                 {t("admin.studio.content.autoplay")}
               </label>
               <label className="block space-y-1">
                 <span>{t("admin.studio.content.rotation_interval")}</span>
-                <input type="number" min={2} max={30} step={0.5} value={(blockConfig.rotationInterval ?? (blockConfig.type === "breaking_ticker" ? 4500 : 5500)) / 1000} onChange={(event) => { const seconds = Number(event.target.value); if (Number.isFinite(seconds) && seconds >= 2 && seconds <= 30) updateBlockField({ rotationInterval: Math.round(seconds * 1000) }) }} className="w-full rounded border border-slate-300 px-2.5 py-1.5" />
+                <input
+                  type="number"
+                  min={2}
+                  max={30}
+                  step={0.5}
+                  value={
+                    (blockConfig.rotationInterval ??
+                      (blockConfig.type === "breaking_ticker" ? 4500 : 5500)) /
+                    1000
+                  }
+                  onChange={(event) => {
+                    const seconds = Number(event.target.value)
+                    if (
+                      Number.isFinite(seconds) &&
+                      seconds >= 2 &&
+                      seconds <= 30
+                    )
+                      updateBlockField({
+                        rotationInterval: Math.round(seconds * 1000),
+                      })
+                  }}
+                  className="w-full rounded border border-slate-300 px-2.5 py-1.5"
+                />
               </label>
             </div>
           )}
@@ -403,7 +438,12 @@ export function StudioEditorialControls({
                     [
                       {
                         id: "headline_cover",
-                        renderIcon: (active: boolean) => <HeadlineCoverWireframe active={active} className="h-5 w-8" />,
+                        renderIcon: (active: boolean) => (
+                          <HeadlineCoverWireframe
+                            active={active}
+                            className="h-5 w-8"
+                          />
+                        ),
                       },
                       {
                         id: "featured_slider",
@@ -502,6 +542,15 @@ export function StudioEditorialControls({
                         id: "grid_4",
                         renderIcon: (active: boolean) => (
                           <Grid4Wireframe active={active} className="h-5 w-8" />
+                        ),
+                      },
+                      {
+                        id: "compact_posts",
+                        renderIcon: (active: boolean) => (
+                          <ListThumbLeftWireframe
+                            active={active}
+                            className="h-5 w-8"
+                          />
                         ),
                       },
                       {

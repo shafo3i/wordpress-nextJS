@@ -1,3 +1,5 @@
+import { effectiveStudioDesign } from "@/lib/studio/design"
+import { StudioDesignSurface } from "./studio-design"
 import type { StudioWidgetProps } from "./studio-widget-types"
 import { StudioContentWidgets } from "./studio-content-widgets"
 import { StudioMediaWidgets } from "./studio-media-widgets"
@@ -22,8 +24,18 @@ export function StudioWidget(props: StudioWidgetProps) {
     definition.renderGroup === "global" ||
     props.element.widgetType === "sidebar"
   )
-    return <StudioContentWidget {...props} />
+    return (
+      <StudioDesignSurface
+        design={effectiveStudioDesign(props.element.settings)}
+      >
+        <StudioContentWidget {...props} />
+      </StudioDesignSurface>
+    )
   const Renderer =
     WIDGET_RENDERERS[definition.renderGroup as keyof typeof WIDGET_RENDERERS]
-  return Renderer ? <Renderer {...props} /> : null
+  return Renderer ? (
+    <StudioDesignSurface design={effectiveStudioDesign(props.element.settings)}>
+      <Renderer {...props} />
+    </StudioDesignSurface>
+  ) : null
 }

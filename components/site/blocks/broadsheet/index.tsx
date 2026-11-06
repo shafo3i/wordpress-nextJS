@@ -1,10 +1,20 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import type { ContentItem } from "@/lib/site-content";
-import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { ThemeSectionHeader } from "@/components/site/section-header";
-import { DEFAULT_THEME, formatDate, getExcerpt, isSerifHeading, isDarkTheme, getPostUrl, getCategoryUrl, t } from "@/components/site/utils";
+import Link from "next/link"
+import styles from "./broadsheet.module.css"
+import type { ContentItem } from "@/lib/site-content"
+import type { FrontEndThemeContext } from "@/lib/site-theme"
+import { ThemeSectionHeader } from "@/components/site/section-header"
+import {
+  DEFAULT_THEME,
+  formatDate,
+  getExcerpt,
+  isSerifHeading,
+  isDarkTheme,
+  getPostUrl,
+  getCategoryUrl,
+  t,
+} from "@/components/site/utils"
 
 /**
  * 2. BROADSHEET 3-COLUMN WIRE BLOCK
@@ -25,131 +35,154 @@ export function Broadsheet3ColBlock({
   col2Title,
   col3Title,
 }: {
-  posts: ContentItem[];
-  title: string;
-  theme?: FrontEndThemeContext;
-  showExcerpt?: boolean;
-  showAuthor?: boolean;
-  showDate?: boolean;
-  showCategory?: boolean;
-  subtitle?: string;
-  linkText?: string;
-  linkHref?: string;
-  showColumnHeaders?: boolean;
-  col1Title?: string;
-  col2Title?: string;
-  col3Title?: string;
+  posts: ContentItem[]
+  title: string
+  theme?: FrontEndThemeContext
+  showExcerpt?: boolean
+  showAuthor?: boolean
+  showDate?: boolean
+  showCategory?: boolean
+  subtitle?: string
+  linkText?: string
+  linkHref?: string
+  showColumnHeaders?: boolean
+  col1Title?: string
+  col2Title?: string
+  col3Title?: string
 }) {
-  const isDark = isDarkTheme(theme);
-  const isSerif = isSerifHeading(theme);
+  const isDark = isDarkTheme(theme)
+  const isSerif = isSerifHeading(theme)
 
-  if (!posts.length) return null;
+  if (!posts.length) return null
 
-  const col1Item = posts[0];
-  const col1Briefs = posts.slice(1, 3);
-  const centerFeature = posts[3] || posts[0];
-  const wirePosts = posts.slice(4, 8);
+  const centerIndex = Math.min(3, posts.length - 1)
+  const col1Item = centerIndex > 0 ? posts[0] : undefined
+  const col1Briefs = posts.slice(1, centerIndex)
+  const centerFeature = posts[centerIndex]
+  const wirePosts = posts.slice(centerIndex + 1)
 
-  const displayCol1 = col1Title ? (theme.dict?.[col1Title] || col1Title) : (showColumnHeaders ? (theme.dict?.["site.column_1_regional"] || "Column I • Regional") : null);
-  const displayCol2 = col2Title ? (theme.dict?.[col2Title] || col2Title) : (showColumnHeaders ? (theme.dict?.["site.column_2_feature"] || "Column II • Center Lead Feature") : null);
-  const displayCol3 = col3Title ? (theme.dict?.[col3Title] || col3Title) : (showColumnHeaders ? (theme.dict?.["site.column_3_wire"] || "Column III • News Wire") : null);
+  const displayCol1 = col1Title
+    ? theme.dict?.[col1Title] || col1Title
+    : showColumnHeaders
+      ? theme.dict?.["site.column_1_regional"] || "Column I • Regional"
+      : null
+  const displayCol2 = col2Title
+    ? theme.dict?.[col2Title] || col2Title
+    : showColumnHeaders
+      ? theme.dict?.["site.column_2_feature"] ||
+        "Column II • Center Lead Feature"
+      : null
+  const displayCol3 = col3Title
+    ? theme.dict?.[col3Title] || col3Title
+    : showColumnHeaders
+      ? theme.dict?.["site.column_3_wire"] || "Column III • News Wire"
+      : null
 
   return (
-    <section className="space-y-4">
+    <section className={`${styles.section} space-y-4`}>
       <ThemeSectionHeader
         title={title}
         subtitle={subtitle}
         linkText={linkText}
-        linkHref={linkHref || (linkText ? getCategoryUrl("all", theme) : undefined)}
+        linkHref={
+          linkHref || (linkText ? getCategoryUrl("all", theme) : undefined)
+        }
         theme={theme}
       />
 
       <div
         style={{ borderColor: "var(--theme-border)" }}
-        className="grid grid-cols-1 lg:grid-cols-12 gap-6 divide-y lg:divide-y-0 lg:divide-x divide-theme-border items-start"
+        className={styles.columns}
+        data-broadsheet-columns={col1Item ? (wirePosts.length ? 3 : 2) : 1}
       >
         {/* Column 1: Left Briefs & Vertical Story (3 cols) */}
-        <div className="lg:col-span-3 space-y-4">
-          {displayCol1 && (
-            <div
-              style={{ borderColor: "var(--theme-border)" }}
-              className="border-b pb-1"
-            >
-              <span
-                style={{ color: "var(--theme-muted)" }}
-                className="text-[0.625rem] font-bold uppercase tracking-widest font-mono"
+        {col1Item && (
+          <div className={`${styles.column} space-y-4`}>
+            {displayCol1 && (
+              <div
+                style={{ borderColor: "var(--theme-border)" }}
+                className="border-b pb-1"
               >
-                {displayCol1}
-              </span>
-            </div>
-          )}
-
-          {col1Item && (
-            <div className="space-y-2">
-              <div className="h-36 rounded-lg overflow-hidden bg-theme-border/40">
-                <img
-                  src={col1Item.imageUrl}
-                  alt={col1Item.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              {showCategory && col1Item.categories?.[0] && (
                 <span
-                  style={{ color: "var(--theme-primary)" }}
-                  className="text-[0.625rem] font-bold uppercase tracking-wider block"
-                >
-                  {col1Item.categories[0]}
-                </span>
-              )}
-              <Link href={getPostUrl(col1Item.slug, theme)} className="block">
-                <h4
-                  style={{ color: "var(--theme-heading)" }}
-                  className={`text-sm font-bold leading-snug hover:underline ${isSerif ? "font-serif" : "font-sans"}`}
-                >
-                  {col1Item.title}
-                </h4>
-              </Link>
-              {showExcerpt && (
-                <p
                   style={{ color: "var(--theme-muted)" }}
-                  className="text-xs line-clamp-2 leading-relaxed"
+                  className="font-mono text-[0.625rem] font-bold tracking-widest uppercase"
                 >
-                  {getExcerpt(col1Item, 90)}
-                </p>
-              )}
-            </div>
-          )}
+                  {displayCol1}
+                </span>
+              </div>
+            )}
 
-          {col1Briefs.length > 0 && (
-            <div
-              style={{ borderColor: "var(--theme-border)" }}
-              className="pt-3 border-t space-y-3"
-            >
-              {col1Briefs.map((item) => (
-                <div key={item.id} className="text-xs space-y-1">
-                  {showDate && (
-                    <span
-                      style={{ color: "var(--theme-muted)" }}
-                      className="text-[0.625rem] font-mono block"
-                    >
-                      {formatDate(item.date, theme.locale)}
-                    </span>
-                  )}
-                  <Link
-                    href={getPostUrl(item.slug, theme)}
-                    style={{ color: "var(--theme-heading)" }}
-                    className="block font-semibold hover:underline"
-                  >
-                    {item.title}
-                  </Link>
+            {col1Item && (
+              <div className="space-y-2">
+                <div data-studio-image className={styles.image}>
+                  <img
+                    src={col1Item.imageUrl}
+                    alt={col1Item.title}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                {showCategory && col1Item.categories?.[0] && (
+                  <span
+                    data-studio-category
+                    style={{ color: "var(--theme-primary)" }}
+                    className="block text-[0.625rem] font-bold tracking-wider uppercase"
+                  >
+                    {col1Item.categories[0]}
+                  </span>
+                )}
+                <Link href={getPostUrl(col1Item.slug, theme)} className="block">
+                  <h4
+                    data-studio-title
+                    style={{ color: "var(--theme-heading)" }}
+                    className={`text-sm leading-snug font-bold hover:underline ${isSerif ? "font-serif" : "font-sans"}`}
+                  >
+                    {col1Item.title}
+                  </h4>
+                </Link>
+                {showExcerpt && (
+                  <p
+                    data-studio-excerpt
+                    style={{ color: "var(--theme-muted)" }}
+                    className="line-clamp-2 text-xs leading-relaxed"
+                  >
+                    {getExcerpt(col1Item, 90)}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {col1Briefs.length > 0 && (
+              <div
+                style={{ borderColor: "var(--theme-border)" }}
+                className="space-y-3 border-t pt-3"
+              >
+                {col1Briefs.map((item) => (
+                  <div key={item.id} className="space-y-1 text-xs">
+                    {showDate && (
+                      <span
+                        style={{ color: "var(--theme-muted)" }}
+                        className="block font-mono text-[0.625rem]"
+                      >
+                        {formatDate(item.date, theme.locale)}
+                      </span>
+                    )}
+                    <Link
+                      data-studio-title
+                      href={getPostUrl(item.slug, theme)}
+                      style={{ color: "var(--theme-heading)" }}
+                      className="block font-semibold hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Column 2: Center Major Feature (6 cols) */}
-        <div className="lg:col-span-6 lg:px-6 pt-4 lg:pt-0 space-y-4">
+        <div className={`${styles.column} ${styles.center} space-y-4`}>
           {displayCol2 && (
             <div
               style={{ borderColor: "var(--theme-border)" }}
@@ -157,18 +190,18 @@ export function Broadsheet3ColBlock({
             >
               <span
                 style={{ color: "var(--theme-muted)" }}
-                className="text-[0.625rem] font-bold uppercase tracking-widest font-mono"
+                className="font-mono text-[0.625rem] font-bold tracking-widest uppercase"
               >
                 {displayCol2}
               </span>
             </div>
           )}
 
-          <div className="h-72 sm:h-80 rounded-xl overflow-hidden bg-theme-border/40 shadow-md">
+          <div data-studio-image className={styles.featureImage}>
             <img
               src={centerFeature.imageUrl}
               alt={centerFeature.title}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
           </div>
 
@@ -176,8 +209,9 @@ export function Broadsheet3ColBlock({
             <div className="flex items-center gap-2">
               {showCategory && centerFeature.categories?.[0] && (
                 <span
+                  data-studio-category
                   style={{ color: "var(--theme-primary)" }}
-                  className="text-xs font-black uppercase tracking-wider"
+                  className="text-xs font-black tracking-wider uppercase"
                 >
                   {centerFeature.categories[0]}
                 </span>
@@ -187,18 +221,24 @@ export function Broadsheet3ColBlock({
                   <span style={{ color: "var(--theme-muted)" }}>•</span>
                   <span
                     style={{ color: "var(--theme-muted)" }}
-                    className="text-xs font-mono"
+                    className="font-mono text-xs"
                   >
-                    {t("site.by", theme, "By")} {theme.dict?.[centerFeature.authorName] || centerFeature.authorName}
+                    {t("site.by", theme, "By")}{" "}
+                    {theme.dict?.[centerFeature.authorName] ||
+                      centerFeature.authorName}
                   </span>
                 </>
               )}
             </div>
 
-            <Link href={getPostUrl(centerFeature.slug, theme)} className="block">
+            <Link
+              href={getPostUrl(centerFeature.slug, theme)}
+              className="block"
+            >
               <h3
+                data-studio-title
                 style={{ color: "var(--theme-heading)" }}
-                className={`text-2xl sm:text-3xl font-black leading-tight tracking-tight hover:underline ${isSerif ? "font-serif" : "font-sans"}`}
+                className={`text-2xl leading-tight font-black tracking-tight hover:underline sm:text-3xl ${isSerif ? "font-serif" : "font-sans"}`}
               >
                 {centerFeature.title}
               </h3>
@@ -206,6 +246,7 @@ export function Broadsheet3ColBlock({
 
             {showExcerpt && (
               <p
+                data-studio-excerpt
                 style={{ color: "var(--theme-text)" }}
                 className="text-sm leading-relaxed"
               >
@@ -215,7 +256,7 @@ export function Broadsheet3ColBlock({
 
             <div
               style={{ borderColor: "var(--theme-border)" }}
-              className="pt-2 flex items-center justify-between text-xs border-t"
+              className="flex items-center justify-between border-t pt-2 text-xs"
             >
               {showDate && (
                 <span
@@ -239,58 +280,65 @@ export function Broadsheet3ColBlock({
         </div>
 
         {/* Column 3: The Wire Desk (3 cols) */}
-        <div className="lg:col-span-3 lg:pl-6 pt-4 lg:pt-0 space-y-4">
-          {displayCol3 && (
-            <div
-              style={{ borderColor: "var(--theme-border)" }}
-              className="border-b pb-1 flex items-center justify-between"
-            >
-              <span
-                style={{ color: "var(--theme-muted)" }}
-                className="text-[0.625rem] font-bold uppercase tracking-widest font-mono"
-              >
-                {displayCol3}
-              </span>
-              <span
-                style={{ backgroundColor: "var(--theme-primary)" }}
-                className="size-2 rounded-full animate-ping"
-              />
-            </div>
-          )}
-
-          <div className="space-y-3.5">
-            {wirePosts.map((item) => (
+        {wirePosts.length > 0 && (
+          <div className={`${styles.column} space-y-4`}>
+            {displayCol3 && (
               <div
-                key={item.id}
                 style={{ borderColor: "var(--theme-border)" }}
-                className="border-b pb-3 last:border-b-0"
+                className="flex items-center justify-between border-b pb-1"
               >
-                {showDate && (
-                  <div className="text-[0.625rem] font-mono text-theme-muted mb-1">
-                    {formatDate(item.date, theme.locale)}
-                  </div>
-                )}
-                <Link href={getPostUrl(item.slug, theme)} className="block">
-                  <h4
-                    style={{ color: "var(--theme-heading)" }}
-                    className={`text-xs font-bold leading-snug hover:underline ${isSerif ? "font-serif" : "font-sans"}`}
-                  >
-                    {item.title}
-                  </h4>
-                </Link>
-                {showAuthor && (
-                  <span
-                    style={{ color: "var(--theme-muted)" }}
-                    className="text-[0.625rem] mt-1 block"
-                  >
-                    {t("site.reported_by", theme, "Reported by")} {theme.dict?.[item.authorName] || item.authorName}
-                  </span>
-                )}
+                <span
+                  style={{ color: "var(--theme-muted)" }}
+                  className="font-mono text-[0.625rem] font-bold tracking-widest uppercase"
+                >
+                  {displayCol3}
+                </span>
+                <span
+                  style={{ backgroundColor: "var(--theme-primary)" }}
+                  className="size-2 animate-ping rounded-full"
+                />
               </div>
-            ))}
+            )}
+
+            <div className={styles.wire} data-studio-items>
+              {wirePosts.map((item) => (
+                <article
+                  key={item.id}
+                  style={{ borderColor: "var(--theme-border)" }}
+                  className="border-b pb-3 last:border-b-0"
+                >
+                  {showDate && (
+                    <time
+                      data-studio-meta
+                      dateTime={new Date(item.date).toISOString()}
+                    >
+                      {formatDate(item.date, theme.locale)}
+                    </time>
+                  )}
+                  <Link href={getPostUrl(item.slug, theme)} className="block">
+                    <h4
+                      data-studio-title
+                      style={{ color: "var(--theme-heading)" }}
+                      className={`text-xs leading-snug font-bold hover:underline ${isSerif ? "font-serif" : "font-sans"}`}
+                    >
+                      {item.title}
+                    </h4>
+                  </Link>
+                  {showAuthor && (
+                    <span
+                      style={{ color: "var(--theme-muted)" }}
+                      className="mt-1 block text-[0.625rem]"
+                    >
+                      {t("site.reported_by", theme, "Reported by")}{" "}
+                      {theme.dict?.[item.authorName] || item.authorName}
+                    </span>
+                  )}
+                </article>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
-  );
+  )
 }

@@ -1,3 +1,4 @@
+import type { StudioDesign } from "@/db/schema/cms-studio-design"
 import type {
   HomepageBlock,
   HomepageBlockType,
@@ -123,6 +124,8 @@ export interface StudioElementSettings {
   widgetTitle?: string
   widgetConfig?: Record<string, unknown>
   widgetLocale?: string
+
+  design?: StudioDesign
 
   // Style Settings
   textColor?: string

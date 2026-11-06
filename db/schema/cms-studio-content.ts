@@ -28,6 +28,6 @@ export const studioContentRequestSchema = z.object({
   ),
   pageSize: z.coerce.number().int().min(1).max(100).default(6),
   page: z.coerce.number().int().min(1).max(1000).default(1),
-  sort: z.enum(["newest", "oldest"]).default("newest"),
+  sort: z.enum(["newest", "oldest", "popular"]).default("newest"),
 })
 export type StudioContentRequest = z.output<typeof studioContentRequestSchema>

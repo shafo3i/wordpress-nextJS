@@ -67,7 +67,7 @@ export function OpinionBlock({
                   {theme.dict?.[item.authorName] || item.authorName}
                 </span>
                 {item.categories?.[0] && (
-                  <span
+                  <span data-studio-category
                     style={{ color: "var(--theme-muted)" }}
                     className="text-[0.625rem]"
                   >
@@ -77,7 +77,7 @@ export function OpinionBlock({
               </div>
             </div>
             <Link href={getPostUrl(item.slug, theme)} className="hover:underline">
-              <h4
+              <h4 data-studio-title
                 style={{ color: "var(--theme-heading)" }}
                 className="font-serif text-base font-bold leading-snug"
               >

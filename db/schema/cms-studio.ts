@@ -1,3 +1,4 @@
+import { studioDesignSchema } from "./cms-studio-design"
 import {
   getStudioWidgetDefinition,
   isStudioElementCompatible,
@@ -52,13 +53,14 @@ const studioBlockSchema: z.ZodType<HomepageBlock> = z.object({
   categorySlug: z.string().max(200).optional(),
   categoryId: studioCategoryIdSchema.optional(),
   contentLocale: studioContentLocaleSchema.optional(),
-  sortOrder: z.enum(["newest", "oldest"]).optional(),
+  sortOrder: z.enum(["newest", "oldest", "popular"]).optional(),
   autoplay: z.boolean().optional(),
   rotationInterval: z.number().int().min(2000).max(30000).optional(),
   featuredOnly: z.boolean().optional(),
   postCount: z.number().int().min(1).max(100).optional(),
   displayStyle: z
     .enum([
+      "compact_posts",
       "headline_cover",
       "bento",
       "lead_side_list",
@@ -231,6 +233,7 @@ export const studioSettingsSchema: z.ZodType<StudioElementSettings> = z.object({
   widgetTitle: z.string().max(100_000).optional(),
   widgetConfig: z.record(z.string(), z.unknown()).optional(),
   widgetLocale: z.string().max(100_000).optional(),
+  design: studioDesignSchema.optional(),
   textColor: z.string().max(100_000).optional(),
   tickerLabelColor: z.string().max(200).optional(),
   tickerLabelBackground: z.string().max(200).optional(),

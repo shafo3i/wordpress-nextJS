@@ -35,6 +35,8 @@ export const STUDIO_WIDGET_REGISTRY = {
 >
 
 export const STUDIO_EDITORIAL_TYPES = [
+  "recent_posts",
+  "popular_posts",
   "headline_slider",
   "featured_hero_slider",
   "hero_slider",

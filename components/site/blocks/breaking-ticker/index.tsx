@@ -103,7 +103,7 @@ export function BreakingTickerBlock({
                   {orderedPosts.map((post) => (
                     <div key={post.id} className={styles.item}>
                       {showDate && (
-                        <time
+                        <time data-studio-meta
                           className={`${styles.meta} hidden sm:inline`}
                           dateTime={new Date(post.date).toISOString()}
                         >
@@ -111,7 +111,7 @@ export function BreakingTickerBlock({
                         </time>
                       )}
                       {showCategory && post.categories[0] && (
-                        <span
+                        <span data-studio-category
                           className={`${styles.meta} hidden uppercase md:inline`}
                         >
                           {post.categories[0]}

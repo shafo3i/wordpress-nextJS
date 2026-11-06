@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "studio-design.browser.spec.ts",
     "admin-runtime.browser.spec.ts",
     "studio-security.browser.spec.ts",
     "studio-content.browser.spec.ts",

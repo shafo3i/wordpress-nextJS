@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, exists, inArray, count } from "drizzle-orm"
+import { and, asc, desc, eq, exists, inArray, count, sql } from "drizzle-orm"
 import { db, type DB } from "@/db"
 import {
   wpPosts,
+  wpComments,
   wpPostmeta,
   wpTerms,
   wpTermTaxonomy,
@@ -125,6 +126,7 @@ export async function getStudioWidgetContent(
           )
       )
     )
+  const popularity = sql<number>`(select count(*)::int from ${wpComments} where ${wpComments.commentPostId} = ${wpPosts.id} and ${wpComments.commentApproved} = ${"1"})`
   const where = and(...conditions)
   const [rows, totals] = await Promise.all([
     database
@@ -136,6 +138,7 @@ export async function getStudioWidgetContent(
         content: wpPosts.postContent,
         date: wpPosts.postDate,
         authorName: user.name,
+        ...(request.sort === "popular" ? { commentCount: popularity } : {}),
       })
       .from(wpPosts)
       .innerJoin(
@@ -145,6 +148,7 @@ export async function getStudioWidgetContent(
       .leftJoin(user, eq(user.id, wpPosts.postAuthor))
       .where(where)
       .orderBy(
+        ...(request.sort === "popular" ? [desc(popularity)] : []),
         request.sort === "oldest"
           ? asc(wpPosts.postDate)
           : desc(wpPosts.postDate),
@@ -231,6 +235,9 @@ export async function getStudioWidgetContent(
     content: "",
     date: row.date,
     authorName: row.authorName || "",
+    ...(request.sort === "popular"
+      ? { commentCount: Number(row.commentCount || 0) }
+      : {}),
     categories: terms
       .filter((term) => term.postId === row.id && term.taxonomy === "category")
       .map((term) => term.name),

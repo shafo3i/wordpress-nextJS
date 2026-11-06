@@ -63,12 +63,12 @@ export function CompactNumberedGridBlock({
               </span>
               <div className="min-w-0 flex-1 space-y-1.5">
                 {showCategory && post.categories[0] && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-theme-primary block truncate">
+                  <span data-studio-category className="text-[10px] font-bold uppercase tracking-wider text-theme-primary block truncate">
                     {post.categories[0]}
                   </span>
                 )}
                 <Link href={getPostUrl(post.slug, theme)}>
-                  <h4
+                  <h4 data-studio-title
                     className={`text-xs sm:text-sm font-bold leading-snug line-clamp-3 text-theme-heading group-hover:text-theme-primary transition-colors ${
                       isSerif ? "font-serif" : "font-sans"
                     }`}

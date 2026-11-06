@@ -17,6 +17,7 @@ export type ContentItem = {
   categories: string[];
   tags: string[];
   imageUrl: string;
+  commentCount?: number;
   isFeatured?: boolean;
   template?: string;
   locale?: string;

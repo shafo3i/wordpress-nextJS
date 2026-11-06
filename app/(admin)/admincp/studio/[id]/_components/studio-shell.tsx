@@ -1,4 +1,5 @@
 "use client"
+import { StudioDesignViewport } from "@/components/site/studio/studio-design"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -268,147 +269,149 @@ export function StudioShell({
           onClick={() => setSelectedId(null)}
           className="flex flex-1 justify-center overflow-y-auto bg-[#d4d8dd] p-0"
         >
-          <div
-            dir={theme.direction || "ltr"}
-            className={`${viewportWidthClass} flex min-h-full flex-col bg-theme-bg text-theme-text shadow-2xl transition-all duration-200`}
-          >
-            {theme.mods && (
-              <ThemeDynamicStyles
-                mods={theme.mods}
-                themeSlug={theme.themeSlug}
-              />
-            )}
-
-            {pageTemplate !== "studio_canvas" && <SiteHeader theme={theme} />}
-
+          <StudioDesignViewport device={device}>
             <div
-              className={
-                pageTemplate === "studio_full_width" ||
-                pageTemplate === "studio_canvas"
-                  ? "flex-1"
-                  : "flex-1 py-6"
-              }
+              dir={theme.direction || "ltr"}
+              className={`${viewportWidthClass} flex min-h-full flex-col bg-theme-bg text-theme-text shadow-2xl transition-all duration-200`}
             >
-              <StudioRenderer
-                widgetContent={initialWidgetContent}
-                contentLocale={activeLocale}
-                pageLocale={pageLocale}
-                liveContent
-                elements={elements}
-                posts={posts}
-                theme={theme}
-                isEditor={!isPreviewMode}
-                selectedId={selectedId}
-                onSelectElement={handleSelectElement}
-                onMoveElement={handleMoveElement}
-                onRelocateElement={editor.relocate}
-                onDuplicateElement={handleDuplicateElement}
-                onDeleteElement={handleDeleteElement}
-                onDropWidgetIntoContainer={handleDropWidgetIntoContainer}
-                onOpenElementsForContainer={(containerId) => {
-                  setSelectedId(containerId)
-                  setPanelMode("elements")
-                }}
-                dict={dict}
-              />
+              {theme.mods && (
+                <ThemeDynamicStyles
+                  mods={theme.mods}
+                  themeSlug={theme.themeSlug}
+                />
+              )}
 
-              {/* Bottom Dashed Add-Section / Drag-Widget Box (Matching Screenshot 2!) */}
-              {!isPreviewMode && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    const raw = e.dataTransfer.getData(
-                      "application/x-studio-widget"
-                    )
-                    if (raw) {
-                      handleAddOrInsertWidget(raw as StudioWidgetType)
-                    }
+              {pageTemplate !== "studio_canvas" && <SiteHeader theme={theme} />}
+
+              <div
+                className={
+                  pageTemplate === "studio_full_width" ||
+                  pageTemplate === "studio_canvas"
+                    ? "flex-1"
+                    : "flex-1 py-6"
+                }
+              >
+                <StudioRenderer
+                  widgetContent={initialWidgetContent}
+                  contentLocale={activeLocale}
+                  pageLocale={pageLocale}
+                  liveContent
+                  elements={elements}
+                  posts={posts}
+                  theme={theme}
+                  isEditor={!isPreviewMode}
+                  selectedId={selectedId}
+                  onSelectElement={handleSelectElement}
+                  onMoveElement={handleMoveElement}
+                  onRelocateElement={editor.relocate}
+                  onDuplicateElement={handleDuplicateElement}
+                  onDeleteElement={handleDeleteElement}
+                  onDropWidgetIntoContainer={handleDropWidgetIntoContainer}
+                  onOpenElementsForContainer={(containerId) => {
+                    setSelectedId(containerId)
+                    setPanelMode("elements")
                   }}
-                  className="mx-auto my-8 max-w-4xl px-4"
-                >
-                  <div className="rounded border border-dashed border-slate-300 bg-white/80 px-6 py-10 text-center shadow-xs">
-                    {showPresetPicker ? (
-                      <div className="space-y-4">
-                        <div className="mx-auto flex max-w-md items-center justify-between">
-                          <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
-                            {dict?.["admin.studio.select_structure"]}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setShowPresetPicker(false)}
-                            className="text-slate-400 hover:text-slate-700"
-                          >
-                            <X className="size-4" />
-                          </button>
-                        </div>
-                        <div className="mx-auto grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
-                          {STRUCTURE_PRESETS.map((preset) => (
+                  dict={dict}
+                />
+
+                {/* Bottom Dashed Add-Section / Drag-Widget Box (Matching Screenshot 2!) */}
+                {!isPreviewMode && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const raw = e.dataTransfer.getData(
+                        "application/x-studio-widget"
+                      )
+                      if (raw) {
+                        handleAddOrInsertWidget(raw as StudioWidgetType)
+                      }
+                    }}
+                    className="mx-auto my-8 max-w-4xl px-4"
+                  >
+                    <div className="rounded border border-dashed border-slate-300 bg-white/80 px-6 py-10 text-center shadow-xs">
+                      {showPresetPicker ? (
+                        <div className="space-y-4">
+                          <div className="mx-auto flex max-w-md items-center justify-between">
+                            <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                              {dict?.["admin.studio.select_structure"]}
+                            </span>
                             <button
-                              key={preset.id}
                               type="button"
-                              onClick={() =>
-                                handleAddContainerPreset(preset.id)
-                              }
-                              className="group flex h-14 items-center gap-1 rounded border border-slate-200 bg-slate-50 p-2 transition-all hover:border-blue-500 hover:bg-blue-50"
+                              onClick={() => setShowPresetPicker(false)}
+                              className="text-slate-400 hover:text-slate-700"
                             >
-                              {preset.bars.map((w, bIdx) => (
-                                <div
-                                  key={bIdx}
-                                  style={{ width: `${w}%` }}
-                                  className="h-full rounded-xs bg-slate-300 transition-colors group-hover:bg-blue-500"
-                                />
-                              ))}
+                              <X className="size-4" />
                             </button>
-                          ))}
+                          </div>
+                          <div className="mx-auto grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
+                            {STRUCTURE_PRESETS.map((preset) => (
+                              <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() =>
+                                  handleAddContainerPreset(preset.id)
+                                }
+                                className="group flex h-14 items-center gap-1 rounded border border-slate-200 bg-slate-50 p-2 transition-all hover:border-blue-500 hover:bg-blue-50"
+                              >
+                                {preset.bars.map((w, bIdx) => (
+                                  <div
+                                    key={bIdx}
+                                    style={{ width: `${w}%` }}
+                                    className="h-full rounded-xs bg-slate-300 transition-colors group-hover:bg-blue-500"
+                                  />
+                                ))}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setShowPresetPicker(true)}
-                            className="flex size-10 items-center justify-center rounded-full bg-slate-200/80 text-slate-700 transition-colors hover:bg-slate-300"
-                            title={dict?.["admin.builder.add_section"]}
-                          >
-                            <Plus className="size-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setShowTemplatesModal(true)}
-                            className="flex size-10 items-center justify-center rounded-full bg-slate-200/80 text-slate-700 transition-colors hover:bg-slate-300"
-                            title={dict?.["admin.studio.templates_library"]}
-                          >
-                            <Folder className="size-4 fill-slate-700" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedId(null)
-                              setPanelMode("elements")
-                            }}
-                            className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 transition-colors hover:bg-emerald-200"
-                            title={dict?.["admin.studio.elements"]}
-                          >
-                            <Sparkles className="size-4" />
-                          </button>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setShowPresetPicker(true)}
+                              className="flex size-10 items-center justify-center rounded-full bg-slate-200/80 text-slate-700 transition-colors hover:bg-slate-300"
+                              title={dict?.["admin.builder.add_section"]}
+                            >
+                              <Plus className="size-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowTemplatesModal(true)}
+                              className="flex size-10 items-center justify-center rounded-full bg-slate-200/80 text-slate-700 transition-colors hover:bg-slate-300"
+                              title={dict?.["admin.studio.templates_library"]}
+                            >
+                              <Folder className="size-4 fill-slate-700" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedId(null)
+                                setPanelMode("elements")
+                              }}
+                              className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 transition-colors hover:bg-emerald-200"
+                              title={dict?.["admin.studio.elements"]}
+                            >
+                              <Sparkles className="size-4" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-500 italic">
+                            {dict?.["admin.studio.drag_widget_here"]}
+                          </p>
                         </div>
-                        <p className="text-xs text-slate-500 italic">
-                          {dict?.["admin.studio.drag_widget_here"]}
-                        </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
+
+              {pageTemplate !== "studio_canvas" && (
+                <SiteFooter theme={theme} footerWidgets={footerWidgets} />
               )}
             </div>
-
-            {pageTemplate !== "studio_canvas" && (
-              <SiteFooter theme={theme} footerWidgets={footerWidgets} />
-            )}
-          </div>
+          </StudioDesignViewport>
         </main>
 
         {/* Floating Structure (Navigator) Panel */}

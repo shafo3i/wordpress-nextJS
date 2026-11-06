@@ -54,7 +54,7 @@ export function MagazineBentoBlock({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {lead && (
-          <div className="lg:col-span-7 group relative rounded-2xl overflow-hidden min-h-[460px] sm:min-h-[520px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl transition-all">
+          <div data-studio-card className="lg:col-span-7 group relative rounded-2xl overflow-hidden min-h-[460px] sm:min-h-[520px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl transition-all">
             <img
               src={lead.imageUrl}
               alt={lead.title}
@@ -65,7 +65,7 @@ export function MagazineBentoBlock({
             <div className="relative z-10 space-y-3.5">
               <div className="flex items-center gap-2">
                 {showCategory && lead.categories?.[0] && (
-                  <span
+                  <span data-studio-category
                     style={{ backgroundColor: theme.primaryColor }}
                     className="rounded-full px-3 py-1 text-[0.625rem] font-extrabold uppercase tracking-widest text-theme-on-primary shadow-sm flex items-center gap-1.5"
                   >
@@ -79,7 +79,7 @@ export function MagazineBentoBlock({
               </div>
 
               <Link href={getPostUrl(lead.slug, theme)} className="block">
-                <h3
+                <h3 data-studio-title
                   className={`text-2xl sm:text-4xl lg:text-5xl font-black leading-[1.1] tracking-tight text-theme-overlay hover:underline drop-shadow-md ${
                     isSerif ? "font-serif" : "font-sans"
                   }`}
@@ -89,7 +89,7 @@ export function MagazineBentoBlock({
               </Link>
 
               {showExcerpt && (
-                <p className="text-xs sm:text-sm text-theme-overlay-muted line-clamp-3 leading-relaxed max-w-xl">
+                <p data-studio-excerpt className="text-xs sm:text-sm text-theme-overlay-muted line-clamp-3 leading-relaxed max-w-xl">
                   {getExcerpt(lead, 200)}
                 </p>
               )}
@@ -120,7 +120,7 @@ export function MagazineBentoBlock({
 
         <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fourCards.map((item) => (
-            <div
+            <div data-studio-card
               key={item.id}
               className="group relative rounded-xl overflow-hidden min-h-[240px] flex flex-col justify-end p-4 text-theme-overlay shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
             >
@@ -133,13 +133,13 @@ export function MagazineBentoBlock({
 
               <div className="relative z-10 space-y-1.5">
                 {showCategory && (
-                  <span className="rounded bg-theme-scrim/50 backdrop-blur-sm px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider text-theme-overlay-muted inline-block">
+                  <span data-studio-category className="rounded bg-theme-scrim/50 backdrop-blur-sm px-2 py-0.5 text-[0.5625rem] font-bold uppercase tracking-wider text-theme-overlay-muted inline-block">
                     {item.categories[0]}
                   </span>
                 )}
 
                 <Link href={getPostUrl(item.slug, theme)} className="block">
-                  <h4
+                  <h4 data-studio-title
                     className={`text-xs sm:text-sm font-bold leading-snug text-theme-overlay line-clamp-2 hover:underline ${
                       isSerif ? "font-serif" : "font-sans"
                     }`}
