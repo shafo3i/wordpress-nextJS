@@ -2,11 +2,11 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   // Sharp 0.35 loads libvips via its native addon; automatic tracing can miss it.
-  // Include the native packages in both pnpm's virtual store and hoisted layouts.
+  // Trace real pnpm store directories only. Hoisted @img paths are symlinks;
+  // including both aliases and their targets makes Vercel reject the package.
   outputFileTracingIncludes: {
     "/*": [
       "./node_modules/.pnpm/@img+sharp-*/node_modules/@img/sharp-*/lib/**/*",
-      "./node_modules/@img/sharp-*/lib/**/*",
     ],
   },
 }

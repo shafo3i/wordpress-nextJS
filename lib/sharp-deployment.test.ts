@@ -15,6 +15,14 @@ function filesIn(directory: string): string[] {
   })
 }
 describe("Sharp deployment assets", () => {
+  it("does not explicitly trace hoisted symlink aliases", () => {
+    const patterns = nextConfig.outputFileTracingIncludes?.["/*"] || []
+    expect(patterns.length).toBeGreaterThan(0)
+    for (const pattern of patterns) {
+      expect(pattern).toMatch(/^\.\/node_modules\/\.pnpm\/@img\+sharp-/)
+    }
+  })
+
   it("explicitly includes the native libvips dependency used by the pinned Sharp version", () => {
     const patterns = nextConfig.outputFileTracingIncludes?.["/*"] || []
     const matches = patterns.map((pattern) =>
