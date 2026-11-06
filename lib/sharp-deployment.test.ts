@@ -1,6 +1,7 @@
 ﻿import { describe, expect, it } from "vitest"
-import { readFileSync, readdirSync } from "node:fs"
+import { readFileSync, readdirSync, realpathSync } from "node:fs"
 import { createRequire } from "node:module"
+import { resolve } from "node:path"
 import nextConfig from "../next.config"
 
 const picomatch = createRequire(import.meta.url)("next/dist/compiled/picomatch")
@@ -15,6 +16,23 @@ function filesIn(directory: string): string[] {
   })
 }
 describe("Sharp deployment assets", () => {
+  it("does not match dependency symlinks inside native package store directories", () => {
+    const patterns = nextConfig.outputFileTracingIncludes?.["/*"] || []
+    const matches = patterns.map((pattern) => picomatch(pattern.replace(/^\.\//, "")))
+    const aliases = readdirSync("node_modules/.pnpm")
+      .filter((name) => name.startsWith("@img+sharp-"))
+      .flatMap((name) => {
+        const directory = `node_modules/.pnpm/${name}/node_modules/@img`
+        return readdirSync(directory).flatMap((dependency) => {
+          const path = `${directory}/${dependency}`
+          if (realpathSync(path) === resolve(path)) return []
+          return filesIn(`${path}/lib`)
+        })
+      })
+    expect(aliases.length).toBeGreaterThan(0)
+    expect(aliases.filter((file) => matches.some((match) => match(file)))).toEqual([])
+  })
+
   it("does not explicitly trace hoisted symlink aliases", () => {
     const patterns = nextConfig.outputFileTracingIncludes?.["/*"] || []
     expect(patterns.length).toBeGreaterThan(0)
