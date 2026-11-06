@@ -1,0 +1,59 @@
+# Existing PostgreSQL is managed separately in Coolify. No database is created here.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?Set the public application URL}
+    restart: unless-stopped
+    init: true
+    environment:
+      DATABASE_URL: ${APP_DATABASE_URL:?Set the URL pointing to pgbouncer port 6432}
+      DB_POOL_MAX: ${DB_POOL_MAX:-2}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a private authentication secret}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set a stable private key for encrypted settings}
+      BETTER_AUTH_URL: ${NEXT_PUBLIC_APP_URL:?Set the public application URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?Set the public application URL}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_APP_URL:?Set the public application URL}
+    expose:
+      - "3000"
+    volumes:
+      - uploads:/app/public/uploads
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.25.1-p0
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST:?Use the existing Coolify PostgreSQL internal hostname}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-postgres}
+      DB_USER: ${DB_USER:?Set the existing database username}
+      DB_PASSWORD: ${DB_PASSWORD:?Set the existing database password}
+      LISTEN_PORT: "6432"
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "100"
+      DEFAULT_POOL_SIZE: "10"
+      MIN_POOL_SIZE: "0"
+      RESERVE_POOL_SIZE: "0"
+      MAX_DB_CONNECTIONS: "10"
+      MAX_USER_CONNECTIONS: "10"
+      MAX_PREPARED_STATEMENTS: "100"
+      SERVER_IDLE_TIMEOUT: "60"
+    expose:
+      - "6432"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'PGPASSWORD="$${DB_PASSWORD}" psql -h 127.0.0.1 -p 6432 -U "$${DB_USER}" -d "$${DB_NAME}" -tAc "SELECT 1" >/dev/null'
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  uploads:

@@ -224,6 +224,14 @@ async function getStudioPageData(postIds: bigint[] | string[]) {
   }
 }
 
+function decodeContentSlug(slug: string): string {
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
+  }
+}
+
 export async function getPublishedContent(type: "post" | "page", slug?: string, limit = 10, locale?: string) {
   let base: any[] = [];
   let effectiveLocale = locale;
@@ -253,7 +261,7 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
         eq(wpPosts.postType, type),
         eq(wpPosts.postStatus, "publish"),
         eq(postTranslationsTable.languageCode, effectiveLocale),
-        slug ? eq(wpPosts.postName, slug) : undefined
+        slug ? eq(wpPosts.postName, decodeContentSlug(slug)) : undefined
       )
     )
     .orderBy(desc(wpPosts.postDate))
@@ -436,7 +444,7 @@ export async function getPublishedPostsByCategory(
     })
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
-    .where(and(eq(wpTerms.slug, categorySlug), eq(wpTermTaxonomy.taxonomy, "category")))
+    .where(and(eq(wpTerms.slug, decodeContentSlug(categorySlug)), eq(wpTermTaxonomy.taxonomy, "category")))
     .limit(1);
 
   if (!catRows.length) {
