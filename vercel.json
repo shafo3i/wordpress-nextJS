@@ -1,4 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm exec next build --webpack"
+  "buildCommand": "pnpm exec next build --webpack",
+  "env": {
+    "NODE_OPTIONS": "--experimental-require-module"
+  }
 }
