@@ -10,6 +10,7 @@ export type PostRowData = {
   categorySlugs?: string[];
   tags: string[];
   commentCount: string;
+  viewCount?: number;
   date: string;
   commentStatus?: string;
   pingStatus?: string;
@@ -209,6 +210,8 @@ export function PostRowItem({
           <span className="text-[#a7aaad]">—</span>
         )}
       </td>
+
+      <td data-admin-post-views className="px-3 py-2 text-end align-top tabular-nums">{(post.viewCount || 0).toLocaleString(direction === "rtl" ? "ar" : "en")}</td>
 
       <td className="px-3 py-2 text-[13px] text-[#50575e] align-top leading-normal whitespace-nowrap">
         <span className="text-[#646970] text-[12px] block">

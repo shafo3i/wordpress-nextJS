@@ -92,9 +92,9 @@ export function SectionPanel({
                 key={group.id}
                 className={index > 0 || section.palettes ? "border-t border-[#dcdcde] pt-3" : undefined}
               >
-                {group.title && (
+                {(group.title || group.titleKey) && (
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#2271b1] block mb-2">
-                    {t(keys.group(section, group), group.title)}
+                    {t(keys.group(section, group), group.title || "")}
                   </span>
                 )}
                 {boxed ? (

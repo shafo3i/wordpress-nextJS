@@ -17,6 +17,9 @@ export function PostListTable({
   categories = [],
   currentCategory,
   currentDate,
+  dateMonths = [],
+  currentFrom,
+  currentTo,
   basePath = "/admincp/posts",
   emptyMessage = "No posts found.",
   pagination,
@@ -29,6 +32,9 @@ export function PostListTable({
   categories?: CategoryOption[];
   currentCategory?: string;
   currentDate?: string;
+  dateMonths?: string[];
+  currentFrom?: string;
+  currentTo?: string;
   basePath?: string;
   emptyMessage?: string;
   pagination?: {
@@ -180,6 +186,9 @@ export function PostListTable({
         categories={categories}
         currentCategory={currentCategory}
         currentDate={currentDate}
+        dateMonths={dateMonths}
+        currentFrom={currentFrom}
+        currentTo={currentTo}
         currentPage={pagination?.currentPage}
         dict={dict}
         direction={direction}
@@ -203,6 +212,7 @@ export function PostListTable({
             <col className="w-[14%]" />
             <col className="w-[14%]" />
             <col className="w-[50px]" />
+            <col className="w-[85px]" />
             <col className="w-[16%]" />
           </colgroup>
 
@@ -234,6 +244,13 @@ export function PostListTable({
               </th>
               <th className="w-[50px] px-3 py-2 text-center font-semibold">
                 <MessageSquare className="inline size-3.5 fill-[#72777c] text-transparent" />
+              </th>
+              <th className="px-3 py-2 text-end font-semibold" aria-sort={new URLSearchParams(pagination?.queryString).get("sort") === "views" ? (new URLSearchParams(pagination?.queryString).get("order") === "asc" ? "ascending" : "descending") : "none"}>
+                <button type="button" className="inline-flex items-center gap-1 text-[#2271b1]" onClick={() => {
+                  const params = new URLSearchParams(pagination?.queryString);
+                  const ascending = params.get("sort") === "views" && params.get("order") !== "asc";
+                  params.set("sort", "views"); params.set("order", ascending ? "asc" : "desc"); params.delete("page"); router.push(`${basePath}?${params}`);
+                }}>{dict["admin.posts.views"]}<ArrowUpDown className="size-3" aria-hidden="true" /></button>
               </th>
               <th className="px-3 py-2 font-semibold text-start whitespace-nowrap">
                 <span className="inline-flex items-center gap-1 cursor-pointer hover:text-[#0073aa]">
@@ -276,7 +293,7 @@ export function PostListTable({
               ))
             ) : (
               <tr>
-                <td className="px-4 py-8 text-center text-[#646970]" colSpan={7}>
+                <td className="px-4 py-8 text-center text-[#646970]" colSpan={8}>
                   {emptyMessage}
                 </td>
               </tr>
@@ -308,6 +325,13 @@ export function PostListTable({
               </th>
               <th className="w-[50px] px-3 py-2 text-center font-semibold">
                 <MessageSquare className="inline size-3.5 fill-[#72777c] text-transparent" />
+              </th>
+              <th className="px-3 py-2 text-end font-semibold" aria-sort={new URLSearchParams(pagination?.queryString).get("sort") === "views" ? (new URLSearchParams(pagination?.queryString).get("order") === "asc" ? "ascending" : "descending") : "none"}>
+                <button type="button" className="inline-flex items-center gap-1 text-[#2271b1]" onClick={() => {
+                  const params = new URLSearchParams(pagination?.queryString);
+                  const ascending = params.get("sort") === "views" && params.get("order") !== "asc";
+                  params.set("sort", "views"); params.set("order", ascending ? "asc" : "desc"); params.delete("page"); router.push(`${basePath}?${params}`);
+                }}>{dict["admin.posts.views"]}<ArrowUpDown className="size-3" aria-hidden="true" /></button>
               </th>
               <th className="px-3 py-2 font-semibold text-start whitespace-nowrap">
                 <bdi>{dict["admin.posts.table.date"] || "Date"}</bdi>

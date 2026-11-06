@@ -1,27 +1,41 @@
-"use client";
+"use client"
 
-import { useEffect, useState, type FormEvent, type MouseEvent } from "react";
-import type { ContentItem } from "@/lib/site-content";
-import type { FrontEndThemeContext } from "@/lib/site-theme";
-import type { HomepageSettings } from "@/lib/themes/homepage-types";
-import type { WidgetItem } from "@/widgets/types";
-import { getFontKind } from "@/lib/customizer/fonts";
-import { resolveColor } from "@/lib/customizer/resolve";
-import type { CustomizerToPreview, PreviewState, PreviewToCustomizer } from "@/lib/customizer/preview-protocol";
-import { getThemeModule } from "@/themes/registry";
-import { NewsHome } from "@/components/site/templates/news-home";
-import { PostTemplate } from "@/components/site/templates/post-template";
+import { useEffect, useState, type FormEvent, type MouseEvent } from "react"
+import type { ContentItem } from "@/lib/site-content"
+import type { FrontEndThemeContext } from "@/lib/site-theme"
+import type { HomepageSettings } from "@/lib/themes/homepage-types"
+import type { WidgetItem } from "@/widgets/types"
+import { getFontKind } from "@/lib/customizer/fonts"
+import { resolveColor } from "@/lib/customizer/resolve"
+import type {
+  CustomizerToPreview,
+  PreviewState,
+  PreviewToCustomizer,
+} from "@/lib/customizer/preview-protocol"
+import { getThemeModule } from "@/themes/registry"
+import { NewsHome } from "@/components/site/templates/news-home"
+import { PostTemplate } from "@/components/site/templates/post-template"
+import { CategoryTemplate } from "@/components/site/templates/category-template"
+import type { CategoryPostsResult } from "@/lib/site-content"
+import { getArchiveSettings } from "@/lib/customizer/archive"
 
 interface PreviewHostProps {
-  themeSlug: string;
+  themeSlug: string
   /** Locale aware context from the server (dictionary, direction, menus, plugins). */
-  baseTheme: FrontEndThemeContext;
-  initialState: PreviewState;
-  posts: ContentItem[];
-  homepageSettings: HomepageSettings;
-  primarySidebar: WidgetItem[];
-  secondarySidebar: WidgetItem[];
-  footerWidgets: { col1: WidgetItem[]; col2: WidgetItem[]; col3: WidgetItem[]; col4?: WidgetItem[] };
+  baseTheme: FrontEndThemeContext
+  initialState: PreviewState
+  posts: ContentItem[]
+  categoryArchive: CategoryPostsResult | null
+  categorySidebar: WidgetItem[]
+  homepageSettings: HomepageSettings
+  primarySidebar: WidgetItem[]
+  secondarySidebar: WidgetItem[]
+  footerWidgets: {
+    col1: WidgetItem[]
+    col2: WidgetItem[]
+    col3: WidgetItem[]
+    col4?: WidgetItem[]
+  }
 }
 
 /** Lives inside the customizer iframe: renders the real templates and applies state posted by the editor. */
@@ -30,26 +44,32 @@ export function PreviewHost({
   baseTheme,
   initialState,
   posts,
+  categoryArchive,
+  categorySidebar,
   homepageSettings,
   primarySidebar,
   secondarySidebar,
   footerWidgets,
 }: PreviewHostProps) {
-  const [state, setState] = useState(initialState);
+  const [state, setState] = useState(initialState)
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<CustomizerToPreview>) => {
-      if (event.origin !== window.location.origin || event.source !== window.parent) return;
-      if (event.data?.type === "customizer:state") setState(event.data.state);
-    };
-    window.addEventListener("message", onMessage);
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== window.parent
+      )
+        return
+      if (event.data?.type === "customizer:state") setState(event.data.state)
+    }
+    window.addEventListener("message", onMessage)
 
-    const ready: PreviewToCustomizer = { type: "customizer:ready" };
-    window.parent.postMessage(ready, window.location.origin);
-    return () => window.removeEventListener("message", onMessage);
-  }, []);
+    const ready: PreviewToCustomizer = { type: "customizer:ready" }
+    window.parent.postMessage(ready, window.location.origin)
+    return () => window.removeEventListener("message", onMessage)
+  }, [])
 
-  const { mods } = state;
+  const { mods } = state
   const theme: FrontEndThemeContext = {
     ...baseTheme,
     themeSlug,
@@ -62,18 +82,43 @@ export function PreviewHost({
     darkMode: Boolean(mods.darkMode),
     footerCopyright: mods.footerCopyright || "",
     mods,
-  };
+  }
 
-  const [lead, ...rest] = posts;
+  const [lead, ...rest] = posts
 
   const blockNavigation = (event: MouseEvent) => {
-    if ((event.target as HTMLElement).closest("a")) event.preventDefault();
-  };
-  const blockSubmit = (event: FormEvent) => event.preventDefault();
+    if ((event.target as HTMLElement).closest("a")) event.preventDefault()
+  }
+  const blockSubmit = (event: FormEvent) => event.preventDefault()
 
   return (
     <div onClickCapture={blockNavigation} onSubmitCapture={blockSubmit}>
-      {state.page === "home" || !lead ? (
+      {state.page === "category" ? (
+        <CategoryTemplate
+          category={
+            categoryArchive?.category || {
+              id: "",
+              name: theme.dict?.["site.categories"] || "",
+              slug: "",
+              description: "",
+              count: 0,
+            }
+          }
+          posts={(categoryArchive?.posts || []).slice(
+            0,
+            getArchiveSettings(mods).archivePostsPerPage
+          )}
+          totalPosts={categoryArchive?.total || 0}
+          totalPages={Math.ceil(
+            (categoryArchive?.total || 0) /
+              getArchiveSettings(mods).archivePostsPerPage
+          )}
+          currentPage={1}
+          theme={theme}
+          categoryWidgets={categorySidebar}
+          footerWidgets={footerWidgets}
+        />
+      ) : state.page === "home" || !lead ? (
         <NewsHome
           posts={posts}
           theme={theme}
@@ -84,6 +129,7 @@ export function PreviewHost({
         />
       ) : (
         <PostTemplate
+          trackViews={false}
           article={lead}
           relatedPosts={rest.slice(0, 3)}
           theme={theme}
@@ -92,5 +138,5 @@ export function PreviewHost({
         />
       )}
     </div>
-  );
+  )
 }

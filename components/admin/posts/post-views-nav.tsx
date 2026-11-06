@@ -124,6 +124,7 @@ export function PostViewsNav({
           {currentStatus && <input name="status" type="hidden" value={currentStatus} />}
           {category && <input name="category" type="hidden" value={category} />}
           {date && <input name="date" type="hidden" value={date} />}
+          {["from", "to", "sort", "order"].map(key => searchParams.get(key) ? <input key={key} name={key} type="hidden" value={searchParams.get(key)!} /> : null)}
           {currentLanguage !== "all" && <input name="lang" type="hidden" value={currentLanguage} />}
           <input
             className="h-[30px] w-48 rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] outline-none placeholder:text-[#a7aaad] focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"

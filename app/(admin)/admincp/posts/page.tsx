@@ -1,6 +1,7 @@
+import { getPostDateBounds } from "@/lib/post-date-filter";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getPostsQuery, getPostCountsQuery, getAllCategoriesQuery } from "./query";
+import { getPostsQuery, getPostCountsQuery, getAllCategoriesQuery, getPostMonthsQuery } from "./query";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
 import { PostViewsNav } from "@/components/admin/posts/post-views-nav";
 import { PostListTable } from "@/components/admin/posts/post-list-table";
@@ -11,7 +12,11 @@ interface PostsPageProps {
   searchParams: Promise<{
     s?: string;
     status?: string;
-    date?: "today" | "month";
+    date?: string;
+    from?: string;
+    to?: string;
+    sort?: string;
+    order?: string;
     category?: string;
     lang?: string;
     page?: string;
@@ -21,7 +26,7 @@ interface PostsPageProps {
 export default async function PostsPage({ searchParams }: PostsPageProps) {
   await verifyAdminOrEditor();
 
-  const { s, status, date, category, lang, page } = await searchParams;
+  const { s, status, date, from, to, sort, order, category, lang, page } = await searchParams;
   const search = s?.trim() ?? "";
   const currentPage = Number(page) > 0 ? Number(page) : 1;
   const currentLanguage = lang || "all";
@@ -31,7 +36,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
   const dict = langContext.dict;
   const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
-  const [counts, postsData, categories] = await Promise.all([
+  const [counts, postsData, categories, months] = await Promise.all([
     getPostCountsQuery({
       language: currentLanguage !== "all" ? currentLanguage : undefined,
     }),
@@ -39,18 +44,27 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
       search,
       status,
       date,
+      from,
+      to,
+      orderBy: sort === "views" ? "viewCount" : undefined,
+      order: order === "asc" ? "asc" : "desc",
       category: selectedCategory,
       language: currentLanguage !== "all" ? currentLanguage : undefined,
       page: currentPage,
       pageSize: 20,
     }),
     getAllCategoriesQuery(),
+    getPostMonthsQuery(),
   ]);
 
   const queryString = new URLSearchParams();
   if (search) queryString.set("s", search);
   if (status) queryString.set("status", status);
   if (date) queryString.set("date", date);
+  if (from) queryString.set("from", from);
+  if (to) queryString.set("to", to);
+  if (sort === "views") queryString.set("sort", sort);
+  if (order) queryString.set("order", order);
   if (selectedCategory) queryString.set("category", selectedCategory);
   if (currentLanguage !== "all") queryString.set("lang", currentLanguage);
 
@@ -74,7 +88,12 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
           direction={direction}
         />
 
+        {!getPostDateBounds({ date: date || "all", from, to }).valid && <div role="alert" className="border-s-4 border-[#d63638] bg-white p-3 text-sm">{dict["admin.posts.invalid_date_range"]}</div>}
         <PostListTable
+          key={queryString.toString()}
+          dateMonths={months}
+          currentFrom={from}
+          currentTo={to}
           basePath="/admincp/posts"
           categories={categories}
           currentCategory={selectedCategory}
@@ -84,7 +103,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
           emptyMessage={dict["admin.posts.no_posts"] || "No posts found."}
           isTrashView={status === "trash"}
           pagination={{
-            currentPage,
+            currentPage: postsData.currentPage,
             totalPages: postsData.totalPages,
             totalItems: postsData.totalItems,
             queryString: queryString.toString(),

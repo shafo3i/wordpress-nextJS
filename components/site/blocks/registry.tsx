@@ -141,6 +141,7 @@ export function renderEditorialBlock({
             showExcerpt={block.showExcerpt}
             autoplay={block.autoplay}
             interval={block.rotationInterval}
+            excerptLength={design?.excerptLength}
           />
         )
       case "bento":
@@ -641,6 +642,7 @@ export function renderEditorialBlock({
           showExcerpt={block.showExcerpt}
           autoplay={block.autoplay}
           interval={block.rotationInterval}
+          excerptLength={design?.excerptLength}
         />
       )
 

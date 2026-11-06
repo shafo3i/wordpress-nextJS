@@ -12,6 +12,7 @@ export function SelectControl({ setting, label, resolved, onChange }: ControlPro
   return (
     <Field label={label} description={setting.description}>
       <select
+        aria-label={label}
         value={String(resolved ?? "")}
         onChange={(e) => onChange(toStored(e.target.value, setting.numeric))}
         className={`${INPUT_CLASS} h-[32px]`}

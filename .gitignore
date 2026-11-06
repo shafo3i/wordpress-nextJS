@@ -47,3 +47,4 @@ next-env.d.ts
 /docs/*
 !/docs/WORDPRESS-MIGRATION.md
 !/docs/COOLIFY-DEPLOYMENT.md
+!/docs/POST-DATES-AND-VIEWS.md

@@ -86,7 +86,7 @@ export interface CustomizerSection {
   /** Render the palette picker at the top of the section. */
   palettes?: boolean;
   /** Switches the preview to the single article page while open. */
-  previewPage?: "home" | "single";
+  previewPage?: "home" | "single" | "category";
   groups: SettingGroup[];
 }
 

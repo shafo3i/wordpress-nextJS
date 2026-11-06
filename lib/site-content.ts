@@ -1,3 +1,5 @@
+import { contentPlainText } from "@/lib/content-text";
+import { getPostViewCounts } from "@/services/post-views.service";
 import { and, desc, eq, inArray, countDistinct } from "drizzle-orm";
 import { db } from "@/db";
 import { wpPosts, wpPostmeta, wpTermRelationships, wpTermTaxonomy, wpTerms, user, postTranslationsTable, languagesTable, termTranslationsTable } from "@/db/schema";
@@ -18,6 +20,7 @@ export type ContentItem = {
   tags: string[];
   imageUrl: string;
   commentCount?: number;
+  viewCount?: number;
   isFeatured?: boolean;
   template?: string;
   locale?: string;
@@ -65,8 +68,8 @@ async function getTermData(postIds: bigint[] | string[]) {
   for (const row of rows) {
     const key = row.objectId.toString();
     const existing = map.get(key) ?? { categories: [], tags: [] };
-    if (row.taxonomy === "category") existing.categories.push(row.name);
-    if (row.taxonomy === "post_tag") existing.tags.push(row.name);
+    if (row.taxonomy === "category") existing.categories.push(contentPlainText(row.name));
+    if (row.taxonomy === "post_tag") existing.tags.push(contentPlainText(row.name));
     map.set(key, existing);
   }
 
@@ -272,12 +275,13 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
   }
 
   const postIds = base.map((item) => item.id.toString());
-  const [termMap, imageMap, templateMap, studioMap, featuredSet] = await Promise.all([
+  const [termMap, imageMap, templateMap, studioMap, featuredSet, viewCounts] = await Promise.all([
     getTermData(postIds),
     getImageData(postIds),
     getPageTemplateData(postIds),
     type === "page" ? getStudioPageData(postIds) : Promise.resolve(new Map()),
     type === "post" ? getFeaturedPostFlags(postIds) : Promise.resolve(new Set<string>()),
+    type === "post" ? getPostViewCounts(postIds) : Promise.resolve(new Map<string,number>()),
   ]);
 
   return base.map((item, idx) => {
@@ -300,9 +304,10 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
 
     return {
       id: idStr,
-      title: item.title || "Untitled",
+      viewCount: viewCounts.get(idStr) || 0,
+      title: contentPlainText(item.title || ""),
       slug: item.slug || "untitled",
-      excerpt: item.excerpt || item.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180),
+      excerpt: contentPlainText(item.excerpt || item.content).slice(0, 180),
       content: item.content || "",
       date: item.date,
       authorName: item.authorName || "Editorial Desk",
@@ -426,6 +431,7 @@ export async function getPublishedPostsByCategory(
   limit: number = 10,
   locale?: string
 ): Promise<CategoryPostsResult> {
+  limit = Number.isFinite(limit) ? Math.max(1, Math.min(36, Math.trunc(limit))) : 12;
   let effectiveLocale = locale;
   if (!effectiveLocale) {
     const defaultLang = await getDefaultLanguage().catch(() => null);
@@ -453,7 +459,7 @@ export async function getPublishedPostsByCategory(
       posts: [],
       total: 0,
       totalPages: 0,
-      currentPage: page,
+      currentPage: 1,
     };
   }
 
@@ -496,7 +502,8 @@ export async function getPublishedPostsByCategory(
 
   const total = Number(countResult?.total ?? 0);
   const totalPages = Math.ceil(total / limit);
-  const offset = Math.max(0, (page - 1) * limit);
+  const safePage = Math.min(Math.max(1, Number.isFinite(page) ? Math.trunc(page) : 1), totalPages || 1);
+  const offset = (safePage - 1) * limit;
 
   // Query distinct post IDs matching criteria ordered by postDate
   const postIdsQuery = await db
@@ -524,16 +531,16 @@ export async function getPublishedPostsByCategory(
     return {
       category: {
         id: cat.termId.toString(),
-        name: cat.name,
+        name: contentPlainText(cat.name),
         slug: cat.slug,
-        description: cat.description || "",
+        description: contentPlainText(cat.description || ""),
         count: total,
         termTaxonomyId: cat.termTaxonomyId.toString(),
       },
       posts: [],
       total,
       totalPages,
-      currentPage: page,
+      currentPage: safePage,
     };
   }
 
@@ -574,12 +581,12 @@ export async function getPublishedPostsByCategory(
 
     return {
       id: item.id.toString(),
-      title: item.title || "Untitled",
+      title: contentPlainText(item.title || ""),
       slug: item.slug || "untitled",
-      excerpt: item.excerpt || item.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 180),
+      excerpt: contentPlainText(item.excerpt || item.content).slice(0, 400),
       content: item.content || "",
       date: item.date,
-      authorName: item.authorName || "Editorial Desk",
+      authorName: item.authorName || "",
       categories: termMap.get(item.id.toString())?.categories ?? [cat.name],
       tags: termMap.get(item.id.toString())?.tags ?? [],
       imageUrl: resolvedImg,
@@ -592,15 +599,15 @@ export async function getPublishedPostsByCategory(
   return {
     category: {
       id: cat.termId.toString(),
-      name: cat.name,
+      name: contentPlainText(cat.name),
       slug: cat.slug,
-      description: cat.description || "",
+      description: contentPlainText(cat.description || ""),
       count: total,
       termTaxonomyId: cat.termTaxonomyId.toString(),
     },
     posts,
     total,
     totalPages,
-    currentPage: page,
+    currentPage: safePage,
   };
 }

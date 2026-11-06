@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, FileText, Home, Laptop, RotateCcw, Smartphone, Tablet, X } from "lucide-react";
+import { Check, FileText, Home, Laptop, Layers, RotateCcw, Smartphone, Tablet, X } from "lucide-react";
 import type { Theme } from "@/lib/themes/types";
 import type { PreviewPage } from "@/lib/customizer/preview-protocol";
 
@@ -121,6 +121,10 @@ export function CustomizerToolbar({
           <button type="button" onClick={() => onPreviewPage("single")} className={segment(previewPage === "single")}>
             <FileText className="size-3.5" />
             <span className="hidden md:inline">{t("admin.customizer.view.single", "Single Article")}</span>
+          </button>
+          <button type="button" onClick={() => onPreviewPage("category")} className={segment(previewPage === "category")} aria-label={t("admin.customizer.view.category", "")}>
+            <Layers className="size-3.5" />
+            <span className="hidden md:inline">{t("admin.customizer.view.category", "")}</span>
           </button>
         </div>
 

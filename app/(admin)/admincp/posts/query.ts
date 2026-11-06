@@ -1,6 +1,7 @@
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import {
   getPosts,
+  getPostMonths,
   getPostCounts,
   getPostById,
   getAllCategoriesOptions,
@@ -13,6 +14,11 @@ import {
 } from "@/services/post.service";
 
 export type { PostItem, PostCounts, GetPostsOptions, CategoryOption, TagOption };
+
+export async function getPostMonthsQuery() {
+  await verifyAdminOrEditor();
+  return getPostMonths();
+}
 
 export async function getPostsQuery(options: GetPostsOptions = {}) {
   await verifyAdminOrEditor();

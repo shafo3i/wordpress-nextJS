@@ -54,13 +54,12 @@ export function getCategoryUrl(slug: string, theme?: FrontEndThemeContext): stri
 
 export function getExcerpt(item: ContentItem, maxChars = 140) {
   return (
-    item.excerpt ||
+    item.excerpt ??
     item.content
       .replace(/<[^>]*>/g, " ")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, maxChars)
-  );
+  ).slice(0, Math.max(0, maxChars));
 }
 
 export function isSerifHeading(theme?: FrontEndThemeContext): boolean {

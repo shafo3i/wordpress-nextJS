@@ -113,7 +113,7 @@ export function PostQuickEditRow({
 
   return (
     <tr className="border-y-2 border-[#2271b1] bg-[#f6f7f7]" dir={direction}>
-      <td className="p-3" colSpan={7}>
+      <td className="p-3" colSpan={8}>
         <div className="space-y-3 text-[13px] text-[#2c3338] text-start">
           <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#1d2327]">
             {dict["admin.common.quick_edit"] || "QUICK EDIT"}

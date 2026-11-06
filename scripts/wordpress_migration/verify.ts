@@ -51,6 +51,9 @@ async function main() {
           "Arabic widgets should show imported news"
         )
       results[path] = "rendered"
+      for (const excerpt of await page.locator("[data-studio-excerpt]").allTextContents()) {
+        assert(!/&(?:nbsp|amp|lt|gt|quot|#\d+);/i.test(excerpt), "Homepage excerpts must not display raw HTML entities")
+      }
       await page.screenshot({
         path: resolve(
           out,

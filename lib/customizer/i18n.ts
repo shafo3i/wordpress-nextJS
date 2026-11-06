@@ -27,7 +27,7 @@ export function localizeSetting(setting: SettingDef, dict: Dict): SettingDef {
   return {
     ...setting,
     label: translate(dict, keys.setting(setting), setting.label),
-    description: setting.description ? translate(dict, keys.description(setting), setting.description) : undefined,
+    description: dict[keys.description(setting)] || setting.description,
     options: setting.options?.map((option) => ({
       ...option,
       label: translate(dict, keys.option(setting.id, option.value), option.label),

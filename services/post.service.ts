@@ -1,4 +1,6 @@
-import { and, asc, count, desc, eq, gte, ilike, inArray, ne, or, sql } from "drizzle-orm";
+import { getPostDateBounds } from "@/lib/post-date-filter";
+import { postViewsExpression } from "./post-views.service";
+import { and, asc, count, desc, eq, gte, lt, ilike, inArray, ne, or, sql } from "drizzle-orm";
 import { DB, db } from "@/db";
 import {
   wpComments,
@@ -91,6 +93,7 @@ export interface PostItem {
   categories: string[];
   categorySlugs: string[];
   tags: string[];
+  viewCount?: number;
   commentCount: string;
   commentStatus: string;
   pingStatus: string;
@@ -114,12 +117,14 @@ export interface PostSeoMeta {
 export interface GetPostsOptions {
   search?: string;
   status?: string;
-  date?: "today" | "month";
+  date?: string;
+  from?: string;
+  to?: string;
   category?: string;
   language?: string;
   page?: number;
   pageSize?: number;
-  orderBy?: "postModified" | "postDate" | "postTitle";
+  orderBy?: "postModified" | "postDate" | "postTitle" | "viewCount";
   order?: "asc" | "desc";
 }
 
@@ -357,15 +362,18 @@ export async function getPosts(
     search,
     status,
     date,
+    from,
+    to,
     category,
     language,
     page = 1,
-    pageSize = 20,
+    pageSize: requestedPageSize = 20,
     orderBy = "postModified",
     order = "desc",
   } = options;
 
-  const currentPage = Math.max(1, page);
+  const pageSize = Number.isFinite(requestedPageSize) ? Math.max(1, Math.min(100, Math.trunc(requestedPageSize))) : 20;
+  let currentPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
   const conditions = [eq(wpPosts.postType, "post")];
 
   if (status && status !== "all") {
@@ -374,12 +382,11 @@ export async function getPosts(
     conditions.push(ne(wpPosts.postStatus, "trash"));
   }
 
-  if (date === "today") {
-    const today = new Date(new Date().setHours(0, 0, 0, 0));
-    conditions.push(gte(wpPosts.postDate, today));
-  } else if (date === "month") {
-    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    conditions.push(gte(wpPosts.postDate, startOfMonth));
+  const bounds = getPostDateBounds({ date: date || "all", from, to });
+  if (!bounds.valid) conditions.push(sql`false`);
+  else {
+    if (bounds.start) conditions.push(gte(wpPosts.postDate, bounds.start));
+    if (bounds.end) conditions.push(lt(wpPosts.postDate, bounds.end));
   }
 
   if (search && search.trim()) {
@@ -407,6 +414,8 @@ export async function getPosts(
       } else {
         conditions.push(eq(wpPosts.id, BigInt(-1)));
       }
+    } else {
+      conditions.push(eq(wpPosts.id, BigInt(-1)));
     }
   }
 
@@ -434,9 +443,10 @@ export async function getPosts(
 
   const totalItems = Number(totalRes?.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  currentPage = Math.min(currentPage, totalPages);
 
   const sortColumn =
-    orderBy === "postDate"
+    orderBy === "viewCount" ? postViewsExpression : orderBy === "postDate"
       ? wpPosts.postDate
       : orderBy === "postTitle"
       ? wpPosts.postTitle
@@ -447,6 +457,7 @@ export async function getPosts(
   const rows = await database
     .select({
       id: wpPosts.id,
+      viewCount: postViewsExpression,
       title: wpPosts.postTitle,
       slug: wpPosts.postName,
       status: wpPosts.postStatus,
@@ -459,7 +470,7 @@ export async function getPosts(
     .from(wpPosts)
     .leftJoin(user, eq(wpPosts.postAuthor, user.id))
     .where(whereClause)
-    .orderBy(sortFn(sortColumn))
+    .orderBy(sortFn(sortColumn), desc(wpPosts.id))
     .limit(pageSize)
     .offset((currentPage - 1) * pageSize);
 
@@ -558,6 +569,7 @@ export async function getPosts(
 
     return {
       id: post.id.toString(),
+      viewCount: Number(post.viewCount || 0),
       title: post.title,
       slug: post.slug,
       status: post.status,
@@ -985,4 +997,10 @@ export async function deletePosts(
     await tx.delete(postTranslationsTable).where(inArray(postTranslationsTable.postId, bigIds));
     await tx.delete(wpPosts).where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")));
   });
+}
+
+export async function getPostMonths(database: DB = db): Promise<string[]> {
+  const month = sql<string>`to_char(${wpPosts.postDate},'YYYY-MM')`;
+  const rows = await database.select({ month }).from(wpPosts).where(and(eq(wpPosts.postType,"post"), ne(wpPosts.postStatus,"auto-draft"))).groupBy(month).orderBy(desc(month));
+  return rows.map(row => row.month);
 }

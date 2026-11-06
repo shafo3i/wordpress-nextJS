@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
+import { getArchiveSettings } from "@/lib/customizer/archive";
 import { CategoryTemplate } from "@/components/site/news-patterns";
 import { getPublishedPostsByCategory } from "@/lib/site-content";
 import { getFrontEndThemeContext } from "@/lib/site-theme";
@@ -49,14 +50,14 @@ export default async function CategoryPage({
   const currentPage = Math.max(1, parseInt(resolvedSearchParams?.page || "1", 10) || 1);
   const lang = resolvedSearchParams?.lang;
 
-  const [theme, widgetAreas, categoryResult] = await Promise.all([
+  const [theme, widgetAreas] = await Promise.all([
     getFrontEndThemeContext({
       locale: lang,
       currentPath: `/category/${slug}`,
     }),
     getAllWidgetAreas(),
-    getPublishedPostsByCategory(slug, currentPage, 9, lang),
   ]);
+  const categoryResult = await getPublishedPostsByCategory(slug, currentPage, getArchiveSettings(theme.mods).archivePostsPerPage, lang);
 
   if (!categoryResult.category) {
     notFound();

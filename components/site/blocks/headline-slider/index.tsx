@@ -4,7 +4,7 @@ import Link from "next/link"
 import { ChevronLeft, ChevronRight, Clock, Pause, Play } from "lucide-react"
 import type { ContentItem } from "@/lib/site-content"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
-import { formatDate, getPostUrl, t } from "@/components/site/utils"
+import { formatDate, getExcerpt, getPostUrl, t } from "@/components/site/utils"
 import { useNewsRotation } from "../use-news-rotation"
 import styles from "./slider.module.css"
 
@@ -16,6 +16,7 @@ export function HeadlineSliderBlock({
   showDate = true,
   showAuthor = false,
   showExcerpt = false,
+  excerptLength = 180,
   autoplay = true,
   interval = 5500,
 }: {
@@ -26,6 +27,7 @@ export function HeadlineSliderBlock({
   showDate?: boolean
   showAuthor?: boolean
   showExcerpt?: boolean
+  excerptLength?: number
   autoplay?: boolean
   interval?: number
 }) {
@@ -34,7 +36,8 @@ export function HeadlineSliderBlock({
   const current = posts[rotation.index]
   const rtl = theme.direction === "rtl"
   return (
-    <section data-studio-card
+    <section
+      data-studio-card
       className={styles.slider}
       dir={theme.direction}
       aria-label={title || t("site.headline_slider", theme)}
@@ -58,7 +61,9 @@ export function HeadlineSliderBlock({
       <div key={current.id} className={styles.story}>
         <div>
           {showCategory && current.categories[0] && (
-            <p data-studio-category className={styles.category}>{current.categories[0]}</p>
+            <p data-studio-category className={styles.category}>
+              {current.categories[0]}
+            </p>
           )}
           <Link
             href={getPostUrl(current.slug, theme)}
@@ -66,13 +71,18 @@ export function HeadlineSliderBlock({
           >
             <h2 data-studio-title>{current.title}</h2>
           </Link>
-          {showExcerpt && current.excerpt && (
-            <p data-studio-excerpt className={styles.excerpt}>{current.excerpt}</p>
+          {showExcerpt && getExcerpt(current, excerptLength) && (
+            <p data-studio-excerpt className={styles.excerpt}>
+              {getExcerpt(current, excerptLength)}
+            </p>
           )}
         </div>
         <div className={styles.meta}>
           {showDate && (
-            <time data-studio-meta dateTime={new Date(current.date).toISOString()}>
+            <time
+              data-studio-meta
+              dateTime={new Date(current.date).toISOString()}
+            >
               <Clock size={20} aria-hidden="true" />
               {formatDate(current.date, theme.locale)}
             </time>

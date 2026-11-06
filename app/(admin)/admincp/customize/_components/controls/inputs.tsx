@@ -18,6 +18,7 @@ export function RangeControl({ setting, label, resolved, onChange }: ControlProp
       </div>
       <input
         type="range"
+        aria-label={label}
         min={setting.min}
         max={setting.max}
         step={setting.step}

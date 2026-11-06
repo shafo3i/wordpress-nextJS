@@ -42,6 +42,28 @@ export type ThemeModule = {
 };
 
 export type ThemeMods = {
+  singleShowViews?: boolean;
+  archiveLayout?: "list" | "grid";
+  archiveColumns?: number;
+  archiveContentWidth?: number;
+  archivePostsPerPage?: number;
+  archiveFeatured?: boolean;
+  archiveSidebar?: "none" | "left" | "right";
+  archiveGap?: number;
+  archivePadding?: number;
+  archiveRadius?: number;
+  archiveBorder?: boolean;
+  archiveTitleSize?: number;
+  archiveTitleWeight?: number;
+  archiveExcerptLength?: number;
+  archiveShowDate?: boolean;
+  archiveShowAuthor?: boolean;
+  archiveShowCategory?: boolean;
+  archiveShowImages?: boolean;
+  archiveImageWidth?: number;
+  archiveImageHeight?: number;
+  archiveGridImageHeight?: number;
+  archiveImageRadius?: number;
   // Brand & Identity
   logoUrl?: string;
   logoWidth?: number; // e.g. 180 (px)

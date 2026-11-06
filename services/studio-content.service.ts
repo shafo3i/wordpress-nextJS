@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, exists, inArray, count, sql } from "drizzle-orm"
 import { db, type DB } from "@/db"
+import { contentPlainText } from "@/lib/content-text"
 import {
   wpPosts,
   wpComments,
@@ -45,7 +46,7 @@ export async function getStudioCategories(
     )
     .where(eq(wpTermTaxonomy.taxonomy, "category"))
     .orderBy(asc(wpTermTaxonomy.termTaxonomyId))
-  return rows.map((row) => ({ ...row, id: row.id.toString() }))
+  return rows.map((row) => ({ ...row, name: contentPlainText(row.name), id: row.id.toString() }))
 }
 
 export async function getStudioWidgetContent(
@@ -223,15 +224,9 @@ export async function getStudioWidgetContent(
   )
   result.items = rows.map((row) => ({
     id: row.id.toString(),
-    title: row.title,
+    title: contentPlainText(row.title),
     slug: row.slug,
-    excerpt:
-      row.excerpt ||
-      row.content
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 180),
+    excerpt: contentPlainText(row.excerpt || row.content).slice(0, 400),
     content: "",
     date: row.date,
     authorName: row.authorName || "",
@@ -240,10 +235,10 @@ export async function getStudioWidgetContent(
       : {}),
     categories: terms
       .filter((term) => term.postId === row.id && term.taxonomy === "category")
-      .map((term) => term.name),
+      .map((term) => contentPlainText(term.name)),
     tags: terms
       .filter((term) => term.postId === row.id && term.taxonomy === "post_tag")
-      .map((term) => term.name),
+      .map((term) => contentPlainText(term.name)),
     imageUrl:
       imageMap.get(
         thumbnails.find((meta) => meta.postId === row.id)?.value || ""

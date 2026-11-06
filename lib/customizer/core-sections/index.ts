@@ -6,6 +6,7 @@ import { headerSection } from "./header";
 import { navigationSection } from "./navigation";
 import { layoutSection } from "./layout";
 import { singleSection } from "./single";
+import { archiveSection } from "./archive";
 import { footerSection } from "./footer";
 import { cssSection } from "./css";
 
@@ -17,6 +18,7 @@ export const CORE_SECTIONS: CustomizerSection[] = [
   navigationSection,
   layoutSection,
   singleSection,
+  archiveSection,
   footerSection,
   cssSection,
 ];

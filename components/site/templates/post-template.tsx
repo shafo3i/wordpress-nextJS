@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PostViews } from "@/components/site/post-views";
 import Link from "next/link";
 import { Clock, Share2, Check, Copy } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
@@ -21,9 +22,11 @@ export function PostTemplate({
   theme = DEFAULT_THEME,
   sidebarWidgets = [],
   footerWidgets,
+  trackViews = true,
 }: {
   article: ContentItem;
   relatedPosts: ContentItem[];
+  trackViews?: boolean;
   theme?: FrontEndThemeContext;
   sidebarWidgets?: WidgetItem[];
   footerWidgets?: {
@@ -160,6 +163,7 @@ export function PostTemplate({
             </div>
 
             {/* Social Share Buttons */}
+            <PostViews postId={article.id} initialCount={article.viewCount} track={trackViews} visible={mods.singleShowViews !== false} label={t("site.views",theme,"")} locale={activeLocale} />
             {showShareButtons && (
               <div className="flex items-center gap-1.5">
                 <span className="text-[0.6875rem] font-medium mr-1 text-theme-muted hidden sm:inline">

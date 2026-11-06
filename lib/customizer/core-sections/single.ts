@@ -44,6 +44,7 @@ export const singleSection: CustomizerSection = {
       id: "elements",
       title: "Display Elements",
       settings: [
+        { id: "singleShowViews", type: "toggle", label: "", default: true },
         {
           id: "singleShowFeaturedImage",
           type: "toggle",
