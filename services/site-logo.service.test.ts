@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import sharp from "sharp"
-import {
-  getGlobalSiteLogo,
-  normalizeSiteLogo,
-  uploadSiteLogo,
-} from "./site-logo.service"
+import { getGlobalSiteLogo } from "./site-logo.service"
+import { normalizeSiteLogo, uploadSiteLogo } from "./site-logo-upload.service"
 import {
   siteLogoIdSchema,
   SITE_LOGO_MAX_BYTES,

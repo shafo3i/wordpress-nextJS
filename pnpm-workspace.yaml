@@ -1,5 +1,17 @@
 packages: []
 
+# Retain the local platform and install Vercel's Linux x64 optional binaries too.
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+  libc:
+    - current
+    - glibc
+
 allowBuilds:
   sharp: true
   unrs-resolver: true

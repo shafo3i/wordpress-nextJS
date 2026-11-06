@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { verifyAdminOrEditor } from "@/lib/authMIddleware"
 import { SITE_LOGO_MAX_BYTES } from "@/db/schema/cms-site-logo"
-import { SiteLogoError, uploadSiteLogo } from "@/services/site-logo.service"
+import { SiteLogoError } from "@/services/site-logo.service"
+import { uploadSiteLogo } from "@/services/site-logo-upload.service"
 
 export const runtime = "nodejs"
 const response = (body: unknown, status = 200) =>

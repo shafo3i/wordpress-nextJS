@@ -9,8 +9,10 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/authMIddleware", () => ({ verifyAdminOrEditor: mocks.auth }))
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidate }))
 vi.mock("@/services/site-logo.service", () => ({
-  uploadSiteLogo: mocks.upload,
   SiteLogoError: class SiteLogoError extends Error {},
+}))
+vi.mock("@/services/site-logo-upload.service", () => ({
+  uploadSiteLogo: mocks.upload,
 }))
 beforeEach(() => {
   vi.clearAllMocks()
