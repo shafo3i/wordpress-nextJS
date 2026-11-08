@@ -1,43 +1,58 @@
-"use client";
+"use client"
 
-import { FormEvent, useState } from "react";
-import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FormEvent, useState } from "react"
+import { authClient } from "@/lib/auth-client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-export function SignupForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function SignupForm({ dict }: { dict: Record<string, string> }) {
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage("");
-    setIsSubmitting(true);
+    event.preventDefault()
+    setErrorMessage("")
+    setIsSubmitting(true)
 
-    const result = await authClient.signUp.email({
-      name,
-      email,
-      password,
-      callbackURL: "/",
-    });
+    try {
+      const result = await authClient.signUp.email({
+        name,
+        email,
+        password,
+        callbackURL: "/email-verified",
+      })
 
-    if (result.error) {
-      setErrorMessage(result.error.message ?? "Unable to create your account.");
-      setIsSubmitting(false);
-      return;
+      if (result.error) {
+        setErrorMessage(dict["auth.requestError"])
+        return
+      }
+
+      setSuccess(true)
+      setPassword("")
+    } catch {
+      setErrorMessage(dict["auth.requestError"])
+    } finally {
+      setIsSubmitting(false)
     }
-
-    window.location.assign("/");
   }
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
+      {success && (
+        <p
+          role="status"
+          className="border-s-4 border-green-600 bg-green-50 p-3 text-sm"
+        >
+          {dict["auth.emailSent"]}
+        </p>
+      )}
       <div className="space-y-1">
-        <Label htmlFor="signup-name">Name</Label>
+        <Label htmlFor="signup-name">{dict["auth.name"]}</Label>
         <Input
           id="signup-name"
           name="name"
@@ -48,7 +63,7 @@ export function SignupForm() {
         />
       </div>
       <div className="space-y-1">
-        <Label htmlFor="signup-email">Email address</Label>
+        <Label htmlFor="signup-email">{dict["auth.email"]}</Label>
         <Input
           id="signup-email"
           name="email"
@@ -59,7 +74,7 @@ export function SignupForm() {
         />
       </div>
       <div className="space-y-1">
-        <Label htmlFor="signup-password">Password</Label>
+        <Label htmlFor="signup-password">{dict["auth.password"]}</Label>
         <Input
           id="signup-password"
           minLength={8}
@@ -71,13 +86,20 @@ export function SignupForm() {
         />
       </div>
       {errorMessage ? (
-        <p className="border border-destructive px-3 py-2 text-sm text-destructive" role="alert">
+        <p
+          className="border border-destructive px-3 py-2 text-sm text-destructive"
+          role="alert"
+        >
           {errorMessage}
         </p>
       ) : null}
-      <Button className="w-full" disabled={isSubmitting} type="submit">
-        {isSubmitting ? "Creating account..." : "Create account"}
+      <Button
+        className="w-full"
+        disabled={isSubmitting || success}
+        type="submit"
+      >
+        {dict[isSubmitting ? "auth.working" : "auth.signup"]}
       </Button>
     </form>
-  );
+  )
 }

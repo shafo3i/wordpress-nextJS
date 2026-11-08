@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { wpOptions } from "@/db/schema";
 import { getActiveThemeSlug } from "./loader";
+import { getHomepageLayoutSettings } from "./homepage-layout";
 import {
   HomepageBlock,
   HomepageBlockType,
@@ -67,6 +68,7 @@ export async function getHomepageSettings(themeSlug?: string): Promise<HomepageS
           ? parsed.blocks.sort((a: HomepageBlock, b: HomepageBlock) => a.order - b.order)
           : [];
         return {
+          ...getHomepageLayoutSettings(parsed),
           layout,
           blocks,
           sections: parsed.sections,
@@ -113,6 +115,7 @@ export async function saveHomepageSettings(
   const orderedBlocks = (settings.blocks || []).map((b, idx) => ({ ...b, order: idx + 1 }));
 
   const payload: HomepageSettings = {
+    ...getHomepageLayoutSettings(settings),
     layout: settings.layout,
     blocks: orderedBlocks,
     sections: settings.sections,

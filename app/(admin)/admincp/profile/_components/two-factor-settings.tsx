@@ -1,27 +1,34 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { Loader2, KeyRound, Copy, Check, ShieldCheck, AlertCircle, Shield } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react"
+import {
+  Loader2,
+  KeyRound,
+  Copy,
+  Check,
+  ShieldCheck,
+  AlertCircle,
+  Shield,
+} from "lucide-react"
+import { authClient } from "@/lib/auth-client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"
 
 interface TwoFactorSettingsProps {
-  isOpen: boolean;
-  onClose: () => void;
-  user: { twoFactorEnabled?: boolean | null };
-  onUpdate?: () => void;
-  dict?: Record<string, string>;
-  direction?: "rtl" | "ltr";
+  isOpen: boolean
+  onClose: () => void
+  user: { twoFactorEnabled?: boolean | null }
+  onUpdate?: () => void
+  dict?: Record<string, string>
+  direction?: "rtl" | "ltr"
 }
 
 export default function TwoFactorSettings({
@@ -32,187 +39,201 @@ export default function TwoFactorSettings({
   dict = {},
   direction,
 }: TwoFactorSettingsProps) {
-  const isEnabled = !!user.twoFactorEnabled;
+  const isEnabled = !!user.twoFactorEnabled
 
-  const [step, setStep] = useState<"initial" | "setup" | "backup_codes" | "disable">("initial");
-  const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
-  const [totpUri, setTotpUri] = useState("");
-  const [backupCodes, setBackupCodes] = useState<string[]>([]);
-  const [copiedSecret, setCopiedSecret] = useState(false);
-  const [copiedCodes, setCopiedCodes] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [step, setStep] = useState<
+    "initial" | "setup" | "backup_codes" | "disable"
+  >("initial")
+  const [password, setPassword] = useState("")
+  const [code, setCode] = useState("")
+  const [totpUri, setTotpUri] = useState("")
+  const [backupCodes, setBackupCodes] = useState<string[]>([])
+  const [copiedSecret, setCopiedSecret] = useState(false)
+  const [copiedCodes, setCopiedCodes] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   const resetState = () => {
-    setStep("initial");
-    setPassword("");
-    setCode("");
-    setTotpUri("");
-    setBackupCodes([]);
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    setCopiedSecret(false);
-    setCopiedCodes(false);
-  };
+    setStep("initial")
+    setPassword("")
+    setCode("")
+    setTotpUri("")
+    setBackupCodes([])
+    setErrorMsg(null)
+    setSuccessMsg(null)
+    setCopiedSecret(false)
+    setCopiedCodes(false)
+  }
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      resetState();
-      onClose();
+      resetState()
+      onClose()
     }
-  };
+  }
 
   // Extract secret key from otpauth:// URI
   const extractSecretKey = (uri: string): string => {
     try {
-      const parsed = new URL(uri);
-      return parsed.searchParams.get("secret") || uri;
+      const parsed = new URL(uri)
+      return parsed.searchParams.get("secret") || uri
     } catch {
-      return uri;
+      return uri
     }
-  };
+  }
 
   // Start 2FA Setup
   const handleStartSetup = async () => {
     if (!password) {
-      setErrorMsg("Password is required to initialize two-factor authentication.");
-      return;
+      setErrorMsg(dict["auth.passwordRequired"])
+      return
     }
-    setErrorMsg(null);
-    setIsLoading(true);
+    setErrorMsg(null)
+    setIsLoading(true)
 
     try {
-      const res = await authClient.twoFactor.enable({ password });
+      const res = await authClient.twoFactor.enable({ password })
       if (res.error) {
-        setErrorMsg(res.error.message || "Failed to initialize 2FA.");
-        return;
+        setErrorMsg(dict["auth.twoFactorSetupError"])
+        return
       }
 
       if (res.data && "totpURI" in res.data) {
-        setTotpUri(res.data.totpURI as string);
-        setBackupCodes((res.data.backupCodes as string[]) || []);
+        setTotpUri(res.data.totpURI as string)
+        setBackupCodes((res.data.backupCodes as string[]) || [])
       }
-      setStep("setup");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to initialize 2FA.";
-      setErrorMsg(msg);
+      setStep("setup")
+    } catch {
+      const msg = dict["auth.twoFactorSetupError"]
+      setErrorMsg(msg)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // Verify TOTP Code
   const handleVerifyTotp = async () => {
     if (code.trim().length !== 6) {
-      setErrorMsg("Please enter the 6-digit code from your authenticator app.");
-      return;
+      setErrorMsg(dict["auth.authenticatorCode"])
+      return
     }
-    setErrorMsg(null);
-    setIsLoading(true);
+    setErrorMsg(null)
+    setIsLoading(true)
 
     try {
       const res = await authClient.twoFactor.verifyTotp({
         code: code.trim(),
-        trustDevice: true,
-      });
+        trustDevice: false,
+      })
 
       if (res.error) {
-        setErrorMsg(res.error.message || "Invalid verification code. Please check your app.");
-        return;
+        setErrorMsg(dict["auth.twoFactorSetupError"])
+        return
       }
 
-      setSuccessMsg("Two-factor authentication enabled successfully!");
-      setStep("backup_codes");
-      onUpdate?.();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Verification failed.";
-      setErrorMsg(msg);
+      setSuccessMsg(dict["auth.twoFactorEnabled"])
+      setStep("backup_codes")
+      onUpdate?.()
+    } catch {
+      const msg = dict["auth.twoFactorSetupError"]
+      setErrorMsg(msg)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // Disable 2FA
   const handleDisable2FA = async () => {
     if (!password) {
-      setErrorMsg("Password is required to disable two-factor authentication.");
-      return;
+      setErrorMsg(dict["auth.passwordRequired"])
+      return
     }
-    setErrorMsg(null);
-    setIsLoading(true);
+    setErrorMsg(null)
+    setIsLoading(true)
 
     try {
-      const res = await authClient.twoFactor.disable({ password });
+      const res = await authClient.twoFactor.disable({ password })
       if (res.error) {
-        setErrorMsg(res.error.message || "Failed to disable 2FA. Please check your password.");
-        return;
+        setErrorMsg(dict["auth.twoFactorSetupError"])
+        return
       }
 
-      setSuccessMsg("Two-factor authentication disabled successfully.");
-      onUpdate?.();
+      setSuccessMsg(dict["auth.twoFactorDisabled"])
+      onUpdate?.()
       setTimeout(() => {
-        resetState();
-        onClose();
-      }, 1400);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to disable 2FA.";
-      setErrorMsg(msg);
+        resetState()
+        onClose()
+      }, 1400)
+    } catch {
+      const msg = dict["auth.twoFactorSetupError"]
+      setErrorMsg(msg)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  const handleCopySecret = () => {
-    const secret = extractSecretKey(totpUri);
-    navigator.clipboard.writeText(secret);
-    setCopiedSecret(true);
-    setTimeout(() => setCopiedSecret(false), 2000);
-  };
+  const handleCopySecret = async () => {
+    setErrorMsg(null)
+    try {
+      await navigator.clipboard.writeText(extractSecretKey(totpUri))
+      setCopiedSecret(true)
+      setTimeout(() => setCopiedSecret(false), 2000)
+    } catch {
+      setErrorMsg(dict["auth.copyError"])
+    }
+  }
 
-  const handleCopyBackupCodes = () => {
-    navigator.clipboard.writeText(backupCodes.join("\n"));
-    setCopiedCodes(true);
-    setTimeout(() => setCopiedCodes(false), 2000);
-  };
+  const handleCopyBackupCodes = async () => {
+    setErrorMsg(null)
+    try {
+      await navigator.clipboard.writeText(backupCodes.join("\n"))
+      setCopiedCodes(true)
+      setTimeout(() => setCopiedCodes(false), 2000)
+    } catch {
+      setErrorMsg(dict["auth.copyError"])
+    }
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent dir={direction} className="sm:max-w-[480px] rounded-[4px] border border-[#c3c4c7] p-5 bg-white text-[#1d2327] shadow-lg text-start">
-        <DialogHeader className="border-b border-[#c3c4c7] pb-3 pe-8 text-start">
+      <DialogContent
+        dir={direction}
+        className="rounded-[4px] border border-[#c3c4c7] bg-white p-5 text-start text-[#1d2327] shadow-lg sm:max-w-[480px]"
+      >
+        <DialogHeader className="border-b border-[#c3c4c7] pe-8 pb-3 text-start">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="size-4 text-[#2271b1]" />
               <DialogTitle className="text-[15px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.two_factor"] || "Two-Factor Authentication (2FA)"}
+                {dict["admin.profile.two_factor"]}
               </DialogTitle>
             </div>
             {isEnabled ? (
-              <span className="bg-[#edfaef] text-[#007017] border border-[#a7e3b2] text-[11px] font-bold px-2 py-0.5 rounded-[2px]">
-                {dict["admin.profile.two_factor_active"] || "Active"} ✓
+              <span className="rounded-[2px] border border-[#a7e3b2] bg-[#edfaef] px-2 py-0.5 text-[11px] font-bold text-[#007017]">
+                {dict["admin.profile.two_factor_active"]} ✓
               </span>
             ) : (
-              <span className="border-[#c3c4c7] bg-[#f6f7f7] text-[#50575e] text-[11px] font-medium px-2 py-0.5 rounded-[2px] border">
-                {dict["admin.profile.two_factor_disabled"] || "Disabled"}
+              <span className="rounded-[2px] border border-[#c3c4c7] bg-[#f6f7f7] px-2 py-0.5 text-[11px] font-medium text-[#50575e]">
+                {dict["admin.profile.two_factor_disabled"]}
               </span>
             )}
           </div>
-          <DialogDescription className="text-[12px] text-[#646970] mt-1">
-            {dict["admin.profile.two_factor_desc"] || "Protect your account with a time-based code (TOTP) from an authenticator app."}
+          <DialogDescription className="mt-1 text-[12px] text-[#646970]">
+            {dict["admin.profile.two_factor_desc"]}
           </DialogDescription>
         </DialogHeader>
 
         {errorMsg && (
-          <div className="border-s-4 border-[#d63638] bg-[#fcf0f1] text-[#b32d2e] p-2.5 text-[12px] font-medium rounded-[2px] flex items-center gap-1.5">
-            <AlertCircle className="size-3.5 text-[#d63638] shrink-0" />
+          <div className="flex items-center gap-1.5 rounded-[2px] border-s-4 border-[#d63638] bg-[#fcf0f1] p-2.5 text-[12px] font-medium text-[#b32d2e]">
+            <AlertCircle className="size-3.5 shrink-0 text-[#d63638]" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="border-s-4 border-[#00a32a] bg-[#edfaef] text-[#007017] p-2.5 text-[12px] font-medium rounded-[2px] flex items-center gap-1.5">
-            <Check className="size-3.5 text-[#007017] shrink-0" />
+          <div className="flex items-center gap-1.5 rounded-[2px] border-s-4 border-[#00a32a] bg-[#edfaef] p-2.5 text-[12px] font-medium text-[#007017]">
+            <Check className="size-3.5 shrink-0 text-[#007017]" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -222,112 +243,115 @@ export default function TwoFactorSettings({
           <div className="space-y-4 py-2">
             {isEnabled ? (
               <div className="space-y-3">
-                <div className="p-3.5 bg-[#f6f7f7] border border-[#c3c4c7] rounded-[3px] text-[12px] text-[#2c3338] space-y-1">
-                  <div className="font-bold flex items-center gap-1.5 text-[#1d2327]">
-                    <ShieldCheck className="size-4 text-[#007017]" /> {dict["admin.profile.two_factor_active"] || "Active & Protected"}
+                <div className="space-y-1 rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] p-3.5 text-[12px] text-[#2c3338]">
+                  <div className="flex items-center gap-1.5 font-bold text-[#1d2327]">
+                    <ShieldCheck className="size-4 text-[#007017]" />{" "}
+                    {dict["admin.profile.two_factor_active"]}
                   </div>
-                  <p className="text-[#646970] leading-relaxed">
-                    {dict["admin.profile.two_factor_desc"] || "Two-factor authentication is active on your account."}
+                  <p className="leading-relaxed text-[#646970]">
+                    {dict["admin.profile.two_factor_desc"]}
                   </p>
                 </div>
 
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full text-[13px] font-semibold text-[#b32d2e] hover:bg-[#fcf0f1] hover:text-[#d63638] border border-[#d63638] rounded-[3px] h-9 cursor-pointer shadow-none"
+                  className="h-9 w-full cursor-pointer rounded-[3px] border border-[#d63638] text-[13px] font-semibold text-[#b32d2e] shadow-none hover:bg-[#fcf0f1] hover:text-[#d63638]"
                   onClick={() => setStep("disable")}
                 >
-                  {dict["admin.profile.disable_two_factor"] || "Disable 2FA"}
+                  {dict["admin.profile.disable_two_factor"]}
                 </Button>
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-[13px] text-[#50575e] leading-relaxed">
-                  {dict["admin.profile.two_factor_desc"] || "Enter your current password to begin setting up an authenticator app."}
+                <p className="text-[13px] leading-relaxed text-[#50575e]">
+                  {dict["admin.profile.two_factor_desc"]}
                 </p>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="twofa-pw" className="text-[13px] font-semibold text-[#1d2327]">
-                    {dict["admin.profile.current_password"] || "Current Password"}
+                  <Label
+                    htmlFor="twofa-pw"
+                    className="text-[13px] font-semibold text-[#1d2327]"
+                  >
+                    {dict["admin.profile.current_password"]}
                   </Label>
                   <Input
                     id="twofa-pw"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-8.5 text-[13px] bg-white border border-[#8c8f94] focus:border-[#2271b1] rounded-[4px] focus:ring-1 focus:ring-[#2271b1] focus:outline-hidden text-start placeholder:text-start"
+                    className="h-8.5 rounded-[4px] border border-[#8c8f94] bg-white text-start text-[13px] placeholder:text-start focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] focus:outline-hidden"
                   />
                 </div>
 
                 <Button
                   size="sm"
-                  className="w-full h-9 text-[13px] font-semibold bg-[#2271b1] hover:bg-[#135e96] text-white border border-[#2271b1] rounded-[3px] transition-colors shadow-xs cursor-pointer"
+                  className="h-9 w-full cursor-pointer rounded-[3px] border border-[#2271b1] bg-[#2271b1] text-[13px] font-semibold text-white shadow-xs transition-colors hover:bg-[#135e96]"
                   onClick={handleStartSetup}
                   disabled={isLoading || !password}
                 >
-                  {isLoading ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-                  {dict["admin.profile.enable_two_factor"] || "Continue to QR Code"} →
+                  {isLoading ? (
+                    <Loader2 className="ml-1.5 size-3.5 animate-spin" />
+                  ) : null}
+                  {dict["admin.profile.enable_two_factor"]} →
                 </Button>
               </div>
             )}
           </div>
         )}
 
-        {/* STEP 2: SETUP (SCAN QR & ENTER CODE) */}
+        {/* STEP 2: SETUP (ENTER KEY & VERIFY CODE) */}
         {step === "setup" && (
           <div className="space-y-4 py-2">
-            <div className="p-3.5 bg-[#f6f7f7] border border-[#c3c4c7] rounded-[3px] text-center space-y-2.5">
-              <p className="text-[13px] text-[#1d2327] font-semibold">
-                {dict["admin.profile.scan_qr_desc"] || "Scan the QR code using your authenticator app:"}
+            <div className="space-y-2.5 rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] p-3.5 text-center">
+              <p className="text-[13px] font-semibold text-[#1d2327]">
+                {dict["auth.manualSetup"]}
               </p>
 
-              {totpUri && (
-                <div className="mx-auto w-36 h-36 bg-white p-2 rounded-[3px] border border-[#c3c4c7] flex items-center justify-center shadow-2xs">
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(totpUri)}`}
-                    alt="TOTP QR"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              )}
-
               <div className="pt-1 text-start">
-                <span className="text-[12px] text-[#646970] block mb-1">
-                  {dict["admin.profile.or_enter_secret"] || "Or enter secret key manually:"}
+                <span className="mb-1 block text-[12px] text-[#646970]">
+                  {dict["auth.secretKey"]}
                 </span>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
                     readOnly
                     value={extractSecretKey(totpUri)}
-                    className="flex-1 px-2.5 py-1 text-[12px] font-mono bg-white border border-[#8c8f94] rounded-[3px] text-[#2c3338] text-center select-all focus:outline-none"
+                    className="flex-1 rounded-[3px] border border-[#8c8f94] bg-white px-2.5 py-1 text-center font-mono text-[12px] text-[#2c3338] select-all focus:outline-none"
                     dir="ltr"
                   />
                   <button
                     type="button"
                     onClick={handleCopySecret}
-                    className="px-2.5 py-1 bg-[#f6f7f7] border border-[#c3c4c7] hover:bg-[#f0f0f1] rounded-[3px] text-[12px] font-semibold text-[#2271b1] flex items-center gap-1 transition-colors cursor-pointer"
+                    className="flex cursor-pointer items-center gap-1 rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] px-2.5 py-1 text-[12px] font-semibold text-[#2271b1] transition-colors hover:bg-[#f0f0f1]"
                   >
-                    {copiedSecret ? <Check className="size-3 text-[#007017]" /> : <Copy className="size-3" />}
-                    {copiedSecret ? "Copied" : "Copy"}
+                    {copiedSecret ? (
+                      <Check className="size-3 text-[#007017]" />
+                    ) : (
+                      <Copy className="size-3" />
+                    )}
+                    {dict[copiedSecret ? "auth.copied" : "auth.copy"]}
                   </button>
                 </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="verify-code" className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.totp_code"] || "Verification Code (6 digits)"}
+              <Label
+                htmlFor="verify-code"
+                className="text-[13px] font-semibold text-[#1d2327]"
+              >
+                {dict["admin.profile.totp_code"]}
               </Label>
               <Input
                 id="verify-code"
                 type="text"
-                placeholder="123456"
+                autoComplete="one-time-code"
+                inputMode="numeric"
                 maxLength={6}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                className="h-10 text-center font-mono text-xl tracking-[0.25em] font-bold bg-white border border-[#8c8f94] focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] rounded-[4px] focus:outline-hidden"
+                className="h-10 rounded-[4px] border border-[#8c8f94] bg-white text-center font-mono text-xl font-bold tracking-[0.25em] focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] focus:outline-hidden"
                 dir="ltr"
                 autoFocus
               />
@@ -335,12 +359,14 @@ export default function TwoFactorSettings({
 
             <Button
               size="sm"
-              className="w-full h-9 text-[13px] font-semibold bg-[#2271b1] hover:bg-[#135e96] text-white border border-[#2271b1] rounded-[3px] transition-colors shadow-xs cursor-pointer"
+              className="h-9 w-full cursor-pointer rounded-[3px] border border-[#2271b1] bg-[#2271b1] text-[13px] font-semibold text-white shadow-xs transition-colors hover:bg-[#135e96]"
               onClick={handleVerifyTotp}
               disabled={isLoading || code.trim().length !== 6}
             >
-              {isLoading ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-              {dict["admin.profile.save_changes"] || "Confirm & Activate 2FA"}
+              {isLoading ? (
+                <Loader2 className="ml-1.5 size-3.5 animate-spin" />
+              ) : null}
+              {dict["admin.profile.save_changes"]}
             </Button>
           </div>
         )}
@@ -348,20 +374,21 @@ export default function TwoFactorSettings({
         {/* STEP 3: BACKUP CODES */}
         {step === "backup_codes" && (
           <div className="space-y-3.5 py-2">
-            <div className="p-3.5 bg-[#f6f7f7] border border-[#c3c4c7] rounded-[3px] text-[12px] text-[#2c3338] space-y-1 leading-relaxed">
-              <div className="font-bold flex items-center gap-1.5 text-[#1d2327]">
-                <KeyRound className="size-3.5 text-[#2271b1]" /> {dict["admin.profile.backup_codes"] || "Recovery Backup Codes"}
+            <div className="space-y-1 rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] p-3.5 text-[12px] leading-relaxed text-[#2c3338]">
+              <div className="flex items-center gap-1.5 font-bold text-[#1d2327]">
+                <KeyRound className="size-3.5 text-[#2271b1]" />{" "}
+                {dict["admin.profile.backup_codes"]}
               </div>
               <p className="text-[#646970]">
-                {dict["admin.profile.backup_codes_desc"] || "Save these codes securely in case you lose access to your device."}
+                {dict["admin.profile.backup_codes_desc"]}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 p-3 bg-[#f6f7f7] border border-[#c3c4c7] rounded-[3px]">
+            <div className="grid grid-cols-2 gap-2 rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] p-3">
               {backupCodes.map((c, i) => (
                 <div
                   key={i}
-                  className="px-2 py-1 bg-white border border-[#c3c4c7] rounded-[2px] text-center font-mono text-[12px] text-[#1d2327] font-bold select-all tracking-wider"
+                  className="rounded-[2px] border border-[#c3c4c7] bg-white px-2 py-1 text-center font-mono text-[12px] font-bold tracking-wider text-[#1d2327] select-all"
                   dir="ltr"
                 >
                   {c}
@@ -373,20 +400,26 @@ export default function TwoFactorSettings({
               <button
                 type="button"
                 onClick={handleCopyBackupCodes}
-                className="flex-1 h-8.5 bg-[#f6f7f7] border border-[#c3c4c7] hover:bg-[#f0f0f1] text-[#2271b1] rounded-[3px] text-[12px] font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                className="flex h-8.5 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[12px] font-semibold text-[#2271b1] transition-colors hover:bg-[#f0f0f1]"
               >
-                {copiedCodes ? <Check className="size-3.5 text-[#007017]" /> : <Copy className="size-3.5" />}
-                {copiedCodes ? "Copied" : dict["admin.profile.copy_codes"] || "Copy All Codes"}
+                {copiedCodes ? (
+                  <Check className="size-3.5 text-[#007017]" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
+                {copiedCodes
+                  ? dict["auth.copied"]
+                  : dict["admin.profile.copy_codes"]}
               </button>
               <Button
                 size="sm"
-                className="flex-1 h-8.5 text-[13px] font-semibold bg-[#2271b1] hover:bg-[#135e96] text-white border border-[#2271b1] rounded-[3px] transition-colors shadow-xs cursor-pointer"
+                className="h-8.5 flex-1 cursor-pointer rounded-[3px] border border-[#2271b1] bg-[#2271b1] text-[13px] font-semibold text-white shadow-xs transition-colors hover:bg-[#135e96]"
                 onClick={() => {
-                  resetState();
-                  onClose();
+                  resetState()
+                  onClose()
                 }}
               >
-                {dict["admin.profile.cancel"] || "Done & Close"}
+                {dict["admin.profile.cancel"]}
               </Button>
             </div>
           </div>
@@ -395,26 +428,29 @@ export default function TwoFactorSettings({
         {/* STEP 4: DISABLE */}
         {step === "disable" && (
           <div className="space-y-3 py-2">
-            <div className="p-3.5 bg-[#fcf0f1] border border-[#d63638] rounded-[3px] text-[12px] text-[#d63638] space-y-1">
-              <div className="font-bold flex items-center gap-1.5">
-                <AlertCircle className="size-3.5 text-[#d63638]" /> {dict["admin.profile.disable_two_factor"] || "Confirm Disabling 2FA"}
+            <div className="space-y-1 rounded-[3px] border border-[#d63638] bg-[#fcf0f1] p-3.5 text-[12px] text-[#d63638]">
+              <div className="flex items-center gap-1.5 font-bold">
+                <AlertCircle className="size-3.5 text-[#d63638]" />{" "}
+                {dict["admin.profile.disable_two_factor"]}
               </div>
               <p className="leading-relaxed">
-                {dict["admin.profile.two_factor_desc"] || "Are you sure you want to disable two-factor authentication?"}
+                {dict["admin.profile.two_factor_desc"]}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="disable-pw" className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.current_password"] || "Password Confirmation"}
+              <Label
+                htmlFor="disable-pw"
+                className="text-[13px] font-semibold text-[#1d2327]"
+              >
+                {dict["admin.profile.current_password"]}
               </Label>
               <Input
                 id="disable-pw"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="h-8.5 text-[13px] bg-white border border-[#8c8f94] focus:border-[#2271b1] rounded-[4px] focus:ring-1 focus:ring-[#2271b1] focus:outline-hidden text-start placeholder:text-start"
+                className="h-8.5 rounded-[4px] border border-[#8c8f94] bg-white text-start text-[13px] placeholder:text-start focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1] focus:outline-hidden"
                 autoFocus
               />
             </div>
@@ -424,26 +460,28 @@ export default function TwoFactorSettings({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="flex-1 h-8.5 text-[13px] font-semibold bg-[#f6f7f7] hover:bg-[#f0f0f1] text-[#2271b1] border border-[#c3c4c7] rounded-[3px] cursor-pointer"
+                className="h-8.5 flex-1 cursor-pointer rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[13px] font-semibold text-[#2271b1] hover:bg-[#f0f0f1]"
                 onClick={() => setStep("initial")}
                 disabled={isLoading}
               >
-                {dict["admin.profile.cancel"] || dict["common.cancel"] || "Back"}
+                {dict["admin.profile.cancel"]}
               </Button>
               <Button
                 type="button"
                 size="sm"
-                className="flex-1 h-8.5 text-[13px] font-semibold bg-[#b32d2e] hover:bg-[#8a2424] text-white border border-[#b32d2e] rounded-[3px] transition-colors cursor-pointer shadow-xs"
+                className="h-8.5 flex-1 cursor-pointer rounded-[3px] border border-[#b32d2e] bg-[#b32d2e] text-[13px] font-semibold text-white shadow-xs transition-colors hover:bg-[#8a2424]"
                 onClick={handleDisable2FA}
                 disabled={isLoading || !password}
               >
-                {isLoading ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-                {dict["admin.profile.disable_two_factor"] || "Confirm Disable"}
+                {isLoading ? (
+                  <Loader2 className="ml-1.5 size-3.5 animate-spin" />
+                ) : null}
+                {dict["admin.profile.disable_two_factor"]}
               </Button>
             </div>
           </div>
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

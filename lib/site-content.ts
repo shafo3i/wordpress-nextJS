@@ -345,8 +345,10 @@ export async function getPublishedPageById(
     return null;
   }
 
-  // If a locale is requested, check if the page has a translation in that locale
-  if (locale) {
+  const effectiveLocale = locale || (await getDefaultLanguage())?.code || "en";
+
+  // The root homepage must resolve its translation just like a prefixed route.
+  if (effectiveLocale) {
     const transRows = await db
       .select({
         translationGroupId: postTranslationsTable.translationGroupId,
@@ -358,7 +360,7 @@ export async function getPublishedPageById(
 
     if (
       transRows[0]?.translationGroupId &&
-      transRows[0].languageCode !== locale
+      transRows[0].languageCode !== effectiveLocale
     ) {
       const sibling = await db
         .select({ postId: postTranslationsTable.postId })
@@ -370,7 +372,8 @@ export async function getPublishedPageById(
               postTranslationsTable.translationGroupId,
               transRows[0].translationGroupId
             ),
-            eq(postTranslationsTable.languageCode, locale),
+            eq(postTranslationsTable.languageCode, effectiveLocale),
+            eq(wpPosts.postType, "page"),
             eq(wpPosts.postStatus, "publish")
           )
         )
@@ -378,8 +381,12 @@ export async function getPublishedPageById(
 
       if (sibling[0]?.postId) {
         targetId = sibling[0].postId;
-      }
+      } else return null;
     }
+    if (
+      !transRows[0] ||
+      (transRows[0].languageCode !== effectiveLocale && !transRows[0].translationGroupId)
+    ) return null;
   }
 
   const rows = await db
@@ -401,7 +408,7 @@ export async function getPublishedPageById(
   if (!rows.length) return null;
   return await getPublishedPageBySlug(
     rows[0].slug,
-    rows[0].locale || locale || "en"
+    effectiveLocale
   );
 }
 

@@ -1,39 +1,42 @@
-import { getActiveThemeSlug, getAllThemes } from "@/lib/themes/loader";
-import { getHomepageSettings } from "@/lib/themes/homepage-blocks";
-import { getCategoriesForMenu } from "@/lib/menus/db";
-import { Theme } from "@/lib/themes/types";
-import { HomepageSettings } from "@/lib/themes/homepage-types";
-import { getAvailableWidgets } from "@/lib/widgets/db";
-import { AvailableWidgetDescriptor } from "@/lib/widgets/types";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { getActiveThemeSlug, getAllThemes } from "@/lib/themes/loader"
+import {
+  getHomepageSettings,
+  getThemeDefaultSettings,
+} from "@/lib/themes/homepage-blocks"
+import { getHomepageLayoutSettings } from "@/lib/themes/homepage-layout"
+import { getOptions } from "@/services/settings.service"
+import { getPostTranslations } from "@/services/language.service"
 
-export interface ThemeSettingsQueryData {
-  allThemes: Theme[];
-  currentTheme: Theme;
-  targetSlug: string;
-  homepageSettings: HomepageSettings;
-  categories: { id: string; name: string; slug: string }[];
-  availableWidgets: AvailableWidgetDescriptor[];
-}
-
-export async function getThemeSettingsQuery(targetThemeSlug?: string): Promise<ThemeSettingsQueryData> {
-  const activeSlug = await getActiveThemeSlug();
-  const targetSlug = targetThemeSlug || activeSlug;
-
-  const [allThemes, homepageSettings, categories, availableWidgets] = await Promise.all([
+export async function getThemeSettingsQuery(targetThemeSlug?: string) {
+  await verifyAdminOrEditor()
+  const [activeSlug, allThemes, front] = await Promise.all([
+    getActiveThemeSlug(),
     getAllThemes(),
-    getHomepageSettings(targetSlug),
-    getCategoriesForMenu(),
-    getAvailableWidgets(),
-  ]);
-
-  const currentTheme = allThemes.find((t) => t.slug === targetSlug) || allThemes[0];
-
+    getOptions(["show_on_front", "page_on_front"]),
+  ])
+  const currentTheme =
+    allThemes.find((theme) => theme.slug === (targetThemeSlug || activeSlug)) ||
+    allThemes.find((theme) => theme.slug === activeSlug) ||
+    allThemes[0]
+  const settings = await getHomepageSettings(currentTheme.slug)
+  const usesPage =
+    front.show_on_front === "page" && Boolean(front.page_on_front)
+  const studioPages =
+    usesPage && /^\d+$/.test(front.page_on_front)
+      ? await getPostTranslations(BigInt(front.page_on_front))
+      : []
   return {
     allThemes,
     currentTheme,
-    targetSlug: currentTheme?.slug || targetSlug,
-    homepageSettings,
-    categories,
-    availableWidgets,
-  };
+    usesPage,
+    initialLayout: getHomepageLayoutSettings(settings),
+    defaultLayout: getHomepageLayoutSettings(
+      getThemeDefaultSettings(currentTheme.slug)
+    ),
+    studioPages: studioPages.map((page) => ({
+      id: String(page.postId),
+      language: page.nativeName || page.languageName,
+    })),
+  }
 }

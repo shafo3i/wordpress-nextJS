@@ -1,101 +1,102 @@
-"use client";
+"use client"
 
-import { FormEvent, useState } from "react";
-import { authClient } from "@/lib/auth-client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState, type FormEvent } from "react"
+import { authClient } from "@/lib/auth-client"
+import {
+  authFlowUrl,
+  requiresTwoFactor,
+  safeAuthRedirect,
+} from "@/lib/auth-navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-type LoginFormProps = {
-  accountType: "admin" | "user";
-  redirectTo: string;
-};
-
-export function LoginForm({ accountType, redirectTo }: LoginFormProps) {
-  const [email, setEmail] = useState(accountType === "admin" ? "admin@pressforge.local" : "");
-  const [password, setPassword] = useState(accountType === "admin" ? "Admin123456!" : "");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage("");
-    setIsSubmitting(true);
-
-    const result = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: redirectTo,
-    });
-
-    if (result.error) {
-      setErrorMessage(result.error.message ?? "Unable to sign in.");
-      setIsSubmitting(false);
-      return;
+export function LoginForm({
+  accountType,
+  redirectTo,
+  dict,
+}: {
+  accountType: "admin" | "user"
+  redirectTo: string
+  dict: Record<string, string>
+}) {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [busy, setBusy] = useState(false)
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (busy) return
+    setError("")
+    setBusy(true)
+    try {
+      const result = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+        callbackURL: safeAuthRedirect(redirectTo),
+      })
+      if (result.error)
+        setError(
+          dict[
+            result.error.code === "EMAIL_NOT_VERIFIED"
+              ? "auth.emailNotVerified"
+              : "auth.loginError"
+          ]
+        )
+      else
+        window.location.assign(
+          requiresTwoFactor(result.data)
+            ? authFlowUrl(
+                "/verify-2fa",
+                redirectTo,
+                accountType === "admin" ? "/cms-admin" : "/cms-login"
+              )
+            : safeAuthRedirect(redirectTo)
+        )
+    } catch {
+      setError(dict["auth.requestError"])
+    } finally {
+      setBusy(false)
     }
-
-    window.location.assign(redirectTo);
   }
-
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      {accountType === "admin" && (
-        <div className="rounded border border-amber-200 bg-amber-50/90 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="font-bold uppercase tracking-wider text-[10px] text-amber-800 dark:text-amber-300">
-              Default Administrator Credentials
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setEmail("admin@pressforge.local");
-                setPassword("Admin123456!");
-              }}
-              className="text-[11px] font-semibold text-[#2271b1] hover:underline"
-            >
-              Fill Credentials
-            </button>
-          </div>
-          <div className="font-mono text-[11px] space-y-0.5 text-slate-700 dark:text-slate-300">
-            <div>Email: <span className="font-bold text-[#1d2327] dark:text-white">admin@pressforge.local</span></div>
-            <div>Password: <span className="font-bold text-[#1d2327] dark:text-white">Admin123456!</span></div>
-          </div>
-        </div>
-      )}
+    <form className="space-y-4" onSubmit={submit}>
       <div className="space-y-1">
-        <Label htmlFor={`${accountType}-email`}>
-          Email address
-        </Label>
+        <Label htmlFor="login-email">{dict["auth.email"]}</Label>
         <Input
-          id={`${accountType}-email`}
+          id="login-email"
           name="email"
-          onChange={(event) => setEmail(event.target.value)}
-          required
           type="email"
+          dir="ltr"
+          autoComplete="username"
+          required
           value={email}
+          onChange={(event) => setEmail(event.target.value)}
         />
       </div>
       <div className="space-y-1">
-        <Label htmlFor={`${accountType}-password`}>
-          Password
-        </Label>
+        <Label htmlFor="login-password">{dict["auth.password"]}</Label>
         <Input
-          id={`${accountType}-password`}
+          id="login-password"
           name="password"
-          onChange={(event) => setPassword(event.target.value)}
-          required
           type="password"
+          autoComplete="current-password"
+          required
           value={password}
+          onChange={(event) => setPassword(event.target.value)}
         />
       </div>
-      {errorMessage ? (
-        <p className="border border-destructive px-3 py-2 text-sm text-destructive" role="alert">
-          {errorMessage}
+      {error && (
+        <p
+          role="alert"
+          className="border-s-4 border-red-600 bg-red-50 p-3 text-sm"
+        >
+          {error}
         </p>
-      ) : null}
-      <Button className="w-full" disabled={isSubmitting} type="submit">
-        {isSubmitting ? "Signing in..." : "Sign in"}
+      )}
+      <Button className="w-full" disabled={busy} type="submit">
+        {dict[busy ? "auth.working" : "auth.login.submit"]}
       </Button>
     </form>
-  );
+  )
 }

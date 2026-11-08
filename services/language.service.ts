@@ -262,11 +262,17 @@ export async function getTranslations(
 
     // 3. Database overrides
     const dbTranslations = await getDbTranslations(locale, database);
+    // Encoding-damaged overrides must not hide readable template translations.
+    const readableOverrides = Object.fromEntries(
+        Object.entries(dbTranslations).filter(([, value]) =>
+            !/(?:^|\s)\?{2,}(?=\s|$|[.,:])/.test(value) && !value.includes("\uFFFD")
+        )
+    );
 
     return {
         ...enTemplate,
         ...localeTemplate,
-        ...dbTranslations,
+        ...readableOverrides,
     };
 }
 

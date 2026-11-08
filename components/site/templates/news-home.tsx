@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { Flame } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import type { HomepageBlock, HomepageSettings } from "@/lib/themes/homepage-types";
@@ -9,12 +7,12 @@ import type { WidgetItem } from "@/lib/widgets/db";
 import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
 import { SiteHeader } from "@/components/site/header/site-header";
 import { SiteFooter } from "@/components/site/footer/site-footer";
-import { ThemeSectionHeader } from "@/components/site/section-header";
 import { SidebarWidgetRenderer } from "@/components/site/sidebar/sidebar-renderer";
 import React from "react";
 import { renderEditorialBlock } from "@/components/site/blocks/registry";
 import { BuilderSectionRenderer } from "@/components/site/builder";
-import { DEFAULT_THEME, isSerifHeading, isDarkTheme } from "@/components/site/utils";
+import { getHomepageLayoutStyle } from "@/lib/themes/homepage-layout";
+import { DEFAULT_THEME } from "@/components/site/utils";
 
 /**
  * Main Front-page News Layout Component
@@ -41,9 +39,6 @@ export function NewsHome({
     col4?: WidgetItem[];
   };
 }) {
-  const isDark = isDarkTheme(theme);
-  const isSerif = isSerifHeading(theme);
-
   const activeLayout = settings?.layout || "right_sidebar";
   const rawBlocks = settings?.blocks || blocks || [];
   const activeBlocks = rawBlocks.filter((b) => b.enabled);
@@ -113,6 +108,7 @@ export function NewsHome({
 
   return (
     <div
+      style={getHomepageLayoutStyle(settings)}
       dir={theme.direction || "ltr"}
       lang={theme.locale || "en"}
       className="min-h-screen transition-colors bg-theme-bg text-theme-text"
@@ -127,9 +123,9 @@ export function NewsHome({
             renderContent()
           ) : activeLayout === "right_sidebar" ? (
             hasPrimary ? (
-              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
-                <div className="min-w-0">{renderContent()}</div>
-                <aside className="space-y-6 lg:sticky lg:top-6">
+              <div dir="ltr" className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,min(var(--feed-sidebar-width,320px),35%))] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <div dir={theme.direction || "ltr"} className="min-w-0">{renderContent()}</div>
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6">
                   {renderSidebar(primarySidebar)}
                 </aside>
               </div>
@@ -138,39 +134,39 @@ export function NewsHome({
             )
           ) : activeLayout === "left_sidebar" ? (
             hasPrimary ? (
-              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
-                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+              <div dir="ltr" className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[minmax(0,min(var(--feed-sidebar-width,320px),35%))_minmax(0,1fr)] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-2 lg:order-1">
                   {renderSidebar(primarySidebar)}
                 </aside>
-                <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
+                <div dir={theme.direction || "ltr"} className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
               </div>
             ) : (
               <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8">{renderContent()}</div>
             )
           ) : activeLayout === "dual_sidebar" ? (
             hasPrimary && hasSecondary ? (
-              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
-                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+              <div dir="ltr" className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[minmax(0,min(var(--feed-sidebar-width,260px),25%))_minmax(0,1fr)_minmax(0,min(var(--feed-sidebar-width,300px),25%))] gap-[var(--feed-column-gap,2rem)] items-start">
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-2 lg:order-1">
                   {renderSidebar(secondarySidebar)}
                 </aside>
-                <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
-                <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
+                <div dir={theme.direction || "ltr"} className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-3 lg:order-3">
                   {renderSidebar(primarySidebar)}
                 </aside>
               </div>
             ) : hasPrimary ? (
-              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
-                <div className="min-w-0">{renderContent()}</div>
-                <aside className="space-y-6 lg:sticky lg:top-6">
+              <div dir="ltr" className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,min(var(--feed-sidebar-width,320px),35%))] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <div dir={theme.direction || "ltr"} className="min-w-0">{renderContent()}</div>
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6">
                   {renderSidebar(primarySidebar)}
                 </aside>
               </div>
             ) : hasSecondary ? (
-              <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
-                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+              <div dir="ltr" className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[minmax(0,min(var(--feed-sidebar-width,320px),35%))_minmax(0,1fr)] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-2 lg:order-1">
                   {renderSidebar(secondarySidebar)}
                 </aside>
-                <div className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
+                <div dir={theme.direction || "ltr"} className="min-w-0 order-1 lg:order-2">{renderContent()}</div>
               </div>
             ) : (
               <div className="theme-container mx-auto px-4 sm:px-6 lg:px-8 py-8">{renderContent()}</div>
@@ -186,9 +182,9 @@ export function NewsHome({
             renderContent()
           ) : activeLayout === "right_sidebar" ? (
             hasPrimary ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
-                <div className="min-w-0">{renderContent()}</div>
-                <aside className="space-y-6 lg:sticky lg:top-6">
+              <div dir="ltr" className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,min(var(--feed-sidebar-width,320px),35%))] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <div dir={theme.direction || "ltr"} className="min-w-0">{renderContent()}</div>
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6">
                   {renderSidebar(primarySidebar)}
                 </aside>
               </div>
@@ -197,8 +193,8 @@ export function NewsHome({
             )
           ) : activeLayout === "left_sidebar" ? (
             hasPrimary ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
-                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+              <div dir="ltr" className="grid grid-cols-1 lg:grid-cols-[minmax(0,min(var(--feed-sidebar-width,320px),35%))_minmax(0,1fr)] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-2 lg:order-1">
                   {renderSidebar(primarySidebar)}
                 </aside>
                 <div className="space-y-12 min-w-0 order-1 lg:order-2">
@@ -210,27 +206,27 @@ export function NewsHome({
             )
           ) : activeLayout === "dual_sidebar" ? (
             hasPrimary && hasSecondary ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_300px] gap-8 items-start">
-                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+              <div dir="ltr" className="grid grid-cols-1 lg:grid-cols-[minmax(0,min(var(--feed-sidebar-width,260px),25%))_minmax(0,1fr)_minmax(0,min(var(--feed-sidebar-width,300px),25%))] gap-[var(--feed-column-gap,2rem)] items-start">
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-2 lg:order-1">
                   {renderSidebar(secondarySidebar)}
                 </aside>
                 <div className="space-y-12 min-w-0 order-1 lg:order-2">
                   {renderContent()}
                 </div>
-                <aside className="space-y-6 lg:sticky lg:top-6 order-3 lg:order-3">
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-3 lg:order-3">
                   {renderSidebar(primarySidebar)}
                 </aside>
               </div>
             ) : hasPrimary ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10 items-start">
-                <div className="min-w-0">{renderContent()}</div>
-                <aside className="space-y-6 lg:sticky lg:top-6">
+              <div dir="ltr" className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,min(var(--feed-sidebar-width,320px),35%))] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <div dir={theme.direction || "ltr"} className="min-w-0">{renderContent()}</div>
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6">
                   {renderSidebar(primarySidebar)}
                 </aside>
               </div>
             ) : hasSecondary ? (
-              <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 items-start">
-                <aside className="space-y-6 lg:sticky lg:top-6 order-2 lg:order-1">
+              <div dir="ltr" className="grid grid-cols-1 lg:grid-cols-[minmax(0,min(var(--feed-sidebar-width,320px),35%))_minmax(0,1fr)] gap-[var(--feed-column-gap,2.5rem)] items-start">
+                <aside dir={theme.direction || "ltr"} className="space-y-6 lg:[position:var(--feed-sidebar-position,sticky)] lg:top-6 order-2 lg:order-1">
                   {renderSidebar(secondarySidebar)}
                 </aside>
                 <div className="space-y-12 min-w-0 order-1 lg:order-2">

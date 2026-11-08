@@ -35,7 +35,7 @@ export default async function Page({
   };
 
   if (frontOptions.show_on_front === "page" && frontOptions.page_on_front) {
-    const frontPage = await getPublishedPageById(frontOptions.page_on_front, lang);
+    const frontPage = await getPublishedPageById(frontOptions.page_on_front, theme.locale);
     if (frontPage) {
       return (
         <PublicAdminBar pageId={frontPage.id} siteTitle={theme.siteTitle}>

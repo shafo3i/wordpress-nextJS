@@ -122,7 +122,7 @@ export async function getFrontEndThemeContext(options?: {
     if (pMenu && pMenu.items.length > 0) {
       primaryNav = pMenu.items.map((item) => ({
         ...item,
-        url: localizePath(item.url, activeLocale, defaultLocale),
+        url: localizePath(item.url, activeLocale, defaultLocale, activeLanguages.map((language) => language.code)),
       }));
     }
   }
@@ -132,7 +132,7 @@ export async function getFrontEndThemeContext(options?: {
     if (fMenu && fMenu.items.length > 0) {
       footerNav = fMenu.items.map((item) => ({
         ...item,
-        url: localizePath(item.url, activeLocale, defaultLocale),
+        url: localizePath(item.url, activeLocale, defaultLocale, activeLanguages.map((language) => language.code)),
       }));
     }
   }

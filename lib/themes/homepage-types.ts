@@ -118,6 +118,9 @@ export interface PageBuilderSection {
 }
 
 export type HomepageSettings = {
+  sidebarWidth?: number | null;
+  columnGap?: number | null;
+  stickySidebars?: boolean;
   layout: HomepageLayout;
   blocks: HomepageBlock[];
   sections?: PageBuilderSection[];

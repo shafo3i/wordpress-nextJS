@@ -23,19 +23,25 @@ export function t(key: string, theme?: FrontEndThemeContext, fallback?: string):
   return fallback !== undefined ? fallback : key;
 }
 
-export function localizePath(path: string, locale?: string, defaultLocale?: string): string {
+export function localizePath(path: string, locale?: string, defaultLocale?: string, supportedLocales: readonly string[] = []): string {
   if (!path) return "/";
-  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("#") || path.startsWith("mailto:")) {
+  if (/^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(path)) {
     return path;
   }
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  if (!locale || (defaultLocale && locale === defaultLocale)) {
+  if (!locale) return path.startsWith("/") ? path : `/${path}`;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const suffixIndex = normalized.search(/[?#]/);
+  let pathname = suffixIndex < 0 ? normalized : normalized.slice(0, suffixIndex);
+  const suffix = suffixIndex < 0 ? "" : normalized.slice(suffixIndex);
+  const firstSegment = pathname.split("/")[1];
+  if ([locale, defaultLocale, ...supportedLocales].includes(firstSegment)) {
+    pathname = pathname.slice(firstSegment.length + 1) || "/";
+  }
+  const cleanPath = pathname + suffix;
+  if (locale === defaultLocale) {
     return cleanPath;
   }
-  if (cleanPath === `/${locale}` || cleanPath.startsWith(`/${locale}/`)) {
-    return cleanPath;
-  }
-  return cleanPath === "/" ? `/${locale}` : `/${locale}${cleanPath}`;
+  return (pathname === "/" ? `/${locale}` : `/${locale}${pathname}`) + suffix;
 }
 
 export function getPostUrl(slug: string, theme?: FrontEndThemeContext): string {
