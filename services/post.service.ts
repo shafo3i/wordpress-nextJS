@@ -1,7 +1,20 @@
-import { getPostDateBounds } from "@/lib/post-date-filter";
-import { postViewsExpression } from "./post-views.service";
-import { and, asc, count, desc, eq, gte, lt, ilike, inArray, ne, or, sql } from "drizzle-orm";
-import { DB, db } from "@/db";
+import { getPostDateBounds } from "@/lib/post-date-filter"
+import { postViewsExpression } from "./post-views.service"
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  lt,
+  ilike,
+  inArray,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm"
+import { DB, db } from "@/db"
 import {
   wpComments,
   wpPostmeta,
@@ -10,30 +23,34 @@ import {
   wpTermTaxonomy,
   wpTerms,
   user,
-} from "@/db/schema";
-import { languagesTable, postTranslationsTable, termTranslationsTable } from "@/db/schema/cms-languages";
+} from "@/db/schema"
+import {
+  languagesTable,
+  postTranslationsTable,
+  termTranslationsTable,
+} from "@/db/schema/cms-languages"
 import {
   getPostLanguage,
   getPostTranslations,
   setPostLanguage,
   type LinkedPostTranslation,
-} from "./language.service";
+} from "./language.service"
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 export function toBigInt(val: unknown): bigint {
-  if (val === null || val === undefined || val === "") return BigInt(0);
-  if (typeof val === "bigint") return val;
+  if (val === null || val === undefined || val === "") return BigInt(0)
+  if (typeof val === "bigint") return val
   if (typeof val === "number" || typeof val === "string") {
     try {
-      return BigInt(val);
+      return BigInt(val)
     } catch {
-      return BigInt(0);
+      return BigInt(0)
     }
   }
-  return BigInt(0);
+  return BigInt(0)
 }
 
 export function toSlug(value: string): string {
@@ -42,7 +59,7 @@ export function toSlug(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 200);
+    .slice(0, 200)
 }
 
 export async function uniquePostSlug(
@@ -50,10 +67,10 @@ export async function uniquePostSlug(
   excludeId?: bigint | string | number,
   database: DB = db
 ): Promise<string> {
-  const base = toSlug(title) || `post-${Date.now()}`;
-  let slug = base;
-  let suffix = 2;
-  const currentId = excludeId !== undefined ? toBigInt(excludeId) : undefined;
+  const base = toSlug(title) || `post-${Date.now()}`
+  let slug = base
+  let suffix = 2
+  const currentId = excludeId !== undefined ? toBigInt(excludeId) : undefined
 
   while (true) {
     const existing = await database
@@ -66,10 +83,10 @@ export async function uniquePostSlug(
           currentId ? ne(wpPosts.id, currentId) : undefined
         )
       )
-      .limit(1);
+      .limit(1)
 
-    if (!existing.length) return slug;
-    slug = `${base}-${suffix++}`.slice(0, 200);
+    if (!existing.length) return slug
+    slug = `${base}-${suffix++}`.slice(0, 200)
   }
 }
 
@@ -78,117 +95,120 @@ export async function uniquePostSlug(
 // ---------------------------------------------------------------------------
 
 export interface PostTranslationLink {
-  languageCode: string;
-  postId: string;
-  title: string;
+  languageCode: string
+  postId: string
+  title: string
 }
 
 export interface PostItem {
-  id: string;
-  title: string;
-  slug: string;
-  status: string;
-  date: string;
-  authorName: string;
-  categories: string[];
-  categorySlugs: string[];
-  tags: string[];
-  viewCount?: number;
-  commentCount: string;
-  commentStatus: string;
-  pingStatus: string;
-  postPassword: string;
-  featuredImageId?: string;
-  isFeatured?: boolean;
-  languageCode?: string;
-  translationGroupId?: string;
-  translations?: PostTranslationLink[];
-  seo?: PostSeoMeta;
+  id: string
+  title: string
+  slug: string
+  status: string
+  date: string
+  authorName: string
+  categories: string[]
+  categorySlugs: string[]
+  tags: string[]
+  viewCount?: number
+  commentCount: string
+  commentStatus: string
+  pingStatus: string
+  postPassword: string
+  featuredImageId?: string
+  isFeatured?: boolean
+  languageCode?: string
+  translationGroupId?: string
+  translations?: PostTranslationLink[]
+  seo?: PostSeoMeta
 }
 
 export interface PostSeoMeta {
-  seoTitle?: string;
-  seoDescription?: string;
-  seoOgImage?: string;
-  seoNoindex?: boolean;
-  seoCanonical?: string;
+  seoTitle?: string
+  seoDescription?: string
+  seoOgImage?: string
+  seoNoindex?: boolean
+  seoCanonical?: string
 }
 
 export interface GetPostsOptions {
-  search?: string;
-  status?: string;
-  date?: string;
-  from?: string;
-  to?: string;
-  category?: string;
-  language?: string;
-  page?: number;
-  pageSize?: number;
-  orderBy?: "postModified" | "postDate" | "postTitle" | "viewCount";
-  order?: "asc" | "desc";
+  search?: string
+  status?: string
+  date?: string
+  from?: string
+  to?: string
+  category?: string
+  language?: string
+  page?: number
+  pageSize?: number
+  orderBy?: "postModified" | "postDate" | "postTitle" | "viewCount"
+  order?: "asc" | "desc"
 }
 
 export interface PostCounts {
-  all: number;
-  publish: number;
-  draft: number;
-  pending: number;
-  trash: number;
+  all: number
+  publish: number
+  draft: number
+  pending: number
+  trash: number
 }
 
 export interface CategoryOption {
-  id: string;
-  slug: string;
-  name: string;
-  termTaxonomyId?: string;
-  languageCode?: string;
-  translationGroupId?: string;
+  id: string
+  slug: string
+  name: string
+  termTaxonomyId?: string
+  languageCode?: string
+  translationGroupId?: string
 }
 
 export interface TagOption {
-  id: string;
-  slug: string;
-  name: string;
+  id: string
+  slug: string
+  name: string
 }
 
 export interface CreatePostInput {
-  title: string;
-  content?: string;
-  excerpt?: string;
-  status?: string;
-  commentStatus?: "open" | "closed";
-  pingStatus?: "open" | "closed";
-  postPassword?: string;
-  postParent?: string | number;
-  menuOrder?: number;
-  featuredImageId?: string;
-  isFeatured?: boolean;
-  categorySlugs?: string[];
-  tags?: string[];
-  languageCode?: string;
-  translationOf?: string | number | bigint;
-  authorId?: string;
-  seo?: PostSeoMeta;
+  title: string
+  content?: string
+  excerpt?: string
+  status?: string
+  commentStatus?: "open" | "closed"
+  pingStatus?: "open" | "closed"
+  postPassword?: string
+  postParent?: string | number
+  menuOrder?: number
+  featuredImageId?: string
+  isFeatured?: boolean
+  categorySlugs?: string[]
+  tags?: string[]
+  languageCode?: string
+  translationOf?: string | number | bigint
+  authorId?: string
+  seo?: PostSeoMeta
 }
 
+export class PostChangedError extends Error {}
+
 export interface UpdatePostInput {
-  title?: string;
-  content?: string;
-  excerpt?: string;
-  slug?: string;
-  status?: string;
-  commentStatus?: "open" | "closed";
-  pingStatus?: "open" | "closed";
-  postPassword?: string;
-  postParent?: string | number;
-  menuOrder?: number;
-  featuredImageId?: string;
-  isFeatured?: boolean;
-  categorySlugs?: string[];
-  tags?: string[];
-  languageCode?: string;
-  translationOf?: string | number | bigint;
-  seo?: PostSeoMeta;
+  expectedModified?: string
+  title?: string
+  content?: string
+  excerpt?: string
+  slug?: string
+  status?: string
+  commentStatus?: "open" | "closed"
+  pingStatus?: "open" | "closed"
+  postPassword?: string
+  postParent?: string | number
+  menuOrder?: number
+  featuredImageId?: string
+  isFeatured?: boolean
+  categorySlugs?: string[]
+  tags?: string[]
+  languageCode?: string
+  translationOf?: string | number | bigint
+  seo?: PostSeoMeta
 }
 
 // ---------------------------------------------------------------------------
@@ -200,17 +220,19 @@ async function syncFeaturedPostFlag(
   isFeatured?: boolean,
   database: DB = db
 ) {
-  if (isFeatured === undefined) return;
+  if (isFeatured === undefined) return
   await database
     .delete(wpPostmeta)
-    .where(and(eq(wpPostmeta.postId, postId), eq(wpPostmeta.metaKey, "_is_featured")));
+    .where(
+      and(eq(wpPostmeta.postId, postId), eq(wpPostmeta.metaKey, "_is_featured"))
+    )
 
   if (isFeatured) {
     await database.insert(wpPostmeta).values({
       postId,
       metaKey: "_is_featured",
       metaValue: "1",
-    });
+    })
   }
 }
 
@@ -221,14 +243,19 @@ async function syncFeaturedImage(
 ) {
   await database
     .delete(wpPostmeta)
-    .where(and(eq(wpPostmeta.postId, postId), eq(wpPostmeta.metaKey, "_thumbnail_id")));
+    .where(
+      and(
+        eq(wpPostmeta.postId, postId),
+        eq(wpPostmeta.metaKey, "_thumbnail_id")
+      )
+    )
 
   if (featuredImageId && /^\d+$/.test(featuredImageId.trim())) {
     await database.insert(wpPostmeta).values({
       postId,
       metaKey: "_thumbnail_id",
       metaValue: String(BigInt(featuredImageId.trim())),
-    });
+    })
   }
 }
 
@@ -238,14 +265,14 @@ export const SEO_META_KEYS = [
   "_seo_og_image",
   "_seo_noindex",
   "_seo_canonical",
-] as const;
+] as const
 
 async function syncPostSeoMeta(
   postId: bigint,
   seo?: PostSeoMeta,
   database: DB = db
 ) {
-  if (!seo) return;
+  if (!seo) return
 
   await database
     .delete(wpPostmeta)
@@ -254,28 +281,49 @@ async function syncPostSeoMeta(
         eq(wpPostmeta.postId, postId),
         inArray(wpPostmeta.metaKey, [...SEO_META_KEYS])
       )
-    );
+    )
 
-  const metaToInsert: { postId: bigint; metaKey: string; metaValue: string }[] = [];
+  const metaToInsert: { postId: bigint; metaKey: string; metaValue: string }[] =
+    []
 
   if (seo.seoTitle !== undefined && seo.seoTitle.trim() !== "") {
-    metaToInsert.push({ postId, metaKey: "_seo_title", metaValue: seo.seoTitle.trim() });
+    metaToInsert.push({
+      postId,
+      metaKey: "_seo_title",
+      metaValue: seo.seoTitle.trim(),
+    })
   }
   if (seo.seoDescription !== undefined && seo.seoDescription.trim() !== "") {
-    metaToInsert.push({ postId, metaKey: "_seo_description", metaValue: seo.seoDescription.trim() });
+    metaToInsert.push({
+      postId,
+      metaKey: "_seo_description",
+      metaValue: seo.seoDescription.trim(),
+    })
   }
   if (seo.seoOgImage !== undefined && seo.seoOgImage.trim() !== "") {
-    metaToInsert.push({ postId, metaKey: "_seo_og_image", metaValue: seo.seoOgImage.trim() });
+    metaToInsert.push({
+      postId,
+      metaKey: "_seo_og_image",
+      metaValue: seo.seoOgImage.trim(),
+    })
   }
   if (seo.seoNoindex !== undefined) {
-    metaToInsert.push({ postId, metaKey: "_seo_noindex", metaValue: seo.seoNoindex ? "1" : "0" });
+    metaToInsert.push({
+      postId,
+      metaKey: "_seo_noindex",
+      metaValue: seo.seoNoindex ? "1" : "0",
+    })
   }
   if (seo.seoCanonical !== undefined && seo.seoCanonical.trim() !== "") {
-    metaToInsert.push({ postId, metaKey: "_seo_canonical", metaValue: seo.seoCanonical.trim() });
+    metaToInsert.push({
+      postId,
+      metaKey: "_seo_canonical",
+      metaValue: seo.seoCanonical.trim(),
+    })
   }
 
   if (metaToInsert.length > 0) {
-    await database.insert(wpPostmeta).values(metaToInsert);
+    await database.insert(wpPostmeta).values(metaToInsert)
   }
 }
 
@@ -285,28 +333,35 @@ async function syncPostTerms(
   tags: string[] = [],
   database: DB = db
 ) {
-  await database.delete(wpTermRelationships).where(eq(wpTermRelationships.objectId, postId));
+  await database
+    .delete(wpTermRelationships)
+    .where(eq(wpTermRelationships.objectId, postId))
 
-  const taxonomyIds: bigint[] = [];
+  const taxonomyIds: bigint[] = []
 
   if (categorySlugs.length) {
     const categories = await database
       .select({ taxonomyId: wpTermTaxonomy.termTaxonomyId })
       .from(wpTermTaxonomy)
       .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
-      .where(and(eq(wpTermTaxonomy.taxonomy, "category"), inArray(wpTerms.slug, categorySlugs)));
-    taxonomyIds.push(...categories.map((c) => c.taxonomyId));
+      .where(
+        and(
+          eq(wpTermTaxonomy.taxonomy, "category"),
+          inArray(wpTerms.slug, categorySlugs)
+        )
+      )
+    taxonomyIds.push(...categories.map((c) => c.taxonomyId))
   }
 
   for (const tagName of tags) {
-    const cleanTag = tagName.trim();
-    if (!cleanTag) continue;
-    const slug = toSlug(cleanTag);
+    const cleanTag = tagName.trim()
+    if (!cleanTag) continue
+    const slug = toSlug(cleanTag)
     const existing = await database
       .select({ termId: wpTerms.termId })
       .from(wpTerms)
       .where(eq(wpTerms.slug, slug))
-      .limit(1);
+      .limit(1)
 
     const termId =
       existing[0]?.termId ??
@@ -315,13 +370,18 @@ async function syncPostTerms(
           .insert(wpTerms)
           .values({ name: cleanTag, slug })
           .returning({ termId: wpTerms.termId })
-      )[0].termId;
+      )[0].termId
 
     const taxonomy = await database
       .select({ id: wpTermTaxonomy.termTaxonomyId })
       .from(wpTermTaxonomy)
-      .where(and(eq(wpTermTaxonomy.termId, termId), eq(wpTermTaxonomy.taxonomy, "post_tag")))
-      .limit(1);
+      .where(
+        and(
+          eq(wpTermTaxonomy.termId, termId),
+          eq(wpTermTaxonomy.taxonomy, "post_tag")
+        )
+      )
+      .limit(1)
 
     const taxonomyId =
       taxonomy[0]?.id ??
@@ -330,9 +390,9 @@ async function syncPostTerms(
           .insert(wpTermTaxonomy)
           .values({ termId, taxonomy: "post_tag" })
           .returning({ id: wpTermTaxonomy.termTaxonomyId })
-      )[0].id;
+      )[0].id
 
-    taxonomyIds.push(taxonomyId);
+    taxonomyIds.push(taxonomyId)
   }
 
   if (taxonomyIds.length) {
@@ -341,7 +401,7 @@ async function syncPostTerms(
         objectId: postId,
         termTaxonomyId,
       }))
-    );
+    )
   }
 }
 
@@ -353,10 +413,10 @@ export async function getPosts(
   options: GetPostsOptions = {},
   database: DB = db
 ): Promise<{
-  posts: PostItem[];
-  totalItems: number;
-  totalPages: number;
-  currentPage: number;
+  posts: PostItem[]
+  totalItems: number
+  totalPages: number
+  currentPage: number
 }> {
   const {
     search,
@@ -370,27 +430,29 @@ export async function getPosts(
     pageSize: requestedPageSize = 20,
     orderBy = "postModified",
     order = "desc",
-  } = options;
+  } = options
 
-  const pageSize = Number.isFinite(requestedPageSize) ? Math.max(1, Math.min(100, Math.trunc(requestedPageSize))) : 20;
-  let currentPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1;
-  const conditions = [eq(wpPosts.postType, "post")];
+  const pageSize = Number.isFinite(requestedPageSize)
+    ? Math.max(1, Math.min(100, Math.trunc(requestedPageSize)))
+    : 20
+  let currentPage = Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1
+  const conditions = [eq(wpPosts.postType, "post")]
 
   if (status && status !== "all") {
-    conditions.push(eq(wpPosts.postStatus, status));
+    conditions.push(eq(wpPosts.postStatus, status))
   } else if (!status || status === "all") {
-    conditions.push(ne(wpPosts.postStatus, "trash"));
+    conditions.push(ne(wpPosts.postStatus, "trash"))
   }
 
-  const bounds = getPostDateBounds({ date: date || "all", from, to });
-  if (!bounds.valid) conditions.push(sql`false`);
+  const bounds = getPostDateBounds({ date: date || "all", from, to })
+  if (!bounds.valid) conditions.push(sql`false`)
   else {
-    if (bounds.start) conditions.push(gte(wpPosts.postDate, bounds.start));
-    if (bounds.end) conditions.push(lt(wpPosts.postDate, bounds.end));
+    if (bounds.start) conditions.push(gte(wpPosts.postDate, bounds.start))
+    if (bounds.end) conditions.push(lt(wpPosts.postDate, bounds.end))
   }
 
   if (search && search.trim()) {
-    conditions.push(ilike(wpPosts.postTitle, `%${search.trim()}%`));
+    conditions.push(ilike(wpPosts.postTitle, `%${search.trim()}%`))
   }
 
   // Filter by category
@@ -399,23 +461,25 @@ export async function getPosts(
       .select({ taxonomyId: wpTermTaxonomy.termTaxonomyId })
       .from(wpTermTaxonomy)
       .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
-      .where(and(eq(wpTerms.slug, category), eq(wpTermTaxonomy.taxonomy, "category")))
-      .limit(1);
+      .where(
+        and(eq(wpTerms.slug, category), eq(wpTermTaxonomy.taxonomy, "category"))
+      )
+      .limit(1)
 
     if (catRows[0]) {
       const relRows = await database
         .select({ objectId: wpTermRelationships.objectId })
         .from(wpTermRelationships)
-        .where(eq(wpTermRelationships.termTaxonomyId, catRows[0].taxonomyId));
+        .where(eq(wpTermRelationships.termTaxonomyId, catRows[0].taxonomyId))
 
-      const postIds = relRows.map((r) => r.objectId);
+      const postIds = relRows.map((r) => r.objectId)
       if (postIds.length) {
-        conditions.push(inArray(wpPosts.id, postIds));
+        conditions.push(inArray(wpPosts.id, postIds))
       } else {
-        conditions.push(eq(wpPosts.id, BigInt(-1)));
+        conditions.push(eq(wpPosts.id, BigInt(-1)))
       }
     } else {
-      conditions.push(eq(wpPosts.id, BigInt(-1)));
+      conditions.push(eq(wpPosts.id, BigInt(-1)))
     }
   }
 
@@ -424,35 +488,37 @@ export async function getPosts(
     const langPostRows = await database
       .select({ postId: postTranslationsTable.postId })
       .from(postTranslationsTable)
-      .where(eq(postTranslationsTable.languageCode, language));
+      .where(eq(postTranslationsTable.languageCode, language))
 
-    const langPostIds = langPostRows.map((r) => r.postId);
+    const langPostIds = langPostRows.map((r) => r.postId)
     if (langPostIds.length) {
-      conditions.push(inArray(wpPosts.id, langPostIds));
+      conditions.push(inArray(wpPosts.id, langPostIds))
     } else {
-      conditions.push(eq(wpPosts.id, BigInt(-1)));
+      conditions.push(eq(wpPosts.id, BigInt(-1)))
     }
   }
 
-  const whereClause = and(...conditions);
+  const whereClause = and(...conditions)
 
   const [totalRes] = await database
     .select({ total: count() })
     .from(wpPosts)
-    .where(whereClause);
+    .where(whereClause)
 
-  const totalItems = Number(totalRes?.total ?? 0);
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  currentPage = Math.min(currentPage, totalPages);
+  const totalItems = Number(totalRes?.total ?? 0)
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  currentPage = Math.min(currentPage, totalPages)
 
   const sortColumn =
-    orderBy === "viewCount" ? postViewsExpression : orderBy === "postDate"
-      ? wpPosts.postDate
-      : orderBy === "postTitle"
-      ? wpPosts.postTitle
-      : wpPosts.postModified;
+    orderBy === "viewCount"
+      ? postViewsExpression
+      : orderBy === "postDate"
+        ? wpPosts.postDate
+        : orderBy === "postTitle"
+          ? wpPosts.postTitle
+          : wpPosts.postModified
 
-  const sortFn = order === "asc" ? asc : desc;
+  const sortFn = order === "asc" ? asc : desc
 
   const rows = await database
     .select({
@@ -472,13 +538,13 @@ export async function getPosts(
     .where(whereClause)
     .orderBy(sortFn(sortColumn), desc(wpPosts.id))
     .limit(pageSize)
-    .offset((currentPage - 1) * pageSize);
+    .offset((currentPage - 1) * pageSize)
 
   if (!rows.length) {
-    return { posts: [], totalItems, totalPages, currentPage };
+    return { posts: [], totalItems, totalPages, currentPage }
   }
 
-  const postIds = rows.map((r) => r.id);
+  const postIds = rows.map((r) => r.id)
 
   // Fetch comments, terms, featured images, and language info in parallel
   const [commentRows, termRows, metaRows, postTransRows] = await Promise.all([
@@ -495,7 +561,10 @@ export async function getPosts(
         slug: wpTerms.slug,
       })
       .from(wpTermRelationships)
-      .innerJoin(wpTermTaxonomy, eq(wpTermRelationships.termTaxonomyId, wpTermTaxonomy.termTaxonomyId))
+      .innerJoin(
+        wpTermTaxonomy,
+        eq(wpTermRelationships.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
+      )
       .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
       .where(inArray(wpTermRelationships.objectId, postIds)),
     database
@@ -519,16 +588,18 @@ export async function getPosts(
       })
       .from(postTranslationsTable)
       .where(inArray(postTranslationsTable.postId, postIds)),
-  ]);
+  ])
 
   // Fetch sibling translations for translation groups
-  const groupIds = Array.from(new Set(postTransRows.map((t) => t.translationGroupId).filter(Boolean)));
+  const groupIds = Array.from(
+    new Set(postTransRows.map((t) => t.translationGroupId).filter(Boolean))
+  )
   let siblingTranslations: {
-    groupId: string;
-    postId: bigint;
-    languageCode: string;
-    title: string;
-  }[] = [];
+    groupId: string
+    postId: bigint
+    languageCode: string
+    title: string
+  }[] = []
 
   if (groupIds.length) {
     siblingTranslations = await database
@@ -540,31 +611,34 @@ export async function getPosts(
       })
       .from(postTranslationsTable)
       .innerJoin(wpPosts, eq(postTranslationsTable.postId, wpPosts.id))
-      .where(inArray(postTranslationsTable.translationGroupId, groupIds));
+      .where(inArray(postTranslationsTable.translationGroupId, groupIds))
   }
 
   const posts: PostItem[] = rows.map((post) => {
-    const comments = commentRows.find((c) => c.postId === post.id);
-    const terms = termRows.filter((t) => t.objectId === post.id);
-    const catTerms = terms.filter((t) => t.taxonomy === "category");
-    const tagTerms = terms.filter((t) => t.taxonomy === "post_tag");
+    const comments = commentRows.find((c) => c.postId === post.id)
+    const terms = termRows.filter((t) => t.objectId === post.id)
+    const catTerms = terms.filter((t) => t.taxonomy === "category")
+    const tagTerms = terms.filter((t) => t.taxonomy === "post_tag")
     const thumb = metaRows.find(
       (m) => m.postId === post.id && m.metaKey === "_thumbnail_id"
-    );
+    )
     const featuredRow = metaRows.find(
       (m) => m.postId === post.id && m.metaKey === "_is_featured"
-    );
-    const transInfo = postTransRows.find((t) => t.postId === post.id);
+    )
+    const transInfo = postTransRows.find((t) => t.postId === post.id)
 
-    let translations: PostTranslationLink[] | undefined;
+    let translations: PostTranslationLink[] | undefined
     if (transInfo?.translationGroupId) {
       translations = siblingTranslations
-        .filter((st) => st.groupId === transInfo.translationGroupId && st.postId !== post.id)
+        .filter(
+          (st) =>
+            st.groupId === transInfo.translationGroupId && st.postId !== post.id
+        )
         .map((st) => ({
           languageCode: st.languageCode,
           postId: st.postId.toString(),
           title: st.title,
-        }));
+        }))
     }
 
     return {
@@ -587,44 +661,47 @@ export async function getPosts(
       languageCode: transInfo?.languageCode,
       translationGroupId: transInfo?.translationGroupId,
       translations,
-    };
-  });
+    }
+  })
 
-  return { posts, totalItems, totalPages, currentPage };
+  return { posts, totalItems, totalPages, currentPage }
 }
 
 export async function getPostCounts(
   options: { language?: string } = {},
   database: DB = db
 ): Promise<PostCounts> {
-  const { language } = options;
+  const { language } = options
 
-  let langPostIds: bigint[] | undefined;
+  let langPostIds: bigint[] | undefined
   if (language && language !== "all") {
     const langRows = await database
       .select({ postId: postTranslationsTable.postId })
       .from(postTranslationsTable)
-      .where(eq(postTranslationsTable.languageCode, language));
-    langPostIds = langRows.map((r) => r.postId);
+      .where(eq(postTranslationsTable.languageCode, language))
+    langPostIds = langRows.map((r) => r.postId)
   }
 
   const buildCount = async (status?: string) => {
-    const conditions = [eq(wpPosts.postType, "post")];
+    const conditions = [eq(wpPosts.postType, "post")]
     if (status) {
-      conditions.push(eq(wpPosts.postStatus, status));
+      conditions.push(eq(wpPosts.postStatus, status))
     } else {
-      conditions.push(ne(wpPosts.postStatus, "trash"));
+      conditions.push(ne(wpPosts.postStatus, "trash"))
     }
     if (langPostIds !== undefined) {
       if (langPostIds.length) {
-        conditions.push(inArray(wpPosts.id, langPostIds));
+        conditions.push(inArray(wpPosts.id, langPostIds))
       } else {
-        return 0;
+        return 0
       }
     }
-    const [res] = await database.select({ c: count() }).from(wpPosts).where(and(...conditions));
-    return Number(res?.c ?? 0);
-  };
+    const [res] = await database
+      .select({ c: count() })
+      .from(wpPosts)
+      .where(and(...conditions))
+    return Number(res?.c ?? 0)
+  }
 
   const [all, publish, draft, pending, trash] = await Promise.all([
     buildCount(undefined),
@@ -632,9 +709,9 @@ export async function getPostCounts(
     buildCount("draft"),
     buildCount("pending"),
     buildCount("trash"),
-  ]);
+  ])
 
-  return { all, publish, draft, pending, trash };
+  return { all, publish, draft, pending, trash }
 }
 
 export async function getPostById(
@@ -642,83 +719,108 @@ export async function getPostById(
   database: DB = db
 ): Promise<{
   post: {
-    id: string;
-    title: string;
-    content: string;
-    excerpt: string;
-    slug: string;
-    status: string;
-    commentStatus: string;
-    pingStatus: string;
-    postPassword: string;
-    featuredImageId: string;
-    isFeatured: boolean;
-    categorySlugs: string[];
-    tags: string[];
-    languageCode?: string;
-    translationGroupId?: string;
-    seo: PostSeoMeta;
-  };
-  translations: LinkedPostTranslation[];
+    id: string
+    modifiedAt: string
+    title: string
+    content: string
+    excerpt: string
+    slug: string
+    status: string
+    commentStatus: string
+    pingStatus: string
+    postPassword: string
+    featuredImageId: string
+    isFeatured: boolean
+    categorySlugs: string[]
+    tags: string[]
+    languageCode?: string
+    translationGroupId?: string
+    seo: PostSeoMeta
+  }
+  translations: LinkedPostTranslation[]
 } | null> {
-  const postId = toBigInt(id);
-  if (postId <= BigInt(0)) return null;
+  const postId = toBigInt(id)
+  if (postId <= BigInt(0)) return null
 
-  const [postRows, metaRows, termRows, langInfo, translations] = await Promise.all([
-    database
-      .select({
-        id: wpPosts.id,
-        title: wpPosts.postTitle,
-        content: wpPosts.postContent,
-        excerpt: wpPosts.postExcerpt,
-        slug: wpPosts.postName,
-        status: wpPosts.postStatus,
-        commentStatus: wpPosts.commentStatus,
-        pingStatus: wpPosts.pingStatus,
-        postPassword: wpPosts.postPassword,
-      })
-      .from(wpPosts)
-      .where(and(eq(wpPosts.id, postId), eq(wpPosts.postType, "post")))
-      .limit(1),
-    database
-      .select({ metaKey: wpPostmeta.metaKey, metaValue: wpPostmeta.metaValue })
-      .from(wpPostmeta)
-      .where(
-        and(
-          eq(wpPostmeta.postId, postId),
-          inArray(wpPostmeta.metaKey, ["_thumbnail_id", "_is_featured", ...SEO_META_KEYS])
+  const [postRows, metaRows, termRows, langInfo, translations] =
+    await Promise.all([
+      database
+        .select({
+          id: wpPosts.id,
+          title: wpPosts.postTitle,
+          modifiedAt: wpPosts.postModifiedGmt,
+          content: wpPosts.postContent,
+          excerpt: wpPosts.postExcerpt,
+          slug: wpPosts.postName,
+          status: wpPosts.postStatus,
+          commentStatus: wpPosts.commentStatus,
+          pingStatus: wpPosts.pingStatus,
+          postPassword: wpPosts.postPassword,
+        })
+        .from(wpPosts)
+        .where(and(eq(wpPosts.id, postId), eq(wpPosts.postType, "post")))
+        .limit(1),
+      database
+        .select({
+          metaKey: wpPostmeta.metaKey,
+          metaValue: wpPostmeta.metaValue,
+        })
+        .from(wpPostmeta)
+        .where(
+          and(
+            eq(wpPostmeta.postId, postId),
+            inArray(wpPostmeta.metaKey, [
+              "_thumbnail_id",
+              "_is_featured",
+              ...SEO_META_KEYS,
+            ])
+          )
+        ),
+      database
+        .select({
+          taxonomy: wpTermTaxonomy.taxonomy,
+          name: wpTerms.name,
+          slug: wpTerms.slug,
+        })
+        .from(wpTermRelationships)
+        .innerJoin(
+          wpTermTaxonomy,
+          eq(wpTermRelationships.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
         )
-      ),
-    database
-      .select({
-        taxonomy: wpTermTaxonomy.taxonomy,
-        name: wpTerms.name,
-        slug: wpTerms.slug,
-      })
-      .from(wpTermRelationships)
-      .innerJoin(wpTermTaxonomy, eq(wpTermRelationships.termTaxonomyId, wpTermTaxonomy.termTaxonomyId))
-      .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
-      .where(eq(wpTermRelationships.objectId, postId)),
-    getPostLanguage(postId, database),
-    getPostTranslations(postId, database),
-  ]);
+        .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
+        .where(eq(wpTermRelationships.objectId, postId)),
+      getPostLanguage(postId, database),
+      getPostTranslations(postId, database),
+    ])
 
-  if (!postRows.length) return null;
-  const p = postRows[0];
-  const thumb = metaRows.find((m) => m.metaKey === "_thumbnail_id");
-  const isFeatured = metaRows.find((m) => m.metaKey === "_is_featured")?.metaValue === "1";
-  const seoTitle = metaRows.find((m) => m.metaKey === "_seo_title")?.metaValue ?? undefined;
-  const seoDescription = metaRows.find((m) => m.metaKey === "_seo_description")?.metaValue ?? undefined;
-  const seoOgImage = metaRows.find((m) => m.metaKey === "_seo_og_image")?.metaValue ?? undefined;
-  const seoNoindex = metaRows.find((m) => m.metaKey === "_seo_noindex")?.metaValue === "1";
-  const seoCanonical = metaRows.find((m) => m.metaKey === "_seo_canonical")?.metaValue ?? undefined;
+  if (!postRows.length) return null
+  const p = postRows[0]
+  const thumb = metaRows.find((m) => m.metaKey === "_thumbnail_id")
+  const isFeatured =
+    metaRows.find((m) => m.metaKey === "_is_featured")?.metaValue === "1"
+  const seoTitle =
+    metaRows.find((m) => m.metaKey === "_seo_title")?.metaValue ?? undefined
+  const seoDescription =
+    metaRows.find((m) => m.metaKey === "_seo_description")?.metaValue ??
+    undefined
+  const seoOgImage =
+    metaRows.find((m) => m.metaKey === "_seo_og_image")?.metaValue ?? undefined
+  const seoNoindex =
+    metaRows.find((m) => m.metaKey === "_seo_noindex")?.metaValue === "1"
+  const seoCanonical =
+    metaRows.find((m) => m.metaKey === "_seo_canonical")?.metaValue ?? undefined
 
-  const catSlugs = termRows.filter((t) => t.taxonomy === "category").map((t) => t.slug);
-  const tagNames = termRows.filter((t) => t.taxonomy === "post_tag").map((t) => t.name);
+  const catSlugs = termRows
+    .filter((t) => t.taxonomy === "category")
+    .map((t) => t.slug)
+  const tagNames = termRows
+    .filter((t) => t.taxonomy === "post_tag")
+    .map((t) => t.name)
 
   return {
     post: {
       id: p.id.toString(),
+      modifiedAt: p.modifiedAt?.toISOString() || "",
       title: p.title,
       content: p.content,
       excerpt: p.excerpt,
@@ -742,25 +844,25 @@ export async function getPostById(
       },
     },
     translations,
-  };
+  }
 }
 
 export async function getAllCategoriesOptions(
   language?: string,
   database: DB = db
 ): Promise<CategoryOption[]> {
-  const conditions = [eq(wpTermTaxonomy.taxonomy, "category")];
+  const conditions = [eq(wpTermTaxonomy.taxonomy, "category")]
 
   if (language && language !== "all") {
     const matching = await database
       .select({ termTaxonomyId: termTranslationsTable.termTaxonomyId })
       .from(termTranslationsTable)
-      .where(eq(termTranslationsTable.languageCode, language));
-    const taxIds = matching.map((m) => m.termTaxonomyId);
+      .where(eq(termTranslationsTable.languageCode, language))
+    const taxIds = matching.map((m) => m.termTaxonomyId)
     if (taxIds.length > 0) {
-      conditions.push(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
+      conditions.push(inArray(wpTermTaxonomy.termTaxonomyId, taxIds))
     } else {
-      conditions.push(eq(wpTermTaxonomy.termTaxonomyId, BigInt(-1)));
+      conditions.push(eq(wpTermTaxonomy.termTaxonomyId, BigInt(-1)))
     }
   }
 
@@ -780,7 +882,7 @@ export async function getAllCategoriesOptions(
       eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
     )
     .where(and(...conditions))
-    .orderBy(asc(wpTerms.name));
+    .orderBy(asc(wpTerms.name))
 
   return rows.map((r) => ({
     id: r.id.toString(),
@@ -789,10 +891,12 @@ export async function getAllCategoriesOptions(
     termTaxonomyId: r.termTaxonomyId.toString(),
     languageCode: r.languageCode ?? "en",
     translationGroupId: r.translationGroupId ?? undefined,
-  }));
+  }))
 }
 
-export async function getAllTagOptions(database: DB = db): Promise<TagOption[]> {
+export async function getAllTagOptions(
+  database: DB = db
+): Promise<TagOption[]> {
   const rows = await database
     .select({
       id: wpTerms.termId,
@@ -802,16 +906,25 @@ export async function getAllTagOptions(database: DB = db): Promise<TagOption[]> 
     .from(wpTerms)
     .innerJoin(wpTermTaxonomy, eq(wpTerms.termId, wpTermTaxonomy.termId))
     .where(eq(wpTermTaxonomy.taxonomy, "post_tag"))
-    .orderBy(asc(wpTerms.name));
+    .orderBy(asc(wpTerms.name))
 
   return rows.map((r) => ({
     id: r.id.toString(),
     slug: r.slug,
     name: r.name,
-  }));
+  }))
 }
 
 export async function createPost(
+  input: CreatePostInput,
+  database: DB = db
+): Promise<string> {
+  if (database !== db) return createPostRecord(input, database)
+  // The legacy DB alias includes root-only members; post helpers use the shared transaction query methods.
+  return db.transaction((tx) => createPostRecord(input, tx as unknown as DB))
+}
+
+async function createPostRecord(
   input: CreatePostInput,
   database: DB = db
 ): Promise<string> {
@@ -831,14 +944,18 @@ export async function createPost(
     languageCode = "en",
     translationOf,
     authorId,
-  } = input;
+  } = input
 
-  const slug = await uniquePostSlug(title, undefined, database);
-  const now = new Date();
+  const slug = await uniquePostSlug(title, undefined, database)
+  const now = new Date()
   const generatedExcerpt =
     excerpt ||
-    content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200) ||
-    "";
+    content
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 200) ||
+    ""
 
   const inserted = await database
     .insert(wpPosts)
@@ -866,22 +983,22 @@ export async function createPost(
       postMimeType: "",
       commentCount: BigInt(0),
     })
-    .returning({ id: wpPosts.id });
+    .returning({ id: wpPosts.id })
 
-  const newId = inserted[0].id;
+  const newId = inserted[0].id
 
-  await syncFeaturedImage(newId, featuredImageId, database);
-  await syncFeaturedPostFlag(newId, input.isFeatured, database);
-  await syncPostTerms(newId, categorySlugs, tags, database);
+  await syncFeaturedImage(newId, featuredImageId, database)
+  await syncFeaturedPostFlag(newId, input.isFeatured, database)
+  await syncPostTerms(newId, categorySlugs, tags, database)
 
   if (input.seo) {
-    await syncPostSeoMeta(newId, input.seo, database);
+    await syncPostSeoMeta(newId, input.seo, database)
   }
 
-  const sourcePostId = translationOf ? toBigInt(translationOf) : undefined;
-  await setPostLanguage(newId, languageCode, sourcePostId, database);
+  const sourcePostId = translationOf ? toBigInt(translationOf) : undefined
+  await setPostLanguage(newId, languageCode, sourcePostId, database)
 
-  return newId.toString();
+  return newId.toString()
 }
 
 export async function updatePost(
@@ -889,72 +1006,98 @@ export async function updatePost(
   input: UpdatePostInput,
   database: DB = db
 ): Promise<void> {
-  const postId = toBigInt(id);
-  if (postId <= BigInt(0)) throw new Error("A valid post ID is required");
+  if (database !== db) return updatePostRecord(id, input, database)
+  return db.transaction((tx) =>
+    updatePostRecord(id, input, tx as unknown as DB)
+  )
+}
+
+async function updatePostRecord(
+  id: bigint | string | number,
+  input: UpdatePostInput,
+  database: DB = db
+): Promise<void> {
+  const postId = toBigInt(id)
+  if (postId <= BigInt(0)) throw new Error("A valid post ID is required")
 
   const existing = await database
-    .select({ id: wpPosts.id, postTitle: wpPosts.postTitle })
+    .select({
+      id: wpPosts.id,
+      postTitle: wpPosts.postTitle,
+      modified: wpPosts.postModifiedGmt,
+    })
     .from(wpPosts)
     .where(and(eq(wpPosts.id, postId), eq(wpPosts.postType, "post")))
-    .limit(1);
+    .limit(1)
+    .for("update")
 
-  if (!existing.length) throw new Error("Post not found");
+  if (!existing.length) throw new Error("Post not found")
+  if (
+    input.expectedModified &&
+    existing[0].modified.toISOString() !== input.expectedModified
+  )
+    throw new PostChangedError("post_changed")
 
   const updates: Partial<typeof wpPosts.$inferInsert> = {
     postModified: new Date(),
     postModifiedGmt: new Date(),
-  };
-
-  if (input.title !== undefined) {
-    updates.postTitle = input.title;
-    const slug = input.slug?.trim()
-      ? await uniquePostSlug(input.slug, postId, database)
-      : await uniquePostSlug(input.title, postId, database);
-    updates.postName = slug;
-    updates.guid = `/posts/${slug}`;
   }
 
-  if (input.content !== undefined) updates.postContent = input.content;
+  if (input.title !== undefined) {
+    updates.postTitle = input.title
+    const slug = input.slug?.trim()
+      ? await uniquePostSlug(input.slug, postId, database)
+      : await uniquePostSlug(input.title, postId, database)
+    updates.postName = slug
+    updates.guid = `/posts/${slug}`
+  }
+
+  if (input.content !== undefined) updates.postContent = input.content
   if (input.excerpt !== undefined) {
-    updates.postExcerpt = input.excerpt;
+    updates.postExcerpt = input.excerpt
   } else if (input.content !== undefined && updates.postContent) {
     updates.postExcerpt = updates.postContent
       .replace(/<[^>]*>/g, " ")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 200);
+      .slice(0, 200)
   }
 
-  if (input.status !== undefined) updates.postStatus = input.status;
-  if (input.commentStatus !== undefined) updates.commentStatus = input.commentStatus;
-  if (input.pingStatus !== undefined) updates.pingStatus = input.pingStatus;
-  if (input.postPassword !== undefined) updates.postPassword = input.postPassword;
-  if (input.postParent !== undefined) updates.postParent = toBigInt(input.postParent);
-  if (input.menuOrder !== undefined) updates.menuOrder = input.menuOrder;
+  if (input.status !== undefined) updates.postStatus = input.status
+  if (input.commentStatus !== undefined)
+    updates.commentStatus = input.commentStatus
+  if (input.pingStatus !== undefined) updates.pingStatus = input.pingStatus
+  if (input.postPassword !== undefined)
+    updates.postPassword = input.postPassword
+  if (input.postParent !== undefined)
+    updates.postParent = toBigInt(input.postParent)
+  if (input.menuOrder !== undefined) updates.menuOrder = input.menuOrder
 
   await database
     .update(wpPosts)
     .set(updates)
-    .where(and(eq(wpPosts.id, postId), eq(wpPosts.postType, "post")));
+    .where(and(eq(wpPosts.id, postId), eq(wpPosts.postType, "post")))
 
   if (input.featuredImageId !== undefined) {
-    await syncFeaturedImage(postId, input.featuredImageId, database);
+    await syncFeaturedImage(postId, input.featuredImageId, database)
   }
   if (input.isFeatured !== undefined) {
-    await syncFeaturedPostFlag(postId, input.isFeatured, database);
+    await syncFeaturedPostFlag(postId, input.isFeatured, database)
   }
 
   if (input.categorySlugs !== undefined || input.tags !== undefined) {
-    await syncPostTerms(postId, input.categorySlugs, input.tags, database);
+    await syncPostTerms(postId, input.categorySlugs, input.tags, database)
   }
 
   if (input.seo !== undefined) {
-    await syncPostSeoMeta(postId, input.seo, database);
+    await syncPostSeoMeta(postId, input.seo, database)
   }
 
   if (input.languageCode) {
-    const sourcePostId = input.translationOf ? toBigInt(input.translationOf) : undefined;
-    await setPostLanguage(postId, input.languageCode, sourcePostId, database);
+    const sourcePostId = input.translationOf
+      ? toBigInt(input.translationOf)
+      : undefined
+    await setPostLanguage(postId, input.languageCode, sourcePostId, database)
   }
 }
 
@@ -962,45 +1105,66 @@ export async function trashPosts(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<void> {
-  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0));
-  if (!bigIds.length) return;
+  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0))
+  if (!bigIds.length) return
 
   await database
     .update(wpPosts)
-    .set({ postStatus: "trash", postModified: new Date(), postModifiedGmt: new Date() })
-    .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")));
+    .set({
+      postStatus: "trash",
+      postModified: new Date(),
+      postModifiedGmt: new Date(),
+    })
+    .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")))
 }
 
 export async function restorePosts(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<void> {
-  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0));
-  if (!bigIds.length) return;
+  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0))
+  if (!bigIds.length) return
 
   await database
     .update(wpPosts)
-    .set({ postStatus: "draft", postModified: new Date(), postModifiedGmt: new Date() })
-    .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")));
+    .set({
+      postStatus: "draft",
+      postModified: new Date(),
+      postModifiedGmt: new Date(),
+    })
+    .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")))
 }
 
 export async function deletePosts(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<void> {
-  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0));
-  if (!bigIds.length) return;
+  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0))
+  if (!bigIds.length) return
 
   await database.transaction(async (tx) => {
-    await tx.delete(wpPostmeta).where(inArray(wpPostmeta.postId, bigIds));
-    await tx.delete(wpTermRelationships).where(inArray(wpTermRelationships.objectId, bigIds));
-    await tx.delete(postTranslationsTable).where(inArray(postTranslationsTable.postId, bigIds));
-    await tx.delete(wpPosts).where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")));
-  });
+    await tx.delete(wpPostmeta).where(inArray(wpPostmeta.postId, bigIds))
+    await tx
+      .delete(wpTermRelationships)
+      .where(inArray(wpTermRelationships.objectId, bigIds))
+    await tx
+      .delete(postTranslationsTable)
+      .where(inArray(postTranslationsTable.postId, bigIds))
+    await tx
+      .delete(wpPosts)
+      .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")))
+  })
 }
 
 export async function getPostMonths(database: DB = db): Promise<string[]> {
-  const month = sql<string>`to_char(${wpPosts.postDate},'YYYY-MM')`;
-  const rows = await database.select({ month }).from(wpPosts).where(and(eq(wpPosts.postType,"post"), ne(wpPosts.postStatus,"auto-draft"))).groupBy(month).orderBy(desc(month));
-  return rows.map(row => row.month);
+  const month = sql<string>`to_char(${wpPosts.postDate},'YYYY-MM')`
+  const rows = await database
+    .select({ month })
+    .from(wpPosts)
+    .where(
+      and(eq(wpPosts.postType, "post"), ne(wpPosts.postStatus, "auto-draft"))
+    )
+    .groupBy(month)
+    .orderBy(desc(month))
+  return rows.map((row) => row.month)
 }

@@ -2,10 +2,10 @@
 import { ContentImage } from "@/components/site/content-image";
 
 
-import { useState } from "react";
+import { ArticleShare } from "@/components/site/article-share";
 import { PostViews } from "@/components/site/post-views";
 import Link from "next/link";
-import { Clock, Share2, Check, Copy } from "lucide-react";
+import { Clock } from "lucide-react";
 import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { ThemeDynamicStyles } from "@/components/site/theme-dynamic-styles";
@@ -38,7 +38,6 @@ export function PostTemplate({
     col4?: WidgetItem[];
   };
 }) {
-  const [copied, setCopied] = useState(false);
   const isDark = isDarkTheme(theme);
   const isSerif = isSerifHeading(theme);
   const mods = theme.mods || {};
@@ -59,14 +58,6 @@ export function PostTemplate({
     ? article.content.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length
     : 250;
   const readingMinutes = Math.max(1, Math.ceil(wordCount / 200));
-
-  const handleCopy = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard?.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
 
   // Determine container width based on layout
   const containerClass =
@@ -167,37 +158,7 @@ export function PostTemplate({
 
             {/* Social Share Buttons */}
             <PostViews postId={article.id} initialCount={article.viewCount} track={trackViews} visible={mods.singleShowViews !== false} label={t("site.views",theme,"")} locale={activeLocale} />
-            {showShareButtons && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[0.6875rem] font-medium mr-1 text-theme-muted hidden sm:inline">
-                  {t("site.share", theme, "Share")}:
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      window.open(
-                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(window.location.href)}`,
-                        "_blank",
-                        "noopener,noreferrer"
-                      );
-                    }
-                  }}
-                  className="rounded p-1.5 border border-theme-border bg-theme-surface hover:opacity-80 text-theme-text transition-colors cursor-pointer"
-                  title="Share on X (Twitter)"
-                >
-                  <span className="text-xs font-bold px-0.5">𝕏</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="rounded p-1.5 border border-theme-border bg-theme-surface hover:opacity-80 text-theme-text transition-colors flex items-center gap-1 cursor-pointer"
-                  title={t("site.copy_link", theme, "Copy Link")}
-                >
-                  {copied ? <Check className="size-3.5 text-theme-primary" /> : <Copy className="size-3.5" />}
-                </button>
-              </div>
-            )}
+            {showShareButtons && <ArticleShare title={article.title} url={`${theme.siteUrl || ""}${getPostUrl(article.slug, theme)}`} mods={mods} dict={theme.dict} />}
           </div>
         </div>
 

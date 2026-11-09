@@ -1,3 +1,4 @@
+import { AdminSessionMonitor } from "./admin-session-monitor";
 import Link from "next/link";
 import { headers, cookies } from "next/headers";
 import { count, eq } from "drizzle-orm";
@@ -25,6 +26,7 @@ export async function getAdminContext() {
 
   return {
     userName: session?.user.name ?? "",
+    userId: session?.user.id ?? "",
     siteName: siteName[0]?.value ?? "WordPress Clone",
     commentCount: comments[0]?.value ?? 0,
     themeName: activeTheme[0]?.value ?? "Default Theme",
@@ -152,7 +154,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="wp-admin-main">{children}</main>
+        <main className="wp-admin-main"><AdminSessionMonitor userId={context.userId} dict={dict} />{children}</main>
       </div>
     </div>
   );

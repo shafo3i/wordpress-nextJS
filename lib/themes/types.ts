@@ -196,6 +196,14 @@ export type ThemeMods = {
   singleShowDate?: boolean;
   singleShowReadingTime?: boolean;
   singleShowShareButtons?: boolean;
+  singleShareFacebook?: boolean;
+  singleShareX?: boolean;
+  singleShareWhatsapp?: boolean;
+  singleShareTelegram?: boolean;
+  singleShareLinkedin?: boolean;
+  singleShareEmail?: boolean;
+  singleShareNative?: boolean;
+  singleShareCopy?: boolean;
   singleContentWidth?: "narrow" | "standard" | "wide"; // narrow (720px), standard (860px), wide (full container)
 
   // Footer Options

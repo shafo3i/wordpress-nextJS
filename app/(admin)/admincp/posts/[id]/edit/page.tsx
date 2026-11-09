@@ -1,41 +1,49 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getPostByIdQuery, getAllCategoriesQuery, getAllTagsQuery } from "../../query";
-import { updatePostAction } from "../../action";
+import Link from "next/link"
+import { notFound } from "next/navigation"
+import {
+  AdminShell,
+  getAdminLanguageContext,
+} from "@/components/admin/admin-shell"
+import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor"
+import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import {
+  getPostByIdQuery,
+  getAllCategoriesQuery,
+  getAllTagsQuery,
+} from "../../query"
+import { updatePostAction } from "../../action"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 interface EditPostProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }
 
 export default async function EditPostPage({ params }: EditPostProps) {
-  await verifyAdminOrEditor();
+  const session = await verifyAdminOrEditor()
 
-  const { id } = await params;
-  const langContext = await getAdminLanguageContext();
-  const dict = langContext.dict;
-  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+  const { id } = await params
+  const langContext = await getAdminLanguageContext()
+  const dict = langContext.dict
+  const direction: "rtl" | "ltr" =
+    langContext.direction === "rtl" ? "rtl" : "ltr"
 
   const [result, categories, tags] = await Promise.all([
     getPostByIdQuery(id),
     getAllCategoriesQuery(),
     getAllTagsQuery(),
-  ]);
+  ])
 
-  if (!result || !result.post) notFound();
+  if (!result || !result.post) notFound()
 
-  const { post, translations } = result;
+  const { post, translations } = result
 
   return (
     <AdminShell>
       <div dir={direction} className="space-y-4 text-start">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
+            <h1 className="text-[23px] leading-normal font-normal text-[#1d2327]">
               {dict["admin.posts.edit_post"] || "Edit Post"}
             </h1>
             <Link
@@ -57,13 +65,21 @@ export default async function EditPostPage({ params }: EditPostProps) {
               className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
               type="button"
             >
-              {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
+              {dict["admin.common.help"] || "Help"}{" "}
+              <span className="text-[9px]">▼</span>
             </button>
           </div>
         </div>
 
         <ClassicPostEditor
+          key={post.id}
           action={updatePostAction}
+          autosaveUserId={session.user.id}
+          uiLocale={langContext.code}
+          initialModifiedAt={post.modifiedAt}
+          initialPostPassword={post.postPassword}
+          initialCommentStatus={post.commentStatus}
+          initialPingStatus={post.pingStatus}
           postId={post.id}
           initialTitle={post.title}
           initialContent={post.content}
@@ -89,5 +105,5 @@ export default async function EditPostPage({ params }: EditPostProps) {
         />
       </div>
     </AdminShell>
-  );
+  )
 }

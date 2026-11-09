@@ -1,3 +1,4 @@
+import { SESSION_POLICY } from "@/lib/session-policy"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { db } from "@/db"
@@ -88,10 +89,7 @@ export const auth = betterAuth({
     },
   },
 
-  session: {
-    expiresIn: 60 * 60,
-    freshAge: 30 * 60,
-  },
+  session: SESSION_POLICY,
 
   rateLimit: {
     window: 60,

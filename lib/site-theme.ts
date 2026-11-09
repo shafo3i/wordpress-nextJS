@@ -1,3 +1,4 @@
+import { siteBaseUrl } from "@/lib/seo/urls";
 import { getSiteSeoOptions } from "@/services/settings.service";
 import { localizedSiteOptions } from "@/lib/site-identity";
 import { getActiveThemeSlug } from "@/lib/themes/loader";
@@ -35,6 +36,7 @@ export { localizePath };
 export type FrontEndThemeContext = {
   themeSlug: string;
   siteTitle: string;
+  siteUrl?: string;
   siteTagline: string;
   timeZone?: string;
   primaryColor: string;
@@ -163,6 +165,7 @@ export async function getFrontEndThemeContext(options?: {
   return {
     themeSlug,
     siteTitle: identity.blogname,
+    siteUrl: siteBaseUrl(siteOptions),
     siteTagline: identity.blogdescription,
     timeZone: siteOptions.timezone_string || "UTC",
     primaryColor: resolveColor(mods, "primaryColor"),
