@@ -112,7 +112,7 @@ export function CardsGridBlock({
                     style={{ color: "var(--theme-muted)" }}
                     className="font-mono"
                   >
-                    {formatDate(item.date, theme.locale)}
+                    {formatDate(item.date, theme.locale, theme.timeZone)}
                   </span>
                 )}
               </div>

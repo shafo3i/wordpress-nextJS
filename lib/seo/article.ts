@@ -1,3 +1,4 @@
+import { localizedSiteOptions } from "@/lib/site-identity"
 import type { Metadata } from "next"
 import type { ContentItem } from "@/lib/site-content"
 import {
@@ -32,12 +33,20 @@ export async function articleMetadata(
   type: "post" | "page" = "post",
   home = false
 ): Promise<Metadata> {
-  const [article, site] = await Promise.all([
+  const [article, rawSite] = await Promise.all([
     type === "post"
       ? getPublishedPostBySlug(slug, locale)
       : getPublishedPageBySlug(slug, locale),
     getSeoSite(),
   ])
+  const site = {
+    ...rawSite,
+    options: localizedSiteOptions(
+      rawSite.options,
+      article?.locale || locale || rawSite.defaultLocale,
+      rawSite.defaultLocale
+    ),
+  }
   if (!article) return { robots: { index: false, follow: false } }
   const rows = await getIndexableTranslations(article.id, type)
   const isHome =
@@ -132,7 +141,9 @@ export async function homepageMetadata(locale?: string): Promise<Metadata> {
     const page = await getPublishedPageById(site.options.page_on_front, active)
     if (page) return articleMetadata(page.slug, active, "page", true)
   }
-  const metadata = buildSiteMetadata(site.options)
+  const metadata = buildSiteMetadata(
+    localizedSiteOptions(site.options, active, site.defaultLocale)
+  )
   metadata.alternates = {
     canonical:
       site.options.seo_canonical_enabled === "0"
@@ -182,7 +193,11 @@ export function newsArticleSchema(
     publisher: {
       "@type": "Organization",
       "@id": `${site.base}/#publisher`,
-      name: site.options.blogname,
+      name: localizedSiteOptions(
+        site.options,
+        article.locale || site.defaultLocale,
+        site.defaultLocale
+      ).blogname,
       url: site.base,
       ...(logo ? { logo: { "@type": "ImageObject", url: logo } } : {}),
     },

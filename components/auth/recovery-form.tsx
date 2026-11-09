@@ -15,11 +15,13 @@ export function RecoveryForm({
   mode,
   token,
   dict,
+  locale,
   callbackUrl,
   login,
 }: {
   mode: "forgot" | "reset" | "magic" | "emailOtp" | "verifyEmail"
   token?: string
+  locale?: string
   dict: Record<string, string>
   callbackUrl: string
   login: string
@@ -54,17 +56,27 @@ export function RecoveryForm({
         else
           window.location.assign(
             requiresTwoFactor(result.data)
-              ? authFlowUrl("/verify-2fa", callbackUrl, login)
+              ? authFlowUrl("/verify-2fa", callbackUrl, login, locale)
               : safeAuthRedirect(callbackUrl)
           )
         return
       }
-      const verifiedUrl = authFlowUrl("/email-verified", callbackUrl, login)
+      const verifiedUrl = authFlowUrl(
+        "/email-verified",
+        callbackUrl,
+        login,
+        locale
+      )
       const result =
         mode === "forgot"
           ? await authClient.requestPasswordReset({
               email: email.trim(),
-              redirectTo: authFlowUrl("/password-reset", callbackUrl, login),
+              redirectTo: authFlowUrl(
+                "/password-reset",
+                callbackUrl,
+                login,
+                locale
+              ),
             })
           : mode === "reset"
             ? await authClient.resetPassword({

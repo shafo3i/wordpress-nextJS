@@ -87,7 +87,7 @@ export function HeadlineSliderBlock({
               dateTime={new Date(current.date).toISOString()}
             >
               <Clock size={20} aria-hidden="true" />
-              {formatDate(current.date, theme.locale)}
+              {formatDate(current.date, theme.locale, theme.timeZone)}
             </time>
           )}
           {showAuthor && current.authorName && (

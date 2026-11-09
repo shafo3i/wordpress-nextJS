@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next"
+import { localizedSiteOptions } from "@/lib/site-identity"
 import { cache } from "react"
 import { and, desc, eq, inArray, gte } from "drizzle-orm"
 import { db } from "@/db"
@@ -208,7 +209,7 @@ export const getSitemapBundle = cache(async () => {
   }
 })
 
-type NewsEntry = { url: string; title: string; date: string; locale: string }
+type NewsEntry = { url: string; title: string; date: string; locale: string; publication?: string }
 export function splitSitemap<T>(
   items: T[],
   limit: number,
@@ -258,7 +259,7 @@ export function standardSitemapXml(entries: MetadataRoute.Sitemap) {
 }
 
 export function newsSitemapXml(entries: NewsEntry[], publication: string) {
-  return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">${entries.map((entry) => `<url><loc>${escapeXml(entry.url)}</loc><news:news><news:publication><news:name>${escapeXml(publication)}</news:name><news:language>${escapeXml(publicationLanguage(entry.locale))}</news:language></news:publication><news:publication_date>${escapeXml(entry.date)}</news:publication_date><news:title>${escapeXml(entry.title)}</news:title></news:news></url>`).join("")}</urlset>`
+  return `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">${entries.map((entry) => `<url><loc>${escapeXml(entry.url)}</loc><news:news><news:publication><news:name>${escapeXml(entry.publication || publication)}</news:name><news:language>${escapeXml(publicationLanguage(entry.locale))}</news:language></news:publication><news:publication_date>${escapeXml(entry.date)}</news:publication_date><news:title>${escapeXml(entry.title)}</news:title></news:news></url>`).join("")}</urlset>`
 }
 
 export async function generateNewsSitemapXml(part?: number): Promise<string> {
@@ -317,6 +318,7 @@ export async function generateNewsSitemapXml(part?: number): Promise<string> {
             title: contentPlainText(row.title),
             date: row.date.toISOString(),
             locale: row.locale,
+            publication: localizedSiteOptions(site.options, row.locale, site.defaultLocale).blogname,
           },
         ]
   })

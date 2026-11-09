@@ -1,10 +1,15 @@
-"use client";
+"use client"
 
-import { useState, useTransition } from "react";
-import { saveSettingsAction, sendTestEmailAction } from "../action";
-import type { SettingsMap } from "@/services/settings.service";
-import { MediaSelectModal } from "@/components/admin/media-select-modal";
-import { SettingsLogo, useSettingsLogo } from "./settings-logo";
+import { SettingsEmailTemplates } from "./settings-email-templates"
+import {
+  SettingsSiteIdentity,
+  type SettingsIdentityLanguage,
+} from "./settings-site-identity"
+import { useState, useTransition } from "react"
+import { saveSettingsAction, sendTestEmailAction } from "../action"
+import type { SettingsMap } from "@/services/settings.service"
+import { MediaSelectModal } from "@/components/admin/media-select-modal"
+import { SettingsLogo, useSettingsLogo } from "./settings-logo"
 import {
   Globe,
   Search,
@@ -20,138 +25,157 @@ import {
   Loader2,
   Image as ImageIcon,
   Trash2,
-  Upload,
-} from "lucide-react";
+} from "lucide-react"
 
 export function SettingsForm({
   initialSettings,
+  languages = [],
+  effectiveSiteUrl = "",
+  timeZones = [],
   initialLogoUrl = "",
   pages = [],
   dict = {},
   direction = "ltr",
 }: {
-  initialSettings: SettingsMap;
-  initialLogoUrl?: string;
-  pages?: { id: string; title: string }[];
-  dict?: Record<string, string>;
-  direction?: "rtl" | "ltr";
+  initialSettings: SettingsMap
+  languages?: SettingsIdentityLanguage[]
+  effectiveSiteUrl?: string
+  timeZones?: string[]
+  initialLogoUrl?: string
+  pages?: { id: string; title: string }[]
+  dict?: Record<string, string>
+  direction?: "rtl" | "ltr"
 }) {
-  const [activeTab, setActiveTab] = useState<"general" | "seo" | "social" | "analytics" | "email">("general");
-  const [settings, setSettings] = useState<SettingsMap>(initialSettings);
-  const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const logo = useSettingsLogo(initialLogoUrl, () => setNotice(null));
+  const [activeTab, setActiveTab] = useState<
+    "general" | "seo" | "social" | "analytics" | "email"
+  >("general")
+  const [settings, setSettings] = useState<SettingsMap>(initialSettings)
+  const [notice, setNotice] = useState<{
+    type: "success" | "error"
+    message: string
+  } | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const logo = useSettingsLogo(initialLogoUrl, () => setNotice(null))
 
   // SMTP Test Email state
-  const [testEmail, setTestEmail] = useState("");
-  const [testEmailStatus, setTestEmailStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [isSendingTest, startTestTransition] = useTransition();
-  const [showPassword, setShowPassword] = useState(false);
-  const [isOgMediaModalOpen, setIsOgMediaModalOpen] = useState(false);
+  const [emailLocale, setEmailLocale] = useState(
+    languages.find((language) => language.isDefault)?.code ||
+      languages[0]?.code ||
+      "en"
+  )
+  const [testEmail, setTestEmail] = useState("")
+  const [testEmailStatus, setTestEmailStatus] = useState<{
+    type: "success" | "error"
+    message: string
+  } | null>(null)
+  const [isSendingTest, startTestTransition] = useTransition()
+  const [showPassword, setShowPassword] = useState(false)
+  const [isOgMediaModalOpen, setIsOgMediaModalOpen] = useState(false)
 
   const handleChange = (key: string, value: string) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-  };
+    setSettings((prev) => ({ ...prev, [key]: value }))
+  }
 
-  const handleCheckboxToggle = (key: string, checkedValue = "1", uncheckedValue = "0") => {
+  const handleCheckboxToggle = (
+    key: string,
+    checkedValue = "1",
+    uncheckedValue = "0"
+  ) => {
     setSettings((prev) => ({
       ...prev,
       [key]: prev[key] === checkedValue ? uncheckedValue : checkedValue,
-    }));
-  };
+    }))
+  }
 
   const handleSendTestEmail = () => {
     if (!testEmail || !testEmail.includes("@")) {
       setTestEmailStatus({
         type: "error",
-        message: dict["admin.settings.test_email_error"] || "Please enter a valid email address.",
-      });
-      return;
+        message: dict["admin.settings.test_email_error"],
+      })
+      return
     }
-    setTestEmailStatus(null);
+    setTestEmailStatus(null)
     startTestTransition(async () => {
-      const res = await sendTestEmailAction(testEmail);
+      const res = await sendTestEmailAction(testEmail, emailLocale)
       if (res.success) {
         setTestEmailStatus({
           type: "success",
-          message: dict["admin.settings.test_email_success"] || res.message || "Test email dispatched successfully!",
-        });
+          message: dict["admin.settings.test_email_success"],
+        })
       } else {
         setTestEmailStatus({
           type: "error",
-          message: res.error || dict["admin.settings.test_email_error"] || "Failed to send test email.",
-        });
+          message:
+            dict[res.error || ""] || dict["admin.settings.test_email_error"],
+        })
       }
-    });
-  };
+    })
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (logo.mutation.isPending) return;
-    setNotice(null);
+    e.preventDefault()
+    if (logo.mutation.isPending) return
+    setNotice(null)
 
     startTransition(async () => {
       try {
-        await logo.savePending();
+        await logo.savePending()
         const changes = Object.fromEntries(
           Object.entries(settings).filter(
-            ([key, value]) => initialSettings[key] !== value,
-          ),
-        );
-        const res = await saveSettingsAction(changes);
+            ([key, value]) => initialSettings[key] !== value
+          )
+        )
+        const res = await saveSettingsAction(changes)
         if (res.success) {
           setNotice({
             type: "success",
-            message:
-              dict["admin.settings.saved_notice"] ||
-              res.message ||
-              "Settings saved successfully.",
-          });
+            message: dict["admin.settings.saved_notice"],
+          })
         } else {
           setNotice({
             type: "error",
-            message: res.error || "Failed to save settings.",
-          });
+            message: dict[res.error || ""] || dict["admin.settings.save_error"],
+          })
         }
       } catch (error) {
         setNotice({
           type: "error",
           message:
             dict[error instanceof Error ? error.message : ""] ||
-            dict["admin.settings.logo.upload_error"] ||
-            "",
-        });
+            dict["admin.settings.logo.upload_error"],
+        })
       }
-    });
-  };
+    })
+  }
 
   const tabs = [
     {
       id: "general" as const,
-      label: dict["admin.settings.tab_general"] || "General",
+      label: dict["admin.settings.tab_general"],
       icon: Globe,
     },
     {
       id: "seo" as const,
-      label: dict["admin.settings.tab_seo"] || "SEO & Indexing",
+      label: dict["admin.settings.tab_seo"],
       icon: Search,
     },
     {
       id: "social" as const,
-      label: dict["admin.settings.tab_social"] || "Social & Open Graph",
+      label: dict["admin.settings.tab_social"],
       icon: Share2,
     },
     {
       id: "analytics" as const,
-      label: dict["admin.settings.tab_analytics"] || "Analytics & Scripts",
+      label: dict["admin.settings.tab_analytics"],
       icon: BarChart2,
     },
     {
       id: "email" as const,
-      label: dict["admin.settings.tab_email"] || "Email & Notifications",
+      label: dict["admin.settings.tab_email"],
       icon: Mail,
     },
-  ];
+  ]
 
   return (
     <div className="space-y-4 text-start" dir={direction}>
@@ -184,8 +208,8 @@ export function SettingsForm({
       {/* Tabs Header */}
       <div className="flex border-b border-[#c3c4c7] text-[13px]">
         {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
           return (
             <button
               key={tab.id}
@@ -200,11 +224,14 @@ export function SettingsForm({
               <Icon className="size-4 text-[#50575e]" />
               <span>{tab.label}</span>
             </button>
-          );
+          )
         })}
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-[3px] border border-[#c3c4c7] bg-white p-6 shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-[3px] border border-[#c3c4c7] bg-white p-6 shadow-[0_1px_1px_rgba(0,0,0,0.04)]"
+      >
         {/* ========================================================================= */}
         {/* TAB 1: GENERAL */}
         {/* ========================================================================= */}
@@ -213,75 +240,52 @@ export function SettingsForm({
             <SettingsLogo controller={logo} dict={dict} busy={isPending} />
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
-                {dict["admin.settings.general_heading"] || "General Site Settings"}
+                {dict["admin.settings.general_heading"]}
               </h2>
               <p className="text-[12px] text-[#646970]">
-                {dict["admin.settings.general_desc"] || "Core site identity and localization configurations."}
+                {dict["admin.settings.general_desc"]}
               </p>
             </div>
 
             <div className="space-y-4">
-              {/* Site Title */}
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="blogname" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.site_title"] || "Site Title"}
-                </label>
-                <div>
-                  <input
-                    id="blogname"
-                    type="text"
-                    value={settings.blogname ?? ""}
-                    onChange={(e) => handleChange("blogname", e.target.value)}
-                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                  />
-                  <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.site_title_desc"] || "Synchronized with Appearance > Customize > Site Identity."}
-                  </p>
-                </div>
-              </div>
-
-              {/* Tagline */}
-              <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="blogdescription" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.tagline"] || "Tagline"}
-                </label>
-                <div>
-                  <input
-                    id="blogdescription"
-                    type="text"
-                    value={settings.blogdescription ?? ""}
-                    onChange={(e) => handleChange("blogdescription", e.target.value)}
-                    className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                  />
-                  <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.tagline_desc"] || "In a few words, explain what this site is about."}
-                  </p>
-                </div>
-              </div>
+              <SettingsSiteIdentity
+                settings={settings}
+                languages={languages}
+                dict={dict}
+                onChange={handleChange}
+              />
 
               {/* Admin Email */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="admin_email" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.admin_email"] || "Administration Email Address"}
+                <label
+                  htmlFor="admin_email"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.admin_email"]}
                 </label>
                 <div>
                   <input
                     id="admin_email"
                     type="email"
                     value={settings.admin_email ?? ""}
-                    onChange={(e) => handleChange("admin_email", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("admin_email", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.admin_email_desc"] || "This address is used for admin notifications."}
+                    {dict["admin.settings.admin_email_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* Site URL */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="siteurl" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.site_url"] || "Site Address (URL)"}
+                <label
+                  htmlFor="siteurl"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.site_url"]}
                 </label>
                 <div>
                   <input
@@ -291,57 +295,68 @@ export function SettingsForm({
                     onChange={(e) => handleChange("siteurl", e.target.value)}
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
+                  <p className="mt-1 text-[11px] text-[#646970]">
+                    {dict["admin.settings.effective_url"]}{" "}
+                    <span dir="ltr">{effectiveSiteUrl}</span>
+                  </p>
                 </div>
               </div>
 
               {/* Membership / Registration */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
                 <span className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.membership"] || "Membership"}
+                  {dict["admin.settings.membership"]}
                 </span>
                 <div>
-                  <label className="flex items-start gap-2 cursor-pointer">
+                  <label className="flex cursor-pointer items-start gap-2">
                     <input
                       type="checkbox"
-                      checked={settings.users_can_register !== "0" && settings.disableSignUp !== "true"}
+                      checked={
+                        settings.users_can_register !== "0" &&
+                        !["true", "1"].includes(settings.disableSignUp)
+                      }
                       onChange={(e) => {
-                        const canRegister = e.target.checked;
+                        const canRegister = e.target.checked
                         setSettings((prev) => ({
                           ...prev,
                           users_can_register: canRegister ? "1" : "0",
                           disableSignUp: canRegister ? "false" : "true",
-                        }));
+                        }))
                       }}
                       className="mt-0.5 size-4 rounded-[2px] border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                     />
                     <span className="text-[13px] text-[#2c3338]">
-                      {dict["admin.settings.users_can_register"] || "Anyone can register"}
+                      {dict["admin.settings.users_can_register"]}
                     </span>
                   </label>
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.users_can_register_desc"] || "Allow visitors to register new accounts. If unchecked, new user registrations are blocked."}
+                    {dict["admin.settings.users_can_register_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* Timezone */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="timezone_string" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.timezone"] || "Timezone"}
+                <label
+                  htmlFor="timezone_string"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.timezone"]}
                 </label>
                 <div>
                   <select
                     id="timezone_string"
                     value={settings.timezone_string ?? "UTC"}
-                    onChange={(e) => handleChange("timezone_string", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("timezone_string", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-xs rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   >
-                    <option value="UTC">UTC (Coordinated Universal Time)</option>
-                    <option value="Africa/Cairo">Africa/Cairo (UTC+2)</option>
-                    <option value="Asia/Riyadh">Asia/Riyadh (UTC+3)</option>
-                    <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
-                    <option value="Europe/London">Europe/London (UTC+0 / BST)</option>
-                    <option value="America/New_York">America/New_York (UTC-5)</option>
+                    {timeZones.map((zone) => (
+                      <option key={zone} value={zone}>
+                        {zone}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -349,7 +364,7 @@ export function SettingsForm({
               {/* Homepage Displays (WordPress Reading Settings) */}
               <div className="grid grid-cols-1 gap-2 border-t border-[#dcdcde] pt-4 md:grid-cols-[220px_1fr]">
                 <span className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.your_homepage_displays"] || "Your homepage displays"}
+                  {dict["admin.settings.your_homepage_displays"]}
                 </span>
                 <div className="space-y-3">
                   <div className="space-y-2">
@@ -358,12 +373,14 @@ export function SettingsForm({
                         type="radio"
                         name="show_on_front"
                         value="posts"
-                        checked={(settings.show_on_front || "posts") === "posts"}
+                        checked={
+                          (settings.show_on_front || "posts") === "posts"
+                        }
                         onChange={() => handleChange("show_on_front", "posts")}
                         className="size-4 border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                       />
                       <span className="text-[13px] text-[#2c3338]">
-                        {dict["admin.settings.show_on_front_posts"] || "Your latest posts (Theme Default Layout)"}
+                        {dict["admin.settings.show_on_front_posts"]}
                       </span>
                     </label>
 
@@ -377,24 +394,29 @@ export function SettingsForm({
                         className="size-4 border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                       />
                       <span className="text-[13px] text-[#2c3338]">
-                        {dict["admin.settings.show_on_front_page"] || "A static page (or Studio Builder page)"}
+                        {dict["admin.settings.show_on_front_page"]}
                       </span>
                     </label>
                   </div>
 
                   {settings.show_on_front === "page" && (
                     <div className="ms-6 flex flex-wrap items-center gap-3 rounded-[3px] border border-[#dcdcde] bg-[#f6f7f7] p-3">
-                      <label htmlFor="page_on_front" className="text-[12px] font-semibold text-[#1d2327]">
-                        {dict["admin.settings.homepage_page"] || "Homepage:"}
+                      <label
+                        htmlFor="page_on_front"
+                        className="text-[12px] font-semibold text-[#1d2327]"
+                      >
+                        {dict["admin.settings.homepage_page"]}
                       </label>
                       <select
                         id="page_on_front"
                         value={settings.page_on_front ?? ""}
-                        onChange={(e) => handleChange("page_on_front", e.target.value)}
+                        onChange={(e) =>
+                          handleChange("page_on_front", e.target.value)
+                        }
                         className="h-[30px] min-w-[220px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] focus:border-[#2271b1] focus:outline-none"
                       >
                         <option value="">
-                          {dict["admin.settings.select_page"] || "— Select a Page —"}
+                          {dict["admin.settings.select_page"]}
                         </option>
                         {pages.map((p) => (
                           <option key={p.id} value={p.id}>
@@ -408,7 +430,7 @@ export function SettingsForm({
                           className="inline-flex items-center gap-1.5 rounded-[3px] bg-[#2563eb] px-3 py-1 text-[12px] font-semibold text-white hover:bg-[#1d4ed8]"
                         >
                           <span>S</span>
-                          <span>{dict["admin.studio.edit_with_studio"] || "Edit with Studio"}</span>
+                          <span>{dict["admin.studio.edit_with_studio"]}</span>
                         </a>
                       )}
                     </div>
@@ -426,10 +448,10 @@ export function SettingsForm({
           <div className="space-y-6">
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
-                {dict["admin.settings.seo_heading"] || "Search Engine Optimization (SEO)"}
+                {dict["admin.settings.seo_heading"]}
               </h2>
               <p className="text-[12px] text-[#646970]">
-                {dict["admin.settings.seo_desc"] || "Control indexing visibility, title formats, and crawler meta tags."}
+                {dict["admin.settings.seo_desc"]}
               </p>
             </div>
 
@@ -437,28 +459,30 @@ export function SettingsForm({
               {/* Search Engine Visibility (blog_public) */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
                 <span className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.visibility"] || "Search Engine Visibility"}
+                  {dict["admin.settings.visibility"]}
                 </span>
                 <div>
-                  <label className="flex items-start gap-2 cursor-pointer">
+                  <label className="flex cursor-pointer items-start gap-2">
                     <input
                       type="checkbox"
                       checked={settings.blog_public === "0"}
-                      onChange={() => handleCheckboxToggle("blog_public", "0", "1")}
+                      onChange={() =>
+                        handleCheckboxToggle("blog_public", "0", "1")
+                      }
                       className="mt-0.5 h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                     />
                     <div>
                       <span className="text-[13px] font-medium text-[#1d2327]">
-                        {dict["admin.settings.discourage_search_engines"] || "Discourage search engines from indexing this site"}
+                        {dict["admin.settings.discourage_search_engines"]}
                       </span>
                       <p className="text-[11px] text-[#646970]">
-                        {dict["admin.settings.discourage_help"] || "When checked, sends a 'noindex, nofollow' header & meta tag to search engines. Essential while developing or testing."}
+                        {dict["admin.settings.discourage_help"]}
                       </p>
                     </div>
                   </label>
                   {settings.blog_public === "0" && (
-                    <div className="mt-2 inline-block rounded bg-[#fcf0f1] px-2.5 py-1 text-[11px] font-semibold text-[#d63638] border border-[#d63638]/20">
-                      ⚠️ {dict["admin.settings.indexing_blocked_warning"] || "Site is currently hidden from search engines (noindex mode active)."}
+                    <div className="mt-2 inline-block rounded border border-[#d63638]/20 bg-[#fcf0f1] px-2.5 py-1 text-[11px] font-semibold text-[#d63638]">
+                      ⚠️ {dict["admin.settings.indexing_blocked_warning"]}
                     </div>
                   )}
                 </div>
@@ -466,39 +490,53 @@ export function SettingsForm({
 
               {/* Title Template */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="seo_meta_title_template" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.title_template"] || "SEO Title Format"}
+                <label
+                  htmlFor="seo_meta_title_template"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.title_template"]}
                 </label>
                 <div>
                   <input
                     id="seo_meta_title_template"
                     type="text"
-                    value={settings.seo_meta_title_template ?? "%title% — %sitename%"}
-                    onChange={(e) => handleChange("seo_meta_title_template", e.target.value)}
+                    value={
+                      settings.seo_meta_title_template ?? "%title% — %sitename%"
+                    }
+                    onChange={(e) =>
+                      handleChange("seo_meta_title_template", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.title_template_desc"] || "Available variables: %title%, %sitename%, %tagline%."}
+                    {dict["admin.settings.title_template_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* Default Meta Description */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="seo_default_meta_description" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.default_meta_desc"] || "Default Meta Description"}
+                <label
+                  htmlFor="seo_default_meta_description"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.default_meta_desc"]}
                 </label>
                 <div>
                   <textarea
                     id="seo_default_meta_description"
                     rows={3}
                     value={settings.seo_default_meta_description ?? ""}
-                    onChange={(e) => handleChange("seo_default_meta_description", e.target.value)}
+                    onChange={(e) =>
+                      handleChange(
+                        "seo_default_meta_description",
+                        e.target.value
+                      )
+                    }
                     className="w-full max-w-xl rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="Enter default snippet description for homepage and archives..."
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.default_meta_desc_help"] || "Used as the search snippet for the homepage and any posts that do not provide an excerpt."}
+                    {dict["admin.settings.default_meta_desc_help"]}
                   </p>
                 </div>
               </div>
@@ -506,18 +544,20 @@ export function SettingsForm({
               {/* Canonical URLs */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
                 <span className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.canonical"] || "Canonical URLs"}
+                  {dict["admin.settings.canonical"]}
                 </span>
                 <div>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex cursor-pointer items-center gap-2">
                     <input
                       type="checkbox"
                       checked={settings.seo_canonical_enabled === "1"}
-                      onChange={() => handleCheckboxToggle("seo_canonical_enabled", "1", "0")}
+                      onChange={() =>
+                        handleCheckboxToggle("seo_canonical_enabled", "1", "0")
+                      }
                       className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                     />
                     <span className="text-[13px] text-[#1d2327]">
-                      {dict["admin.settings.canonical_enable"] || "Automatically generate <link rel='canonical'> tags on all pages"}
+                      {dict["admin.settings.canonical_enable"]}
                     </span>
                   </label>
                 </div>
@@ -525,19 +565,26 @@ export function SettingsForm({
 
               {/* Robots Directives */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="seo_robots_extra" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.robots_directives"] || "Advanced Robots Directives"}
+                <label
+                  htmlFor="seo_robots_extra"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.robots_directives"]}
                 </label>
                 <div>
                   <input
                     id="seo_robots_extra"
                     type="text"
-                    value={settings.seo_robots_extra ?? "max-image-preview:large"}
-                    onChange={(e) => handleChange("seo_robots_extra", e.target.value)}
+                    value={
+                      settings.seo_robots_extra ?? "max-image-preview:large"
+                    }
+                    onChange={(e) =>
+                      handleChange("seo_robots_extra", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.robots_directives_desc"] || "Standard for Google Discover: max-image-preview:large, max-snippet:-1"}
+                    {dict["admin.settings.robots_directives_desc"]}
                   </p>
                 </div>
               </div>
@@ -552,10 +599,10 @@ export function SettingsForm({
           <div className="space-y-6">
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
-                {dict["admin.settings.social_heading"] || "Social Sharing & Open Graph"}
+                {dict["admin.settings.social_heading"]}
               </h2>
               <p className="text-[12px] text-[#646970]">
-                {dict["admin.settings.social_desc"] || "Customize how links look when shared on WhatsApp, Facebook, X (Twitter), and LinkedIn."}
+                {dict["admin.settings.social_desc"]}
               </p>
             </div>
 
@@ -563,7 +610,7 @@ export function SettingsForm({
               {/* Default OG Image */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
                 <label className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.og_image"] || "Default Share Image (OG)"}
+                  {dict["admin.settings.og_image"]}
                 </label>
                 <div className="space-y-3">
                   {settings.og_default_image ? (
@@ -579,18 +626,18 @@ export function SettingsForm({
                         <button
                           type="button"
                           onClick={() => setIsOgMediaModalOpen(true)}
-                          className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-white px-3 py-1 text-[12px] font-medium text-[#2271b1] hover:bg-[#f0f6fc] transition-colors cursor-pointer"
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-white px-3 py-1 text-[12px] font-medium text-[#2271b1] transition-colors hover:bg-[#f0f6fc]"
                         >
                           <ImageIcon className="size-3.5" />
-                          <span>{dict["admin.settings.replace_image"] || "Replace Image"}</span>
+                          <span>{dict["admin.settings.replace_image"]}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleChange("og_default_image", "")}
-                          className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#d63638] bg-white px-3 py-1 text-[12px] font-medium text-[#d63638] hover:bg-[#fcf0f1] transition-colors cursor-pointer"
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-[3px] border border-[#d63638] bg-white px-3 py-1 text-[12px] font-medium text-[#d63638] transition-colors hover:bg-[#fcf0f1]"
                         >
                           <Trash2 className="size-3.5" />
-                          <span>{dict["admin.settings.remove_image"] || "Remove Image"}</span>
+                          <span>{dict["admin.settings.remove_image"]}</span>
                         </button>
                       </div>
                     </div>
@@ -599,10 +646,10 @@ export function SettingsForm({
                       <button
                         type="button"
                         onClick={() => setIsOgMediaModalOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#f0f6fc] px-4 py-2 text-[13px] font-medium text-[#2271b1] hover:bg-[#2271b1] hover:text-white transition-colors cursor-pointer"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#f0f6fc] px-4 py-2 text-[13px] font-medium text-[#2271b1] transition-colors hover:bg-[#2271b1] hover:text-white"
                       >
                         <ImageIcon className="size-4" />
-                        <span>{dict["admin.settings.select_og_image"] || "Select or Upload Image from Media Library"}</span>
+                        <span>{dict["admin.settings.select_og_image"]}</span>
                       </button>
                     </div>
                   )}
@@ -613,12 +660,13 @@ export function SettingsForm({
                       id="og_default_image"
                       type="text"
                       value={settings.og_default_image ?? ""}
-                      onChange={(e) => handleChange("og_default_image", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("og_default_image", e.target.value)
+                      }
                       className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="https://yourdomain.com/images/default-og.jpg or /uploads/..."
                     />
                     <p className="mt-1 text-[11px] text-[#646970]">
-                      {dict["admin.settings.og_image_desc"] || "Recommended resolution: 1200x630 pixels. Used when an article or page has no featured image."}
+                      {dict["admin.settings.og_image_desc"]}
                     </p>
                   </div>
                 </div>
@@ -626,15 +674,20 @@ export function SettingsForm({
 
               {/* OG Site Name */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="og_site_name" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.og_site_name"] || "Open Graph Site Name"}
+                <label
+                  htmlFor="og_site_name"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.og_site_name"]}
                 </label>
                 <div>
                   <input
                     id="og_site_name"
                     type="text"
                     value={settings.og_site_name ?? ""}
-                    onChange={(e) => handleChange("og_site_name", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("og_site_name", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
                 </div>
@@ -642,17 +695,24 @@ export function SettingsForm({
 
               {/* Twitter Card Type */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="twitter_card_type" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.twitter_card"] || "Twitter / X Card Type"}
+                <label
+                  htmlFor="twitter_card_type"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.twitter_card"]}
                 </label>
                 <div>
                   <select
                     id="twitter_card_type"
                     value={settings.twitter_card_type ?? "summary_large_image"}
-                    onChange={(e) => handleChange("twitter_card_type", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("twitter_card_type", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-xs rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   >
-                    <option value="summary_large_image">Summary with Large Image (Standard for news)</option>
+                    <option value="summary_large_image">
+                      Summary with Large Image (Standard for news)
+                    </option>
                     <option value="summary">Summary (Small thumbnail)</option>
                   </select>
                 </div>
@@ -660,34 +720,42 @@ export function SettingsForm({
 
               {/* Twitter Site Handle */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="twitter_site_handle" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.twitter_handle"] || "Twitter / X @Handle"}
+                <label
+                  htmlFor="twitter_site_handle"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.twitter_handle"]}
                 </label>
                 <div>
                   <input
                     id="twitter_site_handle"
                     type="text"
                     value={settings.twitter_site_handle ?? ""}
-                    onChange={(e) => handleChange("twitter_site_handle", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("twitter_site_handle", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="@YourAccount"
                   />
                 </div>
               </div>
 
               {/* Facebook App ID */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="facebook_app_id" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.fb_app_id"] || "Facebook App ID"}
+                <label
+                  htmlFor="facebook_app_id"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.fb_app_id"]}
                 </label>
                 <div>
                   <input
                     id="facebook_app_id"
                     type="text"
                     value={settings.facebook_app_id ?? ""}
-                    onChange={(e) => handleChange("facebook_app_id", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("facebook_app_id", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="Optional: for Facebook Insights"
                   />
                 </div>
               </div>
@@ -702,45 +770,54 @@ export function SettingsForm({
           <div className="space-y-6">
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
-                {dict["admin.settings.analytics_heading"] || "Analytics & Webmaster Verification"}
+                {dict["admin.settings.analytics_heading"]}
               </h2>
               <p className="text-[12px] text-[#646970]">
-                {dict["admin.settings.analytics_desc"] || "Connect search consoles, traffic metrics, and custom scripts."}
+                {dict["admin.settings.analytics_desc"]}
               </p>
             </div>
 
             <div className="space-y-4">
               {/* Google Search Console */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="google_site_verification" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.gsc"] || "Google Search Console"}
+                <label
+                  htmlFor="google_site_verification"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.gsc"]}
                 </label>
                 <div>
                   <input
                     id="google_site_verification"
                     type="text"
                     value={settings.google_site_verification ?? ""}
-                    onChange={(e) => handleChange("google_site_verification", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("google_site_verification", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="Verification code content string"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.gsc_desc"] || "Value from <meta name='google-site-verification' content='...' />"}
+                    {dict["admin.settings.gsc_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* Bing Webmaster */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="bing_site_verification" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.bing"] || "Bing Webmaster Tools"}
+                <label
+                  htmlFor="bing_site_verification"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.bing"]}
                 </label>
                 <div>
                   <input
                     id="bing_site_verification"
                     type="text"
                     value={settings.bing_site_verification ?? ""}
-                    onChange={(e) => handleChange("bing_site_verification", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("bing_site_verification", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
                 </div>
@@ -748,60 +825,74 @@ export function SettingsForm({
 
               {/* Google Analytics 4 */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="google_analytics_id" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.ga4"] || "Google Analytics 4 (GA4)"}
+                <label
+                  htmlFor="google_analytics_id"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.ga4"]}
                 </label>
                 <div>
                   <input
                     id="google_analytics_id"
                     type="text"
                     value={settings.google_analytics_id ?? ""}
-                    onChange={(e) => handleChange("google_analytics_id", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("google_analytics_id", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-xs rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="G-XXXXXXXXXX"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.ga4_desc"] || "Your GA4 Measurement ID."}
+                    {dict["admin.settings.ga4_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* Custom Header Scripts */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="custom_header_scripts" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.header_scripts"] || "Header Scripts (<head>)"}
+                <label
+                  htmlFor="custom_header_scripts"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.header_scripts"]}
                 </label>
                 <div>
                   <textarea
                     id="custom_header_scripts"
+                    disabled
                     rows={4}
                     value={settings.custom_header_scripts ?? ""}
-                    onChange={(e) => handleChange("custom_header_scripts", e.target.value)}
-                    className="w-full max-w-xl font-mono text-[12px] rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="<script>...</script>"
+                    onChange={(e) =>
+                      handleChange("custom_header_scripts", e.target.value)
+                    }
+                    className="w-full max-w-xl rounded-[3px] border border-[#8c8f94] bg-white p-2.5 font-mono text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.header_scripts_desc"] || "Injected right before </head>. Useful for Google Tag Manager, custom CSS, or meta tags."}
+                    {dict["admin.settings.scripts_unavailable"]}
                   </p>
                 </div>
               </div>
 
               {/* Custom Footer Scripts */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="custom_footer_scripts" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.footer_scripts"] || "Footer Scripts (</body>)"}
+                <label
+                  htmlFor="custom_footer_scripts"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.footer_scripts"]}
                 </label>
                 <div>
                   <textarea
                     id="custom_footer_scripts"
+                    disabled
                     rows={4}
                     value={settings.custom_footer_scripts ?? ""}
-                    onChange={(e) => handleChange("custom_footer_scripts", e.target.value)}
-                    className="w-full max-w-xl font-mono text-[12px] rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="<script>...</script>"
+                    onChange={(e) =>
+                      handleChange("custom_footer_scripts", e.target.value)
+                    }
+                    className="w-full max-w-xl rounded-[3px] border border-[#8c8f94] bg-white p-2.5 font-mono text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.footer_scripts_desc"] || "Injected right before </body>. Useful for tracking pixels and analytics."}
+                    {dict["admin.settings.scripts_unavailable"]}
                   </p>
                 </div>
               </div>
@@ -816,23 +907,26 @@ export function SettingsForm({
           <div className="space-y-8">
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
-                {dict["admin.settings.email_heading"] || "Email & SMTP Server"}
+                {dict["admin.settings.email_heading"]}
               </h2>
               <p className="text-[12px] text-[#646970]">
-                {dict["admin.settings.email_desc"] || "Configure outbound mail delivery (SMTP), admin alerts, and customize template wording."}
+                {dict["admin.settings.email_desc"]}
               </p>
             </div>
 
             {/* Sub-Section 1: SMTP Server Configuration */}
-            <div className="border-t border-[#dcdcde] pt-6 space-y-6">
+            <div className="space-y-6 border-t border-[#dcdcde] pt-6">
               <h3 className="text-[14px] font-semibold text-[#1d2327]">
-                {dict["admin.settings.smtp_section"] || "SMTP Configuration"}
+                {dict["admin.settings.smtp_section"]}
               </h3>
 
               {/* SMTP Host */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="smtp_host" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.smtp_host"] || "SMTP Host"}
+                <label
+                  htmlFor="smtp_host"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.smtp_host"]}
                 </label>
                 <div>
                   <input
@@ -841,18 +935,20 @@ export function SettingsForm({
                     value={settings.smtp_host ?? ""}
                     onChange={(e) => handleChange("smtp_host", e.target.value)}
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="smtp.mailgun.org / smtp.gmail.com"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.smtp_host_desc"] || "Hostname of your mail server."}
+                    {dict["admin.settings.smtp_host_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* SMTP Port & Secure */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="smtp_port" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.smtp_port"] || "SMTP Port"}
+                <label
+                  htmlFor="smtp_port"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.smtp_port"]}
                 </label>
                 <div className="flex flex-wrap items-center gap-4">
                   <div>
@@ -860,12 +956,13 @@ export function SettingsForm({
                       id="smtp_port"
                       type="text"
                       value={settings.smtp_port ?? "587"}
-                      onChange={(e) => handleChange("smtp_port", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("smtp_port", e.target.value)
+                      }
                       className="h-[32px] w-28 rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="587"
                     />
                     <p className="mt-1 text-[11px] text-[#646970]">
-                      {dict["admin.settings.smtp_port_desc"] || "587 (TLS) or 465 (SSL)."}
+                      {dict["admin.settings.smtp_port_desc"]}
                     </p>
                   </div>
 
@@ -873,12 +970,20 @@ export function SettingsForm({
                     <select
                       id="smtp_secure"
                       value={settings.smtp_secure ?? "tls"}
-                      onChange={(e) => handleChange("smtp_secure", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("smtp_secure", e.target.value)
+                      }
                       className="h-[32px] rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                     >
-                      <option value="tls">{dict["admin.settings.smtp_secure_tls"] || "TLS / STARTTLS (Port 587)"}</option>
-                      <option value="ssl">{dict["admin.settings.smtp_secure_ssl"] || "SSL (Port 465)"}</option>
-                      <option value="none">{dict["admin.settings.smtp_secure_none"] || "None / Plaintext (Port 25)"}</option>
+                      <option value="tls">
+                        {dict["admin.settings.smtp_secure_tls"]}
+                      </option>
+                      <option value="ssl">
+                        {dict["admin.settings.smtp_secure_ssl"]}
+                      </option>
+                      <option value="none">
+                        {dict["admin.settings.smtp_secure_none"]}
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -886,8 +991,11 @@ export function SettingsForm({
 
               {/* SMTP User */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="smtp_user" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.smtp_user"] || "SMTP Username / API Key"}
+                <label
+                  htmlFor="smtp_user"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.smtp_user"]}
                 </label>
                 <div>
                   <input
@@ -896,19 +1004,21 @@ export function SettingsForm({
                     value={settings.smtp_user ?? ""}
                     onChange={(e) => handleChange("smtp_user", e.target.value)}
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="postmaster@yourdomain.com"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.smtp_user_desc"] || "Username or API key for authenticating with the mail provider."}
+                    {dict["admin.settings.smtp_user_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* SMTP Password (Encrypted) */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="smtp_pass" className="text-[13px] font-semibold text-[#1d2327] flex items-center gap-1.5">
+                <label
+                  htmlFor="smtp_pass"
+                  className="flex items-center gap-1.5 text-[13px] font-semibold text-[#1d2327]"
+                >
                   <Lock className="size-3.5 text-[#00a32a]" />
-                  <span>{dict["admin.settings.smtp_pass"] || "SMTP Password / Secret"}</span>
+                  <span>{dict["admin.settings.smtp_pass"]}</span>
                 </label>
                 <div>
                   <div className="relative max-w-md">
@@ -916,9 +1026,11 @@ export function SettingsForm({
                       id="smtp_pass"
                       type={showPassword ? "text" : "password"}
                       value={settings.smtp_pass ?? ""}
-                      onChange={(e) => handleChange("smtp_pass", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("smtp_pass", e.target.value)
+                      }
                       className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 pe-9 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder={dict["admin.settings.smtp_pass_placeholder"] || "•••••••• (Encrypted in database)"}
+                      placeholder={dict["admin.settings.smtp_pass_placeholder"]}
                       autoComplete="new-password"
                     />
                     <button
@@ -926,79 +1038,102 @@ export function SettingsForm({
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute inset-y-0 end-0 flex items-center px-2.5 text-[#646970] hover:text-[#1d2327]"
                     >
-                      {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                      {showPassword ? (
+                        <EyeOff className="size-3.5" />
+                      ) : (
+                        <Eye className="size-3.5" />
+                      )}
                     </button>
                   </div>
-                  <p className="mt-1 text-[11px] text-[#646970] flex items-center gap-1">
-                    <span className="text-[#00a32a] font-medium">✓ AES-256-GCM</span>
-                    <span>{dict["admin.settings.smtp_pass_desc"] || "Encrypted with AES-256-GCM in database before storage."}</span>
+                  <p className="mt-1 flex items-center gap-1 text-[11px] text-[#646970]">
+                    <span className="font-medium text-[#00a32a]">
+                      ✓ AES-256-GCM
+                    </span>
+                    <span>{dict["admin.settings.smtp_pass_desc"]}</span>
                   </p>
                 </div>
               </div>
 
               {/* SMTP From Email */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="smtp_from_email" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.smtp_from_email"] || "From Email Address"}
+                <label
+                  htmlFor="smtp_from_email"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.smtp_from_email"]}
                 </label>
                 <div>
                   <input
                     id="smtp_from_email"
                     type="email"
                     value={settings.smtp_from_email ?? ""}
-                    onChange={(e) => handleChange("smtp_from_email", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("smtp_from_email", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="news@yourdomain.com"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.smtp_from_email_desc"] || "Sender address that appears in outbound messages."}
+                    {dict["admin.settings.smtp_from_email_desc"]}
                   </p>
                 </div>
               </div>
 
               {/* SMTP From Name */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="smtp_from_name" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.smtp_from_name"] || "From Display Name"}
+                <label
+                  htmlFor="smtp_from_name"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.smtp_from_name"]}
                 </label>
                 <div>
                   <input
                     id="smtp_from_name"
                     type="text"
                     value={settings.smtp_from_name ?? ""}
-                    onChange={(e) => handleChange("smtp_from_name", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("smtp_from_name", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="PressForge News"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.smtp_from_name_desc"] || "Sender name that appears in inboxes."}
+                    {dict["admin.settings.smtp_from_name_desc"]}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Sub-Section 2: Notifications Configuration */}
-            <div className="border-t border-[#dcdcde] pt-6 space-y-6">
+            <div className="space-y-6 border-t border-[#dcdcde] pt-6">
               <h3 className="text-[14px] font-semibold text-[#1d2327]">
-                {dict["admin.settings.notifications_section"] || "Admin & Subscriber Notifications"}
+                {dict["admin.settings.notifications_section"]}
               </h3>
 
               {/* Admin Notification Email */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
-                <label htmlFor="admin_notification_email" className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.admin_notification_email"] || "Admin Notification Email"}
+                <label
+                  htmlFor="admin_notification_email"
+                  className="text-[13px] font-semibold text-[#1d2327]"
+                >
+                  {dict["admin.settings.admin_notification_email"]}
                 </label>
                 <div>
                   <input
                     id="admin_notification_email"
+                    disabled
                     type="email"
                     value={settings.admin_notification_email ?? ""}
-                    onChange={(e) => handleChange("admin_notification_email", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("admin_notification_email", e.target.value)
+                    }
                     className="h-[32px] w-full max-w-md rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                    placeholder="editor@yourdomain.com"
                   />
                   <p className="mt-1 text-[11px] text-[#646970]">
-                    {dict["admin.settings.admin_notification_email_desc"] || "Target inbox for administrative and publication alerts."}
+                    {
+                      dict[
+                        "admin.settings.publication_notifications_unavailable"
+                      ]
+                    }
                   </p>
                 </div>
               </div>
@@ -1006,177 +1141,129 @@ export function SettingsForm({
               {/* Notification Toggles */}
               <div className="grid grid-cols-1 gap-2 md:grid-cols-[220px_1fr]">
                 <span className="text-[13px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.notifications_section"] || "Automated Events"}
+                  {dict["admin.settings.notifications_section"]}
                 </span>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-[13px] text-[#2c3338] cursor-pointer">
+                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#2c3338]">
                     <input
                       type="checkbox"
-                      checked={settings.enable_new_post_notifications === "1"}
-                      onChange={() => handleCheckboxToggle("enable_new_post_notifications")}
+                      disabled
+                      checked={false}
+                      onChange={() =>
+                        handleCheckboxToggle("enable_new_post_notifications")
+                      }
                       className="size-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                     />
-                    <span>{dict["admin.settings.enable_new_post_notifications"] || "Notify admin when a new post is published"}</span>
+                    <span>
+                      {dict["admin.settings.enable_new_post_notifications"]}
+                    </span>
+                    <span className="text-[11px] text-[#646970]">
+                      {
+                        dict[
+                          "admin.settings.publication_notifications_unavailable"
+                        ]
+                      }
+                    </span>
                   </label>
 
-                  <label className="flex items-center gap-2 text-[13px] text-[#2c3338] cursor-pointer">
+                  <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[#2c3338]">
                     <input
                       type="checkbox"
                       checked={settings.enable_newsletter_notifications === "1"}
-                      onChange={() => handleCheckboxToggle("enable_newsletter_notifications")}
+                      onChange={() =>
+                        handleCheckboxToggle("enable_newsletter_notifications")
+                      }
                       className="size-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                     />
-                    <span>{dict["admin.settings.enable_newsletter_notifications"] || "Send automated welcome email when users subscribe to newsletter"}</span>
+                    <span>
+                      {dict["admin.settings.enable_newsletter_notifications"]}
+                    </span>
                   </label>
                 </div>
               </div>
             </div>
 
             {/* Sub-Section 3: Email Templates Wording (Configurable in UI) */}
-            <div className="border-t border-[#dcdcde] pt-6 space-y-6">
+            <div className="space-y-6 border-t border-[#dcdcde] pt-6">
               <div>
                 <h3 className="text-[14px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.templates_section"] || "Email Templates Wording"}
+                  {dict["admin.settings.templates_section"]}
                 </h3>
                 <p className="text-[12px] text-[#646970]">
-                  {dict["admin.settings.templates_section_desc"] || "Customize text, subjects, headings, and footer disclaimers for automated system emails without altering code."}
+                  {dict["admin.settings.templates_section_desc"]}
                 </p>
               </div>
 
               {/* Template 1: New Post Notification */}
-              <div className="rounded-[4px] border border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4">
+              <div className="space-y-4 rounded-[4px] border border-[#dcdcde] bg-[#f9fafb] p-4">
                 <h4 className="text-[13px] font-bold text-[#1d2327]">
-                  {dict["admin.settings.tpl_new_post_heading"] || "New Post Alert Template"}
+                  {dict["admin.settings.tpl_new_post_heading"]}
                 </h4>
 
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
-                  <label htmlFor="email_new_post_subject" className="text-[12px] font-medium text-[#1d2327]">
-                    {dict["admin.settings.tpl_new_post_subject"] || "Subject Line"}
+                  <label
+                    htmlFor="email_new_post_subject"
+                    className="text-[12px] font-medium text-[#1d2327]"
+                  >
+                    {dict["admin.settings.tpl_new_post_subject"]}
                   </label>
                   <div>
                     <input
                       id="email_new_post_subject"
+                      disabled
                       type="text"
                       value={settings.email_new_post_subject ?? ""}
-                      onChange={(e) => handleChange("email_new_post_subject", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("email_new_post_subject", e.target.value)
+                      }
                       className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="📰 New Story: {{postTitle}}"
                     />
                     <p className="mt-1 text-[11px] text-[#646970]">
-                      {dict["admin.settings.tpl_new_post_subject_desc"] || "Available variables: {{postTitle}}, {{siteName}}, {{authorName}}."}
+                      {dict["admin.settings.tpl_new_post_subject_desc"]}
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
-                  <label htmlFor="email_new_post_heading" className="text-[12px] font-medium text-[#1d2327]">
-                    {dict["admin.settings.tpl_new_post_title"] || "Email Main Heading"}
+                  <label
+                    htmlFor="email_new_post_heading"
+                    className="text-[12px] font-medium text-[#1d2327]"
+                  >
+                    {dict["admin.settings.tpl_new_post_title"]}
                   </label>
                   <div>
                     <input
                       id="email_new_post_heading"
+                      disabled
                       type="text"
                       value={settings.email_new_post_heading ?? ""}
-                      onChange={(e) => handleChange("email_new_post_heading", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("email_new_post_heading", e.target.value)
+                      }
                       className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="New Article Published"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Template 2: Newsletter Welcome Email */}
-              <div className="rounded-[4px] border border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4">
-                <h4 className="text-[13px] font-bold text-[#1d2327]">
-                  {dict["admin.settings.tpl_welcome_heading"] || "Newsletter Welcome Template"}
-                </h4>
-
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
-                  <label htmlFor="email_welcome_subject" className="text-[12px] font-medium text-[#1d2327]">
-                    {dict["admin.settings.tpl_welcome_subject"] || "Subject Line"}
-                  </label>
-                  <div>
-                    <input
-                      id="email_welcome_subject"
-                      type="text"
-                      value={settings.email_welcome_subject ?? ""}
-                      onChange={(e) => handleChange("email_welcome_subject", e.target.value)}
-                      className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="🎉 Welcome to {{siteName}}"
-                    />
-                    <p className="mt-1 text-[11px] text-[#646970]">
-                      {dict["admin.settings.tpl_welcome_subject_desc"] || "Available variables: {{siteName}}, {{name}}."}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
-                  <label htmlFor="email_welcome_heading" className="text-[12px] font-medium text-[#1d2327]">
-                    {dict["admin.settings.tpl_welcome_title"] || "Email Main Heading"}
-                  </label>
-                  <div>
-                    <input
-                      id="email_welcome_heading"
-                      type="text"
-                      value={settings.email_welcome_heading ?? ""}
-                      onChange={(e) => handleChange("email_welcome_heading", e.target.value)}
-                      className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="Welcome to Our Newsletter"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
-                  <label htmlFor="email_welcome_body" className="text-[12px] font-medium text-[#1d2327]">
-                    {dict["admin.settings.tpl_welcome_body"] || "Welcome Body Content"}
-                  </label>
-                  <div>
-                    <textarea
-                      id="email_welcome_body"
-                      rows={3}
-                      value={settings.email_welcome_body ?? ""}
-                      onChange={(e) => handleChange("email_welcome_body", e.target.value)}
-                      className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="Thank you for subscribing to our newsletter..."
-                    />
-                    <p className="mt-1 text-[11px] text-[#646970]">
-                      {dict["admin.settings.tpl_welcome_body_desc"] || "Main message presented to new newsletter subscribers."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Template 3: Global Footer Disclaimer */}
-              <div className="rounded-[4px] border border-[#dcdcde] bg-[#f9fafb] p-4 space-y-4">
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-[180px_1fr]">
-                  <label htmlFor="email_footer_text" className="text-[12px] font-bold text-[#1d2327]">
-                    {dict["admin.settings.tpl_footer_text"] || "Email Footer Disclaimer"}
-                  </label>
-                  <div>
-                    <textarea
-                      id="email_footer_text"
-                      rows={2}
-                      value={settings.email_footer_text ?? ""}
-                      onChange={(e) => handleChange("email_footer_text", e.target.value)}
-                      className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
-                      placeholder="You received this email because you subscribed to updates."
-                    />
-                    <p className="mt-1 text-[11px] text-[#646970]">
-                      {dict["admin.settings.tpl_footer_text_desc"] || "Appears at the bottom of all system emails."}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <SettingsEmailTemplates
+                settings={settings}
+                languages={languages}
+                dict={dict}
+                locale={emailLocale}
+                onLocaleChange={setEmailLocale}
+                onChange={handleChange}
+              />
             </div>
 
             {/* Sub-Section 4: Live SMTP Connection Test */}
-            <div className="border-t border-[#dcdcde] pt-6 space-y-4">
+            <div className="space-y-4 border-t border-[#dcdcde] pt-6">
               <div>
                 <h3 className="text-[14px] font-semibold text-[#1d2327]">
-                  {dict["admin.settings.test_email_section"] || "Send Test Email"}
+                  {dict["admin.settings.test_email_section"]}
                 </h3>
                 <p className="text-[12px] text-[#646970]">
-                  {dict["admin.settings.test_email_desc"] || "Verify your SMTP credentials and delivery immediately."}
+                  {dict["admin.settings.test_email_desc"]}
                 </p>
               </div>
 
@@ -1206,29 +1293,29 @@ export function SettingsForm({
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-xl">
+              <div className="flex max-w-xl flex-col items-stretch gap-2 sm:flex-row sm:items-center">
                 <input
                   type="email"
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
-                  placeholder={dict["admin.settings.test_email_address"] || "Recipient Email Address"}
+                  placeholder={dict["admin.settings.test_email_address"]}
                   className="h-[32px] flex-1 rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                 />
                 <button
                   type="button"
                   disabled={isSendingTest}
                   onClick={handleSendTestEmail}
-                  className="inline-flex items-center justify-center gap-1.5 h-[32px] px-4 rounded-[3px] border border-[#2271b1] bg-[#2271b1] text-[13px] font-medium text-white shadow-sm hover:border-[#135e96] hover:bg-[#135e96] focus:outline-none disabled:opacity-50"
+                  className="inline-flex h-[32px] items-center justify-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 text-[13px] font-medium text-white shadow-sm hover:border-[#135e96] hover:bg-[#135e96] focus:outline-none disabled:opacity-50"
                 >
                   {isSendingTest ? (
                     <>
                       <Loader2 className="size-3.5 animate-spin" />
-                      <span>{dict["admin.settings.test_email_sending"] || "Sending..."}</span>
+                      <span>{dict["admin.settings.test_email_sending"]}</span>
                     </>
                   ) : (
                     <>
                       <Send className="size-3.5" />
-                      <span>{dict["admin.settings.test_email_send"] || "Send Test Email"}</span>
+                      <span>{dict["admin.settings.test_email_send"]}</span>
                     </>
                   )}
                 </button>
@@ -1245,8 +1332,8 @@ export function SettingsForm({
             className="inline-flex items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-[13px] font-medium text-white shadow-sm hover:border-[#135e96] hover:bg-[#135e96] focus:outline-none disabled:opacity-50"
           >
             {isPending || logo.mutation.isPending
-              ? (dict["admin.common.saving"] || "Saving Changes...")
-              : (dict["admin.settings.save_changes"] || "Save Changes")}
+              ? dict["admin.common.saving"]
+              : dict["admin.settings.save_changes"]}
           </button>
         </div>
       </form>
@@ -1256,10 +1343,10 @@ export function SettingsForm({
         isOpen={isOgMediaModalOpen}
         onClose={() => setIsOgMediaModalOpen(false)}
         onSelect={(item) => handleChange("og_default_image", item.url)}
-        title={dict["admin.settings.select_og_image"] || "Select Default Share Image"}
-        selectButtonText={dict["admin.settings.set_og_image"] || "Set as Share Image"}
+        title={dict["admin.settings.select_og_image"]}
+        selectButtonText={dict["admin.settings.set_og_image"]}
         dict={dict}
       />
     </div>
-  );
+  )
 }

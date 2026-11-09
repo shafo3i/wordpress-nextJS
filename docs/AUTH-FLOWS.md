@@ -32,6 +32,6 @@ Settings logo labels were repaired in the Arabic template. Translation resolutio
 
 ## Verification
 
-`lib/auth-flows.test.ts` exercises actual Better Auth endpoints using isolated in-memory accounts and intercepted mail. It covers enrollment, pending sessions, wrong/valid codes, single-use recovery codes, expired challenges, passwordless MFA enforcement, reset expiry/reuse/session revocation, verification without auto-login, and disabled passwordless signup. Navigation and email tests cover unsafe redirect rejection, localized email HTML escaping and SMTP failure handling.
+`tests/unit/lib/auth-flows.test.ts` exercises actual Better Auth endpoints using isolated in-memory accounts and intercepted mail. It covers enrollment, pending sessions, wrong/valid codes, single-use recovery codes, expired challenges, passwordless MFA enforcement, reset expiry/reuse/session revocation, verification without auto-login, and disabled passwordless signup. Navigation and email tests cover unsafe redirect rejection, localized email HTML escaping and SMTP failure handling.
 
-`scripts/verify-auth-browser.ts` checks both UI languages and directions, recovery links, empty login fields, password confirmation and MFA redirects. Browser auth API calls are intercepted, so this script does not send live mail or alter real users. SMTP delivery to a real inbox is not covered by these checks.
+`tests/verification/verify-auth-browser.ts` checks both UI languages and directions, recovery links, empty login fields, password confirmation and MFA redirects. Browser auth API calls are intercepted, so this script does not send live mail or alter real users. SMTP delivery to a real inbox is not covered by these checks.

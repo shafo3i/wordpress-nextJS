@@ -105,7 +105,7 @@ export function MagazineBentoBlock({
                   )}
                   <div>
                     {showAuthor && <span className="font-semibold text-theme-overlay block text-xs">{theme.dict?.[lead.authorName] || lead.authorName}</span>}
-                    {showDate && <span className="text-[0.625rem] text-theme-overlay-muted font-mono">{formatDate(lead.date, theme.locale)}</span>}
+                    {showDate && <span className="text-[0.625rem] text-theme-overlay-muted font-mono">{formatDate(lead.date, theme.locale, theme.timeZone)}</span>}
                   </div>
                 </div>
 
@@ -152,7 +152,7 @@ export function MagazineBentoBlock({
 
                 <div className="flex items-center justify-between text-[0.625rem] text-theme-overlay-muted pt-1">
                   {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
-                  {showDate && <span className="font-mono">{formatDate(item.date, theme.locale)}</span>}
+                  {showDate && <span className="font-mono">{formatDate(item.date, theme.locale, theme.timeZone)}</span>}
                 </div>
               </div>
             </div>

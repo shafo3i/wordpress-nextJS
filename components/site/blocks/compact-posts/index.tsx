@@ -75,7 +75,7 @@ export function CompactPostsBlock({
               <div className={styles.meta} data-studio-meta>
                 {block.showDate !== false && (
                   <time data-studio-meta dateTime={new Date(post.date).toISOString()}>
-                    {formatDate(post.date, theme.locale)}
+                    {formatDate(post.date, theme.locale, theme.timeZone)}
                   </time>
                 )}
                 {block.showAuthor && post.authorName && (

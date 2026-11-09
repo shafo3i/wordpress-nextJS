@@ -165,7 +165,7 @@ export function Broadsheet3ColBlock({
                         style={{ color: "var(--theme-muted)" }}
                         className="block font-mono text-[0.625rem]"
                       >
-                        {formatDate(item.date, theme.locale)}
+                        {formatDate(item.date, theme.locale, theme.timeZone)}
                       </span>
                     )}
                     <Link
@@ -265,7 +265,7 @@ export function Broadsheet3ColBlock({
                   style={{ color: "var(--theme-muted)" }}
                   className="font-mono"
                 >
-                  {formatDate(centerFeature.date, theme.locale)}
+                  {formatDate(centerFeature.date, theme.locale, theme.timeZone)}
                 </span>
               )}
               {linkText && (
@@ -314,7 +314,7 @@ export function Broadsheet3ColBlock({
                       data-studio-meta
                       dateTime={new Date(item.date).toISOString()}
                     >
-                      {formatDate(item.date, theme.locale)}
+                      {formatDate(item.date, theme.locale, theme.timeZone)}
                     </time>
                   )}
                   <Link href={getPostUrl(item.slug, theme)} className="block">

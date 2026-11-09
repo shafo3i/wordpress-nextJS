@@ -2,11 +2,12 @@ import type { ContentItem } from "@/lib/site-content";
 import type { FrontEndThemeContext } from "@/lib/site-theme";
 import { resolveMods } from "@/lib/customizer/resolve";
 
-export function formatDate(value: Date | string | number, locale = "en") {
+export function formatDate(value: Date | string | number, locale = "en", timeZone?: string) {
   try {
     const d = value instanceof Date ? value : new Date(value);
     if (isNaN(d.getTime())) return "";
     return new Intl.DateTimeFormat(locale || "en", {
+      ...(timeZone ? { timeZone } : {}),
       month: "short",
       day: "numeric",
       year: "numeric",

@@ -63,6 +63,7 @@ export function BreakingTickerBlock({
   const buttonClass = styles.control
   return (
     <section
+      {...rotation.interactionProps}
       dir={theme.direction}
       aria-label={title || t("site.breaking", theme)}
       className={styles.ticker}
@@ -74,7 +75,7 @@ export function BreakingTickerBlock({
           className={styles.track}
           data-direction={rtl ? "rtl" : "ltr"}
           data-static={!rotation.canAutoplay}
-          data-paused={rotation.paused}
+          data-paused={rotation.stopped}
           style={
             {
               "--ticker-duration":
@@ -107,7 +108,7 @@ export function BreakingTickerBlock({
                           className={`${styles.meta} hidden sm:inline`}
                           dateTime={new Date(post.date).toISOString()}
                         >
-                          {formatDate(post.date, theme.locale)}
+                          {formatDate(post.date, theme.locale, theme.timeZone)}
                         </time>
                       )}
                       {showCategory && post.categories[0] && (

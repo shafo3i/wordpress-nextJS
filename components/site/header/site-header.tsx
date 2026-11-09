@@ -155,7 +155,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
             )}
             {mods.showDateInHeader !== false && (
               <span className="hidden flex-shrink-0 font-mono text-[0.6875rem] opacity-75 sm:inline">
-                {formatDate(new Date(), theme.locale)}
+                {formatDate(new Date(), theme.locale, theme.timeZone)}
               </span>
             )}
             {theme.languages && theme.languages.length > 1 && (

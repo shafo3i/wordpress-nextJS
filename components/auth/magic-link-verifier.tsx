@@ -13,10 +13,12 @@ import { Button } from "@/components/ui/button"
 export function MagicLinkVerifier({
   token,
   dict,
+  locale,
   callbackUrl,
   login,
 }: {
   token: string
+  locale?: string
   dict: Record<string, string>
   callbackUrl: string
   login: string
@@ -35,7 +37,7 @@ export function MagicLinkVerifier({
       else
         window.location.assign(
           requiresTwoFactor(result.data)
-            ? authFlowUrl("/verify-2fa", callbackUrl, login)
+            ? authFlowUrl("/verify-2fa", callbackUrl, login, locale)
             : safeAuthRedirect(callbackUrl)
         )
     } catch {

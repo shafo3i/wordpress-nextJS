@@ -19,8 +19,13 @@ export function safeAuthRedirect(value: unknown, fallback = "/"): string {
   }
 }
 
-export function authFlowUrl(path: string, callbackUrl: string, login: string) {
-  return `${path}?${new URLSearchParams({ callbackUrl: safeAuthRedirect(callbackUrl), login: login === "/cms-admin" ? login : "/cms-login" })}`
+export function authFlowUrl(
+  path: string,
+  callbackUrl: string,
+  login: string,
+  locale?: string
+) {
+  return `${path}?${new URLSearchParams({ callbackUrl: safeAuthRedirect(callbackUrl), login: login === "/cms-admin" ? login : "/cms-login", ...(locale ? { lang: locale } : {}) })}`
 }
 
 export function requiresTwoFactor(data: unknown): boolean {

@@ -159,7 +159,7 @@ export function PostTemplate({
                 </span>
                 {showDate && (
                   <time dateTime={article.date.toISOString()} className="text-[0.6875rem] text-theme-muted block font-mono">
-                    {formatDate(article.date, theme.locale)}
+                    {formatDate(article.date, theme.locale, theme.timeZone)}
                   </time>
                 )}
               </div>

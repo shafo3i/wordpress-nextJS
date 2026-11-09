@@ -3,6 +3,8 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "settings-identity.browser.spec.ts",
+    "ticker-interaction.browser.spec.ts",
     "studio-design.browser.spec.ts",
     "admin-runtime.browser.spec.ts",
     "studio-security.browser.spec.ts",

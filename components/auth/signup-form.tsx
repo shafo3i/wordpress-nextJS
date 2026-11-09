@@ -1,12 +1,21 @@
 "use client"
 
 import { FormEvent, useState } from "react"
+import { authFlowUrl } from "@/lib/auth-navigation"
 import { authClient } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export function SignupForm({ dict }: { dict: Record<string, string> }) {
+export function SignupForm({
+  dict,
+  locale,
+  callbackUrl = "/",
+}: {
+  dict: Record<string, string>
+  locale?: string
+  callbackUrl?: string
+}) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -24,7 +33,12 @@ export function SignupForm({ dict }: { dict: Record<string, string> }) {
         name,
         email,
         password,
-        callbackURL: "/email-verified",
+        callbackURL: authFlowUrl(
+          "/email-verified",
+          callbackUrl,
+          "/cms-login",
+          locale
+        ),
       })
 
       if (result.error) {

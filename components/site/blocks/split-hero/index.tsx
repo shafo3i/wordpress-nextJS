@@ -111,7 +111,7 @@ export function SplitHeroFeatureBlock({
                 <span className="font-bold text-theme-heading">{lead.authorName}</span>
               )}
               {showDate && (
-                <span className="font-mono">{formatDate(lead.date, theme.locale)}</span>
+                <span className="font-mono">{formatDate(lead.date, theme.locale, theme.timeZone)}</span>
               )}
             </div>
 
@@ -153,7 +153,7 @@ export function SplitHeroFeatureBlock({
                 </h5>
                 {showDate && (
                   <span className="text-[10px] font-mono text-theme-muted block mt-1">
-                    {formatDate(item.date, theme.locale)}
+                    {formatDate(item.date, theme.locale, theme.timeZone)}
                   </span>
                 )}
               </div>

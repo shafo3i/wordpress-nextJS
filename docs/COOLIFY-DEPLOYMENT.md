@@ -69,7 +69,7 @@ docker build --build-arg NEXT_PUBLIC_APP_URL=https://news.example.com -t pressfo
 
 For configuration validation, supply the variables above through a private environment file and run `docker compose --env-file YOUR_PRIVATE_ENV_FILE config --quiet`. Avoid printing rendered configuration because it contains secrets.
 
-The upload runtime can be checked separately with `node --test deploy/uploads.test.mjs`. Its test files are excluded from the Docker build context.
+The upload runtime can be checked separately with `node --test tests/node/deploy/uploads.test.mjs`. Its test files are excluded from the Docker build context.
 
 ## Deployment checks
 

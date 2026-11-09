@@ -108,7 +108,7 @@ export function DualCategoryColumnsBlock({
                   <span className="font-semibold">{lead.authorName}</span>
                 )}
                 {showDate && (
-                  <span>• {formatDate(lead.date, theme.locale)}</span>
+                  <span>• {formatDate(lead.date, theme.locale, theme.timeZone)}</span>
                 )}
               </div>
             )}
@@ -153,7 +153,7 @@ export function DualCategoryColumnsBlock({
                   </Link>
                   {showDate && (
                     <span className="mt-0.5 block font-mono text-[10px] text-theme-muted">
-                      {formatDate(item.date, theme.locale)}
+                      {formatDate(item.date, theme.locale, theme.timeZone)}
                     </span>
                   )}
                 </div>

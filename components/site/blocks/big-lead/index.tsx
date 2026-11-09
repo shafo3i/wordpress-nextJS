@@ -87,7 +87,7 @@ export function BigLeadSideListBlock({
                       style={{ color: "var(--theme-muted)" }}
                       className="text-xs font-mono"
                     >
-                      {formatDate(lead.date, theme.locale)}
+                      {formatDate(lead.date, theme.locale, theme.timeZone)}
                     </time>
                   </>
                 )}
@@ -175,7 +175,7 @@ export function BigLeadSideListBlock({
                   className="flex items-center justify-between text-[0.6875rem] font-mono mt-2"
                 >
                   {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
-                  {showDate && <span>{formatDate(item.date, theme.locale)}</span>}
+                  {showDate && <span>{formatDate(item.date, theme.locale, theme.timeZone)}</span>}
                 </div>
               </div>
 

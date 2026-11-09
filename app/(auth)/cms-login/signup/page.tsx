@@ -1,5 +1,8 @@
-import { AuthScreen } from "@/components/auth/auth-screen"
-
-export default function Page() {
-  return <AuthScreen mode="signup" />
+import { AuthScreen, type AuthSearch } from "@/components/auth/auth-screen"
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<AuthSearch>
+}) {
+  return <AuthScreen mode="signup" search={await searchParams} />
 }

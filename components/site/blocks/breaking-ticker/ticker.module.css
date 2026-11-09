@@ -14,22 +14,20 @@
 .track[data-direction="rtl"] {
   animation-name: ticker-forward;
 }
-.track[data-paused="true"] {
+.track[data-paused="true"],
+.ticker:hover .track,
+.ticker:focus-within .track {
   animation-play-state: paused;
 }
-.track[data-static="true"],
-.viewport:focus-within .track {
+.track[data-static="true"] {
   animation: none;
   transform: none;
 }
 .track[data-static="true"] .group[aria-hidden="true"],
-.track[data-static="true"] .sequence[aria-hidden="true"],
-.viewport:focus-within .group[aria-hidden="true"],
-.viewport:focus-within .sequence[aria-hidden="true"] {
+.track[data-static="true"] .sequence[aria-hidden="true"] {
   display: none;
 }
-.viewport:has([data-static="true"]),
-.viewport:focus-within {
+.viewport:has([data-static="true"]) {
   overflow-x: auto;
 }
 .group {

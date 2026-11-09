@@ -9,8 +9,6 @@ import {
   emailOTP,
 } from "better-auth/plugins"
 import * as schema from "@/db/schema/auth-schema"
-import { existingAccountAlertTemplate } from "@/templates/email.templates"
-import { sendEmail } from "@/lib/email"
 import { APIError, createAuthMiddleware } from "better-auth/api"
 import { nextCookies } from "better-auth/next-js"
 import { env } from "@/lib/env"
@@ -29,39 +27,23 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: false,
     requireEmailVerification: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendAuthEmail("reset", user.email, url, user.name)
+    sendResetPassword: async ({ user, url }, request) => {
+      await sendAuthEmail("reset", user.email, url, user.name, "", { request })
     },
 
     revokeSessionsOnPasswordReset: true,
     resetPasswordTokenExpiresIn: 60 * 60,
 
     onExistingUserSignUp: async ({ user }, request) => {
-      const siteName = await getOption("blogname", "PressForge News")
-      const frontendUrl = env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-
-      // Extract real client IP and User Agent from the incoming request
-      const ipAddress =
-        request?.headers.get("cf-connecting-ip") ||
-        request?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        request?.headers.get("x-real-ip") ||
-        undefined
-
-      const userAgent = request?.headers.get("user-agent") || undefined
-
-      await sendEmail({
-        to: user.email,
-        subject: `🛡️ تنبيه أمان: محاولة تسجيل جديدة عبر بريدك الإلكتروني - ${siteName}`,
-        html: existingAccountAlertTemplate({
-          name: user.name || undefined,
-          siteName,
-          ipAddress,
-          userAgent,
-          loginUrl: `${frontendUrl}/cms-login`,
-          resetPasswordUrl: `${frontendUrl}/forgot-password`,
-        }),
-        text: `تنبيه أمان من ${siteName}: تم رصد محاولة لإنشاء حساب جديد باستخدام بريدك الإلكتروني (IP: ${ipAddress || "غير محدد"}). إذا كنت أنت من قام بالمحاولة يمكنك تسجيل الدخول عبر: ${frontendUrl}/cms-login`,
-      })
+      const frontendUrl = env.NEXT_PUBLIC_APP_URL
+      await sendAuthEmail(
+        "existing",
+        user.email,
+        new URL("/cms-login", frontendUrl).href,
+        user.name,
+        "",
+        { request }
+      )
     },
   },
 
@@ -101,8 +83,8 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: false,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendAuthEmail("verify", user.email, url, user.name)
+    sendVerificationEmail: async ({ user, url }, request) => {
+      await sendAuthEmail("verify", user.email, url, user.name, "", { request })
     },
   },
 
@@ -143,7 +125,7 @@ export const auth = betterAuth({
       disableSignUp: true,
       expiresIn: 300,
       storeToken: "hashed",
-      sendMagicLink: async ({ email, token, url }) => {
+      sendMagicLink: async ({ email, token, url }, ctx) => {
         const callbackUrl = safeAuthRedirect(
           new URL(url).searchParams.get("callbackURL")
         )
@@ -154,13 +136,20 @@ export const auth = betterAuth({
           "login",
           callbackUrl.startsWith("/admincp") ? "/cms-admin" : "/cms-login"
         )
-        await sendAuthEmail("magic", email, directLink.toString())
+        await sendAuthEmail("magic", email, directLink.toString(), "", "", {
+          request: ctx?.request,
+          headers: ctx?.headers,
+          url,
+        })
       },
     }),
     emailOTP({
       disableSignUp: true,
-      sendVerificationOTP: async ({ email, otp, type }) => {
-        await sendAuthEmail("otp", email, otp, "", type)
+      sendVerificationOTP: async ({ email, otp, type }, ctx) => {
+        await sendAuthEmail("otp", email, otp, "", type, {
+          request: ctx?.request,
+          headers: ctx?.headers,
+        })
       },
     }),
 

@@ -99,7 +99,7 @@ export function NewsListViewBlock({
                         style={{ color: "var(--theme-muted)" }}
                         className="font-mono text-[0.6875rem]"
                       >
-                        {formatDate(item.date, theme.locale)}
+                        {formatDate(item.date, theme.locale, theme.timeZone)}
                       </time>
                     </>
                   )}

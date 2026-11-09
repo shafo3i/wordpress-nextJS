@@ -80,7 +80,7 @@ export function MinimalTextWireBlock({
               {showAuthor && (
                 <span>{theme.dict?.[item.authorName] || item.authorName}</span>
               )}
-              {showDate && <span>{formatDate(item.date, theme.locale)}</span>}
+              {showDate && <span>{formatDate(item.date, theme.locale, theme.timeZone)}</span>}
             </div>
           </article>
         ))}

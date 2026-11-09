@@ -1,60 +1,41 @@
 import { sendEmail } from "@/lib/email"
-import { getOption } from "@/services/settings.service"
-import {
-  getDefaultLanguage,
-  getTranslations,
-} from "@/services/language.service"
-import {
-  passwordResetTemplate,
-  verifyEmailTemplate,
-  magicLinkTemplate,
-  emailOtpTemplate,
-} from "@/templates/email.templates"
-
-const escapeHtml = (value: string) =>
-  value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)
+import { getEmailLanguage, type EmailLanguageHint } from "@/lib/email-language"
+import { localizedEmail } from "@/templates/localized-email"
 
 export async function sendAuthEmail(
-  kind: "reset" | "verify" | "magic" | "otp",
+  kind: "reset" | "verify" | "magic" | "otp" | "existing",
   email: string,
   value: string,
   name = "",
-  otpType = ""
+  _otpType = "",
+  hint: EmailLanguageHint = {}
 ) {
-  const [language, siteName] = await Promise.all([
-    getDefaultLanguage(),
-    getOption("blogname", ""),
-  ])
-  const dict = await getTranslations(language?.code || "en")
-  const direction = language?.direction === "rtl" ? "rtl" : "ltr"
-  const options = {
-    direction,
-    heading: dict[`auth.mail.${kind}`],
-    buttonText: dict["auth.mail.continue"],
-  } as const
-  const html =
-    kind === "reset"
-      ? passwordResetTemplate(
-          escapeHtml(name),
-          escapeHtml(value),
-          escapeHtml(siteName),
-          options
-        )
-      : kind === "verify"
-        ? verifyEmailTemplate(
-            escapeHtml(name),
-            escapeHtml(value),
-            escapeHtml(siteName),
-            options
-          )
-        : kind === "magic"
-          ? magicLinkTemplate(escapeHtml(value), escapeHtml(siteName), options)
-          : emailOtpTemplate(value, otpType, escapeHtml(siteName), options)
-  const result = await sendEmail({
-    to: email,
-    subject: `${dict[`auth.mail.${kind}`]} - ${siteName}`,
-    html,
-    text: `${dict[`auth.mail.${kind}`]}: ${value}`,
+  const language = await getEmailLanguage({
+    ...hint,
+    url: hint.url || (kind === "otp" ? undefined : value),
   })
+  let url: string | undefined
+  if (kind !== "otp") {
+    const link = new URL(value)
+    link.searchParams.set("lang", language.code)
+    url = link.href
+  }
+  const requestHeaders = hint.request?.headers || hint.headers
+  const secondary =
+    kind === "existing" ? new URL("/forgot-password", url) : undefined
+  secondary?.searchParams.set("lang", language.code)
+  const message = localizedEmail({
+    kind,
+    ...language,
+    name,
+    url,
+    code: kind === "otp" ? value : undefined,
+    ip:
+      requestHeaders?.get("cf-connecting-ip") ||
+      requestHeaders?.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    userAgent: requestHeaders?.get("user-agent") || undefined,
+    secondaryUrl: secondary?.href,
+  })
+  const result = await sendEmail({ to: email, ...message })
   if (!result.success) throw new Error("Authentication email delivery failed")
 }

@@ -39,7 +39,7 @@ export function init() {
             fetch('/api/newsletter/subscribe', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: emailVal, source: 'article_footer' })
+              body: JSON.stringify({ email: emailVal, source: 'article_footer', locale: document.documentElement.lang })
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {

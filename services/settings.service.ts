@@ -3,15 +3,18 @@ import { DB, db } from "@/db";
 import { wpOptions } from "@/db/schema/cms-options";
 import { encryptValue } from "@/lib/encryption";
 import { cache } from "react";
+import { localizedSiteOptions } from "@/lib/site-identity";
 import { buildSiteMetadata } from "@/lib/seo/metadata";
 
-const SEO_OPTION_NAMES = ["blogname", "blogdescription", "home", "siteurl", "show_on_front", "page_on_front", "blog_public", "seo_meta_title_template", "seo_default_meta_description", "seo_canonical_enabled", "seo_robots_extra", "og_default_image", "og_site_name", "twitter_card_type", "twitter_site_handle", "facebook_app_id"];
+const SEO_OPTION_NAMES = ["site_identity_translations", "timezone_string", "google_site_verification", "bing_site_verification", "google_analytics_id", "blogname", "blogdescription", "home", "siteurl", "show_on_front", "page_on_front", "blog_public", "seo_meta_title_template", "seo_default_meta_description", "seo_canonical_enabled", "seo_robots_extra", "og_default_image", "og_site_name", "twitter_card_type", "twitter_site_handle", "facebook_app_id"];
 export const getSiteSeoOptions = cache(() => getOptions(SEO_OPTION_NAMES));
 
 export type SettingsMap = Record<string, string>;
 
 export const DEFAULT_SETTINGS: SettingsMap = {
   // General
+  site_identity_translations: "{}",
+  email_template_translations: "{}",
   blogname: "PressForge News",
   blogdescription: "The Independent News Journal",
   admin_email: "admin@pressforge.local",
@@ -64,10 +67,10 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   // Email Templates Wording (Configured in UI)
   email_new_post_subject: "📰 New Story: {{postTitle}}",
   email_new_post_heading: "New Article Published",
-  email_welcome_subject: "🎉 Welcome to {{siteName}}",
-  email_welcome_heading: "Welcome to Our Newsletter",
-  email_welcome_body: "Thank you for subscribing to our newsletter. You will receive our top editorial dispatches and stories directly in your inbox.",
-  email_footer_text: "You received this email because you subscribed to updates.",
+  email_welcome_subject: "",
+  email_welcome_heading: "",
+  email_welcome_body: "",
+  email_footer_text: "",
 };
 
 /**
@@ -135,7 +138,7 @@ export async function getOptions(
 export async function setOption(
   name: string,
   value: string,
-  database: DB = db
+  database: Pick<DB, "select" | "insert" | "update"> = db
 ): Promise<void> {
   const finalValue = name === "smtp_pass" && value ? encryptValue(value) : value;
 
@@ -166,9 +169,11 @@ export async function setOptions(
   entries: SettingsMap,
   database: DB = db
 ): Promise<void> {
-  for (const [name, value] of Object.entries(entries)) {
-    await setOption(name, value, database);
-  }
+  await database.transaction(async transaction => {
+    for (const [name, value] of Object.entries(entries)) {
+      await setOption(name, value, transaction);
+    }
+  });
 }
 
 /**
@@ -184,5 +189,7 @@ export async function getAllSettings(database: DB = db): Promise<SettingsMap> {
  */
 export async function getSiteMetadata(database: DB = db) {
   const options = database === db ? await getSiteSeoOptions() : await getOptions(SEO_OPTION_NAMES, database);
-  return buildSiteMetadata(options);
+  const { getPublicLanguageContext } = await import("@/lib/public-language");
+  const language = await getPublicLanguageContext();
+  return buildSiteMetadata(localizedSiteOptions(options, language.code, language.defaultCode));
 }

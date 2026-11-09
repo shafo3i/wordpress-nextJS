@@ -129,7 +129,7 @@ export function MultiCardCarouselBlock({
               {(showAuthor || showDate) && (
                 <div className="flex items-center gap-2 text-[11px] text-white/75">
                   {showAuthor && <span>{post.authorName}</span>}
-                  {showDate && <span>• {formatDate(post.date, theme.locale)}</span>}
+                  {showDate && <span>• {formatDate(post.date, theme.locale, theme.timeZone)}</span>}
                 </div>
               )}
             </div>

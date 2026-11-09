@@ -24,12 +24,25 @@ export function seoRobots(
   const imagePreview = extra
     .find((value) => value.startsWith("max-image-preview:"))
     ?.split(":")[1]
+  const numberDirective = (key: string) => {
+    const value = extra
+      .find((value) => value.startsWith(`${key}:`))
+      ?.split(":")[1]
+    const number = Number(value)
+    return value &&
+      /^(?:-1|0|[1-9]\d*)$/.test(value) &&
+      Number.isSafeInteger(number)
+      ? number
+      : undefined
+  }
   return {
     index,
     follow: !extra.includes("nofollow"),
     googleBot: {
       index,
       follow: !extra.includes("nofollow"),
+      "max-snippet": numberDirective("max-snippet"),
+      "max-video-preview": numberDirective("max-video-preview"),
       ...(imagePreview && ["none", "standard", "large"].includes(imagePreview)
         ? { "max-image-preview": imagePreview as "none" | "standard" | "large" }
         : {}),
@@ -43,6 +56,12 @@ export function buildSiteMetadata(options: Record<string, string>): Metadata {
     absoluteWebUrl(options.og_default_image, base) || `${base}/opengraph-image`
   return {
     metadataBase: new URL(base),
+    verification: {
+      google: options.google_site_verification || undefined,
+      other: options.bing_site_verification
+        ? { "msvalidate.01": options.bing_site_verification }
+        : {},
+    },
     title: {
       default: options.blogname,
       template: (options.seo_meta_title_template || "%title%")

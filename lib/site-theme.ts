@@ -1,3 +1,5 @@
+import { getSiteSeoOptions } from "@/services/settings.service";
+import { localizedSiteOptions } from "@/lib/site-identity";
 import { getActiveThemeSlug } from "@/lib/themes/loader";
 import { getCustomizerData } from "@/lib/themes/customizer";
 import { getMenuWithItems, getNavMenuLocations } from "@/lib/menus/db";
@@ -34,6 +36,7 @@ export type FrontEndThemeContext = {
   themeSlug: string;
   siteTitle: string;
   siteTagline: string;
+  timeZone?: string;
   primaryColor: string;
   headerLayout: "classic" | "minimal" | "magazine" | "centered";
   headingFont: "serif" | "sans";
@@ -59,17 +62,19 @@ export async function getFrontEndThemeContext(options?: {
   postTranslations?: LinkedPostTranslation[];
   currentPath?: string;
 }): Promise<FrontEndThemeContext> {
-  const [themeSlug, customizer, locations, activeLanguages, defaultLang, activePlugins] = await Promise.all([
+  const [themeSlug, customizer, locations, activeLanguages, defaultLang, activePlugins, siteOptions] = await Promise.all([
     getActiveThemeSlug(),
     getCustomizerData(),
     getNavMenuLocations(),
     getActiveLanguages().catch(() => []),
     getDefaultLanguage().catch(() => null),
     getActivePluginSlugs(),
+    getSiteSeoOptions(),
   ]);
 
   const defaultLocale = defaultLang?.code || "en";
   const activeLocale = options?.locale || defaultLocale;
+  const identity = localizedSiteOptions(siteOptions, activeLocale, defaultLocale);
   const currentLangObj = activeLanguages.find((l) => l.code === activeLocale) || defaultLang;
   const direction = (currentLangObj?.direction as "ltr" | "rtl") || "ltr";
 
@@ -157,8 +162,9 @@ export async function getFrontEndThemeContext(options?: {
 
   return {
     themeSlug,
-    siteTitle: customizer.siteTitle || "PressForge News",
-    siteTagline: customizer.siteTagline || "Open-Source Editorial Engine & Newsroom",
+    siteTitle: identity.blogname,
+    siteTagline: identity.blogdescription,
+    timeZone: siteOptions.timezone_string || "UTC",
     primaryColor: resolveColor(mods, "primaryColor"),
     headerLayout: mods.headerLayout ?? "classic",
     headingFont: getFontKind(mods.headingFontFamily),

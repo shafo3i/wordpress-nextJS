@@ -140,7 +140,7 @@ export function FeaturedHeroSliderBlock({
               )}
               {showDate && (
                 <span className="font-mono text-white/75">
-                  • {formatDate(current.date, theme.locale)}
+                  • {formatDate(current.date, theme.locale, theme.timeZone)}
                 </span>
               )}
             </div>

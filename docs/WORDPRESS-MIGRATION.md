@@ -59,7 +59,7 @@ Local media, SQL dumps, extracted archives, staging files and credentials are no
 ```powershell
 python -m unittest discover -s scripts/wordpress_migration -p "test_*.py"
 pnpm exec vitest run scripts/wordpress_migration
-pnpm exec vitest run lib/site-content.test.ts
+pnpm exec vitest run tests/unit/lib/site-content.test.ts
 pnpm exec tsc --noEmit
 pnpm exec tsx scripts/wordpress_migration/verify.ts
 ```

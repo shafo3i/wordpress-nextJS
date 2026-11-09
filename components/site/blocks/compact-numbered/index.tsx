@@ -82,7 +82,7 @@ export function CompactNumberedGridBlock({
             {showDate && (
               <div className="mt-3 pt-2 border-t border-theme-border/60 flex items-center justify-between text-[10px] font-mono text-theme-muted">
                 <span>{post.authorName}</span>
-                <span>{formatDate(post.date, theme.locale)}</span>
+                <span>{formatDate(post.date, theme.locale, theme.timeZone)}</span>
               </div>
             )}
           </article>

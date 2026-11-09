@@ -21,5 +21,5 @@ Tracking stores hashed visitor/request identifiers in the existing `rate_limit` 
 ## Verification
 
 - Unit tests cover date validation/boundaries, visitor signatures, bot detection and endpoint exclusions.
-- `scripts/test-post-filters-views.ts` checks real PostgreSQL queries using session-local temporary tables, including imported baselines, reload suppression, expiry, sorting and unpublished exclusions.
-- `scripts/verify-post-filters-views.ts` checks the local public article, admin filters/sorting and Customizer toggle. It uses an automated browser and confirms the sampled article's real total remains unchanged. It requires the ignored local migration credentials file and is not a production deployment step.
+- `tests/verification/test-post-filters-views.ts` checks real PostgreSQL queries using session-local temporary tables, including imported baselines, reload suppression, expiry, sorting and unpublished exclusions.
+- `tests/verification/verify-post-filters-views.ts` checks the local public article, admin filters/sorting and Customizer toggle. It uses an automated browser and confirms the sampled article's real total remains unchanged. It requires the ignored local migration credentials file and is not a production deployment step.

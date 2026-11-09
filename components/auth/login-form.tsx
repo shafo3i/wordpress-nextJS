@@ -15,9 +15,11 @@ export function LoginForm({
   accountType,
   redirectTo,
   dict,
+  locale,
 }: {
   accountType: "admin" | "user"
   redirectTo: string
+  locale?: string
   dict: Record<string, string>
 }) {
   const [email, setEmail] = useState("")
@@ -49,7 +51,8 @@ export function LoginForm({
             ? authFlowUrl(
                 "/verify-2fa",
                 redirectTo,
-                accountType === "admin" ? "/cms-admin" : "/cms-login"
+                accountType === "admin" ? "/cms-admin" : "/cms-login",
+                locale
               )
             : safeAuthRedirect(redirectTo)
         )

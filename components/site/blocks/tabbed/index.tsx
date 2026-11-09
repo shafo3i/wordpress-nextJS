@@ -138,7 +138,7 @@ export function TabbedBlock({
                 style={{ color: "var(--theme-muted)" }}
                 className="text-[0.625rem] font-mono mt-1"
               >
-                {formatDate(item.date, theme.locale)}
+                {formatDate(item.date, theme.locale, theme.timeZone)}
               </span>
             </div>
           </article>

@@ -79,7 +79,7 @@ export function VisualGridBlock({
 
               <div className="flex items-center justify-between text-[0.6875rem] text-theme-overlay-muted pt-2 border-t border-theme-overlay/20">
                 {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
-                {showDate && <span className="font-mono">{formatDate(item.date, theme.locale)}</span>}
+                {showDate && <span className="font-mono">{formatDate(item.date, theme.locale, theme.timeZone)}</span>}
               </div>
             </div>
           </article>

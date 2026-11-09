@@ -1,3 +1,4 @@
+import { localizedSiteOptions } from "@/lib/site-identity"
 import type { Metadata } from "next"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
@@ -16,7 +17,15 @@ export async function categoryMetadata(
   slug: string,
   locale?: string
 ): Promise<Metadata> {
-  const site = await getSeoSite()
+  const rawSite = await getSeoSite()
+  const site = {
+    ...rawSite,
+    options: localizedSiteOptions(
+      rawSite.options,
+      locale || rawSite.defaultLocale,
+      rawSite.defaultLocale
+    ),
+  }
   let decoded = slug
   try {
     decoded = decodeURIComponent(slug)

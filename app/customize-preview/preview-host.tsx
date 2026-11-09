@@ -73,8 +73,8 @@ export function PreviewHost({
   const theme: FrontEndThemeContext = {
     ...baseTheme,
     themeSlug,
-    siteTitle: state.siteTitle,
-    siteTagline: state.siteTagline,
+    siteTitle: baseTheme.isDefaultLocale ? state.siteTitle : baseTheme.siteTitle,
+    siteTagline: baseTheme.isDefaultLocale ? state.siteTagline : baseTheme.siteTagline,
     primaryColor: resolveColor(mods, "primaryColor"),
     headerLayout: mods.headerLayout ?? "classic",
     headingFont: getFontKind(mods.headingFontFamily),

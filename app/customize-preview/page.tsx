@@ -48,8 +48,8 @@ export default async function CustomizePreviewPage({
       baseTheme={base}
       initialState={{
         mods: data.mods,
-        siteTitle: data.siteTitle,
-        siteTagline: data.siteTagline,
+        siteTitle: base.siteTitle,
+        siteTagline: base.siteTagline,
         page: "home",
       }}
       posts={posts}

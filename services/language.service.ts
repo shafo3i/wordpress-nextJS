@@ -251,10 +251,10 @@ export async function getDbTranslations(
  * Returns fully resolved translation dictionary for a given locale.
  * Priority: DB Override -> Locale Template JSON -> English Template JSON -> Key
  */
-export async function getTranslations(
+export const getTranslations = cache(async (
     locale: string,
     database: DB = db
-): Promise<Record<string, string>> {
+): Promise<Record<string, string>> => {
     // 1. English baseline
     const enTemplate = getTemplateTranslations("en");
 
@@ -275,7 +275,7 @@ export async function getTranslations(
         ...localeTemplate,
         ...readableOverrides,
     };
-}
+});
 
 /**
  * Saves or updates a single translation in the database.

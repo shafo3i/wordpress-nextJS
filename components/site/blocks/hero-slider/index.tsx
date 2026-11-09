@@ -79,7 +79,7 @@ export function HeroSliderBlock({
               </span>
             )}
             <span className="text-xs text-theme-overlay-muted font-mono">
-              {formatDate(current.date, theme.locale)}
+              {formatDate(current.date, theme.locale, theme.timeZone)}
             </span>
           </div>
 
