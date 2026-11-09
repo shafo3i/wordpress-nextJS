@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq, desc, asc, and, count, sql, inArray } from "drizzle-orm";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -66,7 +67,7 @@ export async function getAllLanguages(database: DB = db): Promise<SelectLanguage
         .orderBy(asc(languagesTable.displayOrder), asc(languagesTable.code));
 }
 
-export async function getActiveLanguages(database: DB = db): Promise<SelectLanguage[]> {
+async function read_getActiveLanguages(database: DB = db): Promise<SelectLanguage[]> {
     return database
         .select()
         .from(languagesTable)
@@ -74,7 +75,7 @@ export async function getActiveLanguages(database: DB = db): Promise<SelectLangu
         .orderBy(asc(languagesTable.displayOrder), asc(languagesTable.code));
 }
 
-export async function getDefaultLanguage(database: DB = db): Promise<SelectLanguage | null> {
+async function read_getDefaultLanguage(database: DB = db): Promise<SelectLanguage | null> {
     const [defaultLang] = await database
         .select()
         .from(languagesTable)
@@ -699,3 +700,7 @@ export async function setTermLanguage(
     return groupId;
 }
 
+
+export const getDefaultLanguage = cache(read_getDefaultLanguage);
+
+export const getActiveLanguages = cache(read_getActiveLanguages);

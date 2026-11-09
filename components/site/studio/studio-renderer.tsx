@@ -14,6 +14,7 @@ import type { ContentItem } from "@/lib/site-content"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
 
 import { buildElementInlineStyles, getShadowClass } from "./studio-styles"
+import { useStudioPreviewDevice } from "./studio-design"
 import { StudioWidget } from "./studio-widget"
 import type { StudioContentSnapshot } from "@/lib/studio/content"
 import { getStudioElementContentRequest } from "@/lib/studio/content"
@@ -67,6 +68,7 @@ export function StudioRenderer({
   onOpenElementsForContainer,
   dict,
 }: StudioRendererProps) {
+  const previewDevice = useStudioPreviewDevice()
   const drag = useStudioDrag(
     isEditor,
     theme.direction === "rtl",
@@ -85,10 +87,18 @@ export function StudioRenderer({
     const isDragOver = isEditor && drag.over?.id === el.id
     const inlineStyles = buildElementInlineStyles(el, isChildColumn)
     const shadowClass = getShadowClass(el.settings.boxShadow)
+    const hiddenInPreview =
+      isEditor &&
+      previewDevice &&
+      ((previewDevice === "mobile" && el.settings.hideOnMobile) ||
+        (previewDevice === "tablet" && el.settings.hideOnTablet) ||
+        (previewDevice === "desktop" && el.settings.hideOnDesktop))
+    // Keep hidden elements selectable in Studio; the public page uses CSS breakpoints.
     const visibilityClasses = [
-      el.settings.hideOnDesktop ? "lg:hidden" : "",
-      el.settings.hideOnTablet ? "md:max-lg:hidden" : "",
-      el.settings.hideOnMobile ? "max-md:hidden" : "",
+      hiddenInPreview ? "opacity-30" : "",
+      !isEditor && el.settings.hideOnDesktop ? "lg:hidden" : "",
+      !isEditor && el.settings.hideOnTablet ? "md:max-lg:hidden" : "",
+      !isEditor && el.settings.hideOnMobile ? "max-md:hidden" : "",
       el.hidden && isEditor ? "opacity-40" : "",
     ]
       .filter(Boolean)

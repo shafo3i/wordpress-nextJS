@@ -1,4 +1,5 @@
 import { resolveStudioPageContent } from '@/services/studio-content.service';
+import { articleMetadata } from '@/lib/seo/article';
 import { notFound, redirect } from "next/navigation";
 import { PageTemplate } from "@/components/site/news-patterns";
 import { getPublishedPageBySlug, getPublishedPosts } from "@/lib/site-content";
@@ -7,6 +8,10 @@ import { getAllWidgetAreas } from "@/lib/widgets/db";
 import { getActiveLanguages, getPostTranslations } from "@/services/language.service";
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata({params}:{params:Promise<{lang:string;slug:string}>}) {
+  const {lang,slug}=await params;
+  return articleMetadata(slug,lang,'page');
+}
 
 export default async function LocalizedStaticPage({
   params,

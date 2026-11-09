@@ -1,4 +1,6 @@
 "use client"
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link"
 import type { ContentItem } from "@/lib/site-content"
@@ -46,8 +48,13 @@ export function CategoryCard({
             borderRadius: settings.archiveImageRadius,
           }}
         >
-          <img
+          <ContentImage
             src={post.imageUrl}
+            srcSet={post.imageSrcSet}
+            sizes={list ? `${settings.archiveImageWidth}px` : `(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${Math.ceil(100/settings.archiveColumns)}vw`}
+            width={post.imageWidth}
+            height={post.imageHeight}
+            decoding="async"
             alt=""
             className="h-full w-full object-cover"
             loading={featured ? "eager" : "lazy"}

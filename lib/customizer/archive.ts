@@ -14,6 +14,8 @@ export type ArchiveSettings = Required<
     | "archivePadding"
     | "archiveRadius"
     | "archiveBorder"
+    | "archiveContentBorder"
+    | "archiveDividerBorders"
     | "archiveTitleSize"
     | "archiveTitleWeight"
     | "archiveExcerptLength"

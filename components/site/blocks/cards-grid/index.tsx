@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
@@ -59,7 +61,7 @@ export function CardsGridBlock({
             className="group rounded-2xl border transition-all overflow-hidden theme-card flex flex-col hover:border-theme-primary"
           >
             <div className="relative overflow-hidden w-full h-44 bg-theme-border/40">
-              <img
+              <ContentImage
                 src={item.imageUrl}
                 alt={item.title}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

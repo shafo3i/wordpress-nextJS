@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import React from "react";
 import Link from "next/link";
@@ -201,7 +203,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
             >
               {item.showThumbnail !== false && post.imageUrl && (
                 <div className="aspect-[16/9] w-full rounded overflow-hidden mb-2 bg-[var(--theme-surface)]">
-                  <img
+                  <ContentImage
                     src={post.imageUrl}
                     alt={post.title}
                     className="w-full h-full object-cover"
@@ -235,7 +237,7 @@ export function RecentPostsRender({ item, theme, posts = [] }: WidgetRenderProps
           {displayPosts.map((post) => (
             <div key={post.id} className="flex gap-2.5 items-start group">
               {item.showThumbnail !== false && post.imageUrl && (
-                <img
+                <ContentImage
                   src={post.imageUrl}
                   alt={post.title}
                   className="size-12 rounded object-cover flex-shrink-0 bg-[var(--theme-bg)]"

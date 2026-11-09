@@ -1,4 +1,7 @@
+import { articleMetadata } from "@/lib/seo/article";
+import { ArticleStructuredData } from "@/components/site/article-structured-data";
 import { notFound, redirect } from "next/navigation";
+import { renderPostMedia } from "@/lib/post-content-media";
 import { Metadata } from "next";
 import { PostTemplate } from "@/components/site/news-patterns";
 import { getPublishedPostBySlug, getPublishedPosts } from "@/lib/site-content";
@@ -7,35 +10,12 @@ import { initActivePlugins } from "@/lib/plugins/loader";
 import { applyFilters } from "@/lib/plugins/hooks";
 import { getAllWidgetAreas } from "@/lib/widgets/db";
 import { getActiveLanguages, getPostTranslations } from "@/services/language.service";
-import { db } from "@/db";
-import { wpOptions } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ lang: string; slug: string }>;
-}): Promise<Metadata> {
-  const { lang, slug } = await params;
-  const [article, siteNameOpt] = await Promise.all([
-    getPublishedPostBySlug(slug, lang),
-    db.select({ value: wpOptions.optionValue }).from(wpOptions).where(eq(wpOptions.optionName, "blogname")).limit(1),
-  ]);
-
-  const siteName = siteNameOpt[0]?.value || "PressForge News";
-
-  if (!article) {
-    return {
-      title: `Post Not Found | ${siteName}`,
-    };
-  }
-
-  return {
-    title: `${article.title} | ${siteName}`,
-    description: article.excerpt || article.title,
-  };
+export async function generateMetadata({ params }: { params: Promise<{ lang: string; slug: string }> }): Promise<Metadata> {
+  const values = await params;
+  return articleMetadata(values.slug, values.lang);
 }
 
 export default async function LocalizedPostPage({
@@ -83,7 +63,7 @@ export default async function LocalizedPostPage({
   }
 
   await initActivePlugins();
-  const filteredContent = await applyFilters("the_content", article.content, { article });
+  const filteredContent = await applyFilters("the_content", renderPostMedia(article.content), { article, theme });
 
   const sidebarWidgets = widgetAreas.find((a) => a.id === "sidebar_primary")?.items || [];
   const footerWidgets = {
@@ -94,6 +74,8 @@ export default async function LocalizedPostPage({
   };
 
   return (
+    <>
+    <ArticleStructuredData article={article} />
     <PostTemplate
       article={{ ...article, content: filteredContent }}
       relatedPosts={relatedPosts.filter((post) => post.slug !== slug)}
@@ -101,5 +83,6 @@ export default async function LocalizedPostPage({
       sidebarWidgets={sidebarWidgets}
       footerWidgets={footerWidgets}
     />
+    </>
   );
 }

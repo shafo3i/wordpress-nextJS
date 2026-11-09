@@ -1,3 +1,4 @@
+import { categoryMetadata } from "@/lib/seo/category";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getArchiveSettings } from "@/lib/customizer/archive";
@@ -7,35 +8,12 @@ import { getFrontEndThemeContext } from "@/lib/site-theme";
 import { initActivePlugins } from "@/lib/plugins/loader";
 import { getAllWidgetAreas } from "@/lib/widgets/db";
 import { getTermTranslations } from "@/services/language.service";
-import { db } from "@/db";
-import { wpOptions } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const [{ category }, siteNameOpt] = await Promise.all([
-    getPublishedPostsByCategory(slug, 1, 1),
-    db.select({ value: wpOptions.optionValue }).from(wpOptions).where(eq(wpOptions.optionName, "blogname")).limit(1),
-  ]);
-
-  const siteName = siteNameOpt[0]?.value || "PressForge News";
-
-  if (!category) {
-    return {
-      title: `Category Not Found | ${siteName}`,
-    };
-  }
-
-  return {
-    title: `${category.name} | ${siteName}`,
-    description: category.description || `Read the latest ${category.name} dispatches and investigative reporting.`,
-  };
+export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata> {
+  const values=await params;
+  return categoryMetadata(values.slug);
 }
 
 export default async function CategoryPage({

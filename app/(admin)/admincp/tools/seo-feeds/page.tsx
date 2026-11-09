@@ -34,7 +34,7 @@ export default async function SeoFeedsPage() {
       icon: Globe,
       title: dict["admin.tools.standard_sitemap_title"] || "Standard XML Sitemap",
       url: "/sitemap.xml",
-      badge: `${stats.totalUrls} ${dict["admin.tools.urls_indexed"] || "URLs Indexed"}`,
+      badge: `${stats.totalUrls} ${dict["admin.tools.urls_indexed"]}`,
       desc:
         dict["admin.tools.standard_sitemap_desc"] ||
         "Complete index of all published news stories, standalone pages, and topic categories for Google, Bing, and search engines.",
@@ -79,6 +79,7 @@ export default async function SeoFeedsPage() {
         </div>
 
         {/* Feeds List Table */}
+        <p className="text-[13px] text-[#50575e]">{dict["admin.tools.sitemap_discovery_note"]}</p>
         <div className="rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] overflow-hidden">
           <div className="border-b border-[#c3c4c7] bg-[#f6f7f7] px-4 py-2.5 text-[13px] font-semibold text-[#1d2327]">
             {dict["admin.tools.live_endpoints"] || "Live Syndication & Sitemap Endpoints"}

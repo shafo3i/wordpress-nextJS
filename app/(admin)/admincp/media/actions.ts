@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { MAX_MEDIA_UPLOAD_BYTES } from "@/lib/media-upload";
 import {
   getMediaLibraryItems,
   uploadMediaFile,
@@ -34,6 +35,9 @@ export async function uploadMediaAction(
   try {
     const session = await verifyAdminOrEditor();
     const files = formData.getAll("file") as File[];
+    if (files.some(file => !(file instanceof File)) || files.reduce((sum, file) => sum + file.size, 0) > MAX_MEDIA_UPLOAD_BYTES) {
+      return { success: false, error: "Invalid upload or upload exceeds 32 MB" };
+    }
 
     if (!files || files.length === 0) {
       return { success: false, error: "No files uploaded" };

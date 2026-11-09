@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import React from "react";
 import manifest from "./widget.json";
@@ -185,7 +187,7 @@ export function AdManagerRender({ item, theme }: WidgetRenderProps) {
           rel={relAttribute}
           className="block group overflow-hidden rounded-lg transition-transform hover:scale-[1.01]"
         >
-          <img
+          <ContentImage
             src={imageUrl}
             alt={sponsorName}
             className="w-full h-auto object-cover rounded-lg shadow-sm max-h-[300px]"

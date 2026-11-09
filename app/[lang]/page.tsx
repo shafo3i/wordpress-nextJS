@@ -14,6 +14,11 @@ import { getActiveLanguages, getDefaultLanguage, getPostTranslations } from "@/s
 import { getOptions } from "@/services/settings.service";
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata({params}:{params:Promise<{lang:string}>}) {
+  const {lang}=await params;
+  const site=await getSeoSite();
+  return site.languages.some(language=>language.code===lang) ? homepageMetadata(lang) : articleMetadata(lang,site.defaultLocale,'page');
+}
 
 export default async function LocalizedRootRoute({
   params,
@@ -137,3 +142,5 @@ export default async function LocalizedRootRoute({
     />
   );
 }
+import { homepageMetadata, articleMetadata } from "@/lib/seo/article";
+import { getSeoSite } from "@/lib/seo/data";

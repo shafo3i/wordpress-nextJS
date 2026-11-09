@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
+import { MAX_MEDIA_UPLOAD_BYTES, validateVideoUpload } from "@/lib/media-upload";
 import { db } from "@/db";
 import { wpPosts, wpPostmeta, user } from "@/db/schema";
 import { eq, and, desc, sql, like, inArray } from "drizzle-orm";
@@ -121,7 +122,7 @@ export async function getMediaLibraryItems(params: {
     })
     .from(wpPosts)
     .where(and(...conditions))
-    .orderBy(desc(wpPosts.postDate))
+    .orderBy(desc(wpPosts.postDate), desc(wpPosts.id))
     .limit(perPage)
     .offset(offset);
 
@@ -251,6 +252,8 @@ export async function uploadMediaFile(
   mimeType: string,
   authorId?: string
 ): Promise<MediaItem> {
+  if (!fileBuffer.length || fileBuffer.length > MAX_MEDIA_UPLOAD_BYTES) throw new Error("Invalid media file size");
+  validateVideoUpload(originalFilename, mimeType, fileBuffer);
   const uploadsDir = getUploadsDir();
 
   // Create date-based folder: public/uploads/YYYY/MM

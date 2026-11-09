@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import { useState } from "react";
 import { PostViews } from "@/components/site/post-views";
@@ -103,6 +105,7 @@ export function PostTemplate({
 
   return (
     <div
+      data-single-article=""
       dir={theme.direction || "ltr"}
       lang={theme.locale || "en"}
       className="min-h-screen transition-colors bg-theme-bg text-theme-text"
@@ -112,7 +115,7 @@ export function PostTemplate({
 
       <main className={`${containerClass} py-10`}>
         {/* Article Masthead */}
-        <div className="mb-8 border-b border-theme-border pb-8">
+        <div data-article-divider="" className="mb-8 border-b border-theme-border pb-8">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             {article.categories.map((category) => (
               <span
@@ -143,7 +146,7 @@ export function PostTemplate({
             </p>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-theme-border/60 text-xs text-theme-muted">
+          <div data-article-divider="" className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-theme-border/60 text-xs text-theme-muted">
             <div className="flex items-center gap-3">
               {showAuthorAvatar && (
                 <div className="size-8 rounded-full bg-theme-primary text-(--theme-on-primary) flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
@@ -200,9 +203,17 @@ export function PostTemplate({
 
         {/* Featured Image */}
         {showFeaturedImage && article.imageUrl && (
-          <div className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-theme-border">
-            <img
+          <div data-article-image="" className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-theme-border">
+            <ContentImage
               src={article.imageUrl}
+              srcSet={article.imageSrcSet}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 75vw, 900px"
+              width={article.imageWidth}
+              height={article.imageHeight}
+              style={{ aspectRatio: article.imageWidth && article.imageHeight ? `${article.imageWidth} / ${article.imageHeight}` : "16 / 9" }}
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
               alt={article.title}
               className="w-full max-h-[520px] object-cover"
             />

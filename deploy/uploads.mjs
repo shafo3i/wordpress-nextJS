@@ -1,4 +1,5 @@
 import { createReadStream } from "node:fs"
+import { Readable } from "node:stream"
 import { realpath, stat } from "node:fs/promises"
 import { extname, resolve, sep, relative as relativePath } from "node:path"
 
@@ -38,25 +39,23 @@ const types = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 }
 
-export async function serveUpload(req, res, directory) {
+export async function resolveUpload(req, directory) {
+  const headers = {}
+  const setHeader = (name, value) => { headers[name] = String(value) }
   let pathname = (req.url || "").split("?", 1)[0]
   try {
     pathname = decodeURIComponent(pathname)
   } catch {
     if (!pathname.startsWith("/uploads")) return false
-    res.writeHead(400)
-    res.end()
-    return true
+    return { status: 400, headers }
   }
   if (!pathname.startsWith("/uploads/") && !pathname.startsWith("/uploads\\"))
     return false
   const end = (status) => {
-    res.writeHead(status)
-    res.end()
-    return true
+    return { status, headers }
   }
   if (!["GET", "HEAD"].includes(req.method)) {
-    res.setHeader("Allow", "GET, HEAD")
+    setHeader("Allow", "GET, HEAD")
     return end(405)
   }
   const relative = pathname.slice("/uploads/".length)
@@ -92,7 +91,7 @@ export async function serveUpload(req, res, directory) {
   if (req.headers.range) {
     const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range)
     if (!match || (!match[1] && !match[2])) {
-      res.setHeader("Content-Range", `bytes */${info.size}`)
+      setHeader("Content-Range", `bytes */${info.size}`)
       return end(416)
     }
     if (match[1]) {
@@ -106,26 +105,39 @@ export async function serveUpload(req, res, directory) {
       start > finish ||
       start >= info.size
     ) {
-      res.setHeader("Content-Range", `bytes */${info.size}`)
+      setHeader("Content-Range", `bytes */${info.size}`)
       return end(416)
     }
     status = 206
-    res.setHeader("Content-Range", `bytes ${start}-${finish}/${info.size}`)
+    setHeader("Content-Range", `bytes ${start}-${finish}/${info.size}`)
   }
-  res.setHeader("Content-Type", contentType)
-  res.setHeader("X-Content-Type-Options", "nosniff")
-  res.setHeader("Cache-Control", "public, max-age=3600")
-  res.setHeader("Accept-Ranges", "bytes")
-  res.setHeader("Content-Length", info.size === 0 ? 0 : finish - start + 1)
-  res.setHeader("Last-Modified", info.mtime.toUTCString())
-  res.writeHead(status)
-  if (req.method === "HEAD" || info.size === 0) {
-    res.end()
-    return true
-  }
-  const stream = createReadStream(filename, { start, end: finish })
+  setHeader("Content-Type", contentType)
+  setHeader("X-Content-Type-Options", "nosniff")
+  setHeader("Cache-Control", "public, max-age=3600")
+  setHeader("Accept-Ranges", "bytes")
+  setHeader("Content-Length", info.size === 0 ? 0 : finish - start + 1)
+  setHeader("Last-Modified", info.mtime.toUTCString())
+  return { status, headers, filename, start, finish, size: info.size }
+}
+
+export async function serveUpload(req, res, directory) {
+  const result = await resolveUpload(req, directory)
+  if (!result) return false
+  res.writeHead(result.status, result.headers)
+  if (!result.filename || req.method === "HEAD" || result.size === 0) { res.end(); return true }
+  const stream = createReadStream(result.filename, { start: result.start, end: result.finish })
   stream.on("error", () => res.destroy())
   res.on("close", () => stream.destroy())
   stream.pipe(res)
   return true
+}
+
+/** Next's internal image optimizer can use this route for files added after startup. */
+export async function serveUploadResponse(request, directory) {
+  const url = new URL(request.url)
+  const result = await resolveUpload({ url: url.pathname + url.search, method: request.method, headers: Object.fromEntries(request.headers) }, directory)
+  if (!result) return null
+  const body = result.filename && request.method !== "HEAD" && result.size > 0
+    ? Readable.toWeb(createReadStream(result.filename, { start: result.start, end: result.finish })) : null
+  return new Response(body, { status: result.status, headers: result.headers })
 }

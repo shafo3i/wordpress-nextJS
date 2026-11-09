@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   X,
   Upload,
@@ -12,8 +13,9 @@ import {
   Music,
   Video,
 } from "lucide-react";
-import type { MediaItem, MediaListResult } from "@/services/media.service";
+import type { MediaItem } from "@/services/media.service";
 import { fetchMediaItemsAction, uploadMediaAction } from "@/app/(admin)/admincp/media/actions";
+import { MAX_MEDIA_UPLOAD_BYTES } from "@/lib/media-upload";
 
 interface MediaSelectModalProps {
   isOpen: boolean;
@@ -22,6 +24,7 @@ interface MediaSelectModalProps {
   title?: string;
   selectButtonText?: string;
   dict?: Record<string, string>;
+  mediaType?: "image" | "all";
 }
 
 export function MediaSelectModal({
@@ -31,43 +34,44 @@ export function MediaSelectModal({
   title,
   selectButtonText,
   dict = {},
+  mediaType = "image",
 }: MediaSelectModalProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "library">("library");
-  const [items, setItems] = useState<MediaItem[]>([]);
+  const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const [type, setType] = useState<"image" | "all" | "video" | "audio">(mediaType);
+  const [search, setSearch] = useState("");
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch media library items
-  const loadMedia = useCallback(async (query: string = "") => {
-    setIsLoading(true);
-    try {
-      const res = await fetchMediaItemsAction({
-        search: query,
-        page: 1,
-        perPage: 40,
-        type: "image",
-      });
-      if (res.success && res.data) {
-        setItems(res.data.items);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    if (isOpen) {
-      loadMedia(searchQuery);
-    }
-  }, [isOpen, loadMedia, searchQuery]);
+    const timer = setTimeout(() => { setSearch(searchQuery); setPage(1); }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const library = useQuery({
+    queryKey: ["media-picker", type, search, page],
+    enabled: isOpen,
+    staleTime: 30000,
+    queryFn: async () => {
+      const result = await fetchMediaItemsAction({ search, page, perPage: 40, type });
+      if (!result.success || !result.data) throw new Error(result.error);
+      return result.data;
+    },
+  });
+  const items = library.data?.items || [];
+  const isLoading = library.isPending;
 
   // Handle file drop or selection
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    if ([...files].some(file => !file.size || (mediaType === "image" && !file.type.startsWith("image/"))) || [...files].reduce((total, file) => total + file.size, 0) > MAX_MEDIA_UPLOAD_BYTES) {
+      setUploadError(dict["admin.media.picker_upload_error"]);
+      return;
+    }
     setIsUploading(true);
     setUploadError(null);
 
@@ -82,12 +86,15 @@ export function MediaSelectModal({
         const first = res.items[0];
         setSelectedItem(first);
         setActiveTab("library");
-        loadMedia();
+        setSearchQuery("");
+        setSearch("");
+        setPage(1);
+        await queryClient.invalidateQueries({ queryKey: ["media-picker"] });
       } else {
-        setUploadError(res.error || "Failed to upload file.");
+        setUploadError(dict["admin.media.picker_upload_error"]);
       }
-    } catch (err: any) {
-      setUploadError(err.message || "Upload failed.");
+    } catch {
+      setUploadError(dict["admin.media.picker_upload_error"]);
     } finally {
       setIsUploading(false);
     }
@@ -97,15 +104,16 @@ export function MediaSelectModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6 md:p-10 backdrop-blur-xs">
-      <div className="relative flex h-[85vh] w-full max-w-5xl flex-col rounded-[3px] border border-[#c3c4c7] bg-white shadow-2xl overflow-hidden">
+      <div role="dialog" aria-modal="true" aria-label={title || dict["admin.media.library"]} className="relative flex h-[85vh] w-full max-w-5xl flex-col rounded-[3px] border border-[#c3c4c7] bg-white shadow-2xl overflow-hidden">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[#c3c4c7] px-4 py-3 bg-[#f6f7f7]">
           <h2 className="text-[16px] font-semibold text-[#1d2327]">
-            {title || dict["admin.media.library"] || "Select Media"}
+            {title || dict["admin.media.library"]}
           </h2>
           <button
             type="button"
             onClick={onClose}
+            aria-label={dict["common.cancel"]}
             className="text-[#646970] hover:text-[#1d2327] transition-colors p-1 rounded"
           >
             <X className="size-5" />
@@ -124,7 +132,7 @@ export function MediaSelectModal({
                   : "border-transparent text-[#50575e] hover:text-[#1d2327]"
               }`}
             >
-              {dict["admin.menu.add_new_media"] || "Upload files"}
+              {dict["admin.menu.add_new_media"]}
             </button>
             <button
               type="button"
@@ -135,20 +143,28 @@ export function MediaSelectModal({
                   : "border-transparent text-[#50575e] hover:text-[#1d2327]"
               }`}
             >
-              {dict["admin.menu.library"] || "Media Library"}
+              {dict["admin.menu.library"]}
             </button>
           </div>
 
           {activeTab === "library" && (
-            <div className="relative my-1.5 w-60">
+            <div className="my-1.5 flex items-center gap-2">
+              {mediaType === "all" && <select aria-label={dict["admin.media.filter_all_types"]} value={type} onChange={event => { setType(event.target.value as typeof type); setPage(1); }} className="h-[28px] border border-[#8c8f94] bg-white text-xs">
+                <option value="all">{dict["admin.media.filter_all_types"]}</option>
+                <option value="image">{dict["admin.media.filter_images"]}</option>
+                <option value="video">{dict["admin.media.filter_video"]}</option>
+                <option value="audio">{dict["admin.media.filter_audio"]}</option>
+              </select>}
+            <div className="relative w-60">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={dict["admin.media.search_placeholder"] || "Search media..."}
+                placeholder={dict["admin.media.search_placeholder"]}
                 className="h-[28px] w-full rounded-[3px] border border-[#8c8f94] bg-white ps-7 pe-2 text-[12px] text-[#2c3338] focus:border-[#2271b1] focus:outline-hidden"
               />
               <Search className="absolute start-2 top-2 size-3.5 text-[#646970]" />
+            </div>
             </div>
           )}
         </div>
@@ -171,16 +187,16 @@ export function MediaSelectModal({
                 </div>
                 <div>
                   <h3 className="text-[15px] font-semibold text-[#1d2327]">
-                    Drop files anywhere to upload
+                    {dict["admin.media.drop_files"]}
                   </h3>
                   <p className="text-[12px] text-[#646970] mt-1">
-                    or select files from your computer
+                    {dict["admin.media.choose_from_computer"]}
                   </p>
                 </div>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept={mediaType === "image" ? "image/*" : "image/*,video/mp4,video/webm,video/ogg,audio/*,application/pdf"}
                   onChange={(e) => handleFileUpload(e.target.files)}
                   className="hidden"
                 />
@@ -193,17 +209,17 @@ export function MediaSelectModal({
                   {isUploading ? (
                     <>
                       <Loader2 className="size-4 animate-spin" />
-                      <span>{dict["admin.media.uploading"] || "Uploading..."}</span>
+                      <span>{dict["admin.media.uploading"]}</span>
                     </>
                   ) : (
-                    <span>Select Files</span>
+                    <span>{dict["admin.media.select_files"]}</span>
                   )}
                 </button>
                 {uploadError && (
                   <p className="text-[12px] text-[#d63638]">{uploadError}</p>
                 )}
                 <p className="text-[11px] text-[#8c8f94]">
-                  Maximum upload file size: 32 MB. Supported: JPG, PNG, WEBP, GIF, SVG.
+                  {dict["admin.media.picker_upload_hint"]}
                 </p>
               </div>
             </div>
@@ -214,6 +230,7 @@ export function MediaSelectModal({
             <div className="flex-1 flex overflow-hidden">
               {/* Media Grid */}
               <div className="flex-1 overflow-y-auto p-4 bg-[#f0f0f1]">
+                {library.isError && <p role="alert" className="p-3 text-[#d63638]">{dict["admin.media.picker_load_error"]}<button type="button" onClick={() => library.refetch()} className="ms-2 underline">{dict["admin.media.retry"]}</button></p>}
                 {isLoading ? (
                   <div className="flex h-64 items-center justify-center">
                     <Loader2 className="size-8 animate-spin text-[#2271b1]" />
@@ -222,7 +239,7 @@ export function MediaSelectModal({
                   <div className="flex h-64 flex-col items-center justify-center text-center">
                     <ImageIcon className="size-12 text-[#c3c4c7] mb-2" />
                     <p className="text-[13px] text-[#646970]">
-                      {dict["admin.media.no_media"] || "No media files found."}
+                      {dict["admin.media.no_media"]}
                     </p>
                   </div>
                 ) : (
@@ -270,6 +287,14 @@ export function MediaSelectModal({
                     })}
                   </div>
                 )}
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#c3c4c7] pt-3 text-xs">
+                  <span>{library.data?.total || 0} {dict["admin.media.items"]}</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" aria-label={dict["admin.media.previous_page"]} disabled={page <= 1 || library.isFetching} onClick={() => setPage(value => value - 1)} className="size-[26px] border border-[#2271b1] bg-white text-[#2271b1] disabled:opacity-40">‹</button>
+                    <span>{page} / {Math.max(1, library.data?.totalPages || 1)}</span>
+                    <button type="button" aria-label={dict["admin.media.next_page"]} disabled={!library.data || page >= library.data.totalPages || library.isFetching} onClick={() => setPage(value => value + 1)} className="size-[26px] border border-[#2271b1] bg-white text-[#2271b1] disabled:opacity-40">›</button>
+                  </div>
+                </div>
               </div>
 
               {/* Selected Item Sidebar */}
@@ -277,15 +302,15 @@ export function MediaSelectModal({
                 {selectedItem ? (
                   <div className="space-y-4">
                     <h3 className="text-[13px] font-semibold text-[#1d2327] uppercase tracking-wide border-b border-[#dcdcde] pb-2">
-                      {dict["admin.media.details_title"] || "Attachment Details"}
+                      {dict["admin.media.details_title"]}
                     </h3>
 
                     <div className="aspect-video w-full rounded border border-[#dcdcde] overflow-hidden bg-white">
-                      <img
+                      {selectedItem.mimeType.startsWith("video/") ? <video src={selectedItem.url} controls preload="metadata" className="h-full w-full object-contain" /> : selectedItem.mimeType.startsWith("audio/") ? <audio src={selectedItem.url} controls preload="metadata" className="w-full" /> : selectedItem.mimeType.startsWith("image/") ? <img
                         src={selectedItem.url}
                         alt={selectedItem.altText || selectedItem.title}
                         className="h-full w-full object-contain"
-                      />
+                      /> : <FileText className="m-auto size-10 text-[#646970]" />}
                     </div>
 
                     <div className="space-y-1.5 text-[12px] text-[#50575e]">
@@ -295,14 +320,14 @@ export function MediaSelectModal({
                       <p>{selectedItem.uploadedAt}</p>
                       <p>{(selectedItem.sizeBytes / 1024).toFixed(1)} KB</p>
                       {selectedItem.width && selectedItem.height && (
-                        <p>{selectedItem.width} by {selectedItem.height} pixels</p>
+                        <p>{selectedItem.width} × {selectedItem.height}</p>
                       )}
                     </div>
                   </div>
                 ) : (
                   <div className="flex h-full items-center justify-center text-center p-4">
                     <p className="text-[12px] text-[#646970]">
-                      Click an image to inspect details and choose it.
+                      {dict["admin.media.picker_select_hint"]}
                     </p>
                   </div>
                 )}
@@ -318,7 +343,7 @@ export function MediaSelectModal({
             onClick={onClose}
             className="rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-1.5 text-[13px] font-medium text-[#2c3338] hover:bg-[#f0f0f1] transition-colors cursor-pointer"
           >
-            Cancel
+            {dict["common.cancel"]}
           </button>
           <button
             type="button"
@@ -331,7 +356,7 @@ export function MediaSelectModal({
             }}
             className="inline-flex items-center gap-1.5 rounded-[3px] bg-[#2271b1] px-4 py-1.5 text-[13px] font-medium text-white hover:bg-[#135e96] transition-colors cursor-pointer disabled:opacity-50"
           >
-            <span>{selectButtonText || "Select"}</span>
+            <span>{selectButtonText || dict["admin.media.select"]}</span>
           </button>
         </div>
       </div>

@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link";
 import { ArrowRight, Star } from "lucide-react";
@@ -61,7 +63,7 @@ export function SplitHeroFeatureBlock({
           href={getPostUrl(lead.slug, theme)}
           className="lg:col-span-7 relative min-h-[280px] sm:min-h-[380px] overflow-hidden group block"
         >
-          <img
+          <ContentImage
             src={lead.imageUrl}
             alt={lead.title}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -136,7 +138,7 @@ export function SplitHeroFeatureBlock({
               href={getPostUrl(item.slug, theme)}
               className="flex items-center gap-3 rounded-xl border border-theme-border bg-theme-surface p-3 hover:border-theme-primary transition-colors"
             >
-              <img
+              <ContentImage
                 src={item.imageUrl}
                 alt={item.title}
                 className="w-16 h-14 rounded-lg object-cover shrink-0"

@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import { useState } from "react";
 import Link from "next/link";
@@ -107,7 +109,7 @@ export function TabbedBlock({
             className="rounded-2xl border p-4 flex gap-4 transition-all theme-card hover:border-theme-primary"
           >
             <div data-studio-image className="w-28 sm:w-32 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-theme-border/40">
-              <img
+              <ContentImage
                 src={item.imageUrl}
                 alt={item.title}
                 className="w-full h-full object-cover"

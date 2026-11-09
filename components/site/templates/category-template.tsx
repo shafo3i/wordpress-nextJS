@@ -74,6 +74,7 @@ export function CategoryTemplate({
     getCategoryUrl(category.slug, theme) + (page > 1 ? `?page=${page}` : "")
   return (
     <div
+      data-category-archive=""
       className={`flex min-h-screen flex-col bg-[var(--theme-bg)] text-[var(--theme-text)] ${theme.darkMode ? "dark" : ""}`}
       dir={theme.direction || "ltr"}
     >
@@ -83,7 +84,7 @@ export function CategoryTemplate({
       <SiteHeader theme={theme} />
       <main
         className="mx-auto w-full flex-1 px-4 py-6 sm:px-6"
-        style={{ maxWidth: settings.archiveContentWidth }}
+        style={{ maxWidth: settings.archiveContentWidth, border: settings.archiveContentBorder ? "1px solid var(--theme-border)" : undefined }}
       >
         <nav
           aria-label={t("site.archive_breadcrumb", theme, "")}
@@ -95,7 +96,7 @@ export function CategoryTemplate({
           <span aria-hidden="true">/</span>
           <span>{category.name}</span>
         </nav>
-        <header className="mb-6 border-b border-[var(--theme-border)] pb-4">
+        <header data-archive-divider="" className="mb-6 border-b border-[var(--theme-border)] pb-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-2xl leading-tight font-bold text-[var(--theme-heading)] sm:text-3xl">
               {category.name}
@@ -153,6 +154,7 @@ export function CategoryTemplate({
             )}
             {totalPages > 1 && (
               <nav
+                data-archive-divider=""
                 aria-label={t("site.archive_pagination", theme, "")}
                 className="mt-6 flex flex-wrap items-center justify-center gap-2 border-t border-[var(--theme-border)] pt-4 text-sm"
               >

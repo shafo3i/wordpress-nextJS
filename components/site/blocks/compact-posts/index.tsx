@@ -1,4 +1,6 @@
 "use client"
+import { ContentImage } from "@/components/site/content-image";
+
 import Link from "next/link"
 import type { ContentItem } from "@/lib/site-content"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
@@ -48,7 +50,7 @@ export function CompactPostsBlock({
                 tabIndex={-1}
                 aria-hidden="true"
               >
-                <img src={post.imageUrl} alt="" loading="lazy" />
+                <ContentImage src={post.imageUrl} alt="" loading="lazy" />
               </Link>
             )}
             <div className={styles.copy}>

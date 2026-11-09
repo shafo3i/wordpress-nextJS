@@ -12,6 +12,9 @@ export const singleSection: CustomizerSection = {
       id: "layout",
       title: "Article Page Layout Architecture",
       settings: [
+        { id: "singleContentBorder", type: "toggle", label: "", default: true },
+        { id: "singleImageBorder", type: "toggle", label: "", default: true },
+        { id: "singleDividerBorders", type: "toggle", label: "", default: true },
         {
           id: "singleLayout",
           type: "radio-cards",

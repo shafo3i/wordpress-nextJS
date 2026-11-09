@@ -139,6 +139,22 @@ function staticRules(mods: Mods): Rule[] {
       ],
     },
     // The theme fonts win over component level font-serif / font-sans utilities.
+    ...(mods.singleContentBorder === false ? [{
+      selectors: ["[data-single-article] article.prose", "[data-single-article] article.prose:hover"],
+      declarations: ["border-width: 0 !important;", "box-shadow: none !important;"],
+    }] : []),
+    ...(mods.singleImageBorder === false ? [{
+      selectors: ["[data-single-article] [data-article-image]"],
+      declarations: ["border-width: 0 !important;", "box-shadow: none !important;"],
+    }] : []),
+    ...(mods.singleDividerBorders === false ? [{
+      selectors: ["[data-single-article] [data-article-divider]"],
+      declarations: ["border-width: 0 !important;"],
+    }] : []),
+    ...(mods.archiveDividerBorders === false ? [{
+      selectors: ["[data-category-archive] [data-archive-divider]"],
+      declarations: ["border-width: 0 !important;"],
+    }] : []),
     {
       selectors: [".font-sans"],
       declarations: ["font-family: var(--font-theme-body), sans-serif;"],

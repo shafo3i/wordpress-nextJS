@@ -1,4 +1,6 @@
 "use client"
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link"
 import styles from "./list.module.css"
@@ -69,7 +71,7 @@ export function NewsListViewBlock({
             className={`${styles.article} ${thumbRight ? styles.reverse : ""}`}
           >
             <div className={styles.image} data-studio-image>
-              <img
+              <ContentImage
                 src={item.imageUrl}
                 alt={item.title}
                 className="h-full w-full object-cover"

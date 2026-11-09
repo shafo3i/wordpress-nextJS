@@ -1,4 +1,6 @@
 "use client"
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link"
 import styles from "./columns.module.css"
@@ -72,7 +74,7 @@ export function DualCategoryColumnsBlock({
             href={getPostUrl(lead.slug, theme)}
             className={`${styles.leadImage} group`}
           >
-            <img
+            <ContentImage
               src={lead.imageUrl}
               alt={lead.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -132,7 +134,7 @@ export function DualCategoryColumnsBlock({
                   href={getPostUrl(item.slug, theme)}
                   className={styles.thumbnail}
                 >
-                  <img
+                  <ContentImage
                     src={item.imageUrl}
                     alt={item.title}
                     className="h-full w-full object-cover"

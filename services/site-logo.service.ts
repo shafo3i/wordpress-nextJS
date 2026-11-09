@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq, and } from "drizzle-orm"
 import { db } from "@/db"
 import { wpPosts, wpOptions } from "@/db/schema"
@@ -10,7 +11,7 @@ export interface SiteLogo {
 }
 export class SiteLogoError extends Error {}
 
-export async function getGlobalSiteLogo(): Promise<SiteLogo | null> {
+async function read_getGlobalSiteLogo(): Promise<SiteLogo | null> {
   const [option] = await db
     .select({ value: wpOptions.optionValue })
     .from(wpOptions)
@@ -46,3 +47,5 @@ export async function getGlobalSiteLogo(): Promise<SiteLogo | null> {
 export async function removeSiteLogo(): Promise<void> {
   await setOption("site_logo_id", "")
 }
+
+export const getGlobalSiteLogo = cache(read_getGlobalSiteLogo);

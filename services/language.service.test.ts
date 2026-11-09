@@ -1,15 +1,33 @@
 import { describe, expect, it } from "vitest"
 import type { DB } from "@/db"
 import { getTranslations } from "./language.service"
+import en from "@/templates/language/en.json"
 import ar from "@/templates/language/ar.json"
 
 describe("translation override integrity", () => {
+  it("ships readable Studio controls and editorial block labels in both languages", () => {
+    for (const dict of [en, ar]) {
+      for (const [key, value] of Object.entries(dict).filter(
+        ([key]) =>
+          key.startsWith("admin.studio.") ||
+          key.startsWith("admin.theme_settings.block.")
+      )) {
+        expect(value, key).not.toMatch(/\?{2,}|\uFFFD/)
+      }
+      expect(dict["admin.studio.advanced.responsive_help"]).toBeTruthy()
+    }
+  })
+
   it("falls back to readable Arabic for damaged overrides while retaining custom translations", async () => {
     const database = {
       select: () => ({
         from: () => ({
           where: async () => [
             { key: "site.admin_bar.dashboard", value: "???? ??????" },
+            {
+              key: "admin.studio.content.preview_language",
+              value: "???? ??????",
+            },
             { key: "site.admin_bar.edit_page", value: "\uFFFD" },
             { key: "site.admin_bar.visit_site", value: "Custom label" },
             {
@@ -26,6 +44,9 @@ describe("translation override integrity", () => {
     )
     expect(dict["site.admin_bar.edit_page"]).toBe(
       ar["site.admin_bar.edit_page"]
+    )
+    expect(dict["admin.studio.content.preview_language"]).toBe(
+      ar["admin.studio.content.preview_language"]
     )
     expect(dict["site.admin_bar.visit_site"]).toBe("Custom label")
     expect(dict["admin.settings.logo.help"]).toBe(

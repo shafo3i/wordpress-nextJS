@@ -7,6 +7,8 @@ import { Toaster } from "@/components/ui/toast";
 import { getSiteMetadata } from "@/services/settings.service";
 import { getActiveFaviconUrl } from "@/lib/themes/customizer";
 import TanStackProvider from "../components/providers/tanstack-provider"
+import { headers, cookies } from "next/headers";
+import { getSeoSite } from "@/lib/seo/data";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -20,14 +22,18 @@ export async function generateMetadata(): Promise<Metadata> {
   return favicon ? { ...metadata, icons: { icon: favicon } } : metadata;
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [site, requestHeaders, cookieStore] = await Promise.all([getSeoSite(), headers(), cookies()]);
+  const hint = requestHeaders.get("x-cms-pathname")?.startsWith("/admincp") ? cookieStore.get("admin_lang")?.value : requestHeaders.get("x-cms-locale");
+  const language = site.languages.find(language => language.code === hint) || site.languages.find(language => language.code === site.defaultLocale);
   return (
     <html
-      lang="en"
+      lang={language?.code || site.defaultLocale}
+      dir={language?.direction === "rtl" ? "rtl" : "ltr"}
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >

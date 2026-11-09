@@ -10,7 +10,7 @@ import {
   symlink,
 } from "node:fs/promises"
 import { resolve, join } from "node:path"
-import { serveUpload } from "./uploads.mjs"
+import { serveUpload, serveUploadResponse } from "./uploads.mjs"
 
 test("production uploads", async (t) => {
   const parent = resolve(".local/wordpress-migration")
@@ -72,6 +72,18 @@ test("production uploads", async (t) => {
       ).status,
       416
     )
+  })
+  await t.test("Next internal requests share the live upload guard and range handling", async () => {
+    const request = (path,options) => new Request(`http://localhost/uploads/${path}`,options)
+    assert.equal((await serveUploadResponse(request("late.png"),root)).status,404)
+    await file(join(root,"late.png"),"abcdefgh")
+    const image=await serveUploadResponse(request("late.png"),root)
+    assert.equal(image.status,200)
+    assert.equal(await image.text(),"abcdefgh")
+    const range=await serveUploadResponse(request("late.png",{headers:{Range:"bytes=2-4"}}),root)
+    assert.equal(range.status,206)
+    assert.equal(await range.text(),"cde")
+    for (const path of [".quarantine/secret.png","active.html","%2e%2e%5coutside.png"]) assert.equal((await serveUploadResponse(request(path),root)).status,404)
   })
   await t.test(
     "blocks traversal, encoded namespace bypasses and active/private files",

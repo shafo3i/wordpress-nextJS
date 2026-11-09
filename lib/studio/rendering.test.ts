@@ -1,6 +1,7 @@
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it, vi } from "vitest"
+import { StudioDesignViewport } from "@/components/site/studio/studio-design"
 import { StudioRenderer } from "@/components/site/studio/studio-renderer"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
 import { createStudioElement } from "./tree-helpers"
@@ -22,37 +23,65 @@ vi.mock("@/components/site/sidebar/sidebar-renderer", () => ({
   },
 }))
 
-function render(element: StudioElement, isEditor = false) {
+function render(
+  element: StudioElement,
+  isEditor = false,
+  device?: "mobile" | "tablet" | "desktop"
+) {
   const request = getStudioElementContentRequest(element, "en")
   return renderToStaticMarkup(
-    createElement(StudioRenderer, {
-      elements: [element],
-      posts: [],
-      theme: { locale: "en", defaultLocale: "en" } as FrontEndThemeContext,
-      pageLocale: "en",
-      widgetContent: request
-        ? {
-            requests: {
-              [studioContentRequestKey(request)]: {
-                items: [],
-                total: 0,
-                page: 1,
-                pageSize: request.pageSize,
-                locale: request.locale,
-                direction: "ltr",
-                category: null,
-                categoryMissing: false,
+    createElement(StudioDesignViewport, {
+      device,
+      children: createElement(StudioRenderer, {
+        elements: [element],
+        posts: [],
+        theme: { locale: "en", defaultLocale: "en" } as FrontEndThemeContext,
+        pageLocale: "en",
+        widgetContent: request
+          ? {
+              requests: {
+                [studioContentRequestKey(request)]: {
+                  items: [],
+                  total: 0,
+                  page: 1,
+                  pageSize: request.pageSize,
+                  locale: request.locale,
+                  direction: "ltr",
+                  category: null,
+                  categoryMissing: false,
+                },
               },
-            },
-          }
-        : undefined,
-      isEditor,
-      dict: { "admin.studio.placeholder.heading": "Add a heading" },
+            }
+          : undefined,
+        isEditor,
+        dict: { "admin.studio.placeholder.heading": "Add a heading" },
+      }),
     })
   )
 }
 
 describe("Studio public rendering", () => {
+  it.each([
+    ["hideOnMobile", "mobile", "max-md:hidden"],
+    ["hideOnTablet", "tablet", "md:max-lg:hidden"],
+    ["hideOnDesktop", "desktop", "lg:hidden"],
+  ] as const)(
+    "applies %s publicly and keeps hidden preview elements editable",
+    (setting, device, css) => {
+      for (const type of ["heading", "container"] as const) {
+        const element = createStudioElement(type)
+        element.settings[setting] = true
+        expect(render(element)).toContain(css)
+        const preview = render(element, true, device)
+        expect(preview).not.toContain(css)
+        expect(preview).toContain("opacity-30")
+        expect(preview).toContain(`data-studio-element="${element.id}"`)
+        const otherDevice = device === "mobile" ? "desktop" : "mobile"
+        expect(render(element, true, otherDevice)).not.toContain("opacity-30")
+      }
+    }
+  )
+
   it.each(["widget_custom_html", "widget_plugin_ad"] as const)(
     "sanitizes the legacy registered widget adapter: %s",
     (type) => {

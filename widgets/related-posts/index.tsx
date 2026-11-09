@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import React from "react";
 import Link from "next/link";
@@ -116,7 +118,7 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
             className="flex items-center gap-2.5 p-2 rounded-lg border border-theme-border bg-theme-surface hover:border-[var(--theme-primary)] transition-colors group"
           >
             {showThumbnail && p.imageUrl && (
-              <img
+              <ContentImage
                 src={p.imageUrl}
                 alt={p.title}
                 className="size-12 rounded object-cover flex-shrink-0"

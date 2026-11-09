@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -86,7 +88,7 @@ export function FeaturedHeroSliderBlock({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         {/* Main Hero Slide Stage (8 cols) */}
         <div data-studio-card className="lg:col-span-8 relative rounded-2xl overflow-hidden min-h-[400px] sm:min-h-[480px] flex flex-col justify-between p-6 sm:p-10 text-theme-overlay shadow-xl group">
-          <img
+          <ContentImage
             src={current.imageUrl}
             alt={current.title}
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -208,7 +210,7 @@ export function FeaturedHeroSliderBlock({
                   }`}
                 >
                   <div data-studio-image className="relative w-16 h-14 rounded-lg overflow-hidden shrink-0 bg-theme-border/50">
-                    <img
+                    <ContentImage
                       src={item.imageUrl}
                       alt={item.title}
                       className="w-full h-full object-cover"

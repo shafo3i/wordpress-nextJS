@@ -42,6 +42,11 @@ export type ThemeModule = {
 };
 
 export type ThemeMods = {
+  singleContentBorder?: boolean;
+  singleImageBorder?: boolean;
+  singleDividerBorders?: boolean;
+  archiveContentBorder?: boolean;
+  archiveDividerBorders?: boolean;
   singleShowViews?: boolean;
   archiveLayout?: "list" | "grid";
   archiveColumns?: number;

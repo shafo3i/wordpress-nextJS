@@ -11,6 +11,10 @@ import styles from "./studio-design.module.css"
 const PreviewDevice = createContext<
   "desktop" | "tablet" | "mobile" | undefined
 >(undefined)
+export function useStudioPreviewDevice() {
+  return useContext(PreviewDevice)
+}
+
 export function StudioDesignViewport({
   device,
   children,

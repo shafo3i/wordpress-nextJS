@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { wpOptions } from "@/db/schema";
@@ -9,7 +10,7 @@ export const AVAILABLE_THEMES: Theme[] = THEME_MODULES.map((mod) => mod.manifest
 /**
  * Get the active stylesheet slug from wp_options
  */
-export async function getActiveThemeSlug(): Promise<string> {
+async function read_getActiveThemeSlug(): Promise<string> {
   try {
     const row = await db
       .select({ value: wpOptions.optionValue })
@@ -88,3 +89,5 @@ export async function getAllThemes(): Promise<Theme[]> {
     isActive: theme.slug === activeSlug,
   }));
 }
+
+export const getActiveThemeSlug = cache(read_getActiveThemeSlug);

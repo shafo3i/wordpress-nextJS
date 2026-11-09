@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link";
 import type { ContentItem } from "@/lib/site-content";
@@ -62,7 +64,7 @@ export function BigLeadSideListBlock({
             className={`rounded-2xl border overflow-hidden theme-card transition-all ${reverse ? "lg:col-start-2" : ""}`}
           >
             <div className="h-64 sm:h-80 w-full overflow-hidden bg-theme-border/40">
-              <img
+              <ContentImage
                 src={lead.imageUrl}
                 alt={lead.title}
                 className="w-full h-full object-cover"
@@ -178,7 +180,7 @@ export function BigLeadSideListBlock({
               </div>
 
               <div data-studio-image className="w-28 sm:w-32 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-theme-border/40">
-                <img
+                <ContentImage
                   src={item.imageUrl}
                   alt={item.title}
                   className="w-full h-full object-cover"

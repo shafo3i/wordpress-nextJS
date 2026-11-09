@@ -2,6 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const next = () => {
+    const headers = new Headers(request.headers);
+    headers.set("x-cms-pathname", pathname);
+    const hint = request.nextUrl.searchParams.get("lang") || pathname.split("/")[1] || "";
+    headers.set("x-cms-locale", /^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,2}$/i.test(hint) ? hint : "");
+    return NextResponse.next({ request: { headers } });
+  };
 
   // Skip static assets, API endpoints, admin panel, feeds, and files
   if (
@@ -13,7 +20,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/sitemap") ||
     pathname.includes(".")
   ) {
-    return NextResponse.next();
+    return next();
   }
 
   // Fast 301/302 redirect lookup
@@ -40,7 +47,7 @@ export async function proxy(request: NextRequest) {
     // Non-blocking fallback
   }
 
-  return NextResponse.next();
+  return next();
 }
 
 export const config = {

@@ -50,4 +50,6 @@ next-env.d.ts
 !/docs/AUTH-FLOWS.md
 !/docs/THEME-LAYOUT.md
 !/docs/DEPENDENCY-SECURITY.md
+!/docs/POST-MEDIA.md
+!/docs/GOOGLE-NEWS-SEO.md
 !/docs/POST-DATES-AND-VIEWS.md

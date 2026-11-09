@@ -1,4 +1,6 @@
 "use client"
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link"
 import styles from "./broadsheet.module.css"
@@ -115,7 +117,7 @@ export function Broadsheet3ColBlock({
             {col1Item && (
               <div className="space-y-2">
                 <div data-studio-image className={styles.image}>
-                  <img
+                  <ContentImage
                     src={col1Item.imageUrl}
                     alt={col1Item.title}
                     className="h-full w-full object-cover"
@@ -198,7 +200,7 @@ export function Broadsheet3ColBlock({
           )}
 
           <div data-studio-image className={styles.featureImage}>
-            <img
+            <ContentImage
               src={centerFeature.imageUrl}
               alt={centerFeature.title}
               className="h-full w-full object-cover"

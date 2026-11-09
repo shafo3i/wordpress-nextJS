@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
+import type { Editor as TinyEditor } from "tinymce";
+import { MediaSelectModal } from "@/components/admin/media-select-modal";
+import { attachmentMarkup, videoMarkup, videoEmbedUrl } from "@/lib/post-media";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Camera, Music } from "lucide-react";
@@ -96,6 +99,9 @@ export function ClassicPostEditor({
   const [isStudioBuilder, setIsStudioBuilder] = useState(initialIsStudioBuilder);
   const [isLaunchingStudio, setIsLaunchingStudio] = useState(false);
   const [content, setContent] = useState(initialContent);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const editorRef = useRef<TinyEditor | null>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
   const [excerpt, setExcerpt] = useState(initialExcerpt);
   const [featuredImageId, setFeaturedImageId] = useState(initialFeaturedImageId);
   const [isFeatured, setIsFeatured] = useState(initialIsFeatured);
@@ -111,9 +117,7 @@ export function ClassicPostEditor({
   const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [customSlug, setCustomSlug] = useState("");
   const [languageCode, setLanguageCode] = useState(initialLanguageCode);
-  const [lastSaved, setLastSaved] = useState<string>(
-    new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" }),
-  );
+  const [lastSaved, setLastSaved] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const slug =
@@ -339,7 +343,7 @@ export function ClassicPostEditor({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <button
                 className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-xs font-medium text-[#2271b1] shadow-sm hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
-                onClick={() => window.open("/admincp/media", "_blank")}
+                onClick={() => setMediaOpen(true)}
                 type="button"
               >
                 <span className="flex items-center text-xs">
@@ -383,9 +387,41 @@ export function ClassicPostEditor({
                     branding: false,
                     statusbar: false,
                     directionality: direction === "rtl" ? "rtl" : "ltr",
-                    plugins: "advlist autolink lists link image table code wordcount",
+                    plugins: "advlist autolink lists link image media table code wordcount",
                     toolbar:
-                      "formatselect | bold italic underline | bullist numlist blockquote | alignleft aligncenter alignright | link unlink | code",
+                      "formatselect | bold italic underline | bullist numlist blockquote | alignleft aligncenter alignright | link unlink | postvideo | code",
+                    media_live_embeds: true,
+                    sandbox_iframes: true,
+                    sandbox_iframes_exclusions: ["youtube-nocookie.com", "youtube.com", "player.vimeo.com"],
+                    setup: (editor: TinyEditor) => {
+                      editor.on("BeforeSetContent", (event) => {
+                        if (!event.content.includes("sandbox")) return;
+                        const doc = new DOMParser().parseFromString(event.content, "text/html");
+                        for (const frame of doc.querySelectorAll("iframe[sandbox]")) {
+                          const source = videoEmbedUrl(frame.getAttribute("src") || "");
+                          if (source) { frame.setAttribute("src", source); frame.removeAttribute("sandbox"); }
+                        }
+                        event.content = doc.body.innerHTML;
+                      });
+                      editor.ui.registry.addButton("postvideo", {
+                        text: dict?.["admin.editor.insert_video"],
+                        onAction: () => editor.windowManager.open({
+                          title: dict?.["admin.editor.insert_video"] || "",
+                          body: { type: "panel", items: [{ type: "input", name: "source", label: dict?.["admin.editor.video_url"] || "" }] },
+                          initialData: { source: "" },
+                          buttons: [
+                            { type: "cancel", text: dict?.["common.cancel"] || "" },
+                            { type: "submit", text: dict?.["admin.editor.insert_media"] || "", primary: true },
+                          ],
+                          onSubmit: (dialog) => {
+                            const markup = videoMarkup(dialog.getData().source.trim());
+                            if (!markup) { editor.windowManager.alert(dict?.["admin.editor.invalid_video"] || ""); return; }
+                            editor.insertContent(markup);
+                            dialog.close();
+                          },
+                        }),
+                      });
+                    },
                     toolbar_mode: "floating",
                     resize: false,
                     content_style:
@@ -394,12 +430,14 @@ export function ClassicPostEditor({
                     content_css: false,
                   }}
                   licenseKey="gpl"
+                  onInit={(_event, editor) => { editorRef.current = editor; }}
                   onEditorChange={setContent}
                   tinymceScriptSrc="/tinymce/tinymce.min.js"
                   value={content}
                 />
               ) : (
                 <textarea
+                  ref={textRef}
                   className="h-[440px] w-full resize-none p-4 font-mono text-xs leading-relaxed text-[#2c3338] outline-none"
                   onChange={(e) => setContent(e.target.value)}
                   value={content}
@@ -412,7 +450,7 @@ export function ClassicPostEditor({
                   {dict?.["admin.editor.word_count"] || "Word count:"} {wordCount}
                 </span>
                 <span>
-                  {dict?.["admin.editor.draft_saved_at"] || "Draft saved at"} {lastSaved}.
+                  {lastSaved ? `${dict?.["admin.editor.draft_saved_at"]} ${lastSaved}.` : ""}
                 </span>
               </div>
             </div>
@@ -504,6 +542,24 @@ export function ClassicPostEditor({
           onChange={setFeaturedImageId}
         />
       </div>
+      <MediaSelectModal
+        isOpen={mediaOpen}
+        onClose={() => setMediaOpen(false)}
+        mediaType="all"
+        dict={dict}
+        title={dict?.["admin.editor.add_media"]}
+        selectButtonText={dict?.["admin.editor.insert_media"]}
+        onSelect={(item) => {
+          const markup = attachmentMarkup(item);
+          if (editorMode === "visual" && editorRef.current) {
+            editorRef.current.insertContent(markup);
+          } else {
+            const start = textRef.current?.selectionStart ?? content.length;
+            const end = textRef.current?.selectionEnd ?? start;
+            setContent(content.slice(0, start) + markup + content.slice(end));
+          }
+        }}
+      />
     </form>
   );
 }

@@ -92,7 +92,9 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
       <div className={styles.utility}>
         {showSocialsInNav && <SocialLinks mods={mods} />}
         {mods.showSearchInNav !== false && (
-          <Search className="size-4" aria-hidden="true" />
+          <Link href={localizePath("/search", theme.locale, theme.defaultLocale)} aria-label={t("site.search.label", theme, "")} className="inline-flex items-center justify-center p-2">
+            <Search className="size-4" aria-hidden="true" />
+          </Link>
         )}
       </div>
     )

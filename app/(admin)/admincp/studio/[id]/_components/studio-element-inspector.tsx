@@ -6,6 +6,7 @@ import { StudioWidgetControls } from "./studio-widget-controls"
 import { StudioEditorialControls } from "./studio-editorial-controls"
 import { StudioGlobalWidgetControls } from "./studio-global-widget-controls"
 import { StudioStyleControls } from "./studio-style-controls"
+import { StudioVisibilityControls } from "./studio-visibility-controls"
 import { StudioAdvancedControls } from "./studio-advanced-controls"
 import { getStudioWidgetDefinition } from "@/lib/studio/widget-registry"
 
@@ -105,6 +106,7 @@ export function StudioElementInspector(props: StudioInspectorProps) {
       <div className="flex-1 space-y-4 overflow-y-auto p-3.5">
         {inspectorTab === "content" && (
           <div className="space-y-4">
+            <StudioVisibilityControls {...props} />
             {ContentControls && <ContentControls {...props} />}
           </div>
         )}

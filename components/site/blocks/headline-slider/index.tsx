@@ -1,4 +1,6 @@
 "use client"
+import { ContentImage } from "@/components/site/content-image";
+
 
 import Link from "next/link"
 import { ChevronLeft, ChevronRight, Clock, Pause, Play } from "lucide-react"
@@ -47,12 +49,13 @@ export function HeadlineSliderBlock({
       {posts.map(
         (post, index) =>
           post.imageUrl && (
-            <img
+            <ContentImage
               key={post.id}
               className={styles.image}
               data-active={index === rotation.index}
               src={post.imageUrl}
               loading={index === rotation.index ? "eager" : "lazy"}
+              fetchPriority={index === rotation.index ? "high" : "low"}
               alt=""
             />
           )

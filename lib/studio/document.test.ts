@@ -24,6 +24,23 @@ const makeDocument = (): StudioDocumentData => ({
 })
 
 describe("Studio document persistence", () => {
+  it("preserves independent device visibility settings on containers and slider blocks", () => {
+    const doc = makeDocument()
+    const slider = createStudioElement("block_headline_slider")
+    slider.settings.hideOnMobile = true
+    slider.settings.hideOnTablet = false
+    slider.settings.hideOnDesktop = true
+    doc.elements[0].settings.hideOnTablet = true
+    doc.elements[0].elements.push(slider)
+    const parsed = studioDocumentSchema.parse(JSON.parse(JSON.stringify(doc)))
+    expect(parsed.elements[0].settings.hideOnTablet).toBe(true)
+    expect(parsed.elements[0].elements.at(-1)?.settings).toMatchObject({
+      hideOnMobile: true,
+      hideOnTablet: false,
+      hideOnDesktop: true,
+    })
+  })
+
   it.each([
     "javascript:alert(1)",
     "data:text/html,<script>alert(1)</script>",

@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import { useState } from "react";
 import Link from "next/link";
@@ -59,7 +61,7 @@ export function HeroSliderBlock({
       />
 
       <div data-studio-card className="relative rounded-2xl overflow-hidden min-h-[380px] sm:min-h-[460px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl group">
-        <img
+        <ContentImage
           src={current.imageUrl}
           alt={current.title}
           className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -131,7 +133,7 @@ export function HeroSliderBlock({
               }`}
             >
               <div data-studio-image className="w-14 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-theme-border/60">
-                <img
+                <ContentImage
                   src={item.imageUrl}
                   alt={item.title}
                   className="w-full h-full object-cover"

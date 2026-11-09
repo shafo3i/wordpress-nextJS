@@ -1,6 +1,9 @@
 import { contentPlainText } from "@/lib/content-text";
 import { getPostViewCounts } from "@/services/post-views.service";
-import { and, desc, eq, inArray, countDistinct } from "drizzle-orm";
+import { and, desc, eq, inArray, countDistinct, lte } from "drizzle-orm";
+import { cache } from "react";
+import { getPostImageAssets } from "@/services/media-images.service";
+import { getPostSeoMap } from "@/lib/seo/data";
 import { db } from "@/db";
 import { wpPosts, wpPostmeta, wpTermRelationships, wpTermTaxonomy, wpTerms, user, postTranslationsTable, languagesTable, termTranslationsTable } from "@/db/schema";
 import { getDefaultLanguage } from "@/services/language.service";
@@ -19,6 +22,13 @@ export type ContentItem = {
   categories: string[];
   tags: string[];
   imageUrl: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageSrcSet?: string;
+  modifiedDate?: Date;
+  publishedDate?: Date;
+  authorId?: string;
+  seo?: { title?: string; description?: string; image?: string; canonical?: string; noindex?: boolean };
   commentCount?: number;
   viewCount?: number;
   isFeatured?: boolean;
@@ -29,26 +39,6 @@ export type ContentItem = {
   studioDocument?: StudioDocumentData;
   studioContent?: StudioContentSnapshot;
 };
-
-// Curated high-resolution editorial broadsheet photos
-const EDITORIAL_PHOTOS = [
-  "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1200&auto=format&fit=crop&q=80", // Financial District
-  "https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&auto=format&fit=crop&q=80", // Microchip / Tech
-  "https://images.unsplash.com/photo-1541872703-74c5e44368f9?w=1200&auto=format&fit=crop&q=80", // Policy / Space
-  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&auto=format&fit=crop&q=80", // Modern Architecture
-  "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=1200&auto=format&fit=crop&q=80", // Stock Markets Chart
-  "https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=1200&auto=format&fit=crop&q=80", // Laboratory Research
-  "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80", // Satellite / Global
-  "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&auto=format&fit=crop&q=80", // Newspaper Broadsheet
-  "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&auto=format&fit=crop&q=80", // Editorial Desk
-  "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=1200&auto=format&fit=crop&q=80", // Newsprint press
-];
-
-function getEditorialPhoto(seed: string | number): string {
-  const hash = String(seed).split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return EDITORIAL_PHOTOS[hash % EDITORIAL_PHOTOS.length];
-}
-
 
 async function getTermData(postIds: bigint[] | string[]) {
   if (!postIds.length) return new Map<string, { categories: string[]; tags: string[] }>();
@@ -74,61 +64,6 @@ async function getTermData(postIds: bigint[] | string[]) {
   }
 
   return map;
-}
-
-async function getImageData(postIds: bigint[] | string[]) {
-  if (!postIds.length) return new Map<string, string>();
-  try {
-    const metas = await db
-      .select({
-        postId: wpPostmeta.postId,
-        metaValue: wpPostmeta.metaValue,
-      })
-      .from(wpPostmeta)
-      .where(
-        and(
-          inArray(wpPostmeta.postId, postIds.map((id) => BigInt(id))),
-          eq(wpPostmeta.metaKey, "_thumbnail_id")
-        )
-      );
-
-    const attachmentIds = metas
-      .map((m) => m.metaValue)
-      .filter((v): v is string => Boolean(v) && !isNaN(Number(v)));
-
-    const attachmentMap = new Map<string, string>();
-
-    if (attachmentIds.length) {
-      const attachments = await db
-        .select({
-          id: wpPosts.id,
-          guid: wpPosts.guid,
-        })
-        .from(wpPosts)
-        .where(
-          and(
-            inArray(wpPosts.id, attachmentIds.map((id) => BigInt(id))),
-            eq(wpPosts.postType, "attachment")
-          )
-        );
-
-      for (const att of attachments) {
-        if (att.guid) {
-          attachmentMap.set(att.id.toString(), att.guid);
-        }
-      }
-    }
-
-    const postImageMap = new Map<string, string>();
-    for (const meta of metas) {
-      if (meta.metaValue && attachmentMap.has(meta.metaValue)) {
-        postImageMap.set(meta.postId.toString(), attachmentMap.get(meta.metaValue)!);
-      }
-    }
-    return postImageMap;
-  } catch {
-    return new Map<string, string>();
-  }
 }
 
 async function getFeaturedPostFlags(postIds: bigint[] | string[]) {
@@ -235,7 +170,8 @@ function decodeContentSlug(slug: string): string {
   }
 }
 
-export async function getPublishedContent(type: "post" | "page", slug?: string, limit = 10, locale?: string) {
+export async function getPublishedContent(type: "post" | "page", slug?: string, limit = 10, locale?: string, selectedPostIds?: bigint[]) {
+  if (selectedPostIds && !selectedPostIds.length) return [];
   let base: any[] = [];
   let effectiveLocale = locale;
   if (!effectiveLocale) {
@@ -251,6 +187,9 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
       excerpt: wpPosts.postExcerpt,
       content: wpPosts.postContent,
       date: wpPosts.postDate,
+      modifiedDate: wpPosts.postModifiedGmt,
+      publishedDate: wpPosts.postDateGmt,
+      authorId: wpPosts.postAuthor,
       authorName: user.name,
       locale: postTranslationsTable.languageCode,
       direction: languagesTable.direction,
@@ -263,11 +202,15 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
       and(
         eq(wpPosts.postType, type),
         eq(wpPosts.postStatus, "publish"),
+        eq(wpPosts.postPassword, ""),
+        lte(wpPosts.postDateGmt, new Date()),
         eq(postTranslationsTable.languageCode, effectiveLocale),
+        eq(languagesTable.isActive, true),
+        selectedPostIds ? inArray(wpPosts.id, selectedPostIds) : undefined,
         slug ? eq(wpPosts.postName, decodeContentSlug(slug)) : undefined
       )
     )
-    .orderBy(desc(wpPosts.postDate))
+    .orderBy(desc(wpPosts.postDate), desc(wpPosts.id))
     .limit(limit);
 
   if (!base.length) {
@@ -275,13 +218,14 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
   }
 
   const postIds = base.map((item) => item.id.toString());
-  const [termMap, imageMap, templateMap, studioMap, featuredSet, viewCounts] = await Promise.all([
+  const [termMap, imageMap, templateMap, studioMap, featuredSet, viewCounts, seoMap] = await Promise.all([
     getTermData(postIds),
-    getImageData(postIds),
+    getPostImageAssets(postIds),
     getPageTemplateData(postIds),
     type === "page" ? getStudioPageData(postIds) : Promise.resolve(new Map()),
     type === "post" ? getFeaturedPostFlags(postIds) : Promise.resolve(new Set<string>()),
     type === "post" ? getPostViewCounts(postIds) : Promise.resolve(new Map<string,number>()),
+    getPostSeoMap(postIds),
   ]);
 
   return base.map((item, idx) => {
@@ -293,10 +237,11 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
     }
 
     const idStr = item.id.toString();
-    const attachedImg = imageMap.get(idStr);
-    const resolvedImg = attachedImg || contentImg || getEditorialPhoto(idStr || idx);
+    const attachedImage = imageMap.get(idStr);
+    const attachedImg = attachedImage?.url;
+    const resolvedImg = attachedImg || contentImg || "";
     const studioInfo = studioMap.get(idStr);
-    const cats = termMap.get(idStr)?.categories ?? ["News"];
+    const cats = termMap.get(idStr)?.categories ?? [];
     const postTags = termMap.get(idStr)?.tags ?? [];
     const isFeaturedByTerm =
       cats.some((c) => /featured|spotlight|مميز|بارز/i.test(c)) ||
@@ -310,7 +255,14 @@ export async function getPublishedContent(type: "post" | "page", slug?: string, 
       excerpt: contentPlainText(item.excerpt || item.content).slice(0, 180),
       content: item.content || "",
       date: item.date,
-      authorName: item.authorName || "Editorial Desk",
+      publishedDate: item.publishedDate,
+      modifiedDate: item.modifiedDate,
+      authorId: item.authorId || undefined,
+      imageWidth: attachedImage?.width,
+      imageHeight: attachedImage?.height,
+      imageSrcSet: attachedImage?.srcSet,
+      seo: seoMap.get(idStr),
+      authorName: item.authorName || "",
       categories: cats,
       tags: postTags,
       imageUrl: resolvedImg,
@@ -328,12 +280,12 @@ export async function getPublishedPosts(limit = 12, locale?: string) {
   return await getPublishedContent("post", undefined, limit, locale);
 }
 
-export async function getPublishedPageBySlug(slug: string, locale?: string) {
+export const getPublishedPageBySlug = cache(async (slug: string, locale?: string) => {
   const pages = await getPublishedContent("page", slug, 1, locale);
   return pages.length ? pages[0] : null;
-}
+});
 
-export async function getPublishedPageById(
+async function readPublishedPageById(
   id: string | number | bigint,
   locale?: string
 ): Promise<ContentItem | null> {
@@ -412,10 +364,10 @@ export async function getPublishedPageById(
   );
 }
 
-export async function getPublishedPostBySlug(slug: string, locale?: string) {
+export const getPublishedPostBySlug = cache(async (slug: string, locale?: string) => {
   const posts = await getPublishedContent("post", slug, 1, locale);
   return posts.length ? posts[0] : null;
-}
+});
 
 export interface CategoryPostsResult {
   category: {
@@ -502,6 +454,8 @@ export async function getPublishedPostsByCategory(
       and(
         eq(wpPosts.postType, "post"),
         eq(wpPosts.postStatus, "publish"),
+        eq(wpPosts.postPassword, ""),
+        lte(wpPosts.postDateGmt, new Date()),
         eq(postTranslationsTable.languageCode, effectiveLocale),
         inArray(wpTermRelationships.termTaxonomyId, taxIds)
       )
@@ -525,6 +479,8 @@ export async function getPublishedPostsByCategory(
       and(
         eq(wpPosts.postType, "post"),
         eq(wpPosts.postStatus, "publish"),
+        eq(wpPosts.postPassword, ""),
+        lte(wpPosts.postDateGmt, new Date()),
         eq(postTranslationsTable.languageCode, effectiveLocale),
         inArray(wpTermRelationships.termTaxonomyId, taxIds)
       )
@@ -572,19 +528,20 @@ export async function getPublishedPostsByCategory(
       .where(inArray(wpPosts.id, postIdsQuery.map((r) => r.id)))
       .orderBy(desc(wpPosts.postDate)),
     getTermData(postIds),
-    getImageData(postIds),
+    getPostImageAssets(postIds),
     getPageTemplateData(postIds),
   ]);
 
-  const posts: ContentItem[] = basePosts.map((item, idx) => {
+  const posts: ContentItem[] = basePosts.map((item) => {
     let contentImg = "";
     const match = item.content.match(/<img[^>]+src=["']([^"']+)["']/i);
     if (match && match[1]) {
       contentImg = match[1];
     }
 
-    const attachedImg = imageMap.get(item.id.toString());
-    const resolvedImg = attachedImg || contentImg || getEditorialPhoto(item.id.toString() || idx);
+    const asset = imageMap.get(item.id.toString());
+    const attachedImg = asset?.url;
+    const resolvedImg = attachedImg || contentImg || "";
 
     return {
       id: item.id.toString(),
@@ -597,6 +554,9 @@ export async function getPublishedPostsByCategory(
       categories: termMap.get(item.id.toString())?.categories ?? [cat.name],
       tags: termMap.get(item.id.toString())?.tags ?? [],
       imageUrl: resolvedImg,
+      imageWidth: asset?.width,
+      imageHeight: asset?.height,
+      imageSrcSet: asset?.srcSet,
       template: templateMap.get(item.id.toString()) || "default",
       locale: item.locale || undefined,
       direction: (item.direction as "ltr" | "rtl") || undefined,
@@ -618,3 +578,5 @@ export async function getPublishedPostsByCategory(
     currentPage: safePage,
   };
 }
+
+export const getPublishedPageById = cache(readPublishedPageById);

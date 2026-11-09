@@ -1,6 +1,10 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  images: { localPatterns: [{ pathname: "/uploads/**", search: "" }] },
+  experimental: {
+    serverActions: { bodySizeLimit: "34mb" },
+  },
   // jsdom reads package assets relative to its own directory. Keep the server
   // sanitizer in Node's module loader so bundling cannot relocate those reads.
   serverExternalPackages: ["isomorphic-dompurify", "jsdom"],

@@ -65,6 +65,8 @@ export const archiveSection: CustomizerSection = {
         range("archivePadding", 16, 0, 40),
         range("archiveRadius", 0, 0, 32),
         toggle("archiveBorder", true),
+        toggle("archiveContentBorder", false),
+        toggle("archiveDividerBorders", true),
         range("archiveTitleSize", 20, 14, 36),
         choice(
           "archiveTitleWeight",

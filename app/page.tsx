@@ -1,4 +1,5 @@
 import { PublicAdminBar } from "@/components/site/admin/public-admin-bar";
+import { homepageMetadata } from "@/lib/seo/article";
 import { resolveStudioPageContent } from '@/services/studio-content.service';
 import { NewsHome, PageTemplate } from "@/components/site/news-patterns";
 import { getPublishedPageById, getPublishedPosts } from "@/lib/site-content";
@@ -8,6 +9,9 @@ import { getAllWidgetAreas } from "@/lib/widgets/db";
 import { getOptions } from "@/services/settings.service";
 
 export const dynamic = "force-dynamic";
+export async function generateMetadata({searchParams}:{searchParams?:Promise<{lang?:string}>}) {
+  return homepageMetadata((await searchParams)?.lang);
+}
 
 export default async function Page({
   searchParams,

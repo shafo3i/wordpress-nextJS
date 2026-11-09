@@ -1,4 +1,6 @@
 "use client";
+import { ContentImage } from "@/components/site/content-image";
+
 
 import React from "react";
 import Link from "next/link";
@@ -150,7 +152,7 @@ export function AuthorBioRender({ item, theme }: WidgetRenderProps) {
 
       <div className="flex items-start gap-3 mb-2.5">
         {avatarUrl ? (
-          <img
+          <ContentImage
             src={avatarUrl}
             alt={authorName}
             className="size-11 rounded-full object-cover border border-[var(--theme-border)] shadow-sm flex-shrink-0"
