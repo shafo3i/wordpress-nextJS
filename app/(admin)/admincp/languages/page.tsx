@@ -1,3 +1,4 @@
+import { LanguageSync } from "./_components/language-sync";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
@@ -25,7 +26,7 @@ type PageProps = {
 };
 
 export default async function LanguagesPage({ searchParams }: PageProps) {
-    await verifyAdminOrEditor();
+    const session = await verifyAdminOrEditor();
 
     const { s, status, page, edit, add } = await searchParams;
     const currentStatus = status ?? "all";
@@ -60,6 +61,8 @@ export default async function LanguagesPage({ searchParams }: PageProps) {
                     dict={dict}
                     title={dict["admin.languages.title"] || "Languages"}
                 />
+
+                {session.user.role === "admin" && <LanguageSync dict={dict} />}
 
                 {/* Create or Edit Form */}
                 {(isAdding || editingLanguage) && (

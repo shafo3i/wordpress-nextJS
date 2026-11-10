@@ -1,5 +1,7 @@
 "use server";
 
+import { mediaItemIdSchema, mediaDetailsPatchSchema } from "@/db/schema/cms-media-details";
+import { getMediaItemDetails } from "@/services/media-details.service";
 import { revalidatePath } from "next/cache";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { MAX_MEDIA_UPLOAD_BYTES } from "@/lib/media-upload";
@@ -76,12 +78,14 @@ export async function updateMediaAction(
     caption?: string;
     description?: string;
   }
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; item?: MediaItem; error?: string }> {
   try {
     await verifyAdminOrEditor();
-    await updateMediaItem(id, data);
+    mediaItemIdSchema.parse(id);
+    await updateMediaItem(id, mediaDetailsPatchSchema.parse(data));
     revalidatePath("/admincp/media");
-    return { success: true };
+    revalidatePath("/", "layout");
+    return { success: true, item: (await getMediaItemDetails(id)) || undefined };
   } catch (error: any) {
     console.error("updateMediaAction error:", error);
     return { success: false, error: error?.message || "Failed to update media item" };
@@ -100,4 +104,9 @@ export async function deleteMediaAction(
     console.error("deleteMediaAction error:", error);
     return { success: false, error: error?.message || "Failed to delete media" };
   }
+}
+
+export async function fetchMediaItemAction(id:number):Promise<{success:boolean;item?:MediaItem;error?:string}>{
+  try { await verifyAdminOrEditor(); mediaItemIdSchema.parse(id); const item=await getMediaItemDetails(id);return item?{success:true,item}:{success:false,error:"admin.media.details_not_found"}; }
+  catch { return {success:false,error:"admin.media.details_load_failed"}; }
 }

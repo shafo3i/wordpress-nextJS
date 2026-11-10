@@ -112,3 +112,15 @@ export async function switchAdminLanguageAction(formData: FormData) {
     revalidatePath("/admincp");
 }
 
+
+export async function syncLanguageTemplatesAction() {
+  const session = await verifyAdminOrEditor();
+  if (session.user.role !== "admin") return { success:false as const };
+  try {
+    const { syncMissingTranslations } = await import("@/services/language-sync.service");
+    const result = await syncMissingTranslations();
+    revalidatePath("/", "layout");
+    revalidatePath("/admincp/translations");
+    return {success:true as const,...result};
+  } catch { return {success:false as const}; }
+}

@@ -99,8 +99,9 @@ const studioBlockSchema: z.ZodType<HomepageBlock> = z.object({
 
 export const studioSettingsSchema: z.ZodType<StudioElementSettings> = z.object({
   containerType: z.enum(["flexbox", "grid", "div", "container"]).optional(),
-  contentWidth: z.union([z.literal("boxed"), z.literal("full")]).optional(),
+  contentWidth: z.enum(["inherit", "boxed", "full"]).optional(),
   maxWidth: z.number().finite().optional(),
+  customWidth: z.boolean().optional(),
   minHeight: z.number().finite().optional(),
   widthPercent: z.number().finite().optional(),
   flexDirection: z

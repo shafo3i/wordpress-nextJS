@@ -29,7 +29,7 @@ test.beforeAll(async () => {
           builder.onResolve(
             {
               filter:
-                /^(next\/(dynamic|navigation|link)|@\/components\/admin\/media-select-modal|@\/app\/\(admin\)\/admincp\/studio\/)/,
+                /^(next\/(dynamic|navigation|link)|@\/components\/admin\/media-select-modal|@\/app\/\(admin\)\/admincp\/(studio\/|media\/actions))/,
             },
             (args) => ({ path: args.path, namespace: "fixture" })
           )
@@ -43,6 +43,8 @@ test.beforeAll(async () => {
             else if (args.path === "next/link")
               contents =
                 "import React from 'react';export default p=>React.createElement('a',p,p.children);"
+            else if (args.path.includes("media/actions"))
+              contents = "export const fetchMediaItemAction=async()=>({success:false});"
             else if (args.path.includes("media-select-modal"))
               contents = "export const MediaSelectModal=()=>null;"
             else

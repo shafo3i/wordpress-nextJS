@@ -2,6 +2,10 @@
 
 import React from "react"
 import {
+  studioContainerWidthMode,
+  studioContainerMaxWidth,
+} from "@/lib/studio/container-width"
+import {
   ArrowDown,
   ArrowUp,
   Copy,
@@ -106,7 +110,9 @@ export function StudioRenderer({
 
     if (el.elType === "container") {
       const cType = el.settings.containerType || "flexbox"
-      const isBoxed = el.settings.contentWidth !== "full" && !isChildColumn
+      const widthMode = studioContainerWidthMode(el.settings)
+      const inheritsWidth = widthMode === "inherit" && !isChildColumn
+      const isBoxed = widthMode !== "full" && !isChildColumn
       const hasChildContainers = el.elements.some(
         (c) => c.elType === "container"
       )
@@ -141,7 +147,11 @@ export function StudioRenderer({
           data-studio-element={el.id}
           key={el.id}
           id={el.settings.customId || undefined}
-          style={inlineStyles}
+          style={
+            inheritsWidth
+              ? { ...inlineStyles, paddingLeft: 0, paddingRight: 0 }
+              : inlineStyles
+          }
           onClick={(e) => {
             if (!isEditor) return
             e.stopPropagation()
@@ -241,8 +251,15 @@ export function StudioRenderer({
           <div
             style={{
               maxWidth: isBoxed
-                ? `${el.settings.maxWidth || 1280}px`
+                ? studioContainerMaxWidth(el.settings)
                 : undefined,
+              ...(inheritsWidth
+                ? {
+                    paddingLeft: `${el.settings.paddingLeft ?? 16}px`,
+                    paddingRight: `${el.settings.paddingRight ?? 16}px`,
+                    boxSizing: "border-box" as const,
+                  }
+                : {}),
             }}
             className={isBoxed ? "mx-auto w-full" : "w-full"}
           >

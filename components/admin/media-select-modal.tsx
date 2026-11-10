@@ -1,5 +1,7 @@
 "use client";
 
+import { MediaAttachmentDetails } from "./media-attachment-details";
+import { MediaPreview } from "./media-preview";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -258,12 +260,7 @@ export function MediaSelectModal({
                           }`}
                         >
                           {item.mimeType?.startsWith("image/") ? (
-                            <img
-                              src={item.thumbnailUrl || item.url}
-                              alt={item.altText || item.title}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
+                            <MediaPreview url={item.url} thumbnailUrl={item.thumbnailUrl} alt={item.altText||item.title} dict={dict} className="h-full w-full object-cover"/>
                           ) : (
                             <div className="flex h-full w-full flex-col items-center justify-center bg-[#f6f7f7] p-2 text-center">
                               {item.mimeType?.startsWith("audio/") && <Music className="size-8 text-[#646970]" />}
@@ -298,32 +295,9 @@ export function MediaSelectModal({
               </div>
 
               {/* Selected Item Sidebar */}
-              <div className="w-72 border-s border-[#c3c4c7] bg-[#f6f7f7] p-4 overflow-y-auto flex flex-col justify-between shrink-0">
+              <div className="w-72 border-s border-[#c3c4c7] bg-[#f6f7f7] overflow-y-auto flex flex-col justify-between shrink-0">
                 {selectedItem ? (
-                  <div className="space-y-4">
-                    <h3 className="text-[13px] font-semibold text-[#1d2327] uppercase tracking-wide border-b border-[#dcdcde] pb-2">
-                      {dict["admin.media.details_title"]}
-                    </h3>
-
-                    <div className="aspect-video w-full rounded border border-[#dcdcde] overflow-hidden bg-white">
-                      {selectedItem.mimeType.startsWith("video/") ? <video src={selectedItem.url} controls preload="metadata" className="h-full w-full object-contain" /> : selectedItem.mimeType.startsWith("audio/") ? <audio src={selectedItem.url} controls preload="metadata" className="w-full" /> : selectedItem.mimeType.startsWith("image/") ? <img
-                        src={selectedItem.url}
-                        alt={selectedItem.altText || selectedItem.title}
-                        className="h-full w-full object-contain"
-                      /> : <FileText className="m-auto size-10 text-[#646970]" />}
-                    </div>
-
-                    <div className="space-y-1.5 text-[12px] text-[#50575e]">
-                      <p className="font-semibold text-[#1d2327] truncate" title={selectedItem.filename}>
-                        {selectedItem.filename}
-                      </p>
-                      <p>{selectedItem.uploadedAt}</p>
-                      <p>{(selectedItem.sizeBytes / 1024).toFixed(1)} KB</p>
-                      {selectedItem.width && selectedItem.height && (
-                        <p>{selectedItem.width} × {selectedItem.height}</p>
-                      )}
-                    </div>
-                  </div>
+                  <MediaAttachmentDetails key={selectedItem.id} item={selectedItem} dict={dict} onUpdated={setSelectedItem}/>
                 ) : (
                   <div className="flex h-full items-center justify-center text-center p-4">
                     <p className="text-[12px] text-[#646970]">

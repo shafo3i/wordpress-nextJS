@@ -183,6 +183,8 @@
   .site-container {
     max-width: var(--theme-container-width, 1280px);
     width: 100%;
+    box-sizing: border-box;
+    padding-inline: var(--theme-container-gutter, 16px) !important;
   }
 
   .wp-admin-shell {

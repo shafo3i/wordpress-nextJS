@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { auth } from "@/auth"
 import { SITE_LOGO_MAX_BYTES } from "@/db/schema/cms-site-logo"
 import { SiteLogoError } from "@/services/site-logo.service"
 import { uploadSiteLogo } from "@/services/site-logo-upload.service"
@@ -13,18 +13,36 @@ const response = (body: unknown, status = 200) =>
   })
 
 export async function POST(request: Request) {
-  let userId: string
+  let session
   try {
-    userId = (await verifyAdminOrEditor()).user.id
+    session = await auth.api.getSession({ headers: request.headers })
   } catch {
-    return response({ error: "admin.settings.logo.unauthorized" }, 401)
+    return response({ error: "admin.settings.logo.session_unavailable" }, 503)
   }
+  if (!session)
+    return response({ error: "admin.settings.logo.unauthorized" }, 401)
+  if (!["admin", "editor"].includes(session.user.role || ""))
+    return response({ error: "admin.settings.logo.forbidden" }, 403)
+  const userId = session.user.id
   const origin = request.headers.get("origin")
+  const allowedOrigins = [
+    request.url,
+    process.env.NEXT_PUBLIC_SITE_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.BETTER_AUTH_URL,
+  ].flatMap((value) => {
+    try {
+      const url = new URL(value || "")
+      return ["http:", "https:"].includes(url.protocol) ? [url.origin] : []
+    } catch {
+      return []
+    }
+  })
   if (
-    (origin && origin !== new URL(request.url).origin) ||
+    (origin && !allowedOrigins.includes(origin)) ||
     request.headers.get("sec-fetch-site") === "cross-site"
   )
-    return response({ error: "admin.settings.logo.unauthorized" }, 403)
+    return response({ error: "admin.settings.logo.origin_rejected" }, 403)
   try {
     // Bound the actual request stream, including requests without Content-Length.
     const maxBody = SITE_LOGO_MAX_BYTES + 64 * 1024

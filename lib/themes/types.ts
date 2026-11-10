@@ -185,7 +185,7 @@ export type ThemeMods = {
   navUppercase?: boolean;
 
   // Layout & Container Geometry
-  containerWidth?: "1140" | "1280" | "1440";
+  containerWidth?: "1140" | "1280" | "1440" | "1600" | "100%";
   borderRadius?: "0" | "4" | "8" | "16"; // px (0 = sharp broadsheet, 8 = modern card)
   cardStyle?: "flat-bordered" | "lifted-shadow" | "clean-minimal";
 

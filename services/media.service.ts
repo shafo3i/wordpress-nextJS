@@ -1,3 +1,5 @@
+import { mapMediaAttachment } from "@/lib/media-attachment";
+import { updateMediaDetails } from "./media-details.service";
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
@@ -24,6 +26,7 @@ export interface MediaItem {
   uploadedAt: string;
   authorName: string;
   postParent?: number;
+  imageMetadata?: Record<string,unknown>;
 }
 
 export interface MediaListResult {
@@ -170,50 +173,7 @@ export async function getMediaLibraryItems(params: {
     }
   }
 
-  const items: MediaItem[] = rows.map((row) => {
-    const id = Number(row.id);
-    const postMetas = metaMap.get(id.toString()) || {};
-    const attachedFile = postMetas["_wp_attached_file"] || "";
-    const altText = postMetas["_wp_attachment_image_alt"] || "";
-
-    let width: number | undefined;
-    let height: number | undefined;
-    let thumbnailUrl = row.guid || "";
-
-    if (postMetas["_wp_attachment_metadata"]) {
-      try {
-        const parsed = JSON.parse(postMetas["_wp_attachment_metadata"]);
-        width = parsed.width;
-        height = parsed.height;
-        if (parsed.sizes?.thumbnail?.file) {
-          const baseDir = path.dirname(attachedFile).replace(/\\/g, "/");
-          thumbnailUrl = `/uploads/${baseDir}/${parsed.sizes.thumbnail.file}`;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    const filename = attachedFile ? path.basename(attachedFile) : path.basename(row.guid || "file");
-
-    return {
-      id,
-      title: row.title || filename,
-      filename,
-      url: row.guid || `/uploads/${attachedFile}`,
-      thumbnailUrl: thumbnailUrl || row.guid || "",
-      mimeType: row.mimeType || "image/jpeg",
-      sizeBytes: 0,
-      width,
-      height,
-      altText,
-      caption: row.caption || "",
-      description: row.description || "",
-      uploadedAt: (row.postDate || new Date()).toISOString(),
-      authorName: authorMap.get(String(row.authorId)) || "Admin",
-      postParent: row.postParent ? Number(row.postParent) : undefined,
-    };
-  });
+  const items: MediaItem[] = rows.map(row => mapMediaAttachment({...row,authorName:authorMap.get(String(row.authorId))},metaMap.get(row.id.toString())||{}));
 
   // Calculate available distinct months for the dropdown
   const monthRows = await db
@@ -434,49 +394,8 @@ export async function updateMediaItem(
     description?: string;
   }
 ) {
-  // 1. Update post fields in wpPosts
-  const updateValues: Record<string, any> = {};
-  if (data.title !== undefined) updateValues.postTitle = data.title;
-  if (data.caption !== undefined) updateValues.postExcerpt = data.caption;
-  if (data.description !== undefined) updateValues.postContent = data.description;
-
-  if (Object.keys(updateValues).length > 0) {
-    updateValues.postModified = new Date();
-    updateValues.postModifiedGmt = new Date();
-    await db
-      .update(wpPosts)
-      .set(updateValues)
-      .where(and(eq(wpPosts.id, BigInt(id)), eq(wpPosts.postType, "attachment")));
-  }
-
-  // 2. Update alt text in wpPostmeta
-  if (data.altText !== undefined) {
-    const existing = await db
-      .select({ metaId: wpPostmeta.metaId })
-      .from(wpPostmeta)
-      .where(
-        and(
-          eq(wpPostmeta.postId, BigInt(id)),
-          eq(wpPostmeta.metaKey, "_wp_attachment_image_alt")
-        )
-      )
-      .limit(1);
-
-    if (existing.length > 0) {
-      await db
-        .update(wpPostmeta)
-        .set({ metaValue: data.altText })
-        .where(eq(wpPostmeta.metaId, existing[0].metaId));
-    } else {
-      await db.insert(wpPostmeta).values({
-        postId: BigInt(id),
-        metaKey: "_wp_attachment_image_alt",
-        metaValue: data.altText,
-      });
-    }
-  }
-
-  return { success: true };
+  await updateMediaDetails(id,data);
+  return {success:true};
 }
 
 /**

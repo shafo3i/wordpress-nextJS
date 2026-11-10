@@ -46,6 +46,7 @@ export function getAvailableTemplateLocales(): string[] {
  * Reads a JSON language template file from `templates/language/[code].json`.
  */
 export function getTemplateTranslations(code: string): Record<string, string> {
+    if (!/^[a-z]{2,3}(?:[-_][a-z0-9]{2,8})*$/i.test(code)) return {};
     try {
         const filePath = resolve(getTemplatesDir(), `${code}.json`);
         if (!existsSync(filePath)) return {};

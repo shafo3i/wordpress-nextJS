@@ -18,7 +18,9 @@ function filesIn(directory: string): string[] {
 describe("Sharp deployment assets", () => {
   it("does not match dependency symlinks inside native package store directories", () => {
     const patterns = nextConfig.outputFileTracingIncludes?.["/*"] || []
-    const matches = patterns.map((pattern) => picomatch(pattern.replace(/^\.\//, "")))
+    const matches = patterns.map((pattern) =>
+      picomatch(pattern.replace(/^\.\//, ""))
+    )
     const aliases = readdirSync("node_modules/.pnpm")
       .filter((name) => name.startsWith("@img+sharp-"))
       .flatMap((name) => {
@@ -30,13 +32,20 @@ describe("Sharp deployment assets", () => {
         })
       })
     expect(aliases.length).toBeGreaterThan(0)
-    expect(aliases.filter((file) => matches.some((match) => match(file)))).toEqual([])
+    expect(
+      aliases.filter((file) => matches.some((match) => match(file)))
+    ).toEqual([])
   })
 
   it("does not explicitly trace hoisted symlink aliases", () => {
     const patterns = nextConfig.outputFileTracingIncludes?.["/*"] || []
-    expect(patterns.length).toBeGreaterThan(0)
-    for (const pattern of patterns) {
+    // Application assets such as the bundled social-image font are not native
+    // dependency paths. Only dependency patterns need the pnpm-store invariant.
+    const dependencies = patterns.filter((pattern) =>
+      pattern.includes("node_modules/")
+    )
+    expect(dependencies.length).toBeGreaterThan(0)
+    for (const pattern of dependencies) {
       expect(pattern).toMatch(/^\.\/node_modules\/\.pnpm\/@img\+sharp-/)
     }
   })

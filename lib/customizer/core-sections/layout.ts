@@ -1,4 +1,4 @@
-import type { CustomizerSection } from "../types";
+import type { CustomizerSection } from "../types"
 
 export const layoutSection: CustomizerSection = {
   id: "layout",
@@ -15,13 +15,15 @@ export const layoutSection: CustomizerSection = {
           type: "button-group",
           label: "Container Maximum Width",
           default: "1280",
-          columns: 3,
+          columns: 2,
           cssVar: "--theme-container-width",
           cssUnit: "px",
           options: [
             { value: "1140", label: "Standard (1140px)" },
             { value: "1280", label: "Wide (1280px)" },
             { value: "1440", label: "Maxi (1440px)" },
+            { value: "1600", label: "" },
+            { value: "100%", label: "" },
           ],
         },
         {
@@ -54,4 +56,4 @@ export const layoutSection: CustomizerSection = {
       ],
     },
   ],
-};
+}

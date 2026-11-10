@@ -16,3 +16,10 @@ Studio pages manage their own structure and override neither these defaults nor 
 Saving accepts only validated layout fields and patches the stored `homepage_settings_<theme>` record inside a transaction. Existing blocks, sections, widget configurations and unknown future fields are retained. The legacy layout key is mirrored; legacy blocks are not rewritten. Reset loads only layout defaults into the form and requires Save to persist them. No database migration or package update is needed.
 
 Verification includes validation/authorization tests, a PostgreSQL temporary-table save/reset test and bilingual browser checks. Browser checks do not save live settings. The temporary-table test shadows `wp_options` on its own connection and confirms no live settings are changed.
+
+
+## Shared frontend width
+
+Customizer > Content Layout & Grid sets the shared site maximum width: 1140, 1280, 1440, 1600px or full width. Header/navigation, theme page frames and footer use the same container rule and 16px side gutters. Studio sections default to Site width and inherit the same CSS variable in both the editor and public renderer.
+
+For compatibility, old boxed sections stamped with Studio's 1280px default now inherit site width without rewriting saved documents. Other saved custom widths and full-width sections remain unchanged. Choosing Custom width in Studio records an explicit override, including an intentional 1280px override. Widget/column padding remains independently editable. No seed or database migration is needed.

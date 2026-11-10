@@ -150,7 +150,7 @@ export function SiteFooter({ theme, footerWidgets }: SiteFooterProps) {
             borderColor: footerBorder,
             backgroundColor: "var(--theme-subfooter-bg)",
           }}
-          className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs -mx-6 px-6 pb-6 mt-6 rounded-b"
+          className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs -mx-4 px-4 pb-6 mt-6 rounded-b"
         >
           <p style={{ color: subFooterText }} className="opacity-90">
             {mods.footerCopyright || theme.footerCopyright}

@@ -9,8 +9,7 @@ export const CONTAINER_WIDGETS = {
     controlGroup: "layout",
     createSettings: () => ({
       containerType: "flexbox",
-      contentWidth: "boxed",
-      maxWidth: 1280,
+      contentWidth: "inherit",
       flexDirection: "row",
       gridColumns: 1,
       gap: 20,
@@ -28,8 +27,7 @@ export const CONTAINER_WIDGETS = {
     controlGroup: "layout",
     createSettings: () => ({
       containerType: "flexbox",
-      contentWidth: "boxed",
-      maxWidth: 1280,
+      contentWidth: "inherit",
       flexDirection: "row",
       gridColumns: 1,
       gap: 20,
@@ -47,8 +45,7 @@ export const CONTAINER_WIDGETS = {
     controlGroup: "layout",
     createSettings: () => ({
       containerType: "grid",
-      contentWidth: "boxed",
-      maxWidth: 1280,
+      contentWidth: "inherit",
       flexDirection: "column",
       gridColumns: 3,
       gap: 20,
@@ -66,8 +63,7 @@ export const CONTAINER_WIDGETS = {
     controlGroup: "layout",
     createSettings: () => ({
       containerType: "div",
-      contentWidth: "boxed",
-      maxWidth: 1280,
+      contentWidth: "inherit",
       flexDirection: "column",
       gridColumns: 1,
       gap: 20,

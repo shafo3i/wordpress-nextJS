@@ -57,7 +57,8 @@ export interface StudioTabItem {
 export interface StudioElementSettings {
   // Container Layout Settings
   containerType?: StudioContainerType
-  contentWidth?: "boxed" | "full"
+  contentWidth?: "inherit" | "boxed" | "full"
+  customWidth?: boolean
   maxWidth?: number
   minHeight?: number
   widthPercent?: number

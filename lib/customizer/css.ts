@@ -297,7 +297,7 @@ function staticRules(mods: Mods): Rule[] {
     },
     {
       selectors: [".theme-container", ".site-container"],
-      declarations: ["max-width: var(--theme-container-width, 1280px) !important;", "width: 100%;"],
+      declarations: ["max-width: var(--theme-container-width, 1280px) !important;", "width: 100%;", "box-sizing: border-box;", "padding-inline: var(--theme-container-gutter, 16px) !important;"],
     },
     {
       selectors: [".theme-rounded", "[data-theme-rounded]"],

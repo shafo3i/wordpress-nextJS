@@ -1,100 +1,122 @@
-"use client";
-
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Image as ImageIcon, Trash2 } from "lucide-react";
-import { MediaSelectModal } from "@/components/admin/media-select-modal";
-
+"use client"
+import { useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react"
+import { MediaSelectModal } from "@/components/admin/media-select-modal"
+import { MediaPreview } from "@/components/admin/media-preview"
+import { fetchMediaItemAction } from "@/app/(admin)/admincp/media/actions"
+import { safeMediaUrl } from "@/lib/post-media"
 export function MetaBoxFeaturedImage({
   featuredImageId,
   onChange,
-  dict,
+  dict = {},
 }: {
-  featuredImageId: string;
-  onChange: (id: string) => void;
-  dict?: Record<string, string>;
+  featuredImageId: string
+  onChange: (id: string) => void
+  dict?: Record<string, string>
 }) {
-  const [isOpen, setIsOpen] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const isUrl = featuredImageId.startsWith("http://") || featuredImageId.startsWith("https://") || featuredImageId.startsWith("/");
-
+  const [isOpen, setIsOpen] = useState(true),
+    [isModalOpen, setIsModalOpen] = useState(false),
+    client = useQueryClient()
+  const numeric =
+    /^[1-9]\d*$/.test(featuredImageId) &&
+    Number.isSafeInteger(Number(featuredImageId))
+  const query = useQuery({
+    queryKey: ["media-item", featuredImageId],
+    enabled: !!numeric,
+    staleTime: 30000,
+    queryFn: async () => {
+      const result = await fetchMediaItemAction(Number(featuredImageId))
+      if (!result.success || !result.item)
+        throw new Error("admin.media.details_load_failed")
+      return result.item
+    },
+  })
+  const url = numeric
+    ? query.data?.url || ""
+    : safeMediaUrl(featuredImageId) || ""
   return (
-    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-start">
-      <div
-        className="flex cursor-pointer select-none items-center justify-between border-b border-[#c3c4c7] px-3 py-2 text-[14px] font-semibold text-[#1d2327]"
-        onClick={() => setIsOpen(!isOpen)}
+    <div className="border border-[#c3c4c7] bg-white text-start shadow-sm">
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        className="flex w-full items-center justify-between border-b border-[#c3c4c7] px-3 py-2 text-sm font-semibold text-[#1d2327]"
       >
-        <span>{dict?.["admin.editor.featured_image"] || "Featured Image"}</span>
-        <button className="text-[#50575e] hover:text-[#1d2327]" type="button">
-          {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </button>
-      </div>
-
+        <span>{dict["admin.editor.featured_image"]}</span>
+        {isOpen ? (
+          <ChevronUp className="size-4" />
+        ) : (
+          <ChevronDown className="size-4" />
+        )}
+      </button>
       {isOpen && (
-        <div className="p-3 text-xs text-[#50575e]">
+        <div className="space-y-2 p-3 text-xs text-[#50575e]">
           {featuredImageId ? (
-            <div className="space-y-2">
-              <div className="relative aspect-video w-full overflow-hidden rounded border border-[#dcdcde] bg-[#f6f7f7] flex items-center justify-center">
-                {isUrl ? (
-                  <img
-                    src={featuredImageId}
-                    alt="Featured preview"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-4 text-center">
-                    <ImageIcon className="size-8 text-[#2271b1] mb-1" />
-                    <span className="text-xs text-[#1d2327] font-medium">
-                      Attachment #{featuredImageId}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  className="text-xs text-[#2271b1] underline hover:text-[#135e96] cursor-pointer"
-                  onClick={() => setIsModalOpen(true)}
-                  type="button"
-                >
-                  {dict?.["admin.editor.change_image"] || "Change image"}
-                </button>
-                <button
-                  className="text-xs text-[#b32d2e] underline hover:text-[#8c1617] cursor-pointer"
-                  onClick={() => onChange("")}
-                  type="button"
-                >
-                  {dict?.["admin.editor.remove_image"] || "Remove featured image"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
+            <>
               <button
                 type="button"
+                aria-label={dict["admin.editor.change_image"]}
                 onClick={() => setIsModalOpen(true)}
-                className="w-full py-4 px-3 border-2 border-dashed border-[#c3c4c7] rounded hover:border-[#2271b1] hover:bg-[#f0f6fc] text-center transition-colors cursor-pointer flex flex-col items-center justify-center gap-1.5"
+                className="block aspect-video w-full overflow-hidden rounded border border-[#dcdcde] bg-[#f6f7f7]"
               >
-                <ImageIcon className="size-6 text-[#2271b1]" />
-                <span className="text-xs font-semibold text-[#2271b1]">
-                  {dict?.["admin.editor.set_featured_image"] || "Set featured image"}
-                </span>
-                <span className="text-[11px] text-[#646970]">
-                  Choose from media library or upload
-                </span>
+                {numeric && query.isPending ? (
+                  <span role="status">
+                    {dict["admin.media.details_loading"]}
+                  </span>
+                ) : (
+                  <MediaPreview
+                    url={url}
+                    thumbnailUrl={query.data?.thumbnailUrl}
+                    alt={
+                      query.data?.altText ||
+                      query.data?.title ||
+                      dict["admin.editor.featured_image"]
+                    }
+                    dict={dict}
+                    className="h-full w-full object-contain"
+                  />
+                )}
               </button>
-            </div>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  className="text-[#2271b1] underline"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  {dict["admin.editor.change_image"]}
+                </button>
+                <button
+                  type="button"
+                  className="text-[#b32d2e] underline"
+                  onClick={() => onChange("")}
+                >
+                  {dict["admin.editor.remove_image"]}
+                </button>
+              </div>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="flex w-full flex-col items-center gap-2 rounded border-2 border-dashed border-[#c3c4c7] px-3 py-4 text-[#2271b1]"
+            >
+              <ImageIcon className="size-6" />
+              <span>{dict["admin.editor.set_featured_image"]}</span>
+            </button>
           )}
         </div>
       )}
-
       <MediaSelectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSelect={(item) => onChange(item.id.toString())}
-        title={dict?.["admin.editor.set_featured_image"] || "Set featured image"}
-        selectButtonText={dict?.["admin.editor.set_featured_image"] || "Set featured image"}
+        onSelect={(item) => {
+          client.setQueryData(["media-item", String(item.id)], item)
+          onChange(String(item.id))
+        }}
+        title={dict["admin.editor.set_featured_image"]}
+        selectButtonText={dict["admin.editor.set_featured_image"]}
         dict={dict}
       />
     </div>
-  );
+  )
 }

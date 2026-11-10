@@ -58,8 +58,7 @@ export function createStudioContainerFromPreset(
     widgetType: isGrid ? "grid" : "flexbox",
     settings: {
       containerType: isGrid ? "grid" : "flexbox",
-      contentWidth: "boxed",
-      maxWidth: 1280,
+      contentWidth: "inherit",
       flexDirection: widths.length > 1 && !isGrid ? "row" : "column",
       justifyContent: "flex-start",
       alignItems: "stretch",

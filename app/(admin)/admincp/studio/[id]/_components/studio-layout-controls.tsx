@@ -1,3 +1,4 @@
+import { studioContainerWidthMode } from "@/lib/studio/container-width"
 import { applyStudioStructurePreset } from "@/lib/studio/structure-presets"
 
 import type { StudioElement, StudioStructurePreset } from "@/lib/studio/types"
@@ -10,6 +11,7 @@ export function StudioLayoutControls({
   dict,
 }: StudioInspectorProps) {
   const s = selectedElement.settings
+  const widthMode = studioContainerWidthMode(s)
 
   const applyContainerColumnsPreset = (
     el: StudioElement,
@@ -49,16 +51,29 @@ export function StudioLayoutControls({
             <label className="block font-semibold text-slate-700">
               {dict?.["admin.studio.field.content_width"]}
             </label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  onUpdateSettings(selectedElement.id, {
+                    contentWidth: "inherit",
+                  })
+                }
+                className={`rounded border py-1.5 font-medium ${widthMode === "inherit" ? "border-blue-600 bg-blue-50 text-blue-600" : "border-slate-200 text-slate-600"}`}
+              >
+                {dict?.["admin.studio.width.inherit"]}
+              </button>
               <button
                 type="button"
                 onClick={() =>
                   onUpdateSettings(selectedElement.id, {
                     contentWidth: "boxed",
+                    customWidth: true,
+                    maxWidth: s.maxWidth || 1280,
                   })
                 }
                 className={`rounded border py-1.5 font-medium ${
-                  s.contentWidth !== "full"
+                  widthMode === "boxed"
                     ? "border-blue-600 bg-blue-50 text-blue-600"
                     : "border-slate-200 text-slate-600"
                 }`}
@@ -71,7 +86,7 @@ export function StudioLayoutControls({
                   onUpdateSettings(selectedElement.id, { contentWidth: "full" })
                 }
                 className={`rounded border py-1.5 font-medium ${
-                  s.contentWidth === "full"
+                  widthMode === "full"
                     ? "border-blue-600 bg-blue-50 text-blue-600"
                     : "border-slate-200 text-slate-600"
                 }`}
@@ -80,6 +95,28 @@ export function StudioLayoutControls({
               </button>
             </div>
           </div>
+
+          {widthMode === "boxed" && (
+            <label className="block space-y-1.5">
+              <span>{dict?.["admin.studio.width.custom"]}</span>
+              <input
+                type="number"
+                min={320}
+                max={3840}
+                value={s.maxWidth || 1280}
+                onChange={(event) =>
+                  onUpdateSettings(selectedElement.id, {
+                    maxWidth: Math.max(
+                      320,
+                      Math.min(3840, Number(event.target.value) || 1280)
+                    ),
+                    customWidth: true,
+                  })
+                }
+                className="w-full rounded border border-slate-300 bg-white px-2.5 py-1.5"
+              />
+            </label>
+          )}
 
           {/* Column Structure Presets */}
           <div className="space-y-1.5">
