@@ -7,9 +7,32 @@ import {
   studioDesignForDevice,
 } from "@/lib/studio/design"
 import { createStudioElement } from "@/lib/studio/tree-helpers"
-import { getStudioContentRequest, studioContentRequestKey } from "@/lib/studio/content"
+import {
+  getStudioContentRequest,
+  studioContentRequestKey,
+} from "@/lib/studio/content"
 
 describe("Studio design persistence", () => {
+  it("preserves independent border visibility, including explicit false values", () => {
+    const design = studioDesignSchema.parse({
+      cardBorders: false,
+      postDividers: true,
+      sectionTitleBorder: false,
+    })
+    expect(
+      studioDesignPresentation(JSON.parse(JSON.stringify(design))).attributes
+    ).toMatchObject({
+      "data-s-card-borders": "false",
+      "data-s-post-dividers": "true",
+      "data-s-section-title-border": "false",
+    })
+    expect(studioDesignPresentation({}).attributes).not.toHaveProperty(
+      "data-s-card-borders"
+    )
+    expect(
+      studioDesignSchema.safeParse({ postDividers: "false" }).success
+    ).toBe(false)
+  })
   it("uses the selected Studio preview device and preserves size units without mutating saved settings", () => {
     const design = studioDesignSchema.parse({
       typography: {

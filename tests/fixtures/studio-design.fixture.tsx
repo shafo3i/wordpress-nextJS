@@ -116,9 +116,9 @@ function Fixture({
         <StudioDesignViewport device={previewDevice}>
           <StudioDesignSurface design={effectiveStudioDesign(element.settings)}>
             {mode === "broadsheet" ? (
-              <Broadsheet3ColBlock posts={posts} title="" theme={theme} />
+              <Broadsheet3ColBlock posts={posts} title="Section" theme={theme} />
             ) : mode === "dual" ? (
-              <DualCategoryColumnsBlock posts={posts} title="" theme={theme} />
+              <DualCategoryColumnsBlock posts={posts} title="Section" theme={theme} />
             ) : mode === "headline" ? (
               <HeadlineSliderBlock
                 posts={posts}
@@ -128,9 +128,9 @@ function Fixture({
                 showExcerpt
               />
             ) : mode === "list" ? (
-              <NewsListViewBlock posts={posts} title="" theme={theme} />
+              <NewsListViewBlock posts={posts} title="Section" theme={theme} />
             ) : mode === "wire" ? (
-              <MinimalTextWireBlock posts={posts} title="" theme={theme} />
+              <MinimalTextWireBlock posts={posts} title="Section" theme={theme} />
             ) : (
               <CompactPostsBlock
                 posts={posts}

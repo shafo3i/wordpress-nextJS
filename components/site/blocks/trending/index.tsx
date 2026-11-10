@@ -31,7 +31,7 @@ export function TrendingBlock({
   const trendingItems = posts.slice(0, postCount)
 
   return (
-    <section
+    <section data-studio-card
       style={{
         backgroundColor: "var(--theme-surface)",
         borderColor: "var(--theme-border)",
@@ -47,7 +47,7 @@ export function TrendingBlock({
           {title}
         </h3>
       </div>
-      <div
+      <div data-studio-divider="children"
         style={{ borderColor: "var(--theme-border)" }}
         className="grid grid-cols-1 gap-4 divide-y divide-theme-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-5"
       >

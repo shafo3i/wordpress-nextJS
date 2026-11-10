@@ -113,7 +113,7 @@ export function BigLeadSideListBlock({
                 </p>
               )}
 
-              <div
+              <div data-studio-divider="top"
                 style={{ borderColor: "var(--theme-border)" }}
                 className="mt-5 flex items-center justify-between text-xs border-t pt-3"
               >
@@ -141,7 +141,7 @@ export function BigLeadSideListBlock({
 
         <div className={`space-y-3 ${reverse ? "lg:col-start-1" : ""}`}>
           {side.slice(0, 4).map((item) => (
-            <div
+            <div data-studio-card
               key={item.id}
               style={{
                 backgroundColor: "var(--theme-surface)",

@@ -96,7 +96,7 @@ export function MagazineBentoBlock({
                 </p>
               )}
 
-              <div className="flex items-center justify-between pt-4 border-t border-theme-overlay/20 text-xs text-theme-overlay-muted">
+              <div data-studio-divider="top" className="flex items-center justify-between pt-4 border-t border-theme-overlay/20 text-xs text-theme-overlay-muted">
                 <div className="flex items-center gap-2.5">
                   {showAuthor && (
                     <div className="size-7 rounded-full bg-theme-overlay text-theme-scrim font-bold flex items-center justify-center text-[0.625rem]">

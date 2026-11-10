@@ -2556,5 +2556,10 @@
   "admin.widgets.recent_style.compact": "Compact",
   "admin.widgets.recent_style.compact.desc": "Minimal headline stream",
   "admin.widgets.recent_style.numbered": "Headlines",
-  "admin.widgets.recent_style.numbered.desc": "Simple headline list"
+  "admin.widgets.recent_style.numbered.desc": "Simple headline list",
+  "admin.studio.design.cardBorders": "Card outlines",
+  "admin.studio.design.postDividers": "Post and column dividers",
+  "admin.studio.design.sectionTitleBorder": "Section title underline",
+  "admin.studio.design.show": "Show",
+  "admin.studio.design.hide": "Hide"
 }

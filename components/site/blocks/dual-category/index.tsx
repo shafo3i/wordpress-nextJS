@@ -60,7 +60,7 @@ export function DualCategoryColumnsBlock({
     return (
       <div data-studio-card className={`${styles.card} space-y-4`}>
         {headerTitle && (
-          <div className="border-b-2 border-theme-primary pb-2">
+          <div data-studio-section-heading className="border-b-2 border-theme-primary pb-2">
             <h4 className="text-xs font-black tracking-wider text-theme-heading uppercase">
               {headerTitle}
             </h4>
@@ -126,7 +126,7 @@ export function DualCategoryColumnsBlock({
 
         {/* Sub-list */}
         {rest.length > 0 && (
-          <div className="divide-y divide-theme-border border-t border-theme-border pt-2">
+          <div data-studio-divider="children" className="divide-y divide-theme-border border-t border-theme-border pt-2">
             {rest.map((item) => (
               <div key={item.id} className="flex items-center gap-3 py-2.5">
                 <Link

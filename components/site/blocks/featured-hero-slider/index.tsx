@@ -129,11 +129,11 @@ export function FeaturedHeroSliderBlock({
           )}
         </div>
         <div className={styles.queue} data-studio-card>
-          <div className={styles.queueHeading}>
+          <div data-studio-divider="bottom" className={styles.queueHeading}>
             {theme.dict?.["site.featured_queue"]}
           </div>
           {posts.map((post, index) => (
-            <button
+            <button data-studio-card
               type="button"
               key={post.id}
               className={styles.queueItem}

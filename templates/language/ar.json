@@ -2562,5 +2562,10 @@
   "admin.widgets.recent_style.compact": "مختصر",
   "admin.widgets.recent_style.compact.desc": "تدفق عناوين مختصر",
   "admin.widgets.recent_style.numbered": "عناوين",
-  "admin.widgets.recent_style.numbered.desc": "قائمة عناوين بسيطة"
+  "admin.widgets.recent_style.numbered.desc": "قائمة عناوين بسيطة",
+  "admin.studio.design.cardBorders": "حدود البطاقات",
+  "admin.studio.design.postDividers": "الفواصل بين الأخبار والأعمدة",
+  "admin.studio.design.sectionTitleBorder": "الخط أسفل عنوان القسم",
+  "admin.studio.design.show": "إظهار",
+  "admin.studio.design.hide": "إخفاء"
 }

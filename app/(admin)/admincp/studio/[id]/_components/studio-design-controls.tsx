@@ -310,6 +310,40 @@ export function StudioDesignControls({
         {color("cardBackground", design.cardBackground, (cardBackground) =>
           update({ cardBackground })
         )}
+        {(["cardBorders", "postDividers", "sectionTitleBorder"] as const).map(
+          (key) => (
+            <label key={key} className="block space-y-1">
+              <span>{t(key)}</span>
+              <select
+                aria-label={t(key)}
+                className={inputClass}
+                value={design[key] === undefined ? "" : String(design[key])}
+                onChange={(event) =>
+                  update({
+                    [key]:
+                      event.target.value === ""
+                        ? undefined
+                        : event.target.value === "true",
+                    ...(key === "cardBorders" && event.target.value === "true"
+                      ? {
+                          cardBorderStyle:
+                            design.cardBorderStyle &&
+                            design.cardBorderStyle !== "none"
+                              ? design.cardBorderStyle
+                              : "solid",
+                          cardBorderWidth: design.cardBorderWidth || 1,
+                        }
+                      : {}),
+                  })
+                }
+              >
+                <option value="">{t("inherit")}</option>
+                <option value="true">{t("show")}</option>
+                <option value="false">{t("hide")}</option>
+              </select>
+            </label>
+          )
+        )}
         {select(
           "cardBorderStyle",
           design.cardBorderStyle,

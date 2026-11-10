@@ -54,7 +54,7 @@ export function MinimalTextWireBlock({
 
       <div className={styles.items} data-studio-items>
         {posts.map((item) => (
-          <article key={item.id} className={styles.item}>
+          <article data-studio-divider="bottom" key={item.id} className={styles.item}>
             <div className="space-y-1">
               <div>
                 {showCategory && (

@@ -139,7 +139,7 @@ export function HeroSliderBlock({
         {slides.map((item, idx) => {
           const isActive = currentIndex === idx
           return (
-            <button
+            <button data-studio-card
               key={item.id}
               type="button"
               onClick={() => setCurrentIndex(idx)}

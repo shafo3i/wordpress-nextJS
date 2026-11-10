@@ -968,15 +968,15 @@
 .design[data-s-background] :global([data-studio-card]) {
   background-color: var(--s-background) !important;
 }
-.design[data-s-border-style] :global(article),
+.design[data-s-border-style] :global(article:not([data-studio-divider])),
 .design[data-s-border-style] :global([data-studio-card]) {
   border-style: var(--s-border-style) !important;
 }
-.design[data-s-border-width] :global(article),
+.design[data-s-border-width] :global(article:not([data-studio-divider])),
 .design[data-s-border-width] :global([data-studio-card]) {
   border-width: var(--s-border-width) !important;
 }
-.design[data-s-border-color] :global(article),
+.design[data-s-border-color] :global(article:not([data-studio-divider])),
 .design[data-s-border-color] :global([data-studio-card]) {
   border-color: var(--s-border-color) !important;
 }
@@ -994,4 +994,42 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: var(--s-title-lines);
   overflow: hidden;
+}
+
+/* Decorative borders have independent visibility; controls and focus outlines are excluded. */
+.design[data-s-card-borders="false"]
+  :global(article:not([data-studio-divider])),
+.design[data-s-card-borders="false"] :global([data-studio-card]) {
+  border-width: 0 !important;
+  border-style: none !important;
+}
+.design[data-s-card-borders="true"] :global(article:not([data-studio-divider])),
+.design[data-s-card-borders="true"] :global([data-studio-card]) {
+  border-style: var(--s-border-style, solid) !important;
+  border-width: var(--s-border-width, 1px) !important;
+  border-color: var(--s-border-color, var(--theme-border)) !important;
+}
+.design[data-s-post-dividers="false"] :global([data-studio-divider]),
+.design[data-s-post-dividers="false"]
+  :global([data-studio-divider="children"] > *) {
+  border-width: 0 !important;
+  border-style: none !important;
+}
+.design[data-s-post-dividers="true"] :global([data-studio-divider="top"]) {
+  border-top: 1px solid var(--theme-border) !important;
+}
+.design[data-s-post-dividers="true"]
+  :global([data-studio-divider="bottom"]:not(:last-child)),
+.design[data-s-post-dividers="true"]
+  :global([data-studio-divider="children"] > :not(:last-child)) {
+  border-bottom: 1px solid var(--theme-border) !important;
+}
+.design[data-s-section-title-border="false"]
+  :global([data-studio-section-heading]) {
+  border-width: 0 !important;
+  border-style: none !important;
+}
+.design[data-s-section-title-border="true"]
+  :global([data-studio-section-heading]) {
+  border-bottom: 1px solid var(--theme-border) !important;
 }

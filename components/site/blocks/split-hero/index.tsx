@@ -105,7 +105,7 @@ export function SplitHeroFeatureBlock({
             )}
           </div>
 
-          <div className="space-y-4 pt-3 border-t border-theme-border">
+          <div data-studio-divider="top" className="space-y-4 pt-3 border-t border-theme-border">
             <div className="flex items-center justify-between text-xs text-theme-muted">
               {showAuthor && (
                 <span className="font-bold text-theme-heading">{lead.authorName}</span>

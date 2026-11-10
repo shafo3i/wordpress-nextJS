@@ -8,9 +8,65 @@ declare global {
   }
 }
 const renderWarnings = new WeakMap<Page, string[]>()
+
+test("card outlines, inner dividers and section underlines are independently controlled", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1500, height: 1000 })
+  await page.evaluate(() =>
+    window.StudioDesignFixture.render("list", false, 1100, true, undefined, 5)
+  )
+  await page.getByText("Cards, images and list layout", { exact: true }).click()
+  const card = page.locator("#preview article").first(),
+    divider = card.locator("[data-studio-divider]").first(),
+    heading = page.locator("#preview [data-studio-section-heading]").first()
+  await page.getByLabel("Card outlines", { exact: true }).selectOption("true")
+  await page
+    .getByLabel("Post and column dividers", { exact: true })
+    .selectOption("true")
+  await page
+    .getByLabel("Section title underline", { exact: true })
+    .selectOption("true")
+  await expect(card).toHaveCSS("border-top-width", "1px")
+  await expect(divider).toHaveCSS("border-top-width", "1px")
+  await expect(heading).toHaveCSS("border-bottom-width", "1px")
+  await page.getByLabel("Card outlines", { exact: true }).selectOption("false")
+  await expect(card).toHaveCSS("border-top-width", "0px")
+  await expect(divider).toHaveCSS("border-top-width", "1px")
+  await page
+    .getByLabel("Post and column dividers", { exact: true })
+    .selectOption("false")
+  await expect(divider).toHaveCSS("border-top-width", "0px")
+  await expect(heading).toHaveCSS("border-bottom-width", "1px")
+  await page
+    .getByLabel("Section title underline", { exact: true })
+    .selectOption("false")
+  await expect(heading).toHaveCSS("border-bottom-width", "0px")
+  await page.evaluate(() => window.StudioDesignFixture.render("broadsheet", false, 1100, false, undefined, 9))
+  const column=page.locator('#preview [data-studio-divider="column"]')
+  await expect(column).toHaveCSS('border-inline-start-width','0px')
+  await page.getByText("Cards, images and list layout",{exact:true}).click()
+  await page.getByLabel("Post and column dividers",{exact:true}).selectOption("true")
+  await expect(column).toHaveCSS('border-inline-start-width','1px')
+  await page.getByLabel("Post and column dividers",{exact:true}).selectOption("false")
+  await expect(column).toHaveCSS('border-inline-start-width','0px')
+  await page.evaluate(() =>
+    window.StudioDesignFixture.render("list", false, 1100, false, undefined, 5)
+  )
+  await expect(card).toHaveCSS("border-top-width", "0px")
+  await expect(divider).toHaveCSS("border-top-width", "0px")
+  await expect(heading).toHaveCSS("border-bottom-width", "0px")
+})
 test.beforeEach(async ({ page }) => {
-  await page.route("https://fixture-images.test/**",route=>route.fulfill({contentType:"image/svg+xml",body:'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"/>'}))
-  page.on("pageerror",error=>console.error("Fixture runtime:",error.message))
+  await page.route("https://fixture-images.test/**", (route) =>
+    route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"/>',
+    })
+  )
+  page.on("pageerror", (error) =>
+    console.error("Fixture runtime:", error.message)
+  )
   const warnings: string[] = []
   renderWarnings.set(page, warnings)
   page.on("console", (message) => {
@@ -38,8 +94,9 @@ test.beforeEach(async ({ page }) => {
             namespace: "link",
           }))
           build.onLoad({ filter: /.*/, namespace: "link" }, (args) => ({
-            contents: args.path.endsWith("image") ? 'import React from "react";export default p=>React.createElement("img",p)' :
-              'import React from "react"; export default function Link(props) { return React.createElement("a",props,props.children); }',
+            contents: args.path.endsWith("image")
+              ? 'import React from "react";export default p=>React.createElement("img",p)'
+              : 'import React from "react"; export default function Link(props) { return React.createElement("a",props,props.children); }',
             loader: "js",
             resolveDir: process.cwd(),
           }))
@@ -100,6 +157,17 @@ test("broadsheet and dual-column blocks render every post without duplicate or d
               '#preview [data-broadsheet-columns="3"] > div'
             )
             await expect(columns).toHaveCount(3)
+            const columnLinks = await columns.evaluateAll((items) =>
+              items.map((column) =>
+                Array.from(column.querySelectorAll("a[href*='/posts/']")).map(
+                  (link) => link.getAttribute("href")
+                )
+              )
+            )
+            expect(columnLinks[1]).toHaveLength(1)
+            expect(columnLinks[1][0]).toMatch(/\/posts\/story-0$/)
+            expect(columnLinks[0].length - columnLinks[2].length).toBeLessThanOrEqual(1)
+            expect(columnLinks[2].length - columnLinks[0].length).toBeLessThanOrEqual(1)
             const tops = await columns.evaluateAll((items) =>
               items.map((item) => item.getBoundingClientRect().top)
             )

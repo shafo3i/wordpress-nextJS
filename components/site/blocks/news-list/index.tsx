@@ -126,7 +126,7 @@ export function NewsListViewBlock({
                 )}
               </div>
 
-              <div
+              <div data-studio-divider="top"
                 style={{ borderColor: "var(--theme-border)" }}
                 data-studio-meta
                 className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-xs"

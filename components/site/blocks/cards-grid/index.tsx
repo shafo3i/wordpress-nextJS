@@ -98,7 +98,7 @@ export function CardsGridBlock({
                 )}
               </div>
 
-              <div
+              <div data-studio-divider="top"
                 style={{ borderColor: "var(--theme-border)" }}
                 className="mt-3 flex items-center justify-between text-[0.625rem] pt-2 border-t"
               >

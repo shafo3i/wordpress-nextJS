@@ -57,11 +57,13 @@ export function Broadsheet3ColBlock({
 
   if (!posts.length) return null
 
-  const centerIndex = Math.min(3, posts.length - 1)
-  const col1Item = centerIndex > 0 ? posts[0] : undefined
-  const col1Briefs = posts.slice(1, centerIndex)
-  const centerFeature = posts[centerIndex]
-  const wirePosts = posts.slice(centerIndex + 1)
+  // Keep the lead tied to the current feed and divide the remaining stories
+  // evenly. A fixed center index left one side sparse for small categories.
+  const centerFeature = posts[0]
+  const col1Posts = posts.filter((_, index) => index > 0 && index % 2 === 1)
+  const wirePosts = posts.filter((_, index) => index > 0 && index % 2 === 0)
+  const col1Item = col1Posts[0]
+  const col1Briefs = col1Posts.slice(1)
 
   const displayCol1 = col1Title
     ? theme.dict?.[col1Title] || col1Title
@@ -101,7 +103,7 @@ export function Broadsheet3ColBlock({
         {col1Item && (
           <div className={`${styles.column} space-y-4`}>
             {displayCol1 && (
-              <div
+              <div data-studio-section-heading
                 style={{ borderColor: "var(--theme-border)" }}
                 className="border-b pb-1"
               >
@@ -154,7 +156,7 @@ export function Broadsheet3ColBlock({
             )}
 
             {col1Briefs.length > 0 && (
-              <div
+              <div data-studio-divider="top"
                 style={{ borderColor: "var(--theme-border)" }}
                 className="space-y-3 border-t pt-3"
               >
@@ -184,9 +186,9 @@ export function Broadsheet3ColBlock({
         )}
 
         {/* Column 2: Center Major Feature (6 cols) */}
-        <div className={`${styles.column} ${styles.center} space-y-4`}>
+        <div data-studio-divider="column" className={`${styles.column} ${styles.center} space-y-4`}>
           {displayCol2 && (
-            <div
+            <div data-studio-section-heading
               style={{ borderColor: "var(--theme-border)" }}
               className="border-b pb-1"
             >
@@ -256,7 +258,7 @@ export function Broadsheet3ColBlock({
               </p>
             )}
 
-            <div
+            <div data-studio-divider="top"
               style={{ borderColor: "var(--theme-border)" }}
               className="flex items-center justify-between border-t pt-2 text-xs"
             >
@@ -285,7 +287,7 @@ export function Broadsheet3ColBlock({
         {wirePosts.length > 0 && (
           <div className={`${styles.column} space-y-4`}>
             {displayCol3 && (
-              <div
+              <div data-studio-section-heading
                 style={{ borderColor: "var(--theme-border)" }}
                 className="flex items-center justify-between border-b pb-1"
               >
@@ -304,7 +306,7 @@ export function Broadsheet3ColBlock({
 
             <div className={styles.wire} data-studio-items>
               {wirePosts.map((item) => (
-                <article
+                <article data-studio-divider="bottom"
                   key={item.id}
                   style={{ borderColor: "var(--theme-border)" }}
                   className="border-b pb-3 last:border-b-0"

@@ -120,6 +120,14 @@ export function studioDesignPresentation(design?: StudioDesign) {
     thumbnailWidth: "thumbnail-width",
     titleLines: "title-lines",
   } as const
+  for (const [key, name] of [
+    ["cardBorders", "card-borders"],
+    ["postDividers", "post-dividers"],
+    ["sectionTitleBorder", "section-title-border"],
+  ] as const) {
+    if (design?.[key] !== undefined)
+      attributes[`data-s-${name}`] = String(design[key])
+  }
   for (const [key, name] of Object.entries(properties)) {
     const value = design?.[key as keyof typeof properties]
     if (value === undefined) continue

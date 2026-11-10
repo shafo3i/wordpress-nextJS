@@ -38,7 +38,7 @@ export function ThemeSectionHeader({
 
   if (isClassic) {
     return (
-      <div
+      <div data-studio-section-heading
         style={{ borderColor: "var(--theme-border)" }}
         className="border-b-4 border-double pb-2 mb-6 flex items-baseline justify-between transition-colors"
       >
@@ -73,7 +73,7 @@ export function ThemeSectionHeader({
 
   if (isMag) {
     return (
-      <div
+      <div data-studio-section-heading
         style={{ borderColor: "var(--theme-border)" }}
         className="relative border-b pb-3 mb-6 flex items-center justify-between transition-colors"
       >
@@ -115,7 +115,7 @@ export function ThemeSectionHeader({
 
   if (isTerminal) {
     return (
-      <div
+      <div data-studio-section-heading
         style={{ borderColor: "var(--theme-border)" }}
         className="border-b pb-2.5 mb-6 flex items-center justify-between font-mono transition-colors"
       >
@@ -153,7 +153,7 @@ export function ThemeSectionHeader({
   }
 
   return (
-    <div
+    <div data-studio-section-heading
       style={{ borderColor: "var(--theme-border)" }}
       className="border-b pb-2 mb-6 flex items-baseline justify-between transition-colors"
     >

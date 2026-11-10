@@ -42,7 +42,7 @@ export function TabbedBlock({
 
   return (
     <section className="space-y-4">
-      <div
+      <div data-studio-section-heading
         style={{ borderColor: "var(--theme-border)" }}
         className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-2 gap-3"
       >

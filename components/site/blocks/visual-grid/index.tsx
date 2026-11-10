@@ -77,7 +77,7 @@ export function VisualGridBlock({
                 </h3>
               </Link>
 
-              <div className="flex items-center justify-between text-[0.6875rem] text-theme-overlay-muted pt-2 border-t border-theme-overlay/20">
+              <div data-studio-divider="top" className="flex items-center justify-between text-[0.6875rem] text-theme-overlay-muted pt-2 border-t border-theme-overlay/20">
                 {showAuthor && <span>{theme.dict?.[item.authorName] || item.authorName}</span>}
                 {showDate && <span className="font-mono">{formatDate(item.date, theme.locale, theme.timeZone)}</span>}
               </div>
