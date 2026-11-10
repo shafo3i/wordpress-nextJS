@@ -1,23 +1,21 @@
-import { addFilter } from "@/lib/plugins/hooks";
+import type { PluginContext } from "@/lib/plugins/types"
+import { addFilter } from "@/lib/plugins/hooks"
+import { escapeMediaHtml as escape } from "@/lib/post-media"
+import { getFactReview, publicFactReview } from "@/services/fact-review.service"
 
 export function init() {
-  addFilter("the_content", (content: string) => {
-    if (!content) return content;
-
-    const trustBadge = `
-<div class="wp-plugin-fact-check not-prose my-6 flex items-center justify-between rounded-md border border-theme-success/40 bg-theme-success/10 p-3 text-xs text-theme-text">
-  <div class="flex items-center gap-2.5">
-    <span class="flex size-6 items-center justify-center rounded-full bg-theme-success text-xs text-white">
-      ✓
-    </span>
-    <div>
-      <span class="font-semibold text-theme-heading">Fact-Checked by Editorial Desk</span>
-      <p class="text-[11px] text-theme-muted">Adheres to the News Integrity Standards and verified primary sources.</p>
-    </div>
-  </div>
-  <span class="text-[10px] font-mono uppercase tracking-wider text-theme-success hidden md:inline">Audit ID #8841</span>
-</div>`;
-
-    return content + trustBadge;
-  }, 22);
+  addFilter(
+    "the_content",
+    async (content: string, context?: PluginContext) => {
+      if (!content || !context?.article?.id) return content
+      const review = publicFactReview(await getFactReview(context.article.id))
+      if (!review) return content
+      const dict = context?.theme?.dict || {}
+      return (
+        content +
+        `<aside class="wp-plugin-fact-check not-prose my-6 border border-theme-border p-4 text-sm"><h3>${escape(dict["admin.plugins.fact.panel"] || "")}</h3><p><strong>${escape(dict[`admin.plugins.fact.status.${review.status}`] || "")}</strong></p><p>${escape(review.claim)}</p><p>${escape(review.summary)}</p><p>${escape(dict["admin.plugins.fact.reviewer"] || "")}: ${escape(review.reviewerName)} ? <time datetime="${escape(review.reviewedAt)}">${escape(new Date(review.reviewedAt).toLocaleDateString(context?.article?.locale || "en"))}</time></p><ul>${review.sources.map((source) => `<li><a href="${escape(source)}" target="_blank" rel="noopener noreferrer">${escape(source)}</a></li>`).join("")}</ul></aside>`
+      )
+    },
+    22
+  )
 }

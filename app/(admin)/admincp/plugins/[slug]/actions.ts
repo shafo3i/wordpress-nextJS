@@ -1,45 +1,58 @@
-"use server";
+"use server"
+import { z } from "zod"
 
-import { revalidatePath } from "next/cache";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { savePluginConfig } from "@/lib/plugins/config";
-import { removeNewsletterSubscriber, clearAllNewsletterSubscribers } from "@/lib/newsletter/db";
+import { revalidatePath } from "next/cache"
+import { verifyPluginAdministrator } from "@/lib/plugins/authorization"
+import { savePluginConfig } from "@/lib/plugins/config"
+import {
+  removeNewsletterSubscriber,
+  clearAllNewsletterSubscribers,
+} from "@/lib/newsletter/db"
 
-export async function savePluginConfigAction(slug: string, config: Record<string, any>) {
+export async function savePluginConfigAction(
+  slug: string,
+  config: Record<string, unknown>
+) {
   try {
-    await verifyAdminOrEditor();
-    await savePluginConfig(slug, config);
+    await verifyPluginAdministrator()
+    await savePluginConfig(slug, config)
 
-    revalidatePath(`/admincp/plugins/${slug}`);
-    revalidatePath("/admincp/plugins");
-    revalidatePath("/", "layout");
-    revalidatePath("/posts/[slug]", "page");
+    revalidatePath(`/admincp/plugins/${slug}`)
+    revalidatePath("/admincp/plugins")
+    revalidatePath("/", "layout")
+    revalidatePath("/posts/[slug]", "page")
 
-    return { success: true };
-  } catch (err: any) {
-    console.error("Failed to save plugin config:", err);
-    return { success: false, error: err?.message || "Failed to save plugin configuration." };
+    return { success: true }
+  } catch (err) {
+    console.error("Failed to save plugin config:", err)
+    return {
+      success: false,
+      error:
+        err instanceof Error && err.message.startsWith("admin.plugins.")
+          ? err.message
+          : "admin.plugins.invalid_config",
+    }
   }
 }
 
 export async function deleteSubscriberAction(email: string) {
   try {
-    await verifyAdminOrEditor();
-    await removeNewsletterSubscriber(email);
-    revalidatePath("/admincp/plugins/newsletter");
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || "Failed to delete subscriber." };
+    await verifyPluginAdministrator()
+    await removeNewsletterSubscriber(z.string().email().max(254).parse(email))
+    revalidatePath("/admincp/plugins/newsletter")
+    return { success: true }
+  } catch {
+    return { success: false, error: "admin.plugins.save_failed" }
   }
 }
 
 export async function clearSubscribersAction() {
   try {
-    await verifyAdminOrEditor();
-    await clearAllNewsletterSubscribers();
-    revalidatePath("/admincp/plugins/newsletter");
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || "Failed to clear subscribers." };
+    await verifyPluginAdministrator()
+    await clearAllNewsletterSubscribers()
+    revalidatePath("/admincp/plugins/newsletter")
+    return { success: true }
+  } catch {
+    return { success: false, error: "admin.plugins.save_failed" }
   }
 }

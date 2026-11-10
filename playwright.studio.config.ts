@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "plugins.browser.spec.ts",
     "post-editor-recovery.browser.spec.ts",
     "settings-identity.browser.spec.ts",
     "ticker-interaction.browser.spec.ts",

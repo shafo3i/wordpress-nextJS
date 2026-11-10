@@ -1,8 +1,16 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { wpOptions } from "@/db/schema";
+import {
+  pluginSlugSchema,
+  pluginConfigSchemas,
+  type PluginConfigMap,
+} from "@/db/schema/cms-plugins"
+import { sanitizePluginMarkup } from "./markup"
+import { eq } from "drizzle-orm"
+import { db } from "@/db"
+import { wpOptions } from "@/db/schema"
 
-export const PLUGIN_DEFAULTS: Record<string, Record<string, any>> = {
+export const PLUGIN_DEFAULTS: {
+  [K in keyof PluginConfigMap]: PluginConfigMap[K]
+} = {
   newsletter: {
     brandName: "",
     pitch: "",
@@ -24,8 +32,8 @@ export const PLUGIN_DEFAULTS: Record<string, Record<string, any>> = {
     stationName: "",
     episodeTitle: "",
     host: "",
-    duration: "04:15",
-    enableSpeechSynthesis: true,
+    duration: "",
+    enableSpeechSynthesis: false,
   },
   "ad-manager": {
     enabled: true,
@@ -42,19 +50,10 @@ export const PLUGIN_DEFAULTS: Record<string, Record<string, any>> = {
     showThumbnail: true,
     showDate: true,
   },
-  "reading-time": {
-    wpm: 200,
-    position: "before_content",
-    showMilestones: true,
-    label: "",
-  },
-  "social-share": {
-    networks: ["twitter", "facebook", "linkedin", "whatsapp", "copy"],
-    style: "colored",
-    sharePrompt: "",
-  },
+  "reading-time": {},
+  "social-share": {},
   "fact-check": {
-    defaultRating: "verified",
+    defaultRating: "unreviewed",
     organization: "",
     summary: "",
   },
@@ -64,67 +63,66 @@ export const PLUGIN_DEFAULTS: Record<string, Record<string, any>> = {
     collapsible: true,
     title: "",
   },
-};
+}
 
 /**
  * Retrieve configuration for a specific plugin from wp_options
  */
-export async function getPluginConfig<T = Record<string, any>>(
-  slug: string,
-  defaults?: Partial<T>
-): Promise<T> {
-  const normalizedSlug = slug.replace(/_/g, "-");
-  const optionKey = `plugin_config_${normalizedSlug}`;
+export async function getPluginConfig<S extends keyof PluginConfigMap>(
+  slug: S
+): Promise<PluginConfigMap[S]> {
+  const normalizedSlug = pluginSlugSchema.parse(slug.replace(/_/g, "-"))
+  const optionKey = `plugin_config_${normalizedSlug}`
   const defaultValues = {
     ...(PLUGIN_DEFAULTS[normalizedSlug] || {}),
-    ...(defaults || {}),
-  } as T;
+  } as PluginConfigMap[S]
 
   try {
     const row = await db
       .select({ value: wpOptions.optionValue })
       .from(wpOptions)
       .where(eq(wpOptions.optionName, optionKey))
-      .limit(1);
+      .limit(1)
 
     if (row[0]?.value) {
-      const parsed = JSON.parse(row[0].value);
-      return { ...defaultValues, ...parsed };
+      const parsed = JSON.parse(row[0].value)
+      const candidate = { ...defaultValues, ...parsed }
+      if (["reading-time", "social-share"].includes(normalizedSlug))
+        return {} as PluginConfigMap[S]
+      const valid = pluginConfigSchemas[normalizedSlug].safeParse(candidate)
+      if (valid.success) return valid.data as PluginConfigMap[S]
+      console.error(`Invalid stored configuration for ${normalizedSlug}`)
     }
   } catch (err) {
-    console.error(`Failed to load plugin config for ${slug}:`, err);
+    console.error(`Failed to load plugin config for ${slug}:`, err)
   }
 
-  return defaultValues;
+  return defaultValues
 }
 
 /**
  * Save configuration for a specific plugin into wp_options
  */
-export async function savePluginConfig(slug: string, config: Record<string, any>): Promise<void> {
-  const normalizedSlug = slug.replace(/_/g, "-");
-  const optionKey = `plugin_config_${normalizedSlug}`;
+export async function savePluginConfig(
+  slug: string,
+  config: Record<string, unknown>
+): Promise<void> {
+  const normalizedSlug = pluginSlugSchema.parse(slug.replace(/_/g, "-"))
+  const optionKey = `plugin_config_${normalizedSlug}`
 
-  const current = await getPluginConfig(normalizedSlug);
-  const updated = { ...current, ...config };
-  const serialized = JSON.stringify(updated);
+  const current = await getPluginConfig(normalizedSlug)
+  const validSlug = pluginSlugSchema.parse(normalizedSlug)
+  const validated = pluginConfigSchemas[validSlug].parse(config)
+  const updated: Record<string, unknown> = { ...current, ...validated }
+  if (validSlug === "ad-manager" && typeof updated.customHtml === "string")
+    updated.customHtml = sanitizePluginMarkup(updated.customHtml)
+  const serialized = JSON.stringify(updated)
 
-  const existing = await db
-    .select({ id: wpOptions.optionId })
-    .from(wpOptions)
-    .where(eq(wpOptions.optionName, optionKey))
-    .limit(1);
-
-  if (existing.length) {
-    await db
-      .update(wpOptions)
-      .set({ optionValue: serialized })
-      .where(eq(wpOptions.optionId, existing[0].id));
-  } else {
-    await db.insert(wpOptions).values({
-      optionName: optionKey,
-      optionValue: serialized,
-      autoload: "yes",
-    });
-  }
+  await db
+    .insert(wpOptions)
+    .values({ optionName: optionKey, optionValue: serialized, autoload: "yes" })
+    .onConflictDoUpdate({
+      target: wpOptions.optionName,
+      set: { optionValue: serialized },
+    })
 }

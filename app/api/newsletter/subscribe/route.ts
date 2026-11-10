@@ -1,68 +1,74 @@
 import { getEmailLanguage } from "@/lib/email-language"
-import { NextResponse } from "next/server"
-import { addNewsletterSubscriber } from "@/lib/newsletter/db"
-import { getPluginConfig } from "@/lib/plugins/config"
-import { sendNewsletterWelcomeEmail } from "@/lib/email"
-
+import {
+  addNewsletterSubscriber,
+  newsletterRequestAllowed,
+} from "@/lib/newsletter/db"
+import { sendNewsletterConfirmation } from "@/lib/newsletter/email"
+import { newsletterSubscribeSchema } from "@/db/schema/cms-newsletter"
+import {
+  readNewsletterBody,
+  newsletterOriginAllowed,
+} from "@/lib/newsletter/request"
+import { getActivePluginSlugs } from "@/services/plugin.service"
 export const dynamic = "force-dynamic"
-
-export async function POST(req: Request) {
+const json = (body: unknown, status = 200) =>
+  Response.json(body, { status, headers: { "Cache-Control": "no-store" } })
+export async function POST(request: Request) {
+  if (!newsletterOriginAllowed(request))
+    return json({ success: false, error: "site.newsletter.error" }, 403)
   try {
-    const body = await req.json()
-    const language = await getEmailLanguage({
-      locale: typeof body?.locale === "string" ? body.locale : undefined,
-      request: req,
-    })
-    const email = typeof body?.email === "string" ? body.email.trim() : ""
-    const name = typeof body?.name === "string" ? body.name.trim() : ""
-    const source =
-      typeof body?.source === "string" ? body.source.trim() : "website_form"
-
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: language.dict["site.newsletter.invalid_email"],
-        },
-        { status: 400 }
+    const input = newsletterSubscribeSchema.safeParse(
+      JSON.parse(await readNewsletterBody(request))
+    )
+    if (!input.success)
+      return json(
+        { success: false, error: "site.newsletter.invalid_email" },
+        400
       )
-    }
-
-    // Persist subscriber into the database
-    const { success, alreadySubscribed } = await addNewsletterSubscriber(
-      email,
-      {
-        name,
-        source,
-        locale: language.code,
-      }
-    )
-
-    // Check plugin configuration for welcome email dispatch
-    const pluginConfig = await getPluginConfig("newsletter")
-    if (pluginConfig.sendWelcomeEmail !== false && !alreadySubscribed) {
-      try {
-        await sendNewsletterWelcomeEmail(email, name, language.code)
-      } catch (mailErr) {
-        console.warn(
-          "Newsletter welcome email dispatch skipped or SMTP not configured:",
-          mailErr
-        )
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      alreadySubscribed,
-      message: alreadySubscribed
-        ? language.dict["site.newsletter.already_subscribed"]
-        : language.dict["site.newsletter.success"],
+    if (input.data.website)
+      return json({ success: true, messageKey: "site.newsletter.check_email" })
+    if (!(await getActivePluginSlugs()).includes("newsletter"))
+      return json({ success: false, error: "site.newsletter.disabled" }, 403)
+    if (!(await newsletterRequestAllowed()))
+      return json(
+        { success: false, error: "site.newsletter.rate_limited" },
+        429
+      )
+    const language = await getEmailLanguage({
+      locale: input.data.locale,
+      request,
     })
-  } catch (error: unknown) {
-    console.error("Newsletter subscription error:", error)
-    return NextResponse.json(
-      { success: false, error: "site.newsletter.error" },
-      { status: 500 }
-    )
+    const result = await addNewsletterSubscriber(input.data.email, {
+      name: input.data.name,
+      source: input.data.source,
+      locale: language.code,
+    })
+    if (result.confirmationToken) {
+      const sent = await sendNewsletterConfirmation(
+        input.data.email,
+        result.confirmationToken,
+        language.code
+      ).catch(() => ({ success: false }))
+      if (!sent.success)
+        console.error(
+          "Newsletter confirmation delivery failed; pending subscriber may retry after cooldown"
+        )
+    }
+    // Same response for active, pending and unknown addresses: do not expose membership.
+    return json({
+      success: true,
+      message: language.dict["site.newsletter.check_email"],
+      messageKey: "site.newsletter.check_email",
+    })
+  } catch (error) {
+    if (error instanceof SyntaxError)
+      return json(
+        { success: false, error: "site.newsletter.invalid_email" },
+        400
+      )
+    if (error instanceof Error && error.message === "too_large")
+      return json({ success: false, error: "site.newsletter.error" }, 413)
+    console.error("Newsletter request failed")
+    return json({ success: false, error: "site.newsletter.error" }, 503)
   }
 }

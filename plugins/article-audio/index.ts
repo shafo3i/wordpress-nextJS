@@ -1,68 +1,20 @@
-import { addFilter } from "@/lib/plugins/hooks";
-import { getPluginConfig } from "@/lib/plugins/config";
-
+import type { PluginContext } from "@/lib/plugins/types"
+import { addFilter } from "@/lib/plugins/hooks"
+import { getPluginConfig } from "@/lib/plugins/config"
+import { escapeMediaHtml as escape, safeMediaUrl } from "@/lib/post-media"
 export function init() {
-  addFilter("the_content", async (content: string, context?: any) => {
-    if (!content) return content;
-
-    const config = await getPluginConfig("article-audio");
-    const audioUrl = config.audioUrl || "";
-    const stationName = config.stationName || "Newsroom Daily Audio";
-    const host = config.host || "Editorial Desk";
-    const duration = config.duration || "03:45";
-    const uniqueId = `audio-player-${Math.random().toString(36).substring(2, 7)}`;
-
-    const audioWidget = `
-<div class="wp-plugin-audio not-prose my-5 rounded-xl border border-theme-footer-border bg-theme-footer p-3.5 text-theme-footer-heading shadow-sm" id="${uniqueId}">
-  <div class="flex items-center justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <button
-        type="button"
-        id="${uniqueId}-btn"
-        class="flex size-9 items-center justify-center rounded-full bg-theme-button text-sm text-theme-button-text hover:bg-theme-button-hover transition-transform hover:scale-105 cursor-pointer shadow"
-        onclick="
-          var btn = this;
-          var audioEl = document.getElementById('${uniqueId}-audio');
-          if (audioEl) {
-            if (audioEl.paused) {
-              audioEl.play();
-              btn.innerText = '⏸';
-            } else {
-              audioEl.pause();
-              btn.innerText = '▶';
-            }
-          } else if ('speechSynthesis' in window) {
-            if (window.speechSynthesis.speaking) {
-              window.speechSynthesis.cancel();
-              btn.innerText = '▶';
-            } else {
-              var articleText = document.querySelector('article') ? document.querySelector('article').innerText : document.body.innerText;
-              var snippet = articleText.substring(0, 1500);
-              var utter = new SpeechSynthesisUtterance(snippet);
-              utter.rate = 1.0;
-              utter.onend = function() { btn.innerText = '▶'; };
-              window.speechSynthesis.speak(utter);
-              btn.innerText = '⏸';
-            }
-          }
-        "
-      >
-        ▶
-      </button>
-      <div>
-        <span class="block text-xs font-semibold text-theme-footer-heading">Listen to this story</span>
-        <span class="block text-[10px] text-theme-muted font-mono">${stationName} • ${host} • ${duration}</span>
-      </div>
-    </div>
-    <div class="hidden sm:flex items-center gap-2">
-      <span class="text-[10px] uppercase tracking-wider font-semibold rounded bg-theme-footer-heading/10 px-2 py-0.5 text-theme-footer-text">
-        ${audioUrl ? "Live Audio Feed" : "Speech Narration"}
-      </span>
-    </div>
-  </div>
-  ${audioUrl ? `<audio id="${uniqueId}-audio" src="${audioUrl}" preload="none" onended="document.getElementById('${uniqueId}-btn').innerText='▶'"></audio>` : ""}
-</div>`;
-
-    return audioWidget + content;
-  }, 4);
+  addFilter(
+    "the_content",
+    async (content: string, context?: PluginContext) => {
+      const config = await getPluginConfig("article-audio"),
+        url = safeMediaUrl(config.audioUrl || "")
+      if (!content || !url) return content
+      const label = context?.theme?.dict?.["admin.plugins.audio.listen"] || ""
+      return (
+        `<section class="wp-plugin-audio not-prose my-5 border border-theme-border p-4"><p>${escape(config.stationName || label)}</p><audio controls preload="none" src="${escape(url)}" class="w-full">${escape(label)}</audio></section>` +
+        content
+      )
+    },
+    4
+  )
 }

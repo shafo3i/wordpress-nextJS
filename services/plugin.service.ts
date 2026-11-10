@@ -1,22 +1,19 @@
-import { eq } from "drizzle-orm";
-import { DB, db } from "@/db";
-import {
-  wpOptions,
-  pluginSlugsSchema,
-  type PluginSlugs,
-} from "@/db/schema/cms-options";
-import { AVAILABLE_PLUGINS } from "@/plugins/registry";
-import type { PluginManifest } from "@/lib/plugins/types";
+import { retiredPlugins, pluginSlugSchema } from "@/db/schema/cms-plugins"
+import { eq, sql } from "drizzle-orm"
+import { DB, db } from "@/db"
+import { wpOptions, pluginSlugsSchema } from "@/db/schema/cms-options"
+import { AVAILABLE_PLUGINS } from "@/plugins/registry"
+import type { PluginManifest } from "@/lib/plugins/types"
 
-export const OPTION_ACTIVE_PLUGINS = "active_plugins";
-export const OPTION_INSTALLED_PLUGINS = "installed_plugins";
+export const OPTION_ACTIVE_PLUGINS = "active_plugins"
+export const OPTION_INSTALLED_PLUGINS = "installed_plugins"
 
-const DEFAULT_INSTALLED = ["reading-time", "newsletter", "related-posts", "ad-manager"];
-const DEFAULT_ACTIVE = ["reading-time", "newsletter"];
+const DEFAULT_INSTALLED = ["newsletter", "related-posts", "ad-manager"]
+const DEFAULT_ACTIVE = ["newsletter"]
 
 function normalizeSlug(entry: string): string {
-  if (!entry) return "";
-  return entry.split("/")[0].trim();
+  if (!entry) return ""
+  return entry.split("/")[0].trim()
 }
 
 /**
@@ -31,9 +28,9 @@ export async function getOption(
     .select({ value: wpOptions.optionValue })
     .from(wpOptions)
     .where(eq(wpOptions.optionName, optionName))
-    .limit(1);
+    .limit(1)
 
-  return rows[0]?.value ?? defaultValue;
+  return rows[0]?.value ?? defaultValue
 }
 
 /**
@@ -45,43 +42,34 @@ export async function updateOption(
   autoload = "yes",
   database: DB = db
 ): Promise<void> {
-  const existing = await database
-    .select({ id: wpOptions.optionId })
-    .from(wpOptions)
-    .where(eq(wpOptions.optionName, optionName))
-    .limit(1);
-
-  if (existing.length) {
-    await database
-      .update(wpOptions)
-      .set({ optionValue, autoload })
-      .where(eq(wpOptions.optionId, existing[0].id));
-  } else {
-    await database.insert(wpOptions).values({
-      optionName,
-      optionValue,
-      autoload,
-    });
-  }
+  await database
+    .insert(wpOptions)
+    .values({ optionName, optionValue, autoload })
+    .onConflictDoUpdate({
+      target: wpOptions.optionName,
+      set: { optionValue, autoload },
+    })
 }
 
 /**
  * Retrieve installed plugin slugs from wp_options
  */
-export async function getInstalledPluginSlugs(database: DB = db): Promise<string[]> {
+export async function getInstalledPluginSlugs(
+  database: DB = db
+): Promise<string[]> {
   try {
-    const raw = await getOption(OPTION_INSTALLED_PLUGINS, "", database);
-    if (!raw) return DEFAULT_INSTALLED;
+    const raw = await getOption(OPTION_INSTALLED_PLUGINS, "", database)
+    if (!raw) return DEFAULT_INSTALLED
 
-    const parsed = JSON.parse(raw);
-    const validated = pluginSlugsSchema.safeParse(parsed);
+    const parsed = JSON.parse(raw)
+    const validated = pluginSlugsSchema.safeParse(parsed)
     if (validated.success) {
-      return validated.data.map(normalizeSlug).filter(Boolean);
+      return validated.data.map(normalizeSlug).filter(Boolean)
     }
-    return DEFAULT_INSTALLED;
+    return DEFAULT_INSTALLED
   } catch (err) {
-    console.error("Failed to read installed_plugins:", err);
-    return DEFAULT_INSTALLED;
+    console.error("Failed to read installed_plugins:", err)
+    return DEFAULT_INSTALLED
   }
 }
 
@@ -92,27 +80,38 @@ export async function setInstalledPluginSlugs(
   slugs: string[],
   database: DB = db
 ): Promise<void> {
-  const uniqueSlugs = Array.from(new Set(slugs.map(normalizeSlug).filter(Boolean)));
-  await updateOption(OPTION_INSTALLED_PLUGINS, JSON.stringify(uniqueSlugs), "yes", database);
+  const uniqueSlugs = Array.from(
+    new Set(slugs.map(normalizeSlug).filter(Boolean))
+  )
+  await updateOption(
+    OPTION_INSTALLED_PLUGINS,
+    JSON.stringify(uniqueSlugs),
+    "yes",
+    database
+  )
 }
 
 /**
  * Retrieve active plugin slugs from wp_options
  */
-export async function getActivePluginSlugs(database: DB = db): Promise<string[]> {
+export async function getActivePluginSlugs(
+  database: DB = db
+): Promise<string[]> {
   try {
-    const raw = await getOption(OPTION_ACTIVE_PLUGINS, "", database);
-    if (!raw) return DEFAULT_ACTIVE;
+    const raw = await getOption(OPTION_ACTIVE_PLUGINS, "", database)
+    if (!raw) return DEFAULT_ACTIVE
 
-    const parsed = JSON.parse(raw);
-    const validated = pluginSlugsSchema.safeParse(parsed);
+    const parsed = JSON.parse(raw)
+    const validated = pluginSlugsSchema.safeParse(parsed)
     if (validated.success) {
-      return validated.data.map(normalizeSlug).filter(Boolean);
+      return validated.data
+        .map(normalizeSlug)
+        .filter((slug) => !!slug && !retiredPlugins.has(slug))
     }
-    return DEFAULT_ACTIVE;
+    return DEFAULT_ACTIVE
   } catch (err) {
-    console.error("Failed to read active_plugins:", err);
-    return DEFAULT_ACTIVE;
+    console.error("Failed to read active_plugins:", err)
+    return DEFAULT_ACTIVE
   }
 }
 
@@ -123,78 +122,83 @@ export async function setActivePluginSlugs(
   slugs: string[],
   database: DB = db
 ): Promise<void> {
-  const uniqueSlugs = Array.from(new Set(slugs.map(normalizeSlug).filter(Boolean)));
-  await updateOption(OPTION_ACTIVE_PLUGINS, JSON.stringify(uniqueSlugs), "yes", database);
+  const uniqueSlugs = Array.from(
+    new Set(slugs.map(normalizeSlug).filter(Boolean))
+  )
+  await updateOption(
+    OPTION_ACTIVE_PLUGINS,
+    JSON.stringify(uniqueSlugs),
+    "yes",
+    database
+  )
 }
 
 /**
  * Toggle plugin active status
  */
+async function changePluginState(
+  slugs: string[],
+  action: "install" | "activate" | "deactivate" | "delete",
+  database: DB
+) {
+  slugs.forEach((slug) => {
+    pluginSlugSchema.parse(slug)
+    if (
+      (action === "install" || action === "activate") &&
+      retiredPlugins.has(slug)
+    )
+      throw new Error("admin.plugins.retired")
+  })
+  await database.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('cms-plugin-state'))`
+    )
+    const connection = tx as unknown as DB
+    const read = async (key: string, fallback: string[]) => {
+      const raw = await getOption(key, "", connection)
+      return raw
+        ? pluginSlugsSchema.parse(JSON.parse(raw)).map(normalizeSlug)
+        : fallback
+    }
+    let installed = await read(OPTION_INSTALLED_PLUGINS, DEFAULT_INSTALLED)
+    let active = await read(OPTION_ACTIVE_PLUGINS, DEFAULT_ACTIVE)
+    if (action === "install" || action === "activate")
+      installed = [...new Set([...installed, ...slugs])]
+    if (action === "activate") active = [...new Set([...active, ...slugs])]
+    if (action === "delete")
+      installed = installed.filter((slug) => !slugs.includes(slug))
+    if (action === "delete" || action === "deactivate")
+      active = active.filter((slug) => !slugs.includes(slug))
+    active = active.filter(
+      (slug) => !retiredPlugins.has(slug) && installed.includes(slug)
+    )
+    await setInstalledPluginSlugs(installed, connection)
+    await setActivePluginSlugs(active, connection)
+  })
+}
 export async function togglePlugin(
   slug: string,
   activate: boolean,
   database: DB = db
-): Promise<void> {
-  const activeSlugs = await getActivePluginSlugs(database);
-
-  if (activate) {
-    // Ensure plugin is installed first
-    const installed = await getInstalledPluginSlugs(database);
-    if (!installed.includes(slug)) {
-      await setInstalledPluginSlugs([...installed, slug], database);
-    }
-    const updated = Array.from(new Set([...activeSlugs, slug]));
-    await setActivePluginSlugs(updated, database);
-  } else {
-    const updated = activeSlugs.filter((s) => s !== slug);
-    await setActivePluginSlugs(updated, database);
-  }
+) {
+  await changePluginState(
+    [slug],
+    activate ? "activate" : "deactivate",
+    database
+  )
 }
-
-/**
- * Install plugin
- */
-export async function installPlugin(slug: string, database: DB = db): Promise<void> {
-  const current = await getInstalledPluginSlugs(database);
-  if (!current.includes(slug)) {
-    await setInstalledPluginSlugs([...current, slug], database);
-  }
+export async function installPlugin(slug: string, database: DB = db) {
+  await changePluginState([slug], "install", database)
 }
-
-/**
- * Uninstall plugin
- */
-export async function uninstallPlugin(slug: string, database: DB = db): Promise<void> {
-  await togglePlugin(slug, false, database);
-  const current = await getInstalledPluginSlugs(database);
-  const updated = current.filter((s) => s !== slug);
-  await setInstalledPluginSlugs(updated, database);
+export async function uninstallPlugin(slug: string, database: DB = db) {
+  await changePluginState([slug], "delete", database)
 }
-
-/**
- * Bulk action on plugins
- */
 export async function bulkUpdatePlugins(
   slugs: string[],
   action: "activate" | "deactivate" | "delete",
   database: DB = db
-): Promise<void> {
-  if (!slugs.length) return;
-
-  if (action === "delete") {
-    for (const slug of slugs) {
-      await uninstallPlugin(slug, database);
-    }
-  } else if (action === "activate") {
-    const currentActive = await getActivePluginSlugs(database);
-    const updated = Array.from(new Set([...currentActive, ...slugs]));
-    await setActivePluginSlugs(updated, database);
-  } else if (action === "deactivate") {
-    const currentActive = await getActivePluginSlugs(database);
-    const toDeactivate = new Set(slugs);
-    const updated = currentActive.filter((s) => !toDeactivate.has(s));
-    await setActivePluginSlugs(updated, database);
-  }
+) {
+  if (slugs.length) await changePluginState(slugs, action, database)
 }
 
 /**
@@ -202,58 +206,58 @@ export async function bulkUpdatePlugins(
  */
 export async function getAllPlugins(
   options: {
-    status?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
+    status?: string
+    search?: string
+    page?: number
+    limit?: number
   } = {},
   database: DB = db
 ): Promise<{ plugins: PluginManifest[]; total: number }> {
   const [installedSlugs, activeSlugs] = await Promise.all([
     getInstalledPluginSlugs(database),
     getActivePluginSlugs(database),
-  ]);
+  ])
 
-  const activeSet = new Set(activeSlugs);
+  const activeSet = new Set(activeSlugs)
   const allInstalled = installedSlugs
     .map((slug) => {
-      const module = AVAILABLE_PLUGINS[slug];
-      if (!module) return null;
+      const pluginModule = AVAILABLE_PLUGINS[slug]
+      if (!pluginModule) return null
       return {
-        ...module.manifest,
+        ...pluginModule.manifest,
         isInstalled: true,
         isActive: activeSet.has(slug),
         settingsUrl: `/admincp/plugins/${slug}`,
-      };
+      }
     })
-    .filter(Boolean) as PluginManifest[];
+    .filter(Boolean) as PluginManifest[]
 
-  const search = options.search?.trim().toLowerCase() ?? "";
-  const status = options.status ?? "all";
+  const search = options.search?.trim().toLowerCase() ?? ""
+  const status = options.status ?? "all"
 
   const filtered = allInstalled.filter((plugin) => {
-    if (status === "active" && !plugin.isActive) return false;
-    if (status === "inactive" && plugin.isActive) return false;
+    if (status === "active" && !plugin.isActive) return false
+    if (status === "inactive" && plugin.isActive) return false
 
     if (search) {
-      const matchName = plugin.name.toLowerCase().includes(search);
-      const matchDesc = plugin.description.toLowerCase().includes(search);
-      const matchAuthor = plugin.author.toLowerCase().includes(search);
-      return matchName || matchDesc || matchAuthor;
+      const matchName = plugin.name.toLowerCase().includes(search)
+      const matchDesc = plugin.description.toLowerCase().includes(search)
+      const matchAuthor = plugin.author.toLowerCase().includes(search)
+      return matchName || matchDesc || matchAuthor
     }
-    return true;
-  });
+    return true
+  })
 
-  const total = filtered.length;
+  const total = filtered.length
   if (options.page && options.limit) {
-    const offset = (options.page - 1) * options.limit;
+    const offset = (options.page - 1) * options.limit
     return {
       plugins: filtered.slice(offset, offset + options.limit),
       total,
-    };
+    }
   }
 
-  return { plugins: filtered, total };
+  return { plugins: filtered, total }
 }
 
 /**
@@ -265,18 +269,18 @@ export async function getPluginCounts(
   const [installedSlugs, activeSlugs] = await Promise.all([
     getInstalledPluginSlugs(database),
     getActivePluginSlugs(database),
-  ]);
+  ])
 
-  const activeSet = new Set(activeSlugs);
-  const total = installedSlugs.length;
-  const activeCount = installedSlugs.filter((s) => activeSet.has(s)).length;
-  const inactiveCount = total - activeCount;
+  const activeSet = new Set(activeSlugs)
+  const total = installedSlugs.length
+  const activeCount = installedSlugs.filter((s) => activeSet.has(s)).length
+  const inactiveCount = total - activeCount
 
   return {
     all: total,
     active: activeCount,
     inactive: inactiveCount,
-  };
+  }
 }
 
 /**
@@ -284,38 +288,45 @@ export async function getPluginCounts(
  */
 export async function getCatalogPlugins(
   options: {
-    category?: string;
-    search?: string;
+    category?: string
+    search?: string
   } = {},
   database: DB = db
 ): Promise<PluginManifest[]> {
   const [installedSlugs, activeSlugs] = await Promise.all([
     getInstalledPluginSlugs(database),
     getActivePluginSlugs(database),
-  ]);
+  ])
 
-  const installedSet = new Set(installedSlugs);
-  const activeSet = new Set(activeSlugs);
+  const installedSet = new Set(installedSlugs)
+  const activeSet = new Set(activeSlugs)
 
-  const catalog = Object.values(AVAILABLE_PLUGINS).map((module) => ({
-    ...module.manifest,
-    isInstalled: installedSet.has(module.manifest.slug),
-    isActive: activeSet.has(module.manifest.slug),
-  }));
+  const catalog = Object.values(AVAILABLE_PLUGINS)
+    .filter((pluginModule) => !retiredPlugins.has(pluginModule.manifest.slug))
+    .map((pluginModule) => ({
+      ...pluginModule.manifest,
+      isInstalled: installedSet.has(pluginModule.manifest.slug),
+      isActive: activeSet.has(pluginModule.manifest.slug),
+    }))
 
-  const search = options.search?.trim().toLowerCase() ?? "";
-  const category = options.category;
+  const search = options.search?.trim().toLowerCase() ?? ""
+  const category = options.category
 
   return catalog.filter((plugin) => {
-    if (!search && category && category !== "all" && plugin.category !== category) {
-      return false;
+    if (
+      !search &&
+      category &&
+      category !== "all" &&
+      plugin.category !== category
+    ) {
+      return false
     }
     if (search) {
-      const matchName = plugin.name.toLowerCase().includes(search);
-      const matchDesc = plugin.description.toLowerCase().includes(search);
-      const matchAuthor = plugin.author.toLowerCase().includes(search);
-      return matchName || matchDesc || matchAuthor;
+      const matchName = plugin.name.toLowerCase().includes(search)
+      const matchDesc = plugin.description.toLowerCase().includes(search)
+      const matchAuthor = plugin.author.toLowerCase().includes(search)
+      return matchName || matchDesc || matchAuthor
     }
-    return true;
-  });
+    return true
+  })
 }

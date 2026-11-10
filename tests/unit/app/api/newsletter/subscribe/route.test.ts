@@ -1,7 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-const mocks = vi.hoisted(() => ({ add: vi.fn(), send: vi.fn() }))
-vi.mock("@/lib/newsletter/db", () => ({ addNewsletterSubscriber: mocks.add }))
-vi.mock("@/lib/email", () => ({ sendNewsletterWelcomeEmail: mocks.send }))
+const mocks = vi.hoisted(() => ({
+  add: vi.fn(),
+  send: vi.fn(),
+  allowed: vi.fn(),
+}))
+vi.mock("@/lib/newsletter/db", () => ({
+  addNewsletterSubscriber: mocks.add,
+  newsletterRequestAllowed: mocks.allowed,
+}))
+vi.mock("@/lib/newsletter/email", () => ({
+  sendNewsletterConfirmation: mocks.send,
+}))
+vi.mock("@/services/plugin.service", () => ({
+  getActivePluginSlugs: async () => ["newsletter"],
+}))
 vi.mock("@/lib/plugins/config", () => ({
   getPluginConfig: async () => ({ sendWelcomeEmail: true }),
 }))
@@ -19,11 +31,16 @@ vi.mock("@/services/language.service", () => ({
 import { POST } from "@/app/api/newsletter/subscribe/route"
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.add.mockResolvedValue({ success: true, alreadySubscribed: false })
+  mocks.allowed.mockResolvedValue(true)
+  mocks.add.mockResolvedValue({
+    success: true,
+    alreadySubscribed: false,
+    confirmationToken: "token",
+  })
   mocks.send.mockResolvedValue({ success: true })
 })
 describe("newsletter email language", () => {
-  it("stores and sends the validated subscription language", async () => {
+  it("stores the validated language and sends confirmation rather than a welcome email", async () => {
     const response = await POST(
       new Request("https://site.test/api/newsletter/subscribe", {
         method: "POST",
@@ -41,7 +58,7 @@ describe("newsletter email language", () => {
     )
     expect(mocks.send).toHaveBeenCalledWith(
       "reader@example.test",
-      "Reader",
+      "token",
       "en"
     )
   })

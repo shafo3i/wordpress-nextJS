@@ -1,6 +1,11 @@
-import { eq } from "drizzle-orm"
-import { db } from "@/db"
-import { wpOptions } from "@/db/schema"
+import { and, eq, sql, desc } from "drizzle-orm"
+import { randomBytes, randomUUID } from "node:crypto"
+import { db, type DB } from "@/db"
+import {
+  newsletterSubscribers as subscribers,
+  newsletterRateLimits,
+} from "@/db/schema/cms-newsletter"
+import { newsletterTokenHash } from "./tokens"
 
 export interface NewsletterSubscriber {
   id: string
@@ -9,121 +14,129 @@ export interface NewsletterSubscriber {
   subscribedAt: string
   source?: string
   locale?: string
-  status: "active" | "unsubscribed"
+  status: "pending" | "active" | "unsubscribed"
 }
-
-const OPTION_KEY = "newsletter_subscribers"
-
-async function getOption(name: string, fallback = ""): Promise<string> {
-  try {
-    const row = await db
-      .select({ value: wpOptions.optionValue })
-      .from(wpOptions)
-      .where(eq(wpOptions.optionName, name))
-      .limit(1)
-
-    return row[0]?.value ?? fallback
-  } catch {
-    return fallback
-  }
+export async function getNewsletterSubscribers(
+  database: DB = db
+): Promise<NewsletterSubscriber[]> {
+  const rows = await database
+    .select()
+    .from(subscribers)
+    .orderBy(desc(subscribers.subscribedAt))
+  return rows.map((r) => ({
+    id: r.id,
+    email: r.email,
+    name: r.name || undefined,
+    source: r.source || undefined,
+    locale: r.locale || undefined,
+    status: r.status as NewsletterSubscriber["status"],
+    subscribedAt: r.subscribedAt.toISOString(),
+  }))
 }
-
-async function setOption(name: string, value: string): Promise<void> {
-  const existing = await db
-    .select({ id: wpOptions.optionId })
-    .from(wpOptions)
-    .where(eq(wpOptions.optionName, name))
-    .limit(1)
-
-  if (existing.length) {
-    await db
-      .update(wpOptions)
-      .set({ optionValue: value })
-      .where(eq(wpOptions.optionId, existing[0].id))
-  } else {
-    await db.insert(wpOptions).values({
-      optionName: name,
-      optionValue: value,
-      autoload: "no",
+export async function newsletterRequestAllowed(database: DB = db) {
+  // Distributed limit: no per-process map and no trust in spoofable IP headers.
+  const now = new Date()
+  const [row] = await database
+    .insert(newsletterRateLimits)
+    .values({
+      key: "subscription-email",
+      count: 1,
+      resetsAt: new Date(now.getTime() + 3600000),
     })
-  }
+    .onConflictDoUpdate({
+      target: newsletterRateLimits.key,
+      set: {
+        count: sql`case when ${newsletterRateLimits.resetsAt} <= ${now} then 1 else ${newsletterRateLimits.count} + 1 end`,
+        resetsAt: sql`case when ${newsletterRateLimits.resetsAt} <= ${now} then ${new Date(now.getTime() + 3600000)} else ${newsletterRateLimits.resetsAt} end`,
+      },
+    })
+    .returning({ count: newsletterRateLimits.count })
+  return row.count <= 60
 }
-
-/**
- * Retrieve all registered newsletter subscribers
- */
-export async function getNewsletterSubscribers(): Promise<
-  NewsletterSubscriber[]
-> {
-  try {
-    const raw = await getOption(OPTION_KEY, "[]")
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) {
-      return parsed
-    }
-    return []
-  } catch (err) {
-    console.error("Failed to read newsletter subscribers:", err)
-    return []
-  }
-}
-
-/**
- * Add or update a subscriber in the newsletter database
- */
 export async function addNewsletterSubscriber(
   email: string,
-  options?: { name?: string; source?: string; locale?: string }
-): Promise<{
-  success: boolean
-  alreadySubscribed: boolean
-  subscriber: NewsletterSubscriber
-}> {
-  const normalized = email.trim().toLowerCase()
-  const current = await getNewsletterSubscribers()
-
-  const existing = current.find((s) => s.email.toLowerCase() === normalized)
-  if (existing) {
-    if (existing.status === "unsubscribed") {
-      existing.status = "active"
-      existing.subscribedAt = new Date().toISOString()
-      await setOption(OPTION_KEY, JSON.stringify(current))
-    }
-    return { success: true, alreadySubscribed: true, subscriber: existing }
-  }
-
-  const newSubscriber: NewsletterSubscriber = {
-    id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-    email: normalized,
-    name: options?.name?.trim() || undefined,
-    subscribedAt: new Date().toISOString(),
+  options?: { name?: string; source?: string; locale?: string },
+  database: DB = db
+) {
+  const normalized = email.trim().toLowerCase(),
+    token = randomBytes(32).toString("base64url"),
+    now = new Date()
+  const fields = {
+    name: options?.name || "",
     source: options?.source || "website_form",
-    locale: options?.locale,
-    status: "active",
+    locale: options?.locale || "",
+    status: "pending",
+    confirmationHash: newsletterTokenHash(token),
+    confirmationExpires: new Date(now.getTime() + 86400000),
+    nextRequestAt: new Date(now.getTime() + 600000),
   }
-
-  current.unshift(newSubscriber)
-  await setOption(OPTION_KEY, JSON.stringify(current))
-
-  return { success: true, alreadySubscribed: false, subscriber: newSubscriber }
+  const [saved] = await database
+    .insert(subscribers)
+    .values({
+      email: normalized,
+      id: randomUUID(),
+      subscribedAt: now,
+      ...fields,
+    })
+    .onConflictDoUpdate({
+      target: subscribers.email,
+      set: fields,
+      setWhere: and(
+        sql`${subscribers.status} <> 'active'`,
+        sql`(${subscribers.nextRequestAt} is null or ${subscribers.nextRequestAt} <= ${now})`
+      ),
+    })
+    .returning({ id: subscribers.id })
+  return {
+    success: true,
+    alreadySubscribed: !saved,
+    confirmationToken: saved ? token : null,
+  }
 }
-
-/**
- * Remove / unsubscribe an email
- */
+export async function confirmNewsletterSubscriber(
+  token: string,
+  database: DB = db
+) {
+  const [row] = await database
+    .update(subscribers)
+    .set({
+      status: "active",
+      confirmationHash: null,
+      confirmationExpires: null,
+    })
+    .where(
+      and(
+        eq(subscribers.status, "pending"),
+        eq(subscribers.confirmationHash, newsletterTokenHash(token)),
+        sql`${subscribers.confirmationExpires} > ${new Date()}`
+      )
+    )
+    .returning()
+  return row || null
+}
+export async function unsubscribeNewsletterSubscriber(
+  id: string,
+  database: DB = db
+) {
+  await database
+    .update(subscribers)
+    .set({
+      status: "unsubscribed",
+      confirmationHash: null,
+      confirmationExpires: null,
+      nextRequestAt: new Date(Date.now() + 600000),
+    })
+    .where(eq(subscribers.id, id))
+}
 export async function removeNewsletterSubscriber(
-  email: string
-): Promise<boolean> {
-  const normalized = email.trim().toLowerCase()
-  const current = await getNewsletterSubscribers()
-  const filtered = current.filter((s) => s.email.toLowerCase() !== normalized)
-  await setOption(OPTION_KEY, JSON.stringify(filtered))
+  email: string,
+  database: DB = db
+) {
+  await database
+    .delete(subscribers)
+    .where(eq(subscribers.email, email.trim().toLowerCase()))
   return true
 }
-
-/**
- * Clear all subscribers
- */
-export async function clearAllNewsletterSubscribers(): Promise<void> {
-  await setOption(OPTION_KEY, JSON.stringify([]))
+export async function clearAllNewsletterSubscribers(database: DB = db) {
+  await database.delete(subscribers)
 }

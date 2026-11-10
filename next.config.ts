@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   // avoid explicitly including both aliases and their targets in deployment.
   outputFileTracingIncludes: {
     "/*": [
+      "./public/fonts/og/NotoSansArabic.ttf",
       "./node_modules/.pnpm/@img+sharp-linux-x64@*/node_modules/@img/sharp-linux-x64/lib/**/*",
       "./node_modules/.pnpm/@img+sharp-libvips-linux-x64@*/node_modules/@img/sharp-libvips-linux-x64/lib/**/*",
       "./node_modules/.pnpm/@img+sharp-linuxmusl-x64@*/node_modules/@img/sharp-linuxmusl-x64/lib/**/*",

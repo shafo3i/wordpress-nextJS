@@ -64,6 +64,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/uploads") ||
     pathname.startsWith("/feed") ||
     pathname.startsWith("/sitemap") ||
+    /(?:^|\/)opengraph-image(?:\/|$)/.test(pathname) ||
     pathname.includes(".")
   ) {
     return next()

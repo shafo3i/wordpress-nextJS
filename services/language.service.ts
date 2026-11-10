@@ -503,10 +503,10 @@ export async function getPostLanguage(
 }
 
 export async function getPostTranslations(
-    postId: bigint | number,
+    postId: bigint | number | string,
     database: DB = db
 ): Promise<LinkedPostTranslation[]> {
-    const postLang = await getPostLanguage(postId, database);
+    const postLang = await getPostLanguage(BigInt(postId), database);
     if (!postLang) return [];
 
     const rows = await database

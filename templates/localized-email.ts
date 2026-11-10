@@ -8,7 +8,14 @@ export function mailText(template: string, values: Record<string, string>) {
 }
 
 export type LocalizedEmailKind =
-  "reset" | "verify" | "magic" | "otp" | "existing" | "welcome" | "test"
+  | "reset"
+  | "verify"
+  | "magic"
+  | "otp"
+  | "existing"
+  | "welcome"
+  | "test"
+  | "newsletter-confirm"
 export function localizedEmail({
   kind,
   dict,

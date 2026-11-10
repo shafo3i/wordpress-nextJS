@@ -1,7 +1,7 @@
-"use client"
+﻿"use client"
 
 import React, { useState } from "react"
-import { CheckCircle2, Loader2 } from "lucide-react"
+import { CheckCircle2, Loader2, Mail } from "lucide-react"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
 import { DEFAULT_THEME } from "@/components/site/utils"
 
@@ -11,10 +11,17 @@ import { DEFAULT_THEME } from "@/components/site/utils"
 export function NewsletterBlock({
   title,
   theme = DEFAULT_THEME,
+  config,
+  compact = false,
+  source = "homepage_block",
 }: {
   title: string
+  source?: string
+  compact?: boolean
+  config?: { pitch?: string; buttonText?: string }
   theme?: FrontEndThemeContext
 }) {
+  const [website, setWebsite] = useState("")
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
@@ -36,7 +43,8 @@ export function NewsletterBlock({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          source: "homepage_block",
+          website,
+          source,
           locale: theme.locale,
         }),
       })
@@ -59,19 +67,21 @@ export function NewsletterBlock({
   }
 
   return (
-    <section className="theme-widget rounded-2xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] p-8 text-center text-[var(--theme-widget-text,var(--theme-text))] shadow-sm">
-      <span className="text-2xl">✉️</span>
+    <section
+      className={`${compact ? "p-4" : "p-8"} theme-widget rounded-2xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-center text-[var(--theme-widget-text,var(--theme-text))] shadow-sm`}
+    >
+      <Mail aria-hidden="true" className="mx-auto size-6" />
       <h3 className="theme-widget-title mt-2 mb-1 font-serif text-2xl font-bold text-[var(--theme-widget-title-color,var(--theme-heading))]">
         {title}
       </h3>
       <p className="mx-auto mb-5 max-w-lg text-xs leading-relaxed text-[var(--theme-muted)]">
-        {theme.dict?.["site.newsletter.description"]}
+        {config?.pitch || theme.dict?.["site.newsletter.description"]}
       </p>
 
       {subscribed ? (
         <div className="mx-auto flex max-w-md items-center justify-center gap-2 rounded-xl border border-theme-success/30 bg-theme-success/10 p-3.5 text-xs font-semibold text-theme-success">
           <CheckCircle2 className="size-4 text-theme-success" />
-          <span>{theme.dict?.["site.newsletter.success"]}</span>
+          <span>{theme.dict?.["site.newsletter.check_email"]}</span>
         </div>
       ) : (
         <form
@@ -79,6 +89,16 @@ export function NewsletterBlock({
           className="mx-auto flex max-w-md flex-col gap-2 sm:flex-row"
         >
           <input
+            aria-hidden="true"
+            tabIndex={-1}
+            autoComplete="off"
+            name="website"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            className="hidden"
+          />
+          <input
+            aria-label={theme.dict?.["site.newsletter.email"]}
             type="email"
             required
             value={email}
@@ -94,7 +114,7 @@ export function NewsletterBlock({
             {loading ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (
-              theme.dict?.["site.newsletter.subscribe"]
+              config?.buttonText || theme.dict?.["site.newsletter.subscribe"]
             )}
           </button>
         </form>
