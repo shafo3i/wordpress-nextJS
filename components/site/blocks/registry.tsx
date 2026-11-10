@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import { EditorialCollectionBlock } from "./editorial-collection"
 import { CompactPostsBlock } from "./compact-posts"
 import type { StudioDesign } from "@/db/schema/cms-studio-design"
 import type { ContentItem } from "@/lib/site-content"
@@ -97,19 +98,26 @@ export function renderEditorialBlock({
         )
       : posts
 
-  // Filter by featured posts if requested (with graceful fallback to categoryFiltered if none are marked yet)
-  const shouldFilterFeatured =
-    !preFiltered &&
-    (block.featuredOnly ||
-      block.type === "featured_hero_slider" ||
-      block.displayStyle === "featured_slider")
-
-  const featuredMatches = shouldFilterFeatured
-    ? categoryFiltered.filter((p) => p.isFeatured)
-    : categoryFiltered
-
   const displayPosts =
-    featuredMatches.length > 0 ? featuredMatches : categoryFiltered
+    !preFiltered && block.featuredOnly
+      ? categoryFiltered.filter((post) => post.isFeatured)
+      : categoryFiltered
+
+  if (
+    ["lead_story_grid", "headlines_grid"].includes(
+      block.displayStyle || block.type
+    )
+  )
+    return (
+      <EditorialCollectionBlock
+        posts={displayPosts.slice(
+          0,
+          block.postCount || (block.type === "headlines_grid" ? 9 : 7)
+        )}
+        block={block}
+        theme={theme}
+      />
+    )
 
   if (
     block.displayStyle === "compact_posts" ||
@@ -344,6 +352,8 @@ export function renderEditorialBlock({
       case "featured_slider":
         return (
           <FeaturedHeroSliderBlock
+            autoplay={block.autoplay}
+            interval={block.rotationInterval}
             key={block.id}
             posts={displayPosts.slice(0, block.postCount || 5)}
             title={block.title}
@@ -615,6 +625,8 @@ export function renderEditorialBlock({
     case "featured_hero_slider":
       return (
         <FeaturedHeroSliderBlock
+          autoplay={block.autoplay}
+          interval={block.rotationInterval}
           key={block.id}
           posts={displayPosts.slice(0, block.postCount || 5)}
           title={block.title}

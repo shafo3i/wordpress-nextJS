@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import type { ContentItem } from "@/lib/site-content";
-import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { ThemeSectionHeader } from "@/components/site/section-header";
+import Link from "next/link"
+import type { ContentItem } from "@/lib/site-content"
+import type { FrontEndThemeContext } from "@/lib/site-theme"
+import { ThemeSectionHeader } from "@/components/site/section-header"
 import {
   DEFAULT_THEME,
   formatDate,
   getPostUrl,
   isSerifHeading,
-} from "@/components/site/utils";
+} from "@/components/site/utils"
 
 /**
  * COMPACT NUMBERED TOP-5 WIRE STRIP BLOCK
@@ -24,19 +24,19 @@ export function CompactNumberedGridBlock({
   linkText,
   linkHref,
 }: {
-  posts: ContentItem[];
-  title: string;
-  theme?: FrontEndThemeContext;
-  showDate?: boolean;
-  showCategory?: boolean;
-  subtitle?: string;
-  linkText?: string;
-  linkHref?: string;
+  posts: ContentItem[]
+  title: string
+  theme?: FrontEndThemeContext
+  showDate?: boolean
+  showCategory?: boolean
+  subtitle?: string
+  linkText?: string
+  linkHref?: string
 }) {
-  const isSerif = isSerifHeading(theme);
-  if (!posts.length) return null;
+  const isSerif = isSerifHeading(theme)
+  if (!posts.length) return null
 
-  const items = posts.slice(0, 5);
+  const items = posts.slice(0, 5)
 
   return (
     <section className="space-y-4">
@@ -48,28 +48,26 @@ export function CompactNumberedGridBlock({
         theme={theme}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-        {items.map((post, idx) => (
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+        {items.map((post) => (
           <article
             key={post.id}
-            className="group relative flex flex-col justify-between rounded-xl border border-theme-border bg-theme-surface p-3.5 hover:border-theme-primary transition-all shadow-2xs"
+            className="group relative flex flex-col justify-between rounded-xl border border-theme-border bg-theme-surface p-3.5 shadow-2xs transition-all hover:border-theme-primary"
           >
             <div className="flex items-start gap-3">
-              <span
-                style={{ color: theme.primaryColor }}
-                className="text-2xl font-black font-mono leading-none opacity-85 select-none"
-              >
-                0{idx + 1}
-              </span>
               <div className="min-w-0 flex-1 space-y-1.5">
                 {showCategory && post.categories[0] && (
-                  <span data-studio-category className="text-[10px] font-bold uppercase tracking-wider text-theme-primary block truncate">
+                  <span
+                    data-studio-category
+                    className="block truncate text-[10px] font-bold tracking-wider text-theme-primary uppercase"
+                  >
                     {post.categories[0]}
                   </span>
                 )}
                 <Link href={getPostUrl(post.slug, theme)}>
-                  <h4 data-studio-title
-                    className={`text-xs sm:text-sm font-bold leading-snug line-clamp-3 text-theme-heading group-hover:text-theme-primary transition-colors ${
+                  <h4
+                    data-studio-title
+                    className={`line-clamp-3 text-xs leading-snug font-bold text-theme-heading transition-colors group-hover:text-theme-primary sm:text-sm ${
                       isSerif ? "font-serif" : "font-sans"
                     }`}
                   >
@@ -80,15 +78,16 @@ export function CompactNumberedGridBlock({
             </div>
 
             {showDate && (
-              <div className="mt-3 pt-2 border-t border-theme-border/60 flex items-center justify-between text-[10px] font-mono text-theme-muted">
+              <div className="mt-3 flex items-center justify-between border-t border-theme-border/60 pt-2 font-mono text-[10px] text-theme-muted">
                 <span>{post.authorName}</span>
-                <span>{formatDate(post.date, theme.locale, theme.timeZone)}</span>
+                <span>
+                  {formatDate(post.date, theme.locale, theme.timeZone)}
+                </span>
               </div>
             )}
           </article>
         ))}
       </div>
     </section>
-  );
+  )
 }
-

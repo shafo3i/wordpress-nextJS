@@ -91,8 +91,7 @@ function Fixture({
     authorName: "Test author",
     categories: [rtl ? "الرياضة" : "Sport"],
     tags: [],
-    imageUrl:
-      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Crect width='160' height='120' fill='%232271b1'/%3E%3C/svg%3E",
+    imageUrl: "https://fixture-images.test/photo.svg",
   }))
   return (
     <main

@@ -1,6 +1,8 @@
 export type HomepageLayout = "full_width" | "right_sidebar" | "left_sidebar" | "dual_sidebar";
 
 export type BlockDisplayStyle =
+  | "lead_story_grid"
+  | "headlines_grid"
   | "compact_posts"
   | "headline_cover"
   | "bento"
@@ -24,6 +26,8 @@ export type BlockDisplayStyle =
 export type ImageRatio = "landscape" | "square" | "portrait" | "none";
 
 export type HomepageBlockType =
+  | "lead_story_grid"
+  | "headlines_grid"
   | "recent_posts"
   | "popular_posts"
   | "headline_slider"

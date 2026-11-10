@@ -1,4 +1,5 @@
 import { getRelatedPublishedPostIds } from "@/services/related-posts.service"
+import { isVideoPost } from "@/lib/post-video"
 import { contentPlainText } from "@/lib/content-text"
 import { getPostViewCounts } from "@/services/post-views.service"
 import { and, desc, eq, inArray, countDistinct, lte } from "drizzle-orm"
@@ -32,6 +33,7 @@ export type ContentItem = {
   authorName: string
   categories: string[]
   tags: string[]
+  hasVideo?: boolean
   imageUrl: string
   imageWidth?: number
   imageHeight?: number
@@ -59,13 +61,17 @@ export type ContentItem = {
 
 async function getTermData(postIds: bigint[] | string[]) {
   if (!postIds.length)
-    return new Map<string, { categories: string[]; tags: string[] }>()
+    return new Map<
+      string,
+      { categories: string[]; tags: string[]; hasVideo?: boolean }
+    >()
 
   const rows = await db
     .select({
       objectId: wpTermRelationships.objectId,
       taxonomy: wpTermTaxonomy.taxonomy,
       name: wpTerms.name,
+      termSlug: wpTerms.slug,
     })
     .from(wpTermRelationships)
     .innerJoin(
@@ -80,7 +86,10 @@ async function getTermData(postIds: bigint[] | string[]) {
       )
     )
 
-  const map = new Map<string, { categories: string[]; tags: string[] }>()
+  const map = new Map<
+    string,
+    { categories: string[]; tags: string[]; hasVideo?: boolean }
+  >()
   for (const row of rows) {
     const key = row.objectId.toString()
     const existing = map.get(key) ?? { categories: [], tags: [] }
@@ -88,6 +97,11 @@ async function getTermData(postIds: bigint[] | string[]) {
       existing.categories.push(contentPlainText(row.name))
     if (row.taxonomy === "post_tag")
       existing.tags.push(contentPlainText(row.name))
+    if (
+      row.taxonomy === "category" &&
+      isVideoPost({ categories: [row.name], categorySlugs: [row.termSlug] })
+    )
+      existing.hasVideo = true
     map.set(key, existing)
   }
 
@@ -318,6 +332,10 @@ export async function getPublishedContent(
       slug: item.slug || "untitled",
       excerpt: contentPlainText(item.excerpt || item.content).slice(0, 180),
       content: item.content || "",
+      hasVideo: isVideoPost({
+        content: item.content,
+        hasVideo: termMap.get(item.id.toString())?.hasVideo,
+      }),
       date: item.date,
       publishedDate: item.publishedDate,
       modifiedDate: item.modifiedDate,
@@ -657,6 +675,10 @@ export async function getPublishedPostsByCategory(
       slug: item.slug || "untitled",
       excerpt: contentPlainText(item.excerpt || item.content).slice(0, 400),
       content: item.content || "",
+      hasVideo: isVideoPost({
+        content: item.content,
+        hasVideo: termMap.get(item.id.toString())?.hasVideo,
+      }),
       date: item.date,
       authorName: item.authorName || "",
       categories: termMap.get(item.id.toString())?.categories ?? [cat.name],

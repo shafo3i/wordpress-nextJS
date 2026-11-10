@@ -1,5 +1,5 @@
 "use client"
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail";
 
 
 import Link from "next/link"
@@ -71,7 +71,7 @@ export function NewsListViewBlock({
             className={`${styles.article} ${thumbRight ? styles.reverse : ""}`}
           >
             <div className={styles.image} data-studio-image>
-              <ContentImage
+              <PostThumbnail post={item} theme={theme}
                 src={item.imageUrl}
                 alt={item.title}
                 className="h-full w-full object-cover"

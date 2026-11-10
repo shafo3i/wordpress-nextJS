@@ -1,5 +1,5 @@
 "use client"
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail";
 
 
 import Link from "next/link"
@@ -49,7 +49,7 @@ export function HeadlineSliderBlock({
       {posts.map(
         (post, index) =>
           post.imageUrl && (
-            <ContentImage
+            <PostThumbnail absolute post={post} theme={theme}
               key={post.id}
               className={styles.image}
               data-active={index === rotation.index}

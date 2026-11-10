@@ -3,6 +3,8 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "editorial-layouts.browser.spec.ts",
+    "settings-logo-library.browser.spec.ts",
     "media-details.browser.spec.ts",
     "container-width.browser.spec.ts",
     "plugins.browser.spec.ts",

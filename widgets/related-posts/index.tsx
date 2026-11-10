@@ -1,5 +1,5 @@
 "use client";
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail";
 
 
 import React from "react";
@@ -118,7 +118,7 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
             className="flex items-center gap-2.5 p-2 rounded-lg border border-theme-border bg-theme-surface hover:border-[var(--theme-primary)] transition-colors group"
           >
             {showThumbnail && p.imageUrl && (
-              <ContentImage
+              <PostThumbnail post={p} theme={theme}
                 src={p.imageUrl}
                 alt={p.title}
                 className="size-12 rounded object-cover flex-shrink-0"

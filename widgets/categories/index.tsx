@@ -1,22 +1,31 @@
-"use client";
+"use client"
 
-import React from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import manifest from "./widget.json";
-import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
+import React from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import manifest from "./widget.json"
+import type {
+  WidgetModule,
+  WidgetAdminFormProps,
+  WidgetRenderProps,
+} from "../types"
 
-export function CategoriesAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
-  const isRtl = direction === "rtl";
-  const displayStyle = item.config?.displayStyle || "list";
-  const showCount = item.config?.showCount !== false;
-  const limit = item.config?.limit || 10;
+export function CategoriesAdminForm({
+  item,
+  onChange,
+  dict,
+  direction,
+}: WidgetAdminFormProps) {
+  const isRtl = direction === "rtl"
+  const displayStyle = item.config?.displayStyle || "list"
+  const limit = item.config?.limit || 10
 
   return (
     <div className="space-y-3 text-start">
       <div>
-        <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
-          {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة" : "Widget Title")}
+        <label className="mb-1 block text-[0.75rem] font-medium text-[#50575e]">
+          {dict?.["admin.widgets.widget_title"] ||
+            (isRtl ? "عنوان الأداة" : "Widget Title")}
         </label>
         <input
           type="text"
@@ -28,21 +37,31 @@ export function CategoriesAdminForm({ item, onChange, dict, direction }: WidgetA
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
+          <label className="mb-1 block text-[0.6875rem] font-medium text-[#50575e]">
             {isRtl ? "نمط العرض" : "Display Format"}
           </label>
           <select
             value={displayStyle}
-            onChange={(e) => onChange({ config: { ...item.config, displayStyle: e.target.value } })}
+            onChange={(e) =>
+              onChange({
+                config: { ...item.config, displayStyle: e.target.value },
+              })
+            }
             className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
           >
-            <option value="list">{isRtl ? "قائمة عمودية" : "Vertical List"}</option>
-            <option value="pills">{isRtl ? "سحابة شارات (Pills)" : "Pills / Badge Cloud"}</option>
-            <option value="dropdown">{isRtl ? "قائمة منسدلة سريعة" : "Quick Dropdown"}</option>
+            <option value="list">
+              {isRtl ? "قائمة عمودية" : "Vertical List"}
+            </option>
+            <option value="pills">
+              {isRtl ? "سحابة شارات (Pills)" : "Pills / Badge Cloud"}
+            </option>
+            <option value="dropdown">
+              {isRtl ? "قائمة منسدلة سريعة" : "Quick Dropdown"}
+            </option>
           </select>
         </div>
         <div>
-          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
+          <label className="mb-1 block text-[0.6875rem] font-medium text-[#50575e]">
             {isRtl ? "الحد الأقصى للأقسام" : "Max Categories"}
           </label>
           <input
@@ -50,134 +69,125 @@ export function CategoriesAdminForm({ item, onChange, dict, direction }: WidgetA
             min="1"
             max="30"
             value={limit}
-            onChange={(e) => onChange({ config: { ...item.config, limit: Number(e.target.value) || 10 } })}
+            onChange={(e) =>
+              onChange({
+                config: { ...item.config, limit: Number(e.target.value) || 10 },
+              })
+            }
             className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
           />
         </div>
       </div>
-
-      <div>
-        <label className="flex items-center gap-2 text-xs text-[#2c3338] cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showCount}
-            onChange={(e) => onChange({ config: { ...item.config, showCount: e.target.checked } })}
-            className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
-          />
-          <span>{isRtl ? "إظهار عدد المقالات بجانب كل قسم" : "Show story count per category"}</span>
-        </label>
-      </div>
     </div>
-  );
+  )
 }
 
-export function CategoriesRender({ item, theme, posts = [] }: WidgetRenderProps) {
-  const isRtl = theme?.direction === "rtl";
-  const router = useRouter();
-  const displayStyle = item.config?.displayStyle || "list";
-  const showCount = item.config?.showCount !== false;
-  const limit = item.config?.limit || 10;
+export function CategoriesRender({
+  item,
+  theme,
+  posts = [],
+}: WidgetRenderProps) {
+  const isRtl = theme?.direction === "rtl"
+  const router = useRouter()
+  const displayStyle = item.config?.displayStyle || "list"
+  const limit = item.config?.limit || 10
 
   // Aggregate category counts from posts
-  const counts: Record<string, number> = {};
+  const counts: Record<string, number> = {}
   for (const post of posts) {
     if (post.categories) {
       for (const cat of post.categories) {
-        counts[cat] = (counts[cat] || 0) + 1;
+        counts[cat] = (counts[cat] || 0) + 1
       }
     }
   }
 
-  const categoryEntries = Object.entries(counts).slice(0, limit);
-  if (!categoryEntries.length) return null;
+  const categoryEntries = Object.entries(counts).slice(0, limit)
+  if (!categoryEntries.length) return null
 
   return (
-    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-[var(--theme-widget-text,var(--theme-text))] p-4 shadow-sm text-start">
-      <div className="flex items-center justify-between border-b border-[var(--theme-border)] pb-2 mb-3">
-        <h4 className="theme-widget-title text-xs font-bold uppercase tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading))]">
+    <div className="theme-widget rounded-xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] p-4 text-start text-[var(--theme-widget-text,var(--theme-text))] shadow-sm">
+      <div className="mb-3 flex items-center justify-between border-b border-[var(--theme-border)] pb-2">
+        <h4 className="theme-widget-title text-xs font-bold tracking-wider text-[var(--theme-widget-title-color,var(--theme-heading))] uppercase">
           {item.title || (isRtl ? "التصنيفات" : "Categories")}
         </h4>
-        <span className="text-[0.625rem] text-[var(--theme-muted)] font-mono">
-          {categoryEntries.length} {isRtl ? "أقسام" : "sections"}
-        </span>
       </div>
 
       {displayStyle === "dropdown" ? (
         <select
           onChange={(e) => {
-            if (e.target.value) router.push(`/category/${e.target.value}`);
+            if (e.target.value) router.push(`/category/${e.target.value}`)
           }}
-          className="w-full h-9 rounded-lg theme-input text-xs text-[var(--theme-text)] px-3 focus:outline-none focus:border-[var(--theme-primary)]"
+          className="theme-input h-9 w-full rounded-lg px-3 text-xs text-[var(--theme-text)] focus:border-[var(--theme-primary)] focus:outline-none"
         >
-          <option value="">{isRtl ? "اختر قسماً للتصفح..." : "Select category..."}</option>
-          {categoryEntries.map(([cat, count]) => {
-            const slug = cat.toLowerCase().replace(/\s+/g, "-");
+          <option value="">
+            {isRtl ? "اختر قسماً للتصفح..." : "Select category..."}
+          </option>
+          {categoryEntries.map(([cat]) => {
+            const slug = cat.toLowerCase().replace(/\s+/g, "-")
             return (
               <option key={cat} value={slug}>
-                {cat} {showCount ? `(${count})` : ""}
+                {cat}
               </option>
-            );
+            )
           })}
         </select>
       ) : displayStyle === "pills" ? (
         <div className="flex flex-wrap gap-1.5">
           {categoryEntries.length ? (
-            categoryEntries.map(([cat, count]) => {
-              const slug = cat.toLowerCase().replace(/\s+/g, "-");
+            categoryEntries.map(([cat]) => {
+              const slug = cat.toLowerCase().replace(/\s+/g, "-")
               return (
                 <Link
                   key={cat}
                   href={`/category/${slug}`}
-                  className="rounded-full border border-theme-border bg-theme-surface px-2.5 py-1 text-[0.6875rem] font-semibold text-[var(--theme-text)] hover:border-[var(--theme-primary)] hover:text-[var(--theme-primary)] transition-colors flex items-center gap-1.5"
+                  className="flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-surface px-2.5 py-1 text-[0.6875rem] font-semibold text-[var(--theme-text)] transition-colors hover:border-[var(--theme-primary)] hover:text-[var(--theme-primary)]"
                 >
                   <span>{cat}</span>
-                  {showCount && (
-                    <span className="text-[0.5625rem] font-mono opacity-60">
-                      {count}
-                    </span>
-                  )}
                 </Link>
-              );
+              )
             })
           ) : (
-            <span className="text-xs text-[var(--theme-muted)]">{isRtl ? "لا توجد تصنيفات حالياً." : "No categories found."}</span>
+            <span className="text-xs text-[var(--theme-muted)]">
+              {isRtl ? "لا توجد تصنيفات حالياً." : "No categories found."}
+            </span>
           )}
         </div>
       ) : (
         /* Vertical List */
         <ul className="divide-y divide-[var(--theme-border)] text-xs">
           {categoryEntries.length ? (
-            categoryEntries.map(([cat, count]) => {
-              const slug = cat.toLowerCase().replace(/\s+/g, "-");
+            categoryEntries.map(([cat]) => {
+              const slug = cat.toLowerCase().replace(/\s+/g, "-")
               return (
-                <li key={cat} className="py-2 flex items-center justify-between group">
+                <li
+                  key={cat}
+                  className="group flex items-center justify-between py-2"
+                >
                   <Link
                     href={`/category/${slug}`}
-                    className="text-[var(--theme-text)] group-hover:text-[var(--theme-primary)] group-hover:underline font-medium transition-colors"
+                    className="font-medium text-[var(--theme-text)] transition-colors group-hover:text-[var(--theme-primary)] group-hover:underline"
                   >
                     {cat}
                   </Link>
-                  {showCount && (
-                    <span className="text-[0.625rem] text-[var(--theme-muted)] border border-theme-border bg-theme-surface px-2 py-0.5 rounded-full font-mono">
-                      {count}
-                    </span>
-                  )}
                 </li>
-              );
+              )
             })
           ) : (
-            <li className="py-2 text-[var(--theme-muted)] text-xs">{isRtl ? "لا توجد تصنيفات حالياً." : "No categories found."}</li>
+            <li className="py-2 text-xs text-[var(--theme-muted)]">
+              {isRtl ? "لا توجد تصنيفات حالياً." : "No categories found."}
+            </li>
           )}
         </ul>
       )}
     </div>
-  );
+  )
 }
 
 export const categoriesWidgetModule: WidgetModule = {
-  manifest: manifest as any,
+  manifest: manifest as WidgetModule["manifest"],
   AdminForm: CategoriesAdminForm,
   render: CategoriesRender,
-};
+}
 
-export default categoriesWidgetModule;
+export default categoriesWidgetModule

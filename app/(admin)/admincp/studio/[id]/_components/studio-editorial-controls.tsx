@@ -382,7 +382,9 @@ export function StudioEditorialControls({
             </div>
           )}
 
-          {(blockConfig.type === "headline_slider" ||
+          {(blockConfig.type === "featured_hero_slider" ||
+            blockConfig.displayStyle === "featured_slider" ||
+            blockConfig.type === "headline_slider" ||
             blockConfig.type === "breaking_ticker" ||
             blockConfig.displayStyle === "headline_cover" ||
             blockConfig.displayStyle === "breaking_bar") && (
@@ -436,6 +438,18 @@ export function StudioEditorialControls({
                 <div className="grid grid-cols-2 gap-1.5">
                   {(
                     [
+                      {
+                        id: "lead_story_grid",
+                        renderIcon: (active: boolean) => (
+                          <BentoWireframe active={active} className="h-5 w-8" />
+                        ),
+                      },
+                      {
+                        id: "headlines_grid",
+                        renderIcon: (active: boolean) => (
+                          <BentoWireframe active={active} className="h-5 w-8" />
+                        ),
+                      },
                       {
                         id: "headline_cover",
                         renderIcon: (active: boolean) => (

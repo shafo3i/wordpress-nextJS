@@ -1,5 +1,5 @@
 "use client"
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail";
 
 
 import Link from "next/link"
@@ -117,7 +117,7 @@ export function Broadsheet3ColBlock({
             {col1Item && (
               <div className="space-y-2">
                 <div data-studio-image className={styles.image}>
-                  <ContentImage
+                  <PostThumbnail post={col1Item} theme={theme}
                     src={col1Item.imageUrl}
                     alt={col1Item.title}
                     className="h-full w-full object-cover"
@@ -200,7 +200,7 @@ export function Broadsheet3ColBlock({
           )}
 
           <div data-studio-image className={styles.featureImage}>
-            <ContentImage
+            <PostThumbnail post={centerFeature} theme={theme}
               src={centerFeature.imageUrl}
               alt={centerFeature.title}
               className="h-full w-full object-cover"

@@ -8,6 +8,8 @@ import { generateStudioId } from "./ids"
 const DEFAULT_BLOCK_STYLES: Partial<
   Record<HomepageBlockType, BlockDisplayStyle>
 > = {
+  lead_story_grid: "lead_story_grid",
+  headlines_grid: "headlines_grid",
   recent_posts: "compact_posts",
   popular_posts: "compact_posts",
   headline_slider: "headline_cover",
@@ -37,32 +39,40 @@ export function createDefaultBlockConfig(
     title: "",
     sortOrder: type === "popular_posts" ? "popular" : "newest",
     displayStyle: DEFAULT_BLOCK_STYLES[type],
-    featuredOnly: type === "featured_hero_slider",
+    featuredOnly: false,
     imageRatio: "landscape",
-    showExcerpt: !["headline_slider", "recent_posts", "popular_posts"].includes(type),
-    showAuthor: !["headline_slider", "recent_posts", "popular_posts"].includes(type),
+    showExcerpt: !["headline_slider", "recent_posts", "popular_posts"].includes(
+      type
+    ),
+    showAuthor: !["headline_slider", "recent_posts", "popular_posts"].includes(
+      type
+    ),
     showDate: true,
     showCategory: true,
     enabled: true,
     categorySlug: defaultCategory,
     postCount:
-      type === "headline_slider" ||
-      type === "magazine_bento" ||
-      type === "hero_slider" ||
-      type === "featured_hero_slider" ||
-      type === "compact_numbered_grid"
-        ? 5
-        : type === "broadsheet_3col" ||
-            type === "dual_category_columns" ||
-            type === "breaking_ticker"
-          ? 6
-          : type === "multi_card_carousel"
-            ? 8
-            : type === "big_lead_side_list" || type === "split_hero_feature"
-              ? 4
-              : type === "visual_grid"
-                ? 3
-                : 4,
+      type === "lead_story_grid"
+        ? 7
+        : type === "headlines_grid"
+          ? 9
+          : type === "headline_slider" ||
+              type === "magazine_bento" ||
+              type === "hero_slider" ||
+              type === "featured_hero_slider" ||
+              type === "compact_numbered_grid"
+            ? 5
+            : type === "broadsheet_3col" ||
+                type === "dual_category_columns" ||
+                type === "breaking_ticker"
+              ? 6
+              : type === "multi_card_carousel"
+                ? 8
+                : type === "big_lead_side_list" || type === "split_hero_feature"
+                  ? 4
+                  : type === "visual_grid"
+                    ? 3
+                    : 4,
     order: 1,
   }
 }

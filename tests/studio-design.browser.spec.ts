@@ -9,6 +9,8 @@ declare global {
 }
 const renderWarnings = new WeakMap<Page, string[]>()
 test.beforeEach(async ({ page }) => {
+  await page.route("https://fixture-images.test/**",route=>route.fulfill({contentType:"image/svg+xml",body:'<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"/>'}))
+  page.on("pageerror",error=>console.error("Fixture runtime:",error.message))
   const warnings: string[] = []
   renderWarnings.set(page, warnings)
   page.on("console", (message) => {
@@ -31,12 +33,12 @@ test.beforeEach(async ({ page }) => {
       {
         name: "next-link-fixture",
         setup(build) {
-          build.onResolve({ filter: /^next\/link$/ }, (args) => ({
+          build.onResolve({ filter: /^next\/(link|image)$/ }, (args) => ({
             path: args.path,
             namespace: "link",
           }))
-          build.onLoad({ filter: /.*/, namespace: "link" }, () => ({
-            contents:
+          build.onLoad({ filter: /.*/, namespace: "link" }, (args) => ({
+            contents: args.path.endsWith("image") ? 'import React from "react";export default p=>React.createElement("img",p)' :
               'import React from "react"; export default function Link(props) { return React.createElement("a",props,props.children); }',
             loader: "js",
             resolveDir: process.cwd(),

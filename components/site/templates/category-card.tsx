@@ -1,5 +1,5 @@
 "use client"
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail";
 
 
 import Link from "next/link"
@@ -48,7 +48,7 @@ export function CategoryCard({
             borderRadius: settings.archiveImageRadius,
           }}
         >
-          <ContentImage
+          <PostThumbnail post={post} theme={theme}
             src={post.imageUrl}
             srcSet={post.imageSrcSet}
             sizes={list ? `${settings.archiveImageWidth}px` : `(max-width: 640px) 100vw, (max-width: 1024px) 50vw, ${Math.ceil(100/settings.archiveColumns)}vw`}

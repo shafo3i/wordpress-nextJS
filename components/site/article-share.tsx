@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
-import { Check, Copy, Mail, Share2 } from "lucide-react"
+import { Check, Copy, Share2 } from "lucide-react"
+import { ShareNetworkIcon } from "./share-network-icon"
 import { articleShareLinks } from "@/lib/article-sharing"
 import type { ThemeMods } from "@/lib/themes/types"
 
@@ -50,9 +51,6 @@ export function ArticleShare({
       className="flex flex-wrap items-center gap-1.5"
       aria-label={dict["site.share"]}
     >
-      <span className="hidden text-[0.6875rem] font-medium text-theme-muted sm:inline">
-        {dict["site.share"]}
-      </span>
       {links &&
         (
           [
@@ -75,13 +73,7 @@ export function ArticleShare({
               aria-label={dict[`site.share.${network}`]}
               title={dict[`site.share.${network}`]}
             >
-              {network === "email" ? (
-                <Mail aria-hidden className="size-3.5" />
-              ) : (
-                <span className="text-xs font-semibold">
-                  {dict[`site.network.${network}`]}
-                </span>
-              )}
+              <ShareNetworkIcon network={network} />
             </a>
           ))}
       {mods.singleShareNative !== false && (

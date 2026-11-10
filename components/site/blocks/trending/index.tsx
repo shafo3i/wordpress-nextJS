@@ -1,10 +1,14 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { Flame } from "lucide-react";
-import type { ContentItem } from "@/lib/site-content";
-import type { FrontEndThemeContext } from "@/lib/site-theme";
-import { DEFAULT_THEME, isSerifHeading, isDarkTheme, getPostUrl } from "@/components/site/utils";
+import Link from "next/link"
+import { Flame } from "lucide-react"
+import type { ContentItem } from "@/lib/site-content"
+import type { FrontEndThemeContext } from "@/lib/site-theme"
+import {
+  DEFAULT_THEME,
+  isSerifHeading,
+  getPostUrl,
+} from "@/components/site/utils"
 
 /**
  * 10. TRENDING LEADERBOARD (Ranked 01-05 Stories)
@@ -15,17 +19,16 @@ export function TrendingBlock({
   theme = DEFAULT_THEME,
   postCount = 5,
 }: {
-  posts: ContentItem[];
-  title: string;
-  theme?: FrontEndThemeContext;
-  postCount?: number;
+  posts: ContentItem[]
+  title: string
+  theme?: FrontEndThemeContext
+  postCount?: number
 }) {
-  const isDark = isDarkTheme(theme);
-  const isSerif = isSerifHeading(theme);
+  const isSerif = isSerifHeading(theme)
 
-  if (!posts.length) return null;
+  if (!posts.length) return null
 
-  const trendingItems = posts.slice(0, postCount);
+  const trendingItems = posts.slice(0, postCount)
 
   return (
     <section
@@ -33,36 +36,34 @@ export function TrendingBlock({
         backgroundColor: "var(--theme-surface)",
         borderColor: "var(--theme-border)",
       }}
-      className="rounded-2xl border p-5 theme-card transition-all"
+      className="theme-card rounded-2xl border p-5 transition-all"
     >
-      <div className="flex items-center gap-2 mb-4">
-        <Flame
-          style={{ color: "var(--theme-primary)" }}
-          className="size-4"
-        />
+      <div className="mb-4 flex items-center gap-2">
+        <Flame style={{ color: "var(--theme-primary)" }} className="size-4" />
         <h3
           style={{ color: "var(--theme-heading)" }}
-          className={`text-base font-bold uppercase tracking-wider ${isSerif ? "font-serif" : "font-sans"}`}
+          className={`text-base font-bold tracking-wider uppercase ${isSerif ? "font-serif" : "font-sans"}`}
         >
           {title}
         </h3>
       </div>
       <div
         style={{ borderColor: "var(--theme-border)" }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-theme-border"
+        className="grid grid-cols-1 gap-4 divide-y divide-theme-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-5"
       >
-        {trendingItems.map((item, idx) => (
-          <div key={item.id} className="pt-3 sm:pt-0 sm:px-3 first:pl-0 last:pr-0">
-            <span
-              style={{ color: "var(--theme-primary)" }}
-              className="font-mono text-xl font-black block leading-none mb-1.5"
+        {trendingItems.map((item) => (
+          <div
+            key={item.id}
+            className="pt-3 first:pl-0 last:pr-0 sm:px-3 sm:pt-0"
+          >
+            <Link
+              href={getPostUrl(item.slug, theme)}
+              className="block hover:underline"
             >
-              0{idx + 1}
-            </span>
-            <Link href={getPostUrl(item.slug, theme)} className="block hover:underline">
-              <h4 data-studio-title
+              <h4
+                data-studio-title
                 style={{ color: "var(--theme-heading)" }}
-                className="text-xs font-bold leading-snug line-clamp-3"
+                className="line-clamp-3 text-xs leading-snug font-bold"
               >
                 {item.title}
               </h4>
@@ -71,5 +72,5 @@ export function TrendingBlock({
         ))}
       </div>
     </section>
-  );
+  )
 }

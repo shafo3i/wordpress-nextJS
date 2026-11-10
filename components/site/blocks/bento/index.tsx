@@ -1,5 +1,5 @@
 "use client";
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail";
 
 
 import Link from "next/link";
@@ -57,7 +57,7 @@ export function MagazineBentoBlock({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {lead && (
           <div data-studio-card className="lg:col-span-7 group relative rounded-2xl overflow-hidden min-h-[460px] sm:min-h-[520px] flex flex-col justify-end p-6 sm:p-10 text-theme-overlay shadow-xl transition-all">
-            <ContentImage
+            <PostThumbnail post={lead} theme={theme}
               src={lead.imageUrl}
               alt={lead.title}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -126,7 +126,7 @@ export function MagazineBentoBlock({
               key={item.id}
               className="group relative rounded-xl overflow-hidden min-h-[240px] flex flex-col justify-end p-4 text-theme-overlay shadow-md transition-all hover:-translate-y-1 hover:shadow-xl"
             >
-              <ContentImage
+              <PostThumbnail post={item} theme={theme}
                 src={item.imageUrl}
                 alt={item.title}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"

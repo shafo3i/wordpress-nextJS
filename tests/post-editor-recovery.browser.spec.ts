@@ -269,6 +269,11 @@ test("share destinations can be toggled and copying reports actual success", asy
   await expect(
     page.getByRole("link", { name: en["site.share.whatsapp"], exact: true })
   ).toHaveAttribute("href", /wa.me/)
+  for (const link of await page.locator('a[title]').all()) {
+    await expect(link.locator('svg')).toHaveCount(1)
+    expect(await link.innerText()).toBe("")
+  }
+
   await page
     .getByRole("button", { name: en["site.copy_link"], exact: true })
     .click()

@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { saveSettingsAction, removeSettingsLogoAction } from "@/app/(admin)/admincp/settings/action"
+import { saveSettingsAction, removeSettingsLogoAction, selectSettingsLogoAction } from "@/app/(admin)/admincp/settings/action"
 
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   set: vi.fn(),
   remove: vi.fn(),
+  select: vi.fn(),
 }))
 vi.mock("@/lib/authMIddleware", () => ({ verifyAdminOrEditor: mocks.auth }))
 vi.mock("@/services/settings.service", () => ({ setOptions: mocks.set }))
 vi.mock("@/services/site-logo.service", () => ({
   removeSiteLogo: mocks.remove,
+  selectSiteLogo: mocks.select,
 }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 beforeEach(() => {
@@ -17,6 +19,17 @@ beforeEach(() => {
   mocks.auth.mockResolvedValue({ user: { role: "editor" } })
 })
 describe("Settings logo isolation", () => {
+  it("requires authorization before selecting a library logo",async()=>{
+    mocks.auth.mockRejectedValue(new Error("unauthorized"))
+    expect((await selectSettingsLogoAction("42")).success).toBe(false)
+    expect(mocks.select).not.toHaveBeenCalled()
+  })
+  it("applies the attachment independently of other settings",async()=>{
+    mocks.select.mockResolvedValue({id:"42",url:"/uploads/logo.png"})
+    expect(await selectSettingsLogoAction("42")).toEqual({success:true,logo:{id:"42",url:"/uploads/logo.png"}})
+    expect(mocks.select).toHaveBeenCalledWith("42")
+    expect(mocks.set).not.toHaveBeenCalled()
+  })
   it("rejects arbitrary options and invalid values before persisting", async () => {
     expect((await saveSettingsAction({ active_plugins: '["unexpected"]' })).success).toBe(false)
     expect((await saveSettingsAction({ google_analytics_id: "<script>" })).success).toBe(false)

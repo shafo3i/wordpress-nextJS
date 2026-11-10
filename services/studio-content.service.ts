@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, exists, inArray, count, sql } from "drizzle-orm"
 import { db, type DB } from "@/db"
+import { isVideoPost } from "@/lib/post-video"
+import { resolveAttachmentImage } from "@/lib/media-images"
 import { contentPlainText } from "@/lib/content-text"
 import {
   wpPosts,
@@ -23,7 +25,6 @@ import {
 } from "@/lib/studio/content"
 import type { ContentItem } from "@/lib/site-content"
 import type { StudioDocumentData } from "@/lib/studio/types"
-import { getSafeStudioUrl } from "@/lib/studio/urls"
 
 export class StudioContentError extends Error {}
 
@@ -46,7 +47,11 @@ export async function getStudioCategories(
     )
     .where(eq(wpTermTaxonomy.taxonomy, "category"))
     .orderBy(asc(wpTermTaxonomy.termTaxonomyId))
-  return rows.map((row) => ({ ...row, name: contentPlainText(row.name), id: row.id.toString() }))
+  return rows.map((row) => ({
+    ...row,
+    name: contentPlainText(row.name),
+    id: row.id.toString(),
+  }))
 }
 
 export async function getStudioWidgetContent(
@@ -175,6 +180,7 @@ export async function getStudioWidgetContent(
         postId: wpTermRelationships.objectId,
         taxonomy: wpTermTaxonomy.taxonomy,
         name: wpTerms.name,
+        slug: wpTerms.slug,
       })
       .from(wpTermRelationships)
       .innerJoin(
@@ -219,7 +225,7 @@ export async function getStudioWidgetContent(
   const imageMap = new Map(
     attachments.map((image) => [
       image.id.toString(),
-      getSafeStudioUrl(image.url, true),
+      resolveAttachmentImage(image.url, undefined).url,
     ])
   )
   result.items = rows.map((row) => ({
@@ -228,6 +234,19 @@ export async function getStudioWidgetContent(
     slug: row.slug,
     excerpt: contentPlainText(row.excerpt || row.content).slice(0, 400),
     content: "",
+    hasVideo: isVideoPost({
+      content: row.content,
+      categories: terms
+        .filter(
+          (term) => term.postId === row.id && term.taxonomy === "category"
+        )
+        .map((term) => term.name),
+      categorySlugs: terms
+        .filter(
+          (term) => term.postId === row.id && term.taxonomy === "category"
+        )
+        .map((term) => term.slug),
+    }),
     date: row.date,
     authorName: row.authorName || "",
     ...(request.sort === "popular"

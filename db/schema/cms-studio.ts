@@ -60,6 +60,8 @@ const studioBlockSchema: z.ZodType<HomepageBlock> = z.object({
   postCount: z.number().int().min(1).max(100).optional(),
   displayStyle: z
     .enum([
+      "lead_story_grid",
+      "headlines_grid",
       "compact_posts",
       "headline_cover",
       "bento",

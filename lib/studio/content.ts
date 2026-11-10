@@ -36,11 +36,7 @@ export function getStudioContentRequest(
     locale: block.contentLocale || locale,
     categoryId: block.categoryId,
     categorySlug: block.categorySlug || "all",
-    featuredOnly: Boolean(
-      block.featuredOnly ||
-      block.type === "featured_hero_slider" ||
-      block.displayStyle === "featured_slider"
-    ),
+    featuredOnly: Boolean(block.featuredOnly),
     pageSize: block.postCount ?? 6,
     page: 1,
     sort: block.sortOrder || "newest",

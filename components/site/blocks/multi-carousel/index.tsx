@@ -1,5 +1,5 @@
 "use client";
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail";
 
 
 import { useState } from "react";
@@ -92,7 +92,7 @@ export function MultiCardCarouselBlock({
             key={`${post.id}-${i}`}
             className="group relative rounded-2xl overflow-hidden min-h-[290px] flex flex-col justify-end p-5 text-white shadow-md"
           >
-            <ContentImage
+            <PostThumbnail post={post} theme={theme}
               src={post.imageUrl}
               alt={post.title}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

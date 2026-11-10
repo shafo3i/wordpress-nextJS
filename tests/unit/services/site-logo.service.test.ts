@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import sharp from "sharp"
-import { getGlobalSiteLogo } from "@/services/site-logo.service"
+import { getGlobalSiteLogo, selectSiteLogo } from "@/services/site-logo.service"
 import { normalizeSiteLogo, uploadSiteLogo } from "@/services/site-logo-upload.service"
 import {
   siteLogoIdSchema,
@@ -31,6 +31,22 @@ const image = () =>
     .toBuffer()
 
 describe("Site logo validation and persistence", () => {
+  it("reuses imported library attachments without uploading a duplicate", async () => {
+    rows([{url:"https://old.example/wp-content/uploads/2026/11/logo.png",mime:"image/png"}],[{value:"2026/11/logo.png"}])
+    expect(await selectSiteLogo("28004")).toEqual({id:"28004",url:"/uploads/2026/11/logo.png"})
+    expect(mocks.set).toHaveBeenCalledWith("site_logo_id","28004")
+    expect(mocks.upload).not.toHaveBeenCalled()
+    rows([{value:"28004"}],[{url:"https://old.example/wp-content/uploads/2026/11/logo.png",mime:"image/png"}],[{value:"2026/11/logo.png"}])
+    expect(await getGlobalSiteLogo()).toEqual({id:"28004",url:"/uploads/2026/11/logo.png"})
+  })
+  it("rejects missing attachments and unsupported library formats without changing the logo", async () => {
+    for (const result of [[],[{url:"/uploads/movie.mp4",mime:"video/mp4"}],[{url:"/uploads/logo.svg",mime:"image/svg+xml"}]]) {
+      rows(result)
+      await expect(selectSiteLogo("42")).rejects.toThrow("admin.settings.logo.invalid_selection")
+    }
+    await expect(selectSiteLogo("")).rejects.toThrow()
+    expect(mocks.set).not.toHaveBeenCalled()
+  })
   it("decodes and re-encodes image bytes instead of trusting the file extension", async () => {
     const buffer = await normalizeSiteLogo(
       new File([new Uint8Array(await image())], "unsafe.html", {

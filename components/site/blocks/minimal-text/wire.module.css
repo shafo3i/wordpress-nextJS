@@ -43,14 +43,3 @@
   font-size: 11px;
   line-height: 1.5;
 }
-@container (min-width: 650px) {
-  .item {
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: 24px;
-  }
-  .meta {
-    align-self: start;
-    padding-top: 3px;
-    max-width: 180px;
-  }
-}

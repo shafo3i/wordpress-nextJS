@@ -1,9 +1,19 @@
-import type { ReactNode } from "react";
-import type { ThemeMods } from "@/lib/themes/types";
+import {
+  cloneElement,
+  isValidElement,
+  type ReactNode,
+  type ReactElement,
+  type SVGProps,
+} from "react"
+import type { ThemeMods } from "@/lib/themes/types"
 
-type Network = { key: keyof ThemeMods; label: string; icon: ReactNode };
+type Network = { key: keyof ThemeMods; label: string; icon: ReactNode }
 
-const FILLED = { viewBox: "0 0 24 24", fill: "currentColor", "aria-hidden": true } as const;
+const FILLED = {
+  viewBox: "0 0 24 24",
+  fill: "currentColor",
+  "aria-hidden": true,
+} as const
 
 const NETWORKS: Network[] = [
   {
@@ -28,7 +38,13 @@ const NETWORKS: Network[] = [
     key: "socialInstagram",
     label: "Instagram",
     icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        aria-hidden
+      >
         <rect x="3" y="3" width="18" height="18" rx="5" />
         <circle cx="12" cy="12" r="4" />
         <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
@@ -53,12 +69,34 @@ const NETWORKS: Network[] = [
       </svg>
     ),
   },
-];
+]
+
+export function SocialProfileIcon({
+  networkKey,
+}: {
+  networkKey: keyof ThemeMods
+}) {
+  const icon = NETWORKS.find((network) => network.key === networkKey)?.icon
+  return isValidElement(icon)
+    ? cloneElement(icon as ReactElement<SVGProps<SVGSVGElement>>, {
+        width: 14,
+        height: 14,
+      })
+    : null
+}
 
 /** Icons for the social profiles configured in the customizer; renders nothing when none are set. */
-export function SocialLinks({ mods, className = "" }: { mods: ThemeMods; className?: string }) {
-  const links = NETWORKS.filter((network) => String(mods[network.key] ?? "").trim());
-  if (links.length === 0) return null;
+export function SocialLinks({
+  mods,
+  className = "",
+}: {
+  mods: ThemeMods
+  className?: string
+}) {
+  const links = NETWORKS.filter((network) =>
+    String(mods[network.key] ?? "").trim()
+  )
+  if (links.length === 0) return null
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
@@ -70,11 +108,11 @@ export function SocialLinks({ mods, className = "" }: { mods: ThemeMods; classNa
           rel="noopener noreferrer"
           aria-label={network.label}
           title={network.label}
-          className="size-4 opacity-80 hover:opacity-100 transition-opacity"
+          className="size-4 opacity-80 transition-opacity hover:opacity-100"
         >
           {network.icon}
         </a>
       ))}
     </div>
-  );
+  )
 }

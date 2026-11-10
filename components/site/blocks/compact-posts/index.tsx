@@ -1,5 +1,5 @@
 "use client"
-import { ContentImage } from "@/components/site/content-image";
+import { PostThumbnail } from "@/components/site/post-thumbnail"
 
 import Link from "next/link"
 import type { ContentItem } from "@/lib/site-content"
@@ -29,7 +29,7 @@ export function CompactPostsBlock({
         theme={theme}
       />
       <div className={styles.items}>
-        {posts.map((post, index) => (
+        {posts.map((post) => (
           <article
             className={`${styles.item} ${design?.thumbnailPosition === "end" ? styles.reverse : ""}`}
             key={post.id}
@@ -50,17 +50,22 @@ export function CompactPostsBlock({
                 tabIndex={-1}
                 aria-hidden="true"
               >
-                <ContentImage src={post.imageUrl} alt="" loading="lazy" />
+                <PostThumbnail
+                  post={post}
+                  theme={theme}
+                  src={post.imageUrl}
+                  alt=""
+                  loading="lazy"
+                />
               </Link>
             )}
             <div className={styles.copy}>
-              {block.type === "popular_posts" && (
-                <span className={styles.rank}>
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-              )}
               {block.showCategory !== false && post.categories[0] && (
-                <span data-studio-category className={styles.category} data-studio-meta>
+                <span
+                  data-studio-category
+                  className={styles.category}
+                  data-studio-meta
+                >
                   {post.categories[0]}
                 </span>
               )}
@@ -74,7 +79,10 @@ export function CompactPostsBlock({
               )}
               <div className={styles.meta} data-studio-meta>
                 {block.showDate !== false && (
-                  <time data-studio-meta dateTime={new Date(post.date).toISOString()}>
+                  <time
+                    data-studio-meta
+                    dateTime={new Date(post.date).toISOString()}
+                  >
                     {formatDate(post.date, theme.locale, theme.timeZone)}
                   </time>
                 )}

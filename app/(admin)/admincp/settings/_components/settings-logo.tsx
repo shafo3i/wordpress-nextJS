@@ -7,7 +7,8 @@ import {
   SITE_LOGO_ACCEPT,
   SITE_LOGO_MAX_BYTES,
 } from "@/db/schema/cms-site-logo"
-import { removeSettingsLogoAction } from "../action"
+import { removeSettingsLogoAction, selectSettingsLogoAction } from "../action"
+import { MediaSelectModal } from "@/components/admin/media-select-modal"
 
 export function useSettingsLogo(
   initialUrl: string,
@@ -17,7 +18,12 @@ export function useSettingsLogo(
   const [file, setFile] = useState<File | null>(null)
   const router = useRouter()
   const mutation = useMutation({
-    mutationFn: async (file: File | null) => {
+    mutationFn: async (file: File | null | { attachmentId: string }) => {
+      if (file && !(file instanceof File)) {
+        const result = await selectSettingsLogoAction(file.attachmentId)
+        if (!result.success) throw new Error(result.error)
+        return result.logo.url
+      }
       if (!file) {
         const result = await removeSettingsLogoAction()
         if (!result.success) throw new Error(result.error)
@@ -68,6 +74,7 @@ export function SettingsLogo({
   busy?: boolean
 }) {
   const { url, file, mutation, chooseFile } = controller
+  const [libraryOpen, setLibraryOpen] = useState(false)
   return (
     <fieldset
       disabled={busy || mutation.isPending}
@@ -89,6 +96,13 @@ export function SettingsLogo({
         </div>
       )}
       <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setLibraryOpen(true)}
+          className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 text-[13px] text-[#2271b1]"
+        >
+          {dict["admin.settings.logo.select_library"]}
+        </button>
         <label className="space-y-1 text-[13px] text-[#1d2327]">
           <span className="block">{dict["admin.settings.logo.choose"]}</span>
           <input
@@ -146,6 +160,18 @@ export function SettingsLogo({
           {dict["admin.settings.logo.saved"]}
         </p>
       )}
+      <MediaSelectModal
+        isOpen={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        mediaType="image"
+        title={dict["admin.settings.logo.select_library"]}
+        selectButtonText={dict["admin.settings.logo.apply_selected"]}
+        dict={dict}
+        onSelect={(item) => {
+          setLibraryOpen(false)
+          mutation.mutate({ attachmentId: String(item.id) })
+        }}
+      />
     </fieldset>
   )
 }

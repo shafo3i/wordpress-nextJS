@@ -1,7 +1,8 @@
-import { cache } from "react";
+import { cache } from "react"
 import { eq, and } from "drizzle-orm"
 import { db } from "@/db"
-import { wpPosts, wpOptions } from "@/db/schema"
+import { wpPosts, wpOptions, wpPostmeta } from "@/db/schema"
+import { resolveAttachmentImage } from "@/lib/media-images"
 import { setOption } from "./settings.service"
 import { siteLogoIdSchema } from "@/db/schema/cms-site-logo"
 
@@ -21,31 +22,44 @@ async function read_getGlobalSiteLogo(): Promise<SiteLogo | null> {
   if (!option) return null
   const parsed = siteLogoIdSchema.safeParse(option.value || "")
   if (!parsed.success || !parsed.data) return { id: "", url: "" }
+  return { id: parsed.data, url: await getLogoAttachmentUrl(parsed.data) }
+}
+
+async function getLogoAttachmentUrl(id: string): Promise<string> {
   const [attachment] = await db
     .select({ url: wpPosts.guid, mime: wpPosts.postMimeType })
     .from(wpPosts)
+    .where(and(eq(wpPosts.id, BigInt(id)), eq(wpPosts.postType, "attachment")))
+    .limit(1)
+  if (
+    !attachment ||
+    !["image/png", "image/jpeg", "image/webp"].includes(attachment.mime)
+  )
+    return ""
+  const [file] = await db
+    .select({ value: wpPostmeta.metaValue })
+    .from(wpPostmeta)
     .where(
       and(
-        eq(wpPosts.id, BigInt(parsed.data)),
-        eq(wpPosts.postType, "attachment")
+        eq(wpPostmeta.postId, BigInt(id)),
+        eq(wpPostmeta.metaKey, "_wp_attached_file")
       )
     )
     .limit(1)
-  const url = attachment?.url || ""
-  const safeUrl =
-    /^(?:\/(?!\/)|https?:\/\/)/.test(url) && !/[\u0000-\u0020\\]/.test(url)
-  return {
-    id: parsed.data,
-    url:
-      safeUrl &&
-      ["image/png", "image/jpeg", "image/webp"].includes(attachment?.mime || "")
-        ? url
-        : "",
-  }
+  return resolveAttachmentImage(attachment.url, file?.value || undefined).url
+}
+
+export async function selectSiteLogo(attachmentId: string): Promise<SiteLogo> {
+  const id = siteLogoIdSchema.parse(attachmentId)
+  if (!id) throw new SiteLogoError("admin.settings.logo.invalid_selection")
+  const url = await getLogoAttachmentUrl(id)
+  if (!url) throw new SiteLogoError("admin.settings.logo.invalid_selection")
+  await setOption("site_logo_id", id)
+  return { id, url }
 }
 
 export async function removeSiteLogo(): Promise<void> {
   await setOption("site_logo_id", "")
 }
 
-export const getGlobalSiteLogo = cache(read_getGlobalSiteLogo);
+export const getGlobalSiteLogo = cache(read_getGlobalSiteLogo)

@@ -4,7 +4,18 @@ import { settingsPatchSchema, testEmailSchema } from "@/db/schema/cms-settings"
 import { revalidatePath } from "next/cache"
 import { verifyAdminOrEditor } from "@/lib/authMIddleware"
 import { setOptions, type SettingsMap } from "@/services/settings.service"
-import { removeSiteLogo } from "@/services/site-logo.service"
+import { removeSiteLogo, selectSiteLogo } from "@/services/site-logo.service"
+
+export async function selectSettingsLogoAction(attachmentId: string) {
+  try {
+    await verifyAdminOrEditor()
+    const logo = await selectSiteLogo(attachmentId)
+    revalidatePath("/", "layout")
+    return { success: true as const, logo }
+  } catch {
+    return { success: false as const, error: "admin.settings.logo.invalid_selection" }
+  }
+}
 
 export async function removeSettingsLogoAction(): Promise<SaveSettingsResult> {
   try {
