@@ -1,4 +1,5 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import {
   getUsersList as getListFromService,
   getUsersCounts as getCountsFromService,
@@ -12,16 +13,16 @@ import {
 export type { UserItem, UserRoleOption, Counts, UsersListParams };
 
 export async function getUsers(params: UsersListParams = {}) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return await getListFromService(params);
 }
 
 export async function getUsersCounts(): Promise<Counts> {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return await getCountsFromService();
 }
 
 export async function getAvailableRoles(): Promise<UserRoleOption[]> {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return await getRolesFromService();
 }

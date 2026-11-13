@@ -8,8 +8,9 @@ function getSecretKey(): Buffer {
   const secret =
     process.env.ENCRYPTION_KEY ||
     process.env.AUTH_SECRET ||
-    process.env.DATABASE_URL ||
-    "pressforge-secure-credential-salt-2026";
+    process.env.DATABASE_URL;
+  if (!secret)
+    throw new Error("Credential encryption requires a server secret");
   return crypto.scryptSync(secret, "pressforge-options-salt", 32);
 }
 
@@ -19,8 +20,9 @@ function getSecretKey(): Buffer {
  */
 export function encryptValue(plainText: string): string {
   if (!plainText) return "";
-  // If already encrypted, return as is
-  if (plainText.startsWith(PREFIX)) return plainText;
+  // Accept plaintext only; callers cannot inject a serialized ciphertext.
+  if (plainText.startsWith(PREFIX))
+    throw new Error("Expected a plaintext credential");
 
   try {
     const key = getSecretKey();
@@ -33,14 +35,13 @@ export function encryptValue(plainText: string): string {
 
     return `${PREFIX}${iv.toString("hex")}:${tag}:${encrypted}`;
   } catch (err) {
-    console.error("Encryption error:", err);
-    return plainText;
+    throw new Error("Credential encryption failed", { cause: err });
   }
 }
 
 /**
  * Decrypts sensitive values retrieved from wp_options.
- * Returns the decrypted plain string or the original value if not encrypted.
+ * Legacy plaintext remains readable; corrupt encrypted values fail closed.
  */
 export function decryptValue(cipherText: string): string {
   if (!cipherText) return "";
@@ -53,7 +54,13 @@ export function decryptValue(cipherText: string): string {
     const key = getSecretKey();
     const payload = cipherText.slice(PREFIX.length);
     const parts = payload.split(":");
-    if (parts.length !== 3) return cipherText;
+    if (
+      parts.length !== 3 ||
+      !/^[0-9a-f]{24}$/.test(parts[0]) ||
+      !/^[0-9a-f]{32}$/.test(parts[1]) ||
+      !/^(?:[0-9a-f]{2})+$/.test(parts[2])
+    )
+      throw new Error("Invalid encrypted credential");
 
     const [ivHex, tagHex, encryptedHex] = parts;
     const iv = Buffer.from(ivHex, "hex");
@@ -65,7 +72,6 @@ export function decryptValue(cipherText: string): string {
     decrypted += decipher.final("utf8");
     return decrypted;
   } catch (err) {
-    console.error("Decryption error:", err);
-    return cipherText;
+    throw new Error("Credential decryption failed", { cause: err });
   }
 }

@@ -1,4 +1,4 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import {
   getPages,
   getPageCounts,
@@ -12,17 +12,17 @@ import {
 export type { PageItem, PageCounts, GetPagesOptions };
 
 export async function getPagesQuery(options: GetPagesOptions = {}) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return getPages(options);
 }
 
 export async function getPageCountsQuery(options: { language?: string } = {}) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return getPageCounts(options);
 }
 
 export async function getPageByIdQuery(id: bigint | string | number) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return getPageById(id);
 }
 
@@ -30,6 +30,6 @@ export async function getParentPagesQuery(
   excludeId?: bigint | string | number,
   language?: string
 ) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return getAllParentPageOptions(excludeId, language);
 }

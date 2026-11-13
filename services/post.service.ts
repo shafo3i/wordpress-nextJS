@@ -169,6 +169,7 @@ export interface TagOption {
 }
 
 export interface CreatePostInput {
+  editorRestricted?: boolean
   title: string
   content?: string
   excerpt?: string
@@ -189,8 +190,11 @@ export interface CreatePostInput {
 }
 
 export class PostChangedError extends Error {}
+export class PostPermissionError extends Error {}
 
 export interface UpdatePostInput {
+  /** Set by authenticated server actions, never copied from client fields. */
+  editorRestricted?: boolean
   expectedModified?: string
   title?: string
   content?: string
@@ -928,6 +932,7 @@ async function createPostRecord(
   input: CreatePostInput,
   database: DB = db
 ): Promise<string> {
+  if (input.editorRestricted && input.status === "trash") throw new PostPermissionError()
   const {
     title,
     content = "",
@@ -1024,6 +1029,7 @@ async function updatePostRecord(
     .select({
       id: wpPosts.id,
       postTitle: wpPosts.postTitle,
+      status: wpPosts.postStatus,
       modified: wpPosts.postModifiedGmt,
     })
     .from(wpPosts)
@@ -1032,6 +1038,7 @@ async function updatePostRecord(
     .for("update")
 
   if (!existing.length) throw new Error("Post not found")
+  if (input.editorRestricted && (existing[0].status === "trash" || input.status === "trash")) throw new PostPermissionError()
   if (
     input.expectedModified &&
     existing[0].modified.toISOString() !== input.expectedModified

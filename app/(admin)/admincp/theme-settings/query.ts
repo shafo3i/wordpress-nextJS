@@ -1,4 +1,4 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { verifyAdmin } from "@/lib/authMIddleware"
 import { getActiveThemeSlug, getAllThemes } from "@/lib/themes/loader"
 import {
   getHomepageSettings,
@@ -9,7 +9,7 @@ import { getOptions } from "@/services/settings.service"
 import { getPostTranslations } from "@/services/language.service"
 
 export async function getThemeSettingsQuery(targetThemeSlug?: string) {
-  await verifyAdminOrEditor()
+  await verifyAdmin()
   const [activeSlug, allThemes, front] = await Promise.all([
     getActiveThemeSlug(),
     getAllThemes(),

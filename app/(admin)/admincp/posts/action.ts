@@ -4,9 +4,10 @@ import { autosaveDocumentKey } from "@/db/schema/cms-post-autosave"
 import { deletePostAutosave } from "@/services/post-autosave.service"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { verifyPostEditor, verifyAdmin } from "@/lib/authMIddleware"
 import {
   PostChangedError,
+  PostPermissionError,
   createPost as createPostService,
   updatePost as updatePostService,
   trashPosts as trashPostsService,
@@ -27,7 +28,7 @@ const quickUpdateSchema = z.object({
   title: z.string().trim().min(1, "Post title is required"),
   slug: z.string().trim().optional(),
   date: z.string().optional(),
-  status: z.string().optional(),
+  status: z.string().trim().refine(value => VALID_STATUSES.has(value)).optional(),
   commentStatus: z.enum(["open", "closed"]).optional(),
   pingStatus: z.enum(["open", "closed"]).optional(),
   postPassword: z.string().optional(),
@@ -132,15 +133,15 @@ async function clearSavedRecovery(
 export async function savePostAction(
   formData: FormData
 ): Promise<SavePostResult> {
-  const session = await verifyAdminOrEditor()
+  const session = await verifyPostEditor()
   const parsed = parsePostFormData(formData)
   if (!parsed.title)
     return { success: false, error: "admin.editor.title_required" }
   let postId: string
   try {
-    postId = await createPostService({ ...parsed, authorId: session.user.id })
-  } catch {
-    return { success: false, error: "admin.editor.save_failed" }
+    postId = await createPostService({ ...parsed, authorId: session.user.id, editorRestricted: session.user.role === "editor" })
+  } catch (error) {
+    return { success: false, error: error instanceof PostPermissionError ? "admin.editor.permission_denied" : "admin.editor.save_failed" }
   }
   await clearSavedRecovery(formData, session.user.id)
   revalidatePath("/admincp")
@@ -152,7 +153,7 @@ export async function savePostAction(
 export async function updatePostAction(
   formData: FormData
 ): Promise<SavePostResult> {
-  const session = await verifyAdminOrEditor()
+  const session = await verifyPostEditor()
   const postId = String(formData.get("id") ?? "")
   if (!/^[1-9]\d*$/.test(postId))
     return { success: false, error: "admin.editor.save_failed" }
@@ -162,6 +163,7 @@ export async function updatePostAction(
   try {
     await updatePostService(postId, {
       ...parsed,
+      editorRestricted: session.user.role === "editor",
       expectedModified:
         String(formData.get("expectedModifiedAt") || "") || undefined,
     })
@@ -169,7 +171,7 @@ export async function updatePostAction(
     return {
       success: false,
       error:
-        error instanceof PostChangedError
+        error instanceof PostPermissionError ? "admin.editor.permission_denied" : error instanceof PostChangedError
           ? "admin.editor.post_changed"
           : "admin.editor.save_failed",
     }
@@ -198,8 +200,8 @@ export type QuickUpdateResult =
 export async function quickUpdatePost(
   data: QuickUpdatePostInput
 ): Promise<QuickUpdateResult> {
+  const session = await verifyPostEditor()
   try {
-    await verifyAdminOrEditor()
     const validated = quickUpdateSchema.parse(data)
 
     const tagsArray =
@@ -212,6 +214,7 @@ export async function quickUpdatePost(
 
     await updatePostService(validated.id, {
       title: validated.title,
+      editorRestricted: session.user.role === "editor",
       slug: validated.slug,
       status: validated.status,
       commentStatus: validated.commentStatus,
@@ -235,13 +238,13 @@ export async function quickUpdatePost(
     }
   } catch (error: any) {
     console.error("Failed to quick update post:", error)
-    return { success: false, error: error?.message || "Failed to update post." }
+    return { success: false, error: error instanceof PostPermissionError ? "admin.editor.permission_denied" : "admin.editor.save_failed" }
   }
 }
 
 export async function trashPostsAction(ids: string[]) {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor()
     if (!ids.length) return { success: false, error: "No post IDs provided." }
 
     await trashPostsService(ids)
@@ -258,8 +261,8 @@ export async function trashPostsAction(ids: string[]) {
 }
 
 export async function restorePostsAction(ids: string[]) {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor()
     if (!ids.length) return { success: false, error: "No post IDs provided." }
 
     await restorePostsService(ids)
@@ -279,8 +282,8 @@ export async function restorePostsAction(ids: string[]) {
 }
 
 export async function deletePostsPermanentlyAction(ids: string[]) {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor()
     if (!ids.length) return { success: false, error: "No post IDs provided." }
 
     await deletePostsService(ids)

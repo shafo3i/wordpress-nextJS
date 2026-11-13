@@ -2,32 +2,24 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { safeMediaUrl } from "@/lib/post-media";
 import { authClient } from "@/lib/auth-client";
 import {
-  User,
   KeyRound,
-  Mail,
-  Calendar,
-  Bell,
   Shield,
-  ShieldCheck,
   Edit,
-  Phone,
   Fingerprint,
   Lock,
   LogOut,
   CheckCircle2,
   AlertTriangle,
   Smartphone,
-  ExternalLink,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import EditProfileModal from "./edit-profile-modal";
 import UpdatePassForm from "./update-pass-form";
 import TwoFactorSettings from "./two-factor-settings";
-import NotificationSettingsModal from "./notification-settings-modal";
-import PasskeySettings from "./passkey-settings";
 
 export type UserProfile = {
   id: string;
@@ -38,11 +30,6 @@ export type UserProfile = {
   twoFactorEnabled?: boolean | null;
   createdAt: string | Date;
   role?: string | null;
-  notificationTx?: boolean;
-  notificationSecurity?: boolean;
-  notificationPromo?: boolean;
-  phoneNumber?: string | null;
-  biometricEnabled?: boolean | null;
 };
 
 interface ProfileClientViewProps {
@@ -58,7 +45,9 @@ export function ProfileClientView({
 }: ProfileClientViewProps) {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile>(initialUser);
-  const [activeTab, setActiveTab] = useState<"identity" | "security" | "notifications">("identity");
+  const [activeTab, setActiveTab] = useState<
+    "identity" | "security" | "notifications"
+  >("identity");
 
   // Screen Options & Help toggles
   const [showScreenOptions, setShowScreenOptions] = useState(false);
@@ -68,54 +57,60 @@ export function ProfileClientView({
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isUpdatePassOpen, setIsUpdatePassOpen] = useState(false);
   const [is2FAOpen, setIs2FAOpen] = useState(false);
-  const [isNotifsOpen, setIsNotifsOpen] = useState(false);
-  const [isPasskeyOpen, setIsPasskeyOpen] = useState(false);
 
   const handleUpdateUser = (updatedFields: Partial<UserProfile>) => {
     setUser((prev) => ({ ...prev, ...updatedFields }));
   };
 
+  const [signOutError, setSignOutError] = useState(false);
   const handleSignOut = async () => {
+    setSignOutError(false);
     try {
-      await authClient.signOut();
-    } catch (err) {
-      console.error("Sign out error:", err);
-    } finally {
-      window.location.href = "/cms-login";
+      const result = await authClient.signOut();
+      if (result.error) {
+        setSignOutError(true);
+        return;
+      }
+      router.replace("/cms-login");
+      router.refresh();
+    } catch {
+      setSignOutError(true);
     }
   };
 
   return (
     <div className="space-y-4 text-start">
+      {signOutError && (
+        <p role="alert">{dict["admin.profile.signout_error"]}</p>
+      )}
       {/* ========================================================================= */}
       {/* 1. SCREEN OPTIONS & HELP DRAWERS                                          */}
       {/* ========================================================================= */}
       {showScreenOptions && (
-        <div className="bg-white border border-[#c3c4c7] p-4 shadow-2xs text-[13px] text-[#2c3338] rounded-[3px]">
-          <h4 className="font-bold text-[#1d2327] mb-1.5">
-            {dict["admin.common.screen_options"] || "Screen Options"}
+        <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-4 text-[13px] text-[#2c3338] shadow-2xs">
+          <h4 className="mb-1.5 font-bold text-[#1d2327]">
+            {dict["admin.common.screen_options"]}
           </h4>
-          <p className="text-[#646970] leading-relaxed mb-3">
-            {dict["admin.profile.screen_options_help"] ||
-              "Manage administrator account settings, update personal details, change passwords, and configure two-factor authentication."}
+          <p className="mb-3 leading-relaxed text-[#646970]">
+            {dict["admin.profile.screen_options_help"]}
           </p>
-          <div className="flex flex-wrap items-center gap-3 text-[#50575e] pt-2 border-t border-[#dcdcde] text-[12px]">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[#dcdcde] pt-2 text-[12px] text-[#50575e]">
             <span>
-              {dict["admin.profile.display_name"] || "Name"}:{" "}
+              {dict["admin.profile.display_name"]}:{" "}
               <strong className="text-[#1d2327]">{user.name}</strong>
             </span>
             <span>|</span>
             <span>
-              {dict["admin.profile.email"] || "Email"}:{" "}
+              {dict["admin.profile.email"]}:{" "}
               <strong className="font-mono text-[#1d2327]">{user.email}</strong>
             </span>
             <span>|</span>
             <span>
-              {dict["admin.profile.two_factor"] || "Two-Factor Auth"}:{" "}
+              {dict["admin.profile.two_factor"]}:{" "}
               <strong className="text-[#1d2327]">
                 {user.twoFactorEnabled
-                  ? dict["admin.profile.two_factor_active"] || "Active"
-                  : dict["admin.profile.two_factor_disabled"] || "Disabled"}
+                  ? dict["admin.profile.two_factor_active"]
+                  : dict["admin.profile.two_factor_disabled"]}
               </strong>
             </span>
           </div>
@@ -123,25 +118,22 @@ export function ProfileClientView({
       )}
 
       {showHelp && (
-        <div className="bg-white border border-[#c3c4c7] p-4 shadow-2xs text-[13px] text-[#2c3338] leading-relaxed rounded-[3px]">
-          <h4 className="font-bold text-[#1d2327] mb-1.5">
-            {dict["admin.common.help"] || "Help"}
+        <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-4 text-[13px] leading-relaxed text-[#2c3338] shadow-2xs">
+          <h4 className="mb-1.5 font-bold text-[#1d2327]">
+            {dict["admin.common.help"]}
           </h4>
-          <ul className="text-[#646970] space-y-1 list-disc list-inside text-[12px]">
+          <ul className="list-inside list-disc space-y-1 text-[12px] text-[#646970]">
             <li>
-              <strong>{dict["admin.profile.change_password"] || "Password"}:</strong>{" "}
-              {dict["admin.profile.change_password_desc"] ||
-                "Updating your password automatically signs out any other active browser sessions."}
+              <strong>{dict["admin.profile.change_password"]}:</strong>{" "}
+              {dict["admin.profile.change_password_desc"]}
             </li>
             <li>
-              <strong>{dict["admin.profile.two_factor"] || "Two-Factor Authentication"}:</strong>{" "}
-              {dict["admin.profile.two_factor_desc"] ||
-                "Protects your account with a time-based code from an authenticator app."}
+              <strong>{dict["admin.profile.two_factor"]}:</strong>{" "}
+              {dict["admin.profile.two_factor_desc"]}
             </li>
             <li>
-              <strong>{dict["admin.profile.passkeys"] || "Passkeys"}:</strong>{" "}
-              {dict["admin.profile.passkeys_desc"] ||
-                "Passwordless authentication using Touch ID, Face ID, or Windows Hello."}
+              <strong>{dict["admin.profile.passkeys"]}:</strong>{" "}
+              {dict["admin.profile.passkeys_unavailable"]}
             </li>
           </ul>
         </div>
@@ -152,35 +144,35 @@ export function ProfileClientView({
       {/* ========================================================================= */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#c3c4c7] pb-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-            {dict["admin.profile.title"] || "Profile"}
+          <h1 className="text-[23px] leading-normal font-normal text-[#1d2327]">
+            {dict["admin.profile.title"]}
           </h1>
 
           <button
             type="button"
             onClick={() => setIsEditProfileOpen(true)}
-            className="inline-flex items-center gap-1.5 border border-[#2271b1] bg-[#f6f7f7] hover:bg-[#f0f0f1] text-[#2271b1] hover:text-[#135e96] px-3 py-1 text-[13px] font-semibold rounded-[3px] shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[13px] font-semibold text-[#2271b1] shadow-2xs transition-colors hover:bg-[#f0f0f1] hover:text-[#135e96]"
           >
             <Edit className="size-3.5" />
-            <span>{dict["admin.profile.edit_profile"] || "Edit Profile"}</span>
+            <span>{dict["admin.profile.edit_profile"]}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setIsUpdatePassOpen(true)}
-            className="inline-flex items-center gap-1.5 border border-[#2271b1] bg-[#f6f7f7] hover:bg-[#f0f0f1] text-[#2271b1] hover:text-[#135e96] px-3 py-1 text-[13px] font-semibold rounded-[3px] shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[13px] font-semibold text-[#2271b1] shadow-2xs transition-colors hover:bg-[#f0f0f1] hover:text-[#135e96]"
           >
             <Lock className="size-3.5" />
-            <span>{dict["admin.profile.change_password"] || "Change Password"}</span>
+            <span>{dict["admin.profile.change_password"]}</span>
           </button>
 
           <button
             type="button"
             onClick={handleSignOut}
-            className="inline-flex items-center gap-1.5 border border-[#c3c4c7] bg-white hover:bg-[#fcf0f1] text-[#50575e] hover:text-[#b32d2e] hover:border-[#d63638] px-3 py-1 text-[13px] font-semibold rounded-[3px] shadow-2xs transition-colors cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-1 text-[13px] font-semibold text-[#50575e] shadow-2xs transition-colors hover:border-[#d63638] hover:bg-[#fcf0f1] hover:text-[#b32d2e]"
           >
             <LogOut className="size-3.5" />
-            <span>{dict["admin.profile.log_out"] || "Log Out"}</span>
+            <span>{dict["admin.profile.log_out"]}</span>
           </button>
         </div>
 
@@ -192,13 +184,13 @@ export function ProfileClientView({
               setShowScreenOptions(!showScreenOptions);
               setShowHelp(false);
             }}
-            className={`flex items-center gap-1 rounded-[3px] border px-2.5 py-1 text-[13px] transition-colors cursor-pointer ${
+            className={`flex cursor-pointer items-center gap-1 rounded-[3px] border px-2.5 py-1 text-[13px] transition-colors ${
               showScreenOptions
-                ? "bg-[#2271b1] text-white border-[#2271b1]"
+                ? "border-[#2271b1] bg-[#2271b1] text-white"
                 : "border-[#c3c4c7] bg-white text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             }`}
           >
-            <span>{dict["admin.common.screen_options"] || "Screen Options"}</span>
+            <span>{dict["admin.common.screen_options"]}</span>
             <span className="text-[9px]">▼</span>
           </button>
 
@@ -208,13 +200,13 @@ export function ProfileClientView({
               setShowHelp(!showHelp);
               setShowScreenOptions(false);
             }}
-            className={`flex items-center gap-1 rounded-[3px] border px-2.5 py-1 text-[13px] transition-colors cursor-pointer ${
+            className={`flex cursor-pointer items-center gap-1 rounded-[3px] border px-2.5 py-1 text-[13px] transition-colors ${
               showHelp
-                ? "bg-[#2271b1] text-white border-[#2271b1]"
+                ? "border-[#2271b1] bg-[#2271b1] text-white"
                 : "border-[#c3c4c7] bg-white text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             }`}
           >
-            <span>{dict["admin.common.help"] || "Help"}</span>
+            <span>{dict["admin.common.help"]}</span>
             <span className="text-[9px]">▼</span>
           </button>
         </div>
@@ -223,7 +215,7 @@ export function ProfileClientView({
       {/* ========================================================================= */}
       {/* 3. SUBSUBSUB NAVIGATION TABS                                              */}
       {/* ========================================================================= */}
-      <ul className="flex flex-wrap items-center text-[13px] text-[#646970] list-none p-0 m-0 gap-1.5 border-b border-[#c3c4c7] pb-2">
+      <ul className="m-0 flex list-none flex-wrap items-center gap-1.5 border-b border-[#c3c4c7] p-0 pb-2 text-[13px] text-[#646970]">
         <li>
           <button
             type="button"
@@ -234,9 +226,9 @@ export function ProfileClientView({
                 : "text-[#2271b1] hover:text-[#135e96] hover:underline"
             }`}
           >
-            {dict["admin.profile.personal_options"] || "Personal Options"}
+            {dict["admin.profile.personal_options"]}
           </button>
-          <span className="text-[#8c8f94] ms-1.5">|</span>
+          <span className="ms-1.5 text-[#8c8f94]">|</span>
         </li>
         <li>
           <button
@@ -248,9 +240,9 @@ export function ProfileClientView({
                 : "text-[#2271b1] hover:text-[#135e96] hover:underline"
             }`}
           >
-            {dict["admin.profile.account_security"] || "Account Security"}
+            {dict["admin.profile.account_security"]}
           </button>
-          <span className="text-[#8c8f94] ms-1.5">|</span>
+          <span className="ms-1.5 text-[#8c8f94]">|</span>
         </li>
         <li>
           <button
@@ -262,7 +254,7 @@ export function ProfileClientView({
                 : "text-[#2271b1] hover:text-[#135e96] hover:underline"
             }`}
           >
-            {dict["admin.profile.notifications"] || "Notifications"}
+            {dict["admin.profile.notifications"]}
           </button>
         </li>
       </ul>
@@ -272,36 +264,37 @@ export function ProfileClientView({
       {/* ========================================================================= */}
       {activeTab === "identity" && (
         <div className="space-y-4">
-          <div className="border border-[#c3c4c7] bg-white rounded-[3px] p-5 shadow-2xs">
-            <h2 className="text-[15px] font-semibold text-[#1d2327] border-b border-[#c3c4c7] pb-3 mb-4">
-              {dict["admin.profile.account_info"] || "Account Information"}
+          <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-5 shadow-2xs">
+            <h2 className="mb-4 border-b border-[#c3c4c7] pb-3 text-[15px] font-semibold text-[#1d2327]">
+              {dict["admin.profile.account_info"]}
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-3 border-b border-[#f0f0f1] items-center">
+            <div className="grid grid-cols-1 items-center gap-4 border-b border-[#f0f0f1] py-3 md:grid-cols-[220px_1fr]">
               <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.picture"] || "Profile Picture"}
+                {dict["admin.profile.picture"]}
               </span>
               <div className="flex items-center gap-3">
                 <Avatar className="size-16 rounded-[4px] border border-[#c3c4c7]">
-                  <AvatarImage src={user.image || ""} alt={user.name} />
-                  <AvatarFallback className="bg-[#2271b1] text-white font-bold text-lg rounded-[4px]">
+                  <AvatarImage
+                    src={user.image ? safeMediaUrl(user.image) || "" : ""}
+                    alt={user.name}
+                  />
+                  <AvatarFallback className="rounded-[4px] bg-[#2271b1] text-lg font-bold text-white">
                     {user.name?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="text-[12px] text-[#646970] space-y-1">
+                <div className="space-y-1 text-[12px] text-[#646970]">
                   <p className="font-semibold text-[#1d2327]">
-                    {user.name} ({user.role || "admin"})
+                    {user.name} ({user.role || ""})
                   </p>
-                  <p>
-                    {dict["admin.profile.picture_desc"] || "You can change your profile picture on Gravatar."}
-                  </p>
+                  <p>{dict["admin.profile.picture_desc"]}</p>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-3 border-b border-[#f0f0f1] items-baseline">
+            <div className="grid grid-cols-1 items-baseline gap-4 border-b border-[#f0f0f1] py-3 md:grid-cols-[220px_1fr]">
               <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.username"] || "Username"}
+                {dict["admin.profile.username"]}
               </span>
               <div>
                 <input
@@ -309,19 +302,19 @@ export function ProfileClientView({
                   readOnly
                   disabled
                   value={user.id}
-                  className="w-full max-w-md rounded-[4px] border border-[#dcdcde] bg-[#f0f0f1] px-3 py-1.5 text-[13px] font-mono text-[#50575e] cursor-not-allowed"
+                  className="w-full max-w-md cursor-not-allowed rounded-[4px] border border-[#dcdcde] bg-[#f0f0f1] px-3 py-1.5 font-mono text-[13px] text-[#50575e]"
                 />
-                <p className="text-[12px] text-[#646970] mt-1">
-                  {dict["admin.profile.username_desc"] || "Usernames cannot be changed."}
+                <p className="mt-1 text-[12px] text-[#646970]">
+                  {dict["admin.profile.username_desc"]}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-3 border-b border-[#f0f0f1] items-baseline">
+            <div className="grid grid-cols-1 items-baseline gap-4 border-b border-[#f0f0f1] py-3 md:grid-cols-[220px_1fr]">
               <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.display_name"] || "Display Name"}
+                {dict["admin.profile.display_name"]}
               </span>
-              <div className="flex flex-wrap items-center gap-2 max-w-md">
+              <div className="flex max-w-md flex-wrap items-center gap-2">
                 <input
                   type="text"
                   readOnly
@@ -331,76 +324,68 @@ export function ProfileClientView({
                 <button
                   type="button"
                   onClick={() => setIsEditProfileOpen(true)}
-                  className="border border-[#2271b1] bg-[#f6f7f7] hover:bg-[#f0f0f1] text-[#2271b1] px-3 py-1.5 text-[13px] font-semibold rounded-[3px] cursor-pointer"
+                  className="cursor-pointer rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1.5 text-[13px] font-semibold text-[#2271b1] hover:bg-[#f0f0f1]"
                 >
-                  {dict["common.edit"] || "Edit"}
+                  {dict["common.edit"]}
                 </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-3 border-b border-[#f0f0f1] items-baseline">
+            <div className="grid grid-cols-1 items-baseline gap-4 border-b border-[#f0f0f1] py-3 md:grid-cols-[220px_1fr]">
               <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.email"] || "Email"}
+                {dict["admin.profile.email"]}
               </span>
               <div>
-                <div className="flex items-center gap-2 max-w-md">
+                <div className="flex max-w-md items-center gap-2">
                   <input
                     type="email"
                     readOnly
                     value={user.email}
-                    className="flex-1 rounded-[4px] border border-[#dcdcde] bg-[#f0f0f1] px-3 py-1.5 text-[13px] font-mono text-[#50575e] cursor-not-allowed"
+                    className="flex-1 cursor-not-allowed rounded-[4px] border border-[#dcdcde] bg-[#f0f0f1] px-3 py-1.5 font-mono text-[13px] text-[#50575e]"
                     dir="ltr"
                   />
                   {user.emailVerified ? (
                     <span className="inline-flex items-center gap-1 rounded-[2px] border border-[#a7e3b2] bg-[#edfaef] px-2 py-0.5 text-[11px] font-semibold text-[#007017]">
                       <CheckCircle2 className="size-3" />
-                      {dict["admin.profile.verified"] || "Verified"}
+                      {dict["admin.profile.verified"]}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-[2px] border border-[#f5c6cb] bg-[#fcf0f1] px-2 py-0.5 text-[11px] font-semibold text-[#d63638]">
                       <AlertTriangle className="size-3" />
-                      {dict["admin.profile.unverified"] || "Unverified"}
+                      {dict["admin.profile.unverified"]}
                     </span>
                   )}
                 </div>
-                <p className="text-[12px] text-[#646970] mt-1">
-                  {dict["admin.profile.email_desc"] || "Used for administration, password recovery, and email notifications."}
+                <p className="mt-1 text-[12px] text-[#646970]">
+                  {dict["admin.profile.email_desc"]}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-3 border-b border-[#f0f0f1] items-baseline">
+            <div className="grid grid-cols-1 items-baseline gap-4 border-b border-[#f0f0f1] py-3 md:grid-cols-[220px_1fr]">
               <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.phone"] || "Phone Number"}
-              </span>
-              <div>
-                <span className="font-mono text-[13px] text-[#2c3338]" dir="ltr">
-                  {user.phoneNumber || dict["admin.profile.not_specified"] || "Not specified"}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-3 border-b border-[#f0f0f1] items-baseline">
-              <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.role"] || "Role"}
+                {dict["admin.profile.role"]}
               </span>
               <div>
                 <span className="inline-block rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] px-2.5 py-0.5 text-[12px] font-semibold text-[#1d2327]">
-                  {user.role || "admin"}
+                  {user.role || ""}
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-3 items-baseline">
+            <div className="grid grid-cols-1 items-baseline gap-4 py-3 md:grid-cols-[220px_1fr]">
               <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.registered"] || "Registered"}
+                {dict["admin.profile.registered"]}
               </span>
               <div className="text-[13px] text-[#50575e]">
-                {new Date(user.createdAt).toLocaleDateString(direction === "rtl" ? "ar-EG" : "en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {new Date(user.createdAt).toLocaleDateString(
+                  direction === "rtl" ? "ar-EG" : "en-US",
+                  {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  }
+                )}
               </div>
             </div>
           </div>
@@ -413,95 +398,84 @@ export function ProfileClientView({
       {activeTab === "security" && (
         <div className="space-y-4">
           {/* Two-Factor Authentication Card */}
-          <div className="border border-[#c3c4c7] bg-white rounded-[3px] p-5 shadow-2xs">
-            <div className="flex flex-wrap items-center justify-between border-b border-[#c3c4c7] pb-3 mb-4">
+          <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-5 shadow-2xs">
+            <div className="mb-4 flex flex-wrap items-center justify-between border-b border-[#c3c4c7] pb-3">
               <div className="flex items-center gap-2">
                 <Shield className="size-4 text-[#2271b1]" />
                 <h2 className="text-[15px] font-semibold text-[#1d2327]">
-                  {dict["admin.profile.two_factor"] || "Two-Factor Authentication (2FA)"}
+                  {dict["admin.profile.two_factor"]}
                 </h2>
               </div>
               {user.twoFactorEnabled ? (
                 <span className="inline-flex items-center gap-1 rounded-[2px] border border-[#a7e3b2] bg-[#edfaef] px-2.5 py-0.5 text-[11px] font-bold text-[#007017]">
                   <CheckCircle2 className="size-3" />
-                  {dict["admin.profile.two_factor_active"] || "Active & Protected"}
+                  {dict["admin.profile.two_factor_active"]}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 rounded-[2px] border border-[#c3c4c7] bg-[#f6f7f7] px-2.5 py-0.5 text-[11px] font-semibold text-[#646970]">
-                  {dict["admin.profile.two_factor_disabled"] || "Currently Disabled"}
+                  {dict["admin.profile.two_factor_disabled"]}
                 </span>
               )}
             </div>
 
-            <p className="text-[13px] text-[#50575e] leading-relaxed mb-4">
-              {dict["admin.profile.two_factor_desc"] ||
-                "Two-factor authentication adds an extra layer of protection using a time-based code (TOTP) from an authenticator app."}
+            <p className="mb-4 text-[13px] leading-relaxed text-[#50575e]">
+              {dict["admin.profile.two_factor_desc"]}
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => setIs2FAOpen(true)}
-                className="bg-[#2271b1] hover:bg-[#135e96] text-white border border-[#2271b1] text-[13px] font-semibold px-4 py-1.5 rounded-[3px] shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-[13px] font-semibold text-white shadow-xs transition-colors hover:bg-[#135e96]"
               >
                 <Smartphone className="size-3.5" />
                 <span>
                   {user.twoFactorEnabled
-                    ? dict["admin.profile.manage_two_factor"] || "Manage 2FA Settings"
-                    : dict["admin.profile.enable_two_factor"] || "Enable Two-Factor Auth"}
+                    ? dict["admin.profile.manage_two_factor"]
+                    : dict["admin.profile.enable_two_factor"]}
                 </span>
               </button>
             </div>
           </div>
 
           {/* Password Management Card */}
-          <div className="border border-[#c3c4c7] bg-white rounded-[3px] p-5 shadow-2xs">
-            <div className="flex items-center gap-2 border-b border-[#c3c4c7] pb-3 mb-4">
+          <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-5 shadow-2xs">
+            <div className="mb-4 flex items-center gap-2 border-b border-[#c3c4c7] pb-3">
               <KeyRound className="size-4 text-[#2271b1]" />
               <h2 className="text-[15px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.change_password"] || "Account Password"}
+                {dict["admin.profile.change_password"]}
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 py-2 items-center">
+            <div className="grid grid-cols-1 items-center gap-4 py-2 md:grid-cols-[220px_1fr]">
               <span className="text-[13px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.current_password"] || "Current Password"}
+                {dict["admin.profile.current_password"]}
               </span>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="font-mono text-[#646970]">••••••••••••</span>
                 <button
                   type="button"
                   onClick={() => setIsUpdatePassOpen(true)}
-                  className="border border-[#2271b1] bg-[#f6f7f7] hover:bg-[#f0f0f1] text-[#2271b1] hover:text-[#135e96] text-[13px] font-semibold px-3 py-1 rounded-[3px] cursor-pointer shadow-2xs"
+                  className="cursor-pointer rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[13px] font-semibold text-[#2271b1] shadow-2xs hover:bg-[#f0f0f1] hover:text-[#135e96]"
                 >
-                  {dict["admin.profile.change_password"] || "Set New Password"}
+                  {dict["admin.profile.change_password"]}
                 </button>
               </div>
             </div>
           </div>
 
           {/* Passkeys (WebAuthn) Card */}
-          <div className="border border-[#c3c4c7] bg-white rounded-[3px] p-5 shadow-2xs">
-            <div className="flex items-center gap-2 border-b border-[#c3c4c7] pb-3 mb-4">
+          <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-5 shadow-2xs">
+            <div className="mb-4 flex items-center gap-2 border-b border-[#c3c4c7] pb-3">
               <Fingerprint className="size-4 text-[#2271b1]" />
               <h2 className="text-[15px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.passkeys"] || "Passkeys & Biometrics (WebAuthn)"}
+                {dict["admin.profile.passkeys"]}
               </h2>
             </div>
 
-            <p className="text-[13px] text-[#50575e] leading-relaxed mb-4">
-              {dict["admin.profile.passkeys_desc"] ||
-                "Passwordless authentication using Touch ID, Face ID, Windows Hello, or hardware security keys."}
+            <p className="mb-4 text-[13px] leading-relaxed text-[#50575e]">
+              {dict["admin.profile.passkeys_unavailable"]}
             </p>
-
-            <button
-              type="button"
-              onClick={() => setIsPasskeyOpen(true)}
-              className="border border-[#c3c4c7] bg-[#f6f7f7] hover:bg-[#f0f0f1] text-[#2271b1] hover:text-[#135e96] text-[13px] font-semibold px-3.5 py-1.5 rounded-[3px] cursor-pointer shadow-2xs inline-flex items-center gap-1.5"
-            >
-              <Fingerprint className="size-3.5" />
-              <span>{dict["admin.profile.setup_passkey"] || "Set up Passkey"}</span>
-            </button>
           </div>
         </div>
       )}
@@ -510,108 +484,55 @@ export function ProfileClientView({
       {/* 6. TAB 3: NOTIFICATIONS & ALERTS                                          */}
       {/* ========================================================================= */}
       {activeTab === "notifications" && (
-        <div className="space-y-4">
-          <div className="border border-[#c3c4c7] bg-white rounded-[3px] p-5 shadow-2xs">
-            <div className="flex items-center gap-2 border-b border-[#c3c4c7] pb-3 mb-4">
-              <Bell className="size-4 text-[#2271b1]" />
-              <h2 className="text-[15px] font-semibold text-[#1d2327]">
-                {dict["admin.profile.notifications"] || "Email Notification Preferences"}
-              </h2>
-            </div>
-
-            <div className="space-y-3 mb-4 text-[13px]">
-              <div className="flex items-start justify-between gap-4 p-3.5 bg-[#f6f7f7] border border-[#c3c4c7] rounded-[3px]">
-                <div>
-                  <h4 className="font-semibold text-[#1d2327]">
-                    {dict["admin.profile.security_alerts"] || "Security & Sign-in Alerts"}
-                  </h4>
-                  <p className="text-[12px] text-[#646970]">
-                    {dict["admin.profile.security_alerts_desc"] ||
-                      "Instant alerts when logging in from an unrecognized device, changing passwords, or modifying 2FA."}
-                  </p>
-                </div>
-                <span className="text-[#007017] font-semibold text-[12px]">
-                  {dict["admin.profile.always_active"] || "Always Active"}
-                </span>
-              </div>
-
-              <div className="flex items-start justify-between gap-4 p-3.5 bg-[#f6f7f7] border border-[#c3c4c7] rounded-[3px]">
-                <div>
-                  <h4 className="font-semibold text-[#1d2327]">
-                    {dict["admin.profile.content_alerts"] || "Content & Editorial Notifications"}
-                  </h4>
-                  <p className="text-[12px] text-[#646970]">
-                    {dict["admin.profile.content_alerts_desc"] ||
-                      "Notifications when comments require moderation or new articles are published."}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsNotifsOpen(true)}
-                  className="text-[#2271b1] hover:underline font-semibold text-[12px]"
-                >
-                  {dict["admin.profile.manage"] || "Configure"}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsNotifsOpen(true)}
-              className="bg-[#2271b1] hover:bg-[#135e96] text-white border border-[#2271b1] text-[13px] font-semibold px-4 py-1.5 rounded-[3px] shadow-xs cursor-pointer inline-flex items-center gap-1.5"
-            >
-              <Bell className="size-3.5" />
-              <span>{dict["admin.profile.manage"] || "Configure Notifications"}</span>
-            </button>
-          </div>
+        <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-5 text-[13px] text-[#50575e]">
+          {dict["admin.profile.notifications_unavailable"]}
         </div>
       )}
 
       {/* ========================================================================= */}
       {/* MODALS                                                                    */}
       {/* ========================================================================= */}
-      <EditProfileModal
-        isOpen={isEditProfileOpen}
-        onClose={() => setIsEditProfileOpen(false)}
-        user={user as any}
-        onUpdate={handleUpdateUser}
-        dict={dict}
-        direction={direction}
-      />
+      {isEditProfileOpen && (
+        <EditProfileModal
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          user={user}
+          onUpdate={handleUpdateUser}
+          dict={dict}
+          direction={direction}
+        />
+      )}
 
-      <UpdatePassForm
-        isOpen={isUpdatePassOpen}
-        onClose={() => setIsUpdatePassOpen(false)}
-        dict={dict}
-        direction={direction}
-      />
+      {isUpdatePassOpen && (
+        <UpdatePassForm
+          isOpen={isUpdatePassOpen}
+          onClose={() => setIsUpdatePassOpen(false)}
+          dict={dict}
+          direction={direction}
+        />
+      )}
 
-      <TwoFactorSettings
-        isOpen={is2FAOpen}
-        onClose={() => setIs2FAOpen(false)}
-        user={{ twoFactorEnabled: user.twoFactorEnabled }}
-        onUpdate={() => {
-          handleUpdateUser({ twoFactorEnabled: !user.twoFactorEnabled });
-        }}
-        dict={dict}
-        direction={direction}
-      />
-
-      <NotificationSettingsModal
-        isOpen={isNotifsOpen}
-        onClose={() => setIsNotifsOpen(false)}
-        user={user as any}
-        onUpdate={handleUpdateUser}
-        dict={dict}
-        direction={direction}
-      />
-
-      <PasskeySettings
-        isOpen={isPasskeyOpen}
-        onClose={() => setIsPasskeyOpen(false)}
-        dict={dict}
-        direction={direction}
-      />
+      {is2FAOpen && (
+        <TwoFactorSettings
+          isOpen={is2FAOpen}
+          onClose={() => setIs2FAOpen(false)}
+          user={{ twoFactorEnabled: user.twoFactorEnabled }}
+          onUpdate={() => {
+            void authClient
+              .getSession({ query: { disableCookieCache: true } })
+              .then((result) => {
+                if (result.data)
+                  handleUpdateUser({
+                    twoFactorEnabled: !!result.data.user.twoFactorEnabled,
+                  });
+                router.refresh();
+              })
+              .catch(() => router.refresh());
+          }}
+          dict={dict}
+          direction={direction}
+        />
+      )}
     </div>
   );
 }

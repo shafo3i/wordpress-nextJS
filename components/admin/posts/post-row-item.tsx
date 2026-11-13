@@ -55,6 +55,7 @@ export function PostRowItem({
   basePath = "/admincp/posts",
   dict = {},
   direction = "ltr",
+  canDelete = true,
 }: {
   post: PostRowData;
   index?: number;
@@ -67,6 +68,7 @@ export function PostRowItem({
   basePath?: string;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  canDelete?: boolean;
 }) {
   const isDraft = post.status === "draft";
   const isPendingReview = post.status === "pending";
@@ -85,6 +87,7 @@ export function PostRowItem({
         <input
           aria-label={`Select ${post.title || "post"}`}
           checked={isSelected}
+          disabled={!canDelete}
           className="mt-1 h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
           onChange={(e) => onToggleSelect(e.target.checked)}
           type="checkbox"
@@ -142,14 +145,13 @@ export function PostRowItem({
               >
                 <bdi>{dict["admin.common.quick_edit"] || "Quick Edit"}</bdi>
               </button>
-              <span aria-hidden="true">|</span>
-              <button
+              {canDelete && <><span aria-hidden="true">|</span><button
                 className="text-[#b32d2e] hover:text-[#8c1617] hover:underline cursor-pointer"
                 onClick={onTrash}
                 type="button"
               >
                 <bdi>{dict["admin.common.trash"] || "Trash"}</bdi>
-              </button>
+              </button></>}
               <span aria-hidden="true">|</span>
               <Link
                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"

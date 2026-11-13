@@ -1,5 +1,5 @@
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { getPagesQuery, getPageCountsQuery, getParentPagesQuery } from "./query";
 import { PageListHeader, PageViewsNav, PageListTable } from "./_components";
 
@@ -16,7 +16,7 @@ interface PagesPageProps {
 }
 
 export default async function PagesPage({ searchParams }: PagesPageProps) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
 
   const { s, status, date, lang, page } = await searchParams;
   const search = s?.trim() ?? "";

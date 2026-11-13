@@ -10,10 +10,12 @@ export function MetaBoxFeaturedImage({
   featuredImageId,
   onChange,
   dict = {},
+  canEditMediaDetails = true,
 }: {
   featuredImageId: string
   onChange: (id: string) => void
   dict?: Record<string, string>
+  canEditMediaDetails?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(true),
     [isModalOpen, setIsModalOpen] = useState(false),
@@ -107,6 +109,7 @@ export function MetaBoxFeaturedImage({
         </div>
       )}
       <MediaSelectModal
+        canEditDetails={canEditMediaDetails}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSelect={(item) => {

@@ -1,3 +1,4 @@
+vi.mock("server-only", () => ({}))
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { PgDialect } from "drizzle-orm/pg-core"
 

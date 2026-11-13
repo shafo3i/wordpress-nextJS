@@ -3,7 +3,7 @@
 import { mediaItemIdSchema, mediaDetailsPatchSchema } from "@/db/schema/cms-media-details";
 import { getMediaItemDetails } from "@/services/media-details.service";
 import { revalidatePath } from "next/cache";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor } from "@/lib/authMIddleware";
 import { MAX_MEDIA_UPLOAD_BYTES } from "@/lib/media-upload";
 import {
   getMediaLibraryItems,
@@ -21,21 +21,21 @@ export async function fetchMediaItemsAction(params: {
   page?: number;
   perPage?: number;
 }): Promise<{ success: boolean; data?: MediaListResult; error?: string }> {
+  await verifyPostEditor();
   try {
-    await verifyAdminOrEditor();
     const data = await getMediaLibraryItems(params);
     return { success: true, data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("fetchMediaItemsAction error:", error);
-    return { success: false, error: error?.message || "Failed to fetch media items" };
+    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to fetch media items" };
   }
 }
 
 export async function uploadMediaAction(
   formData: FormData
 ): Promise<{ success: boolean; items?: MediaItem[]; error?: string }> {
+  const session = await verifyPostEditor();
   try {
-    const session = await verifyAdminOrEditor();
     const files = formData.getAll("file") as File[];
     if (files.some(file => !(file instanceof File)) || files.reduce((sum, file) => sum + file.size, 0) > MAX_MEDIA_UPLOAD_BYTES) {
       return { success: false, error: "Invalid upload or upload exceeds 32 MB" };
@@ -64,9 +64,9 @@ export async function uploadMediaAction(
 
     revalidatePath("/admincp/media");
     return { success: true, items: uploadedItems };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("uploadMediaAction error:", error);
-    return { success: false, error: error?.message || "Failed to upload media" };
+    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to upload media" };
   }
 }
 
@@ -79,34 +79,35 @@ export async function updateMediaAction(
     description?: string;
   }
 ): Promise<{ success: boolean; item?: MediaItem; error?: string }> {
+  await verifyPostEditor();
   try {
-    await verifyAdminOrEditor();
     mediaItemIdSchema.parse(id);
     await updateMediaItem(id, mediaDetailsPatchSchema.parse(data));
     revalidatePath("/admincp/media");
     revalidatePath("/", "layout");
     return { success: true, item: (await getMediaItemDetails(id)) || undefined };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("updateMediaAction error:", error);
-    return { success: false, error: error?.message || "Failed to update media item" };
+    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to update media item" };
   }
 }
 
 export async function deleteMediaAction(
   ids: number[]
 ): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
+  await verifyPostEditor();
   try {
-    await verifyAdminOrEditor();
     const result = await deleteMediaItems(ids);
     revalidatePath("/admincp/media");
     return { success: true, deletedCount: result.deletedCount };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("deleteMediaAction error:", error);
-    return { success: false, error: error?.message || "Failed to delete media" };
+    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to delete media" };
   }
 }
 
 export async function fetchMediaItemAction(id:number):Promise<{success:boolean;item?:MediaItem;error?:string}>{
-  try { await verifyAdminOrEditor(); mediaItemIdSchema.parse(id); const item=await getMediaItemDetails(id);return item?{success:true,item}:{success:false,error:"admin.media.details_not_found"}; }
+  await verifyPostEditor();
+  try { mediaItemIdSchema.parse(id); const item=await getMediaItemDetails(id);return item?{success:true,item}:{success:false,error:"admin.media.details_not_found"}; }
   catch { return {success:false,error:"admin.media.details_load_failed"}; }
 }

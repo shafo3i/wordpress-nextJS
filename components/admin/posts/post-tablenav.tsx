@@ -19,6 +19,7 @@ export function PostTablenav({
   onApplyBulkAction,
   isPending = false,
   isTrashView = false,
+  canDelete = true,
   categories = [],
   currentCategory,
   currentDate,
@@ -39,6 +40,7 @@ export function PostTablenav({
   onApplyBulkAction: () => void;
   isPending?: boolean;
   isTrashView?: boolean;
+  canDelete?: boolean;
   categories?: CategoryOption[];
   currentCategory?: string;
   currentDate?: string;
@@ -98,7 +100,7 @@ export function PostTablenav({
       dir={direction}
     >
       <div className="flex flex-wrap items-center gap-1.5">
-        <select
+        {canDelete && <><select
           aria-label={dict["admin.common.bulk_actions"] || "Bulk actions"}
           className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 py-1 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
           onChange={(e) => onBulkActionChange(e.target.value)}
@@ -131,7 +133,7 @@ export function PostTablenav({
           {isPending
             ? dict["admin.common.applying"] || "Applying..."
             : dict["admin.common.apply"] || "Apply"}
-        </button>
+        </button></>}
 
         {position === "top" && (
           <>

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   clear: vi.fn(),
 }))
-vi.mock("@/lib/authMIddleware", () => ({ verifyAdminOrEditor: mocks.auth }))
+vi.mock("@/lib/authMIddleware", () => ({ verifyPostEditor: mocks.auth, verifyAdmin: mocks.auth }))
 vi.mock("@/services/post.service", () => ({
   createPost: mocks.create,
   updatePost: mocks.update,
@@ -13,6 +13,7 @@ vi.mock("@/services/post.service", () => ({
   restorePosts: vi.fn(),
   deletePosts: vi.fn(),
   PostChangedError: class extends Error {},
+  PostPermissionError: class extends Error {},
 }))
 vi.mock("@/services/post-autosave.service", () => ({
   deletePostAutosave: mocks.clear,
@@ -68,6 +69,12 @@ describe("manual saves acknowledge recovery only after successful writes", () =>
       postId: "1",
     })
     expect(mocks.clear).toHaveBeenCalledWith("editor-a", "post:1", 7)
+  })
+  it("derives editor restrictions from the session instead of posted fields", async () => {
+    const values = form()
+    values.set("editorRestricted", "false")
+    expect((await updatePostAction(values)).success).toBe(true)
+    expect(mocks.update).toHaveBeenCalledWith("1", expect.objectContaining({ editorRestricted: true }))
   })
   it("cannot clear an unrelated document's recovery", async () => {
     const values = form()

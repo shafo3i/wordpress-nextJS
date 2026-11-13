@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import {
   exportWxrXml,
   exportSqlDump,
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
     const searchParams = request.nextUrl.searchParams;
     const format = (searchParams.get("format") || "xml").toLowerCase();

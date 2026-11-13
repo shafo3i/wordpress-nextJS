@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   }
   if (!session)
     return response({ error: "admin.settings.logo.unauthorized" }, 401)
-  if (!["admin", "editor"].includes(session.user.role || ""))
+  if (session.user.role !== "admin" || session.user.banned)
     return response({ error: "admin.settings.logo.forbidden" }, 403)
   const userId = session.user.id
   const origin = request.headers.get("origin")

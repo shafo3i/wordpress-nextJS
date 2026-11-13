@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import {
   createPage as createPageService,
   updatePage as updatePageService,
@@ -59,7 +59,7 @@ function parsePageFormData(formData: FormData) {
 }
 
 export async function savePageAction(formData: FormData) {
-  const session = await verifyAdminOrEditor();
+  const session = await verifyAdmin();
   const parsed = parsePageFormData(formData);
 
   if (!parsed.title) {
@@ -78,7 +78,7 @@ export async function savePageAction(formData: FormData) {
 }
 
 export async function updatePageAction(formData: FormData) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   const pageId = String(formData.get("id") ?? "");
   if (!pageId || pageId === "0") {
     throw new Error("A valid page ID is required.");
@@ -102,7 +102,7 @@ export async function updatePageAction(formData: FormData) {
 
 export async function quickUpdatePageAction(data: QuickUpdatePageInput) {
   try {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
     const validated = quickUpdateSchema.parse(data);
 
     const result = await quickUpdatePageService(validated);
@@ -120,7 +120,7 @@ export async function quickUpdatePageAction(data: QuickUpdatePageInput) {
 
 export async function movePagesToTrashAction(ids: string[]) {
   try {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
     if (!ids.length) return { success: false, error: "No page IDs provided." };
 
     await trashPagesService(ids);
@@ -138,7 +138,7 @@ export async function movePagesToTrashAction(ids: string[]) {
 
 export async function restorePagesAction(ids: string[]) {
   try {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
     if (!ids.length) return { success: false, error: "No page IDs provided." };
 
     await restorePagesService(ids);
@@ -156,7 +156,7 @@ export async function restorePagesAction(ids: string[]) {
 
 export async function deletePagesPermanentlyAction(ids: string[]) {
   try {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
     if (!ids.length) return { success: false, error: "No page IDs provided." };
 
     await deletePagesService(ids);

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
 import {
   tagService,
   createTag as createTagService,

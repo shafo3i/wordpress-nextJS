@@ -1,4 +1,5 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import "server-only";
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
 import {
   getAllCategories as getCategoriesFromService,
   getCategoryCounts as getCountsFromService,
@@ -15,7 +16,7 @@ export async function getCategories(
   options: GetCategoriesOptions = {}
 ): Promise<{ categories: CategoryItem[]; total: number }> {
   await verifyAdminOrEditor();
-  return getCategoriesFromService(options);
+  return getCategoriesFromService({ ...options, limit: options.limit ?? 20 });
 }
 
 export async function getCategoryCounts(): Promise<CategoryCounts> {

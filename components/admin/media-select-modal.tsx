@@ -27,6 +27,7 @@ interface MediaSelectModalProps {
   selectButtonText?: string;
   dict?: Record<string, string>;
   mediaType?: "image" | "all";
+  canEditDetails?: boolean;
 }
 
 export function MediaSelectModal({
@@ -37,6 +38,7 @@ export function MediaSelectModal({
   selectButtonText,
   dict = {},
   mediaType = "image",
+  canEditDetails = true,
 }: MediaSelectModalProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "library">("library");
   const queryClient = useQueryClient();
@@ -297,7 +299,7 @@ export function MediaSelectModal({
               {/* Selected Item Sidebar */}
               <div className="w-72 border-s border-[#c3c4c7] bg-[#f6f7f7] overflow-y-auto flex flex-col justify-between shrink-0">
                 {selectedItem ? (
-                  <MediaAttachmentDetails key={selectedItem.id} item={selectedItem} dict={dict} onUpdated={setSelectedItem}/>
+                  <MediaAttachmentDetails key={selectedItem.id} item={selectedItem} dict={dict} onUpdated={setSelectedItem} readOnly={!canEditDetails}/>
                 ) : (
                   <div className="flex h-full items-center justify-center text-center p-4">
                     <p className="text-[12px] text-[#646970]">

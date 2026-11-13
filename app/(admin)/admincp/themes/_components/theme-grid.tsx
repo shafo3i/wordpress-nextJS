@@ -17,7 +17,7 @@ export function ThemeGrid({ themes, dict, direction = "ltr" }: ThemeGridProps) {
   if (!themes.length) {
     return (
       <div className="rounded border border-[#c3c4c7] bg-white p-8 text-center text-[13px] text-[#646970]">
-        {dict?.["admin.themes.no_themes"] || "No themes found matching your criteria."}
+        {dict?.["admin.themes.no_themes"]}
       </div>
     );
   }

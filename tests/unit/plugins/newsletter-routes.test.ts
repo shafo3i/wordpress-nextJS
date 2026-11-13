@@ -52,7 +52,7 @@ describe("newsletter confirmation and unsubscribe", () => {
       new Request(`https://site.test/api/newsletter/confirm?token=${token}`)
     )
     expect(await response.text()).toContain('method="post"')
-    expect(response.headers.get("referrer-policy")).toBe("no-referrer")
+    expect(response.headers.get("referrer-policy")).toBe("same-origin")
     await unsubscribePage(
       new Request("https://site.test/api/newsletter/unsubscribe")
     )
@@ -70,6 +70,17 @@ describe("newsletter confirmation and unsubscribe", () => {
       400
     )
     expect(mocks.welcome).toHaveBeenCalledTimes(1)
+  })
+  it("accepts the same-origin browser confirmation and rejects opaque origins", async () => {
+    const url = `https://site.test/api/newsletter/confirm?token=${token}&lang=ar`
+    expect((await confirm(new Request(url, {
+      method: "POST", headers: { origin: "https://site.test" },
+    }))).status).toBe(200)
+    mocks.confirm.mockClear()
+    expect((await confirm(new Request(url, {
+      method: "POST", headers: { origin: "null" },
+    }))).status).toBe(403)
+    expect(mocks.confirm).not.toHaveBeenCalled()
   })
   it("requires a subscriber-bound signature and rejects cross-origin POST", async () => {
     const bad = `https://site.test/api/newsletter/unsubscribe?id=${id}&token=${token}`

@@ -1,8 +1,8 @@
 import { AdminSessionMonitor } from "./admin-session-monitor";
+import { verifyAdminArea } from "@/lib/authMIddleware";
 import Link from "next/link";
-import { headers, cookies } from "next/headers";
+import { cookies } from "next/headers";
 import { count, eq } from "drizzle-orm";
-import { auth } from "@/auth";
 import { db } from "@/db";
 import { wpComments, wpOptions } from "@/db/schema";
 import { Home, MessageSquare, Plus, ShieldCheck, Globe, User, LogOut } from "lucide-react";
@@ -16,7 +16,7 @@ import {
 import { switchAdminLanguageAction } from "@/app/(admin)/admincp/languages/action";
 
 export async function getAdminContext() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await verifyAdminArea();
   const [siteName, sitePublic, comments, activeTheme] = await Promise.all([
     db.select({ value: wpOptions.optionValue }).from(wpOptions).where(eq(wpOptions.optionName, "blogname")).limit(1),
     db.select({ value: wpOptions.optionValue }).from(wpOptions).where(eq(wpOptions.optionName, "blog_public")).limit(1),
@@ -27,6 +27,7 @@ export async function getAdminContext() {
   return {
     userName: session?.user.name ?? "",
     userId: session?.user.id ?? "",
+    userRole: session?.user.role ?? "",
     siteName: siteName[0]?.value ?? "WordPress Clone",
     commentCount: comments[0]?.value ?? 0,
     themeName: activeTheme[0]?.value ?? "Default Theme",
@@ -88,13 +89,13 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
             <Home aria-hidden="true" className="size-3.5" />
             <span>{context.siteName || "—"}</span>
           </Link>
-          <Link
+          {context.userRole === "admin" && <Link
             className="wp-admin-top-link"
             href="/admincp/comments"
           >
             <MessageSquare aria-hidden="true" className="size-3.5" />
             <span>{context.commentCount}</span>
-          </Link>
+          </Link>}
           <Link
             className="wp-admin-top-link"
             href="/admincp/posts/new"
@@ -136,9 +137,9 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          <Link className="wp-admin-user-link" href="/admincp/profile">
+          {context.userRole === "admin" ? <Link className="wp-admin-user-link" href="/admincp/profile">
             <User className="size-4" /> {dict["admin.menu.howdy"] || "Howdy"}, {context.userName || "—"}
-          </Link>
+          </Link> : <span>{context.userName}</span>}
           <Link className="wp-admin-user-link" href="/cms-login">
             <LogOut className="size-4" /> {dict["admin.menu.logout"] || "Log Out"}
           </Link>
@@ -147,7 +148,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
 
       <div className="wp-admin-layout">
         <aside className="wp-admin-sidebar">
-          <AdminNav dict={dict} />
+          <AdminNav dict={dict} userRole={context.userRole} />
           <div className="wp-admin-sidebar-footer">
             <ShieldCheck aria-hidden="true" className="mb-2 size-4" />
             {dict["admin.menu.site_administration"] || "Site administration"}

@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { getUsers, getUsersCounts, getAvailableRoles } from "./query";
 import { UserTable } from "./_components";
 
@@ -24,12 +24,13 @@ type PageProps = {
 };
 
 export default async function UsersPage({ searchParams }: PageProps) {
-  const session = await verifyAdminOrEditor();
+  const session = await verifyAdmin();
   const langContext = await getAdminLanguageContext();
   const { dict, direction } = langContext;
 
   const resolvedParams = searchParams ? await searchParams : {};
-  const page = Number(resolvedParams?.page) || 1;
+  const requestedPage = Number(resolvedParams?.page);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100000 ? requestedPage : 1;
   const search = resolvedParams?.search?.trim() || "";
   const role = resolvedParams?.role?.trim() || "all";
   const pageSize = 20;

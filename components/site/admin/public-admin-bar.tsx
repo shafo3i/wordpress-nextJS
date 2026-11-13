@@ -17,7 +17,7 @@ export async function PublicAdminBar({
 }) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (
-    !session ||
+    !session || session.user.banned ||
     (session.user.role !== "admin" && session.user.role !== "editor")
   )
     return children
@@ -30,12 +30,12 @@ export async function PublicAdminBar({
         aria-label={dict["site.admin_bar.label"]}
         data-public-admin-bar
       >
-        <Link href="/admincp" className={styles.site}>
+        <Link href={session.user.role === "admin" ? "/admincp" : "/admincp/posts"} className={styles.site}>
           <Gauge size={15} aria-hidden="true" />
           <span>{siteTitle}</span>
         </Link>
-        <Link href="/admincp">{dict["site.admin_bar.dashboard"]}</Link>
-        {pageId && (
+        <Link href={session.user.role === "admin" ? "/admincp" : "/admincp/posts"}>{dict[session.user.role === "admin" ? "site.admin_bar.dashboard" : "admin.menu.posts"]}</Link>
+        {pageId && session.user.role === "admin" && (
           <>
             <Link href={`/admincp/pages/${pageId}/edit`}>
               <Pencil size={13} aria-hidden="true" />

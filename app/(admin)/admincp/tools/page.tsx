@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { Download, Upload, Database, FileCode, Archive, ArrowRight, Search, Trash2, Activity, Link as LinkIcon, Globe, Image as ImageIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function ToolsPage() {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
 
   const langContext = await getAdminLanguageContext();
   const dict = langContext.dict;

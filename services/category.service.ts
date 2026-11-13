@@ -1,19 +1,35 @@
-import { eq, desc, asc, and, count, sql, inArray, ne, ilike, or } from "drizzle-orm";
+import "server-only";
+import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import {
+  eq,
+  desc,
+  asc,
+  and,
+  count,
+  sql,
+  inArray,
+  ne,
+  ilike,
+  or,
+} from "drizzle-orm";
 import { DB, db } from "@/db";
 import {
   wpTerms,
   wpTermTaxonomy,
   wpTermRelationships,
-  wpTermmeta,
   createCategorySchema,
   updateCategorySchema,
+  quickUpdateCategorySchema,
+  deleteCategoriesSchema,
+  categoryIdSchema,
+  categoryQuerySchema,
   CategoryInput,
-  UpdateCategoryInput,
-  SelectTerm,
-  SelectTermTaxonomy,
 } from "@/db/schema/cms-taxonomy";
-import { postTranslationsTable, termTranslationsTable, languagesTable } from "@/db/schema/cms-languages";
-import { setTermLanguage, getTermLanguage, getTermTranslations } from "./language.service";
+import {
+  termTranslationsTable,
+  languagesTable,
+} from "@/db/schema/cms-languages";
+import { setTermLanguage } from "./language.service";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,7 +74,8 @@ export async function uniqueCategorySlug(
       .limit(1);
 
     if (!existing.length) return slug;
-    slug = `${base}-${suffix++}`.slice(0, 200);
+    const ending = `-${suffix++}`;
+    slug = `${base.slice(0, 200 - ending.length)}${ending}`;
   }
 }
 
@@ -146,7 +163,14 @@ export async function getAllCategories(
   options: GetCategoriesOptions = {},
   database: DB = db
 ): Promise<{ categories: CategoryItem[]; total: number }> {
-  const { search, language, page, limit, orderBy = "name", order = "asc" } = options;
+  const {
+    search,
+    language,
+    page,
+    limit,
+    orderBy = "name",
+    order = "asc",
+  } = categoryQuerySchema.parse(options);
 
   const conditions = [eq(wpTermTaxonomy.taxonomy, "category")];
 
@@ -291,13 +315,17 @@ export async function getAllCategories(
     count: countMap.get(c.termId.toString()) ?? Number(c.count ?? 0),
     languageCode: c.languageCode ?? "en",
     translationGroupId: c.translationGroupId ?? undefined,
-    translations: c.translationGroupId ? groupTranslationsMap.get(c.translationGroupId) ?? [] : [],
+    translations: c.translationGroupId
+      ? (groupTranslationsMap.get(c.translationGroupId) ?? [])
+      : [],
   }));
 
   return { categories, total };
 }
 
-export async function getCategoryCounts(database: DB = db): Promise<CategoryCounts> {
+export async function getCategoryCounts(
+  database: DB = db
+): Promise<CategoryCounts> {
   const [result] = await database
     .select({ total: count() })
     .from(wpTermTaxonomy)
@@ -316,7 +344,7 @@ export async function getParentCategories(
   const conditions = [eq(wpTermTaxonomy.taxonomy, "category")];
 
   if (excludeTermId !== undefined) {
-    conditions.push(ne(wpTerms.termId, toBigInt(excludeTermId)));
+    conditions.push(ne(wpTerms.termId, categoryIdSchema.parse(excludeTermId)));
   }
 
   if (language && language !== "all") {
@@ -327,6 +355,8 @@ export async function getParentCategories(
     const taxIds = matching.map((m) => m.termTaxonomyId);
     if (taxIds.length > 0) {
       conditions.push(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
+    } else {
+      return [];
     }
   }
 
@@ -352,7 +382,7 @@ export async function getCategoryById(
   id: bigint | string | number,
   database: DB = db
 ): Promise<CategoryItem | null> {
-  const termId = toBigInt(id);
+  const termId = categoryIdSchema.parse(id);
 
   const rows = await database
     .select({
@@ -372,7 +402,9 @@ export async function getCategoryById(
       termTranslationsTable,
       eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)
     )
-    .where(and(eq(wpTerms.termId, termId), eq(wpTermTaxonomy.taxonomy, "category")))
+    .where(
+      and(eq(wpTerms.termId, termId), eq(wpTermTaxonomy.taxonomy, "category"))
+    )
     .limit(1);
 
   if (!rows[0]) return null;
@@ -399,7 +431,9 @@ export async function getCategoryById(
         eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
       )
       .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
-      .where(eq(termTranslationsTable.translationGroupId, cat.translationGroupId));
+      .where(
+        eq(termTranslationsTable.translationGroupId, cat.translationGroupId)
+      );
 
     translations = trRows.map((r) => ({
       termTaxonomyId: r.termTaxonomyId.toString(),
@@ -469,14 +503,153 @@ export async function getCategoryBySlug(
 // Category Mutations
 // ---------------------------------------------------------------------------
 
+export class CategoryMutationError extends Error {
+  constructor(public readonly key: string) {
+    super(key);
+  }
+}
+
+async function categoryTransaction<T>(
+  database: DB,
+  operation: (tx: DB) => Promise<T>
+): Promise<T> {
+  return database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB;
+    // Serialize category hierarchy/group changes, including concurrent edits.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('pressforge:categories'))`
+    );
+    return operation(tx);
+  });
+}
+
+async function assertExclusiveCategoryTerm(tx: DB, ids: bigint[]) {
+  const [shared] = await tx
+    .select({ id: wpTermTaxonomy.termId })
+    .from(wpTermTaxonomy)
+    .where(
+      and(
+        inArray(wpTermTaxonomy.termId, ids),
+        ne(wpTermTaxonomy.taxonomy, "category")
+      )
+    )
+    .limit(1);
+  if (shared) throw new CategoryMutationError("admin.categories.error.shared");
+}
+
+async function validateCategoryLinks(
+  tx: DB,
+  parent: bigint,
+  termId: bigint | undefined,
+  languageCode: string | undefined,
+  sourceId: bigint | undefined,
+  currentTaxId?: bigint
+) {
+  const categories = await tx
+    .select({
+      termId: wpTermTaxonomy.termId,
+      taxId: wpTermTaxonomy.termTaxonomyId,
+      parent: wpTermTaxonomy.parent,
+    })
+    .from(wpTermTaxonomy)
+    .where(eq(wpTermTaxonomy.taxonomy, "category"));
+  const byId = new Map(
+    categories.map((category) => [category.termId, category])
+  );
+  const visited = new Set<bigint>();
+  let ancestor = parent;
+  while (ancestor !== BigInt(0)) {
+    if (ancestor === termId || visited.has(ancestor) || !byId.has(ancestor))
+      throw new CategoryMutationError("admin.categories.error.parent");
+    visited.add(ancestor);
+    ancestor = byId.get(ancestor)!.parent;
+  }
+  const [language] = await tx
+    .select({ code: languagesTable.code })
+    .from(languagesTable)
+    .where(
+      languageCode
+        ? and(
+            eq(languagesTable.code, languageCode),
+            eq(languagesTable.isActive, true)
+          )
+        : and(
+            eq(languagesTable.isDefault, true),
+            eq(languagesTable.isActive, true)
+          )
+    )
+    .limit(1);
+  if (!language)
+    throw new CategoryMutationError("admin.categories.error.language");
+  if (sourceId) {
+    if (
+      sourceId === currentTaxId ||
+      !categories.some((category) => category.taxId === sourceId)
+    )
+      throw new CategoryMutationError("admin.categories.error.translation");
+    const translations = await tx
+      .select({
+        taxId: termTranslationsTable.termTaxonomyId,
+        locale: termTranslationsTable.languageCode,
+        group: termTranslationsTable.translationGroupId,
+      })
+      .from(termTranslationsTable);
+    const source = translations.find((item) => item.taxId === sourceId);
+    if (
+      !source ||
+      source.locale === language.code ||
+      translations.some(
+        (item) =>
+          item.group === source.group &&
+          item.locale === language.code &&
+          item.taxId !== currentTaxId
+      )
+    )
+      throw new CategoryMutationError("admin.categories.error.translation");
+  } else if (currentTaxId) {
+    const [current] = await tx
+      .select({ group: termTranslationsTable.translationGroupId })
+      .from(termTranslationsTable)
+      .where(eq(termTranslationsTable.termTaxonomyId, currentTaxId))
+      .limit(1);
+    if (current) {
+      const [duplicate] = await tx
+        .select({ id: termTranslationsTable.termTaxonomyId })
+        .from(termTranslationsTable)
+        .where(
+          and(
+            eq(termTranslationsTable.translationGroupId, current.group),
+            eq(termTranslationsTable.languageCode, language.code),
+            ne(termTranslationsTable.termTaxonomyId, currentTaxId)
+          )
+        )
+        .limit(1);
+      if (duplicate)
+        throw new CategoryMutationError("admin.categories.error.translation");
+    }
+  }
+  return language.code;
+}
+
 export async function createCategory(
   data: CreateCategoryOptions,
   database: DB = db
 ): Promise<CategoryItem> {
+  await verifyAdminOrEditor();
   const parsed = createCategorySchema.parse(data);
-  const slug = await uniqueCategorySlug(parsed.slug || parsed.name, undefined, database);
-
-  const { termId, termTaxonomyId } = await database.transaction(async (tx) => {
+  return categoryTransaction(database, async (tx) => {
+    const language = await validateCategoryLinks(
+      tx,
+      parsed.parent,
+      undefined,
+      parsed.languageCode,
+      parsed.sourceTermTaxonomyId
+    );
+    const slug = await uniqueCategorySlug(
+      parsed.slug || parsed.name,
+      undefined,
+      tx
+    );
     const insertedTerm = await tx
       .insert(wpTerms)
       .values({
@@ -499,18 +672,17 @@ export async function createCategory(
       })
       .returning({ termTaxonomyId: wpTermTaxonomy.termTaxonomyId });
 
-    return { termId: newTermId, termTaxonomyId: insertedTax[0].termTaxonomyId };
+    await setTermLanguage(
+      insertedTax[0].termTaxonomyId,
+      language,
+      parsed.sourceTermTaxonomyId,
+      tx
+    );
+    const created = await getCategoryById(newTermId, tx);
+    if (!created)
+      throw new CategoryMutationError("admin.categories.error.failed");
+    return created;
   });
-
-  const langCode = data.languageCode || "en";
-  const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
-  await setTermLanguage(termTaxonomyId, langCode, sourceTaxId, database);
-
-  const created = await getCategoryById(termId, database);
-  if (!created) {
-    throw new Error("Failed to retrieve created category.");
-  }
-  return created;
 }
 
 export async function updateCategory(
@@ -518,25 +690,35 @@ export async function updateCategory(
   data: UpdateCategoryOptions,
   database: DB = db
 ): Promise<CategoryItem> {
-  const termId = toBigInt(id);
-  const existing = await getCategoryById(termId, database);
-  if (!existing) {
-    throw new Error(`Category with ID ${id} not found.`);
-  }
+  await verifyAdminOrEditor();
+  const parsed = updateCategorySchema.parse({ ...data, termId: id });
+  const termId = parsed.termId;
+  return categoryTransaction(database, async (tx) => {
+    const existing = await getCategoryById(termId, tx);
+    if (!existing)
+      throw new CategoryMutationError("admin.categories.error.not_found");
+    await assertExclusiveCategoryTerm(tx, [termId]);
+    const name = parsed.name ?? existing.name;
 
-  const name = data.name !== undefined ? data.name.trim() : existing.name;
-  if (!name) throw new Error("Category name is required.");
+    let slug = existing.slug;
+    if (
+      existing.slug !== "uncategorized" &&
+      (parsed.slug !== undefined || parsed.name !== undefined)
+    ) {
+      const rawSlug = parsed.slug || name;
+      slug = await uniqueCategorySlug(rawSlug, termId, tx);
+    }
 
-  let slug = existing.slug;
-  if (data.slug !== undefined || data.name !== undefined) {
-    const rawSlug = data.slug !== undefined && data.slug.trim().length > 0 ? data.slug : name;
-    slug = await uniqueCategorySlug(rawSlug, termId, database);
-  }
-
-  const parent = data.parent !== undefined ? toBigInt(data.parent) : toBigInt(existing.parent);
-  const description = data.description !== undefined ? data.description.trim() : existing.description;
-
-  await database.transaction(async (tx) => {
+    const parent = parsed.parent ?? BigInt(existing.parent);
+    const description = parsed.description ?? existing.description;
+    const language = await validateCategoryLinks(
+      tx,
+      parent,
+      termId,
+      parsed.languageCode || existing.languageCode,
+      parsed.sourceTermTaxonomyId,
+      BigInt(existing.termTaxonomyId)
+    );
     await tx
       .update(wpTerms)
       .set({ name, slug })
@@ -545,19 +727,23 @@ export async function updateCategory(
     await tx
       .update(wpTermTaxonomy)
       .set({ description, parent })
-      .where(and(eq(wpTermTaxonomy.termId, termId), eq(wpTermTaxonomy.taxonomy, "category")));
+      .where(
+        and(
+          eq(wpTermTaxonomy.termId, termId),
+          eq(wpTermTaxonomy.taxonomy, "category")
+        )
+      );
+    await setTermLanguage(
+      BigInt(existing.termTaxonomyId),
+      language,
+      parsed.sourceTermTaxonomyId,
+      tx
+    );
+    const updated = await getCategoryById(termId, tx);
+    if (!updated)
+      throw new CategoryMutationError("admin.categories.error.failed");
+    return updated;
   });
-
-  if (data.languageCode) {
-    const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
-    await setTermLanguage(toBigInt(existing.termTaxonomyId), data.languageCode, sourceTaxId, database);
-  }
-
-  const updated = await getCategoryById(termId, database);
-  if (!updated) {
-    throw new Error("Failed to retrieve updated category.");
-  }
-  return updated;
 }
 
 export async function quickUpdateCategory(
@@ -565,18 +751,23 @@ export async function quickUpdateCategory(
   data: { name: string; slug?: string },
   database: DB = db
 ): Promise<{ id: string; name: string; slug: string }> {
-  const termId = toBigInt(id);
-  const name = data.name.trim();
-  if (!name) throw new Error("Category name is required.");
-
-  const slug = await uniqueCategorySlug(data.slug || name, termId, database);
-
-  await database
-    .update(wpTerms)
-    .set({ name, slug })
-    .where(eq(wpTerms.termId, termId));
-
-  return { id: id.toString(), name, slug };
+  await verifyAdminOrEditor();
+  const parsed = quickUpdateCategorySchema.parse({ ...data, id });
+  return categoryTransaction(database, async (tx) => {
+    const existing = await getCategoryById(parsed.id, tx);
+    if (!existing)
+      throw new CategoryMutationError("admin.categories.error.not_found");
+    await assertExclusiveCategoryTerm(tx, [parsed.id]);
+    const slug =
+      existing.slug === "uncategorized"
+        ? existing.slug
+        : await uniqueCategorySlug(parsed.slug || parsed.name, parsed.id, tx);
+    await tx
+      .update(wpTerms)
+      .set({ name: parsed.name, slug })
+      .where(eq(wpTerms.termId, parsed.id));
+    return { id: parsed.id.toString(), name: parsed.name, slug };
+  });
 }
 
 export async function deleteCategory(
@@ -590,38 +781,31 @@ export async function bulkDeleteCategories(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<{ success: boolean; count?: number; error?: string }> {
-  const termIds = ids.map((id) => toBigInt(id)).filter((id) => id > BigInt(0));
-  if (!termIds.length) {
-    return { success: false, error: "Select at least one category." };
-  }
-
-  // Find default uncategorized term to prevent its deletion
-  const uncategorized = await database
-    .select({ termId: wpTerms.termId })
-    .from(wpTerms)
-    .where(eq(wpTerms.slug, "uncategorized"))
-    .limit(1);
-
-  const safeTermIds = termIds.filter(
-    (id) => !uncategorized[0] || id !== uncategorized[0].termId
-  );
-
-  if (!safeTermIds.length) {
-    return { success: false, error: "The default category cannot be deleted." };
-  }
-
-  await database.transaction(async (tx) => {
-    // Get taxonomy IDs for these terms
+  await verifyAdminOrEditor();
+  const termIds = deleteCategoriesSchema.parse(ids);
+  return categoryTransaction(database, async (tx) => {
     const taxRows = await tx
-      .select({ termTaxonomyId: wpTermTaxonomy.termTaxonomyId })
+      .select({
+        termTaxonomyId: wpTermTaxonomy.termTaxonomyId,
+        termId: wpTerms.termId,
+        slug: wpTerms.slug,
+        parent: wpTermTaxonomy.parent,
+      })
       .from(wpTermTaxonomy)
+      .innerJoin(wpTerms, eq(wpTerms.termId, wpTermTaxonomy.termId))
       .where(
         and(
           eq(wpTermTaxonomy.taxonomy, "category"),
-          inArray(wpTermTaxonomy.termId, safeTermIds)
+          inArray(wpTermTaxonomy.termId, termIds)
         )
       );
 
+    if (taxRows.length !== termIds.length)
+      throw new CategoryMutationError("admin.categories.error.not_found");
+    if (taxRows.some((row) => row.slug === "uncategorized"))
+      throw new CategoryMutationError("admin.categories.error.default");
+    // A term shared with a tag/menu must never be renamed/deleted through Categories.
+    await assertExclusiveCategoryTerm(tx, termIds);
     const taxIds = taxRows.map((r) => r.termTaxonomyId);
     if (taxIds.length) {
       await tx
@@ -631,12 +815,20 @@ export async function bulkDeleteCategories(
         .delete(wpTermTaxonomy)
         .where(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
     }
-    await tx.delete(wpTerms).where(inArray(wpTerms.termId, safeTermIds));
+    // Surviving children become roots instead of referencing removed parents.
+    await tx
+      .update(wpTermTaxonomy)
+      .set({ parent: BigInt(0) })
+      .where(
+        and(
+          eq(wpTermTaxonomy.taxonomy, "category"),
+          inArray(wpTermTaxonomy.parent, termIds)
+        )
+      );
+    await tx.delete(wpTerms).where(inArray(wpTerms.termId, termIds));
+    return { success: true, count: taxRows.length };
   });
-
-  return { success: true, count: safeTermIds.length };
 }
-
 
 export async function getAllCategoriesWithPosts(
   languageCode?: string,
@@ -649,7 +841,7 @@ export async function getAllCategoriesWithPosts(
   const categoryWithPosts = await db.query.wpTermTaxonomy.findMany({
     where: {
       taxonomy: "category",
-    }
+    },
   });
   return categoryWithPosts;
 }

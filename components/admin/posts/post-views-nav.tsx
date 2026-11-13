@@ -20,6 +20,7 @@ export function PostViewsNav({
   basePath = "/admincp/posts",
   dict = {},
   direction = "ltr",
+  showTrash = true,
 }: {
   counts: StatusCounts;
   currentStatus?: string;
@@ -28,6 +29,7 @@ export function PostViewsNav({
   basePath?: string;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  showTrash?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,7 +66,7 @@ export function PostViewsNav({
     { key: "draft", label: dict["admin.common.draft"] || "Draft", count: counts.draft },
     ...(counts.pending !== undefined ? [{ key: "pending", label: dict["admin.common.pending"] || "Pending", count: counts.pending }] : []),
     ...(counts.private !== undefined ? [{ key: "private", label: dict["admin.common.private"] || "Private", count: counts.private }] : []),
-    { key: "trash", label: dict["admin.common.trash"] || "Trash", count: counts.trash },
+    ...(showTrash ? [{ key: "trash", label: dict["admin.common.trash"] || "Trash", count: counts.trash }] : []),
   ];
 
   return (

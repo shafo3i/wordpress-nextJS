@@ -20,8 +20,31 @@ vi.mock("@/services/language.service", async () => ({
     (await import(`../../../templates/language/${code}.json`)).default,
 }))
 import { sendAuthEmail } from "@/lib/auth-email"
+import { localizedEmail } from "@/templates/localized-email"
+import en from "@/templates/language/en.json"
+import ar from "@/templates/language/ar.json"
 
 describe("authentication email delivery", () => {
+  it("does not mistake newsletter language metadata for an OTP", () => {
+    for (const code of ["ar", "en"]) {
+      const language = {
+        code,
+        direction: code === "ar" ? "rtl" as const : "ltr" as const,
+        dict: code === "ar" ? ar : en,
+        siteName: "Publication",
+      }
+      const message = localizedEmail({
+        kind: "newsletter-confirm", ...language,
+        url: `https://site.test/api/newsletter/confirm?token=fixture&lang=${code}`,
+      })
+      expect(message.html).not.toContain("letter-spacing:6px")
+      expect(message.text.split("\n")).not.toContain(code)
+      expect(message.text).toContain(`lang=${code}`)
+      const otp = localizedEmail({ kind: "otp", ...language, otpCode: "123456" })
+      expect(otp.html).toContain("123456")
+      expect(otp.text.split("\n")).toContain("123456")
+    }
+  })
   it.each(["reset", "verify", "magic", "otp", "existing"] as const)(
     "sends %s in the requested language and preserves tokens",
     async (kind) => {

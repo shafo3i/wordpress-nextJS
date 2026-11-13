@@ -29,7 +29,7 @@ export async function sendAuthEmail(
     ...language,
     name,
     url,
-    code: kind === "otp" ? value : undefined,
+    otpCode: kind === "otp" ? value : undefined,
     ip:
       requestHeaders?.get("cf-connecting-ip") ||
       requestHeaders?.get("x-forwarded-for")?.split(",")[0]?.trim(),

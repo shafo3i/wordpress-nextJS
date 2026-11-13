@@ -1,56 +1,65 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import {
-  categoryService,
+  CategoryMutationError,
   createCategory as createCategoryService,
   updateCategory as updateCategoryService,
   quickUpdateCategory as quickUpdateCategoryService,
   bulkDeleteCategories as bulkDeleteCategoriesService,
 } from "@/services/category.service";
-import { createCategorySchema, updateCategorySchema } from "@/db/schema/cms-taxonomy";
+import {
+  createCategorySchema,
+  updateCategorySchema,
+  quickUpdateCategorySchema,
+  deleteCategoriesSchema,
+} from "@/db/schema/cms-taxonomy";
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { ZodError } from "zod";
+
+async function categoryErrorMessage(error: unknown): Promise<string> {
+  unstable_rethrow(error);
+  const { dict } = await getAdminLanguageContext();
+  const key =
+    error instanceof CategoryMutationError
+      ? error.key
+      : error instanceof ZodError
+        ? "admin.categories.error.invalid"
+        : "admin.categories.error.failed";
+  return dict[key] || dict["admin.categories.error.failed"] || "";
+}
+async function categoryMutation<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    throw new Error(await categoryErrorMessage(error));
+  }
+}
 
 export async function createCategory(formData: FormData) {
   await verifyAdminOrEditor();
 
-  const raw = Object.fromEntries(formData.entries());
-  const parsed = createCategorySchema.parse(raw);
-  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
-  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
-
-  const category = await createCategoryService({
-    ...parsed,
-    languageCode,
-    sourceTermTaxonomyId,
-  });
+  const category = await categoryMutation(async () =>
+    createCategoryService(
+      createCategorySchema.parse(Object.fromEntries(formData.entries()))
+    )
+  );
 
   revalidatePath("/admincp/categories");
   revalidatePath("/admincp/posts");
-  return { success: true, category };
+  return { success: true, id: category.id };
 }
 
 export async function updateCategory(formData: FormData) {
   await verifyAdminOrEditor();
 
-  const raw = Object.fromEntries(formData.entries());
-  const parsed = updateCategorySchema.parse(raw);
-
-  if (!parsed.termId) {
-    throw new Error("A valid category ID is required.");
-  }
-
-  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
-  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
-
-  await updateCategoryService(parsed.termId, {
-    name: parsed.name,
-    slug: parsed.slug,
-    parent: parsed.parent,
-    description: parsed.description,
-    languageCode,
-    sourceTermTaxonomyId,
+  await categoryMutation(async () => {
+    const parsed = updateCategorySchema.parse(
+      Object.fromEntries(formData.entries())
+    );
+    return updateCategoryService(parsed.termId, parsed);
   });
 
   revalidatePath("/admincp/categories");
@@ -65,14 +74,9 @@ export async function quickUpdateCategory(data: {
 }) {
   await verifyAdminOrEditor();
 
-  const termId = BigInt(data.id);
-  if (termId <= BigInt(0)) {
-    throw new Error("A valid category ID is required.");
-  }
-
-  const result = await quickUpdateCategoryService(termId, {
-    name: data.name,
-    slug: data.slug,
+  const result = await categoryMutation(async () => {
+    const parsed = quickUpdateCategorySchema.parse(data);
+    return quickUpdateCategoryService(parsed.id, parsed);
   });
 
   revalidatePath("/admincp/categories");
@@ -80,17 +84,20 @@ export async function quickUpdateCategory(data: {
   return { success: true, ...result };
 }
 
-export async function deleteCategories(ids: string[]) {
+export async function deleteCategories(
+  ids: string[]
+): Promise<{ success?: boolean; count?: number; error?: string }> {
   await verifyAdminOrEditor();
 
-  const res = await bulkDeleteCategoriesService(ids);
+  let res;
+  try {
+    res = await bulkDeleteCategoriesService(deleteCategoriesSchema.parse(ids));
+  } catch (error) {
+    return { error: await categoryErrorMessage(error) };
+  }
 
   revalidatePath("/admincp/categories");
   revalidatePath("/admincp/posts");
-
-  if (!res.success) {
-    return { error: res.error || "Failed to delete category." };
-  }
 
   return { success: true, count: res.count };
 }

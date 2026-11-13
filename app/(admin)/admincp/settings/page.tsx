@@ -4,7 +4,7 @@ import {
   AdminShell,
   getAdminLanguageContext,
 } from "@/components/admin/admin-shell"
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { verifyAdmin } from "@/lib/authMIddleware"
 import {
   getSettingsQuery,
   getSettingsPagesQuery,
@@ -15,7 +15,7 @@ import { SettingsForm } from "./_components/settings-form"
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  await verifyAdminOrEditor()
+  await verifyAdmin()
 
   const [langContext, settings, pages, logo] = await Promise.all([
     getAdminLanguageContext(),

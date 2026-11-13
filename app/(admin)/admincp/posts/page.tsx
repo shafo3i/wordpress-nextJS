@@ -1,6 +1,7 @@
 import { getPostDateBounds } from "@/lib/post-date-filter";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor } from "@/lib/authMIddleware";
+import { redirect } from "next/navigation";
 import { getPostsQuery, getPostCountsQuery, getAllCategoriesQuery, getPostMonthsQuery } from "./query";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
 import { PostViewsNav } from "@/components/admin/posts/post-views-nav";
@@ -24,9 +25,11 @@ interface PostsPageProps {
 }
 
 export default async function PostsPage({ searchParams }: PostsPageProps) {
-  await verifyAdminOrEditor();
+  const session = await verifyPostEditor();
+  const canDelete = session.user.role === "admin";
 
   const { s, status, date, from, to, sort, order, category, lang, page } = await searchParams;
+  if (!canDelete && status === "trash") redirect("/admincp/posts");
   const search = s?.trim() ?? "";
   const currentPage = Number(page) > 0 ? Number(page) : 1;
   const currentLanguage = lang || "all";
@@ -79,6 +82,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
         />
 
         <PostViewsNav
+          showTrash={canDelete}
           counts={counts}
           currentStatus={status}
           currentLanguage={currentLanguage}
@@ -90,6 +94,7 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
 
         {!getPostDateBounds({ date: date || "all", from, to }).valid && <div role="alert" className="border-s-4 border-[#d63638] bg-white p-3 text-sm">{dict["admin.posts.invalid_date_range"]}</div>}
         <PostListTable
+          canDelete={canDelete}
           key={queryString.toString()}
           dateMonths={months}
           currentFrom={from}

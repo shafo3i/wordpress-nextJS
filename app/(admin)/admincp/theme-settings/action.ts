@@ -1,14 +1,14 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { verifyAdmin } from "@/lib/authMIddleware"
 import { getAllThemes } from "@/lib/themes/loader"
 import { themeLayoutSchema } from "@/db/schema/cms-theme-layout"
 import { saveThemeLayout } from "@/services/theme-layout.service"
 
 export async function saveThemeLayoutAction(themeSlug: string, input: unknown) {
   try {
-    await verifyAdminOrEditor()
+    await verifyAdmin()
     const parsed = themeLayoutSchema.safeParse(input)
     const themes = await getAllThemes()
     if (!parsed.success || !themes.some((theme) => theme.slug === themeSlug))

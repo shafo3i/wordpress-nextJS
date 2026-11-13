@@ -6,7 +6,7 @@ import {
   getAdminLanguageContext,
 } from "@/components/admin/admin-shell"
 import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor"
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware"
 import {
   getAllCategoriesQuery,
   getAllTagsQuery,
@@ -104,6 +104,8 @@ export default async function NewPostPage({ searchParams }: NewPostProps) {
           key={`new:${draft}`}
           action={savePostAction}
           autosaveUserId={session.user.id}
+          canEditMediaDetails
+          canManageCategories={session.user.role === "admin"}
           uiLocale={langContext.code}
           autosaveDocument={`new:${draft}`}
           categories={categories}

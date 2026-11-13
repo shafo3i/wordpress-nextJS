@@ -44,6 +44,8 @@ type PostAction = (
 ) => void | SavePostResult | Promise<void | SavePostResult>
 
 export type ClassicPostEditorProps = {
+  canEditMediaDetails?: boolean
+  canManageCategories?: boolean
   action: PostAction
   autosaveUserId?: string
   uiLocale?: string
@@ -81,6 +83,8 @@ export type ClassicPostEditorProps = {
 }
 
 export function ClassicPostEditor({
+  canEditMediaDetails = true,
+  canManageCategories = true,
   action,
   autosaveUserId = "",
   uiLocale = "en",
@@ -727,6 +731,7 @@ export function ClassicPostEditor({
 
           {postType === "post" && (
             <MetaBoxCategories
+              canManageCategories={canManageCategories}
               categories={categories}
               currentLanguage={languageCode}
               dict={dict}
@@ -760,6 +765,7 @@ export function ClassicPostEditor({
           )}
 
           <MetaBoxFeaturedImage
+            canEditMediaDetails={canEditMediaDetails}
             dict={dict}
             featuredImageId={featuredImageId}
             onChange={setFeaturedImageId}
@@ -767,6 +773,7 @@ export function ClassicPostEditor({
         </div>
       </fieldset>
       <MediaSelectModal
+        canEditDetails={canEditMediaDetails}
         isOpen={mediaOpen}
         onClose={() => setMediaOpen(false)}
         mediaType="all"

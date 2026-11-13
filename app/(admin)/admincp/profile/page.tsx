@@ -1,14 +1,21 @@
-import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { isAuthenticated } from "@/lib/authMIddleware";
-import { ProfileClientView, UserProfile } from "./_components/profile-client-view";
+import {
+  AdminShell,
+  getAdminLanguageContext,
+} from "@/components/admin/admin-shell";
+import { verifyAdmin } from "@/lib/authMIddleware";
+import {
+  ProfileClientView,
+  UserProfile,
+} from "./_components/profile-client-view";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProfileSettingsPage() {
-  const session = await isAuthenticated();
+  const session = await verifyAdmin();
   const langContext = await getAdminLanguageContext();
   const dict = langContext.dict;
-  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+  const direction: "rtl" | "ltr" =
+    langContext.direction === "rtl" ? "rtl" : "ltr";
 
   const userProfile: UserProfile = {
     id: session.user.id,
@@ -16,14 +23,9 @@ export default async function ProfileSettingsPage() {
     email: session.user.email,
     image: session.user.image,
     emailVerified: session.user.emailVerified,
-    twoFactorEnabled: (session.user as any).twoFactorEnabled,
-    role: (session.user as any).role || "admin",
+    twoFactorEnabled: session.user.twoFactorEnabled,
+    role: session.user.role,
     createdAt: session.user.createdAt,
-    notificationTx: true,
-    notificationSecurity: true,
-    notificationPromo: false,
-    phoneNumber: null,
-    biometricEnabled: false,
   };
 
   return (

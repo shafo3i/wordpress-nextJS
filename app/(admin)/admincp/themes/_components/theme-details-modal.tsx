@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Theme } from "@/lib/themes/types";
 import { activateThemeAction } from "../actions";
+import { absoluteWebUrl } from "@/lib/seo/urls";
 import { ThemePreviewVisual } from "./theme-preview-visual";
 
 interface ThemeDetailsModalProps {
@@ -25,6 +26,7 @@ export function ThemeDetailsModal({
   direction = "ltr",
 }: ThemeDetailsModalProps) {
   const [isPending, startTransition] = useTransition();
+  const [activationError, setActivationError] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -52,30 +54,51 @@ export function ThemeDetailsModal({
   if (!theme) return null;
 
   const currentIndex = allThemes.findIndex((t) => t.slug === theme.slug);
-  const prevTheme = allThemes[(currentIndex - 1 + allThemes.length) % allThemes.length];
+  const prevTheme =
+    allThemes[(currentIndex - 1 + allThemes.length) % allThemes.length];
   const nextTheme = allThemes[(currentIndex + 1) % allThemes.length];
 
   const handleActivate = () => {
     startTransition(async () => {
-      await activateThemeAction(theme.slug);
+      setActivationError(false);
+      try {
+        const result = await activateThemeAction(theme.slug);
+        if (!result.success) {
+          setActivationError(true);
+          return;
+        }
+      } catch {
+        setActivationError(true);
+        return;
+      }
       onClose();
     });
   };
 
   const tagsList = theme.tags
-    ? theme.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+    ? [
+        ...new Set(
+          theme.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        ),
+      ]
     : [];
 
   return (
     <div
       dir={direction}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 backdrop-blur-[2px] sm:p-6"
       onClick={onClose}
     >
       <div
         className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[3px] border border-[#c3c4c7] bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {activationError && (
+          <p role="alert">{dict?.["admin.themes.activation_error"]}</p>
+        )}
         {/* Modal Top Header Bar */}
         <div className="flex items-center justify-between border-b border-[#dcdcde] bg-[#f6f7f7] px-4 py-2.5">
           <div className="flex items-center gap-2 text-xs">
@@ -83,7 +106,7 @@ export function ThemeDetailsModal({
               type="button"
               onClick={() => onSelectTheme(prevTheme)}
               className="flex size-7 items-center justify-center rounded border border-[#c3c4c7] bg-white text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
-              title={dict?.["admin.themes.prev_theme"] || "Previous Theme"}
+              title={dict?.["admin.themes.prev_theme"]}
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -91,20 +114,18 @@ export function ThemeDetailsModal({
               type="button"
               onClick={() => onSelectTheme(nextTheme)}
               className="flex size-7 items-center justify-center rounded border border-[#c3c4c7] bg-white text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
-              title={dict?.["admin.themes.next_theme"] || "Next Theme"}
+              title={dict?.["admin.themes.next_theme"]}
             >
               <ChevronRight className="size-4" />
             </button>
-            <span className="font-semibold text-[#1d2327]">
-              {theme.name}
-            </span>
+            <span className="font-semibold text-[#1d2327]">{theme.name}</span>
           </div>
 
           <button
             type="button"
             onClick={onClose}
             className="flex size-7 items-center justify-center rounded text-[#50575e] hover:bg-[#dcdcde] hover:text-[#1d2327]"
-            title={dict?.["admin.themes.close_details"] || "Close details dialog"}
+            title={dict?.["admin.themes.close_details"]}
           >
             <X className="size-4" />
           </button>
@@ -122,17 +143,19 @@ export function ThemeDetailsModal({
             <div className="flex flex-col justify-between space-y-4">
               <div>
                 <div className="flex items-baseline justify-between gap-2 border-b border-[#f0f0f1] pb-3">
-                  <h2 className="text-xl font-bold text-[#1d2327]">{theme.name}</h2>
+                  <h2 className="text-xl font-bold text-[#1d2327]">
+                    {theme.name}
+                  </h2>
                   <span className="text-xs text-[#646970]">
-                    {dict?.["admin.themes.version"] || "Version"}: {theme.version}
+                    {dict?.["admin.themes.version"]}: {theme.version}
                   </span>
                 </div>
 
                 <p className="mt-2 text-xs text-[#50575e]">
-                  {dict?.["admin.themes.by_author"] || "By"}{" "}
+                  {dict?.["admin.themes.by_author"]}{" "}
                   {theme.authorUrl ? (
                     <a
-                      href={theme.authorUrl}
+                      href={absoluteWebUrl(theme.authorUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-medium text-[#2271b1] hover:underline"
@@ -140,7 +163,9 @@ export function ThemeDetailsModal({
                       {theme.author}
                     </a>
                   ) : (
-                    <span className="font-medium text-[#1d2327]">{theme.author}</span>
+                    <span className="font-medium text-[#1d2327]">
+                      {theme.author}
+                    </span>
                   )}
                 </p>
 
@@ -150,8 +175,8 @@ export function ThemeDetailsModal({
 
                 {tagsList.length > 0 && (
                   <div className="mt-6 border-t border-[#f0f0f1] pt-4">
-                    <span className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-[#646970]">
-                      {dict?.["admin.themes.tags"] || "Tags"}:
+                    <span className="mb-2 block text-[11px] font-semibold tracking-wider text-[#646970] uppercase">
+                      {dict?.["admin.themes.tags"]}:
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {tagsList.map((tag) => (
@@ -175,11 +200,11 @@ export function ThemeDetailsModal({
           {theme.isActive ? (
             <div className="flex items-center gap-2 text-xs font-semibold text-[#2271b1]">
               <span className="size-2 rounded-full bg-[#2271b1]"></span>
-              <span>{dict?.["admin.themes.active_theme"] || "Active Theme"}</span>
+              <span>{dict?.["admin.themes.active_theme"]}</span>
             </div>
           ) : (
             <div className="text-xs text-[#646970]">
-              {dict?.["admin.themes.by_author"] || "By"} {theme.author}
+              {dict?.["admin.themes.by_author"]} {theme.author}
             </div>
           )}
 
@@ -189,7 +214,7 @@ export function ThemeDetailsModal({
                 href="/admincp/customize"
                 className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-xs font-medium text-white shadow hover:bg-[#135e96]"
               >
-                {dict?.["admin.themes.customize"] || "Customize"}
+                {dict?.["admin.themes.customize"]}
               </Link>
             ) : (
               <>
@@ -200,14 +225,14 @@ export function ThemeDetailsModal({
                   className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-xs font-medium text-white shadow hover:bg-[#135e96] disabled:opacity-50"
                 >
                   {isPending
-                    ? dict?.["admin.themes.activating"] || "Activating..."
-                    : dict?.["admin.themes.activate"] || "Activate"}
+                    ? dict?.["admin.themes.activating"]
+                    : dict?.["admin.themes.activate"]}
                 </button>
                 <Link
                   href={`/admincp/customize?theme=${theme.slug}`}
                   className="inline-flex items-center rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-1.5 text-xs font-medium text-[#2c3338] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                 >
-                  {dict?.["admin.themes.live_preview"] || "Live Preview"}
+                  {dict?.["admin.themes.live_preview"]}
                 </Link>
               </>
             )}

@@ -20,8 +20,10 @@ export function CategoryTablenav({
   hasSelected = false,
   languages = [],
   currentLanguage = "all",
+  canManage = true,
   dict = {},
 }: {
+  canManage?: boolean;
   position?: "top" | "bottom";
   bulkAction: string;
   onBulkActionChange: (action: string) => void;
@@ -70,7 +72,7 @@ export function CategoryTablenav({
     >
       {/* Left: Bulk Actions */}
       <div className="flex flex-wrap items-center gap-2">
-        <label className="sr-only" htmlFor={`bulk-action-selector-${position}`}>
+        {canManage && <><label className="sr-only" htmlFor={`bulk-action-selector-${position}`}>
           {dict["admin.common.bulk_actions"] || "Bulk actions"}
         </label>
         <select
@@ -92,7 +94,7 @@ export function CategoryTablenav({
           {isPending
             ? dict["admin.common.applying"] || "Applying..."
             : dict["admin.common.apply"] || "Apply"}
-        </button>
+        </button></>}
 
         {languages && languages.length > 0 && (
           <>

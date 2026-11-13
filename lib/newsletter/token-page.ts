@@ -20,7 +20,10 @@ export async function newsletterTokenPage(
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
-        "Referrer-Policy": "no-referrer",
+        // Keep the form POST's same-origin Origin header. no-referrer makes it
+        // opaque ("null") in browsers and the CSRF origin guard rejects it.
+        // Cross-origin destinations still receive no referrer/token URL.
+        "Referrer-Policy": "same-origin",
         "Content-Security-Policy":
           "default-src 'none'; form-action 'self'; frame-ancestors 'none'",
         "X-Content-Type-Options": "nosniff",

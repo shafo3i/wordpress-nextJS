@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getCategoryById, getParentCategories } from "../../query";
+import { getCategoryById, getParentCategories, getCategories } from "../../query";
+import { categoryIdSchema } from "@/db/schema/cms-taxonomy";
 import { updateCategory } from "../../action";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,9 @@ export default async function EditCategoryPage({
   await verifyAdminOrEditor();
 
   const { id } = await params;
-  const termId = BigInt(id);
+  const parsedId = categoryIdSchema.safeParse(id);
+  if (!parsedId.success) notFound();
+  const termId = parsedId.data;
 
   const langContext = await getAdminLanguageContext();
   const dict = langContext.dict;
@@ -23,7 +26,7 @@ export default async function EditCategoryPage({
   const [category, allOtherCategories, englishCategories] = await Promise.all([
     getCategoryById(termId),
     getParentCategories(termId),
-    getParentCategories(undefined, "en"),
+    getCategories({ language: "en", limit: 500 }),
   ]);
 
   if (!category) notFound();
@@ -112,7 +115,7 @@ export default async function EditCategoryPage({
             </select>
           </div>
 
-          {category.languageCode !== "en" && englishCategories.length > 0 && (
+          {category.languageCode !== "en" && englishCategories.categories.length > 0 && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
                 {dict["admin.categories.translation_of"] || "Translation of"}
@@ -127,8 +130,8 @@ export default async function EditCategoryPage({
                 <option value="0">
                   {dict["admin.common.none"] || "— None (standalone category) —"}
                 </option>
-                {englishCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
+                {englishCategories.categories.map((c) => (
+                  <option key={c.id} value={c.termTaxonomyId}>
                     {c.name}
                   </option>
                 ))}

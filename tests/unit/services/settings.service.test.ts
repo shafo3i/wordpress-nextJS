@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import type { DB } from "@/db"
+vi.mock("server-only", () => ({}))
 vi.mock("@/db", () => ({ db: {} }))
 import { setOptions } from "@/services/settings.service"
 

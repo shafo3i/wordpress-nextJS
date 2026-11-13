@@ -14,8 +14,10 @@ export function CategoryRowItem({
   onDelete,
   languages = [],
   basePath = "/admincp/categories",
+  canManage = true,
   dict = {},
 }: {
+  canManage?: boolean;
   category: CategoryRowData;
   isSelected: boolean;
   onToggleSelect: (checked: boolean) => void;
@@ -35,7 +37,7 @@ export function CategoryRowItem({
           aria-label={`Select ${category.name}`}
           checked={isSelected}
           className="mt-1 h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1] disabled:opacity-40"
-          disabled={isDefault}
+          disabled={isDefault || !canManage}
           onChange={(e) => onToggleSelect(e.target.checked)}
           type="checkbox"
         />
@@ -44,16 +46,16 @@ export function CategoryRowItem({
       <td className="px-3 py-2 text-start align-top">
         <div className="flex items-baseline gap-1">
           {hasParent && <span className="text-[#8c8f94] select-none" dir="ltr">—— </span>}
-          <Link
+          {canManage ? <Link
             className="text-[14px] font-semibold text-[#2271b1] hover:text-[#135e96] hover:underline"
             href={`${basePath}/${category.id}/edit`}
           >
             {category.name}
-          </Link>
+          </Link> : <span className="text-[14px] font-semibold">{category.name}</span>}
         </div>
 
         {/* Hover Row Actions */}
-        <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-[#a7aaad] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+        {canManage && <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-[#a7aaad] opacity-0 transition-opacity duration-150 group-hover:opacity-100">
           <Link
             className="text-[#2271b1] hover:text-[#135e96] hover:underline"
             href={`${basePath}/${category.id}/edit`}
@@ -91,7 +93,7 @@ export function CategoryRowItem({
           >
             {dict["admin.categories.view"] || "View"}
           </Link>
-        </div>
+        </div>}
       </td>
 
       <td className="px-3 py-2 text-start text-[#50575e] align-top">
@@ -111,7 +113,7 @@ export function CategoryRowItem({
           <span className="inline-flex items-center rounded border border-[#c3c4c7] bg-[#f0f0f1] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[#50575e]">
             {category.languageCode || "en"}
           </span>
-          {languages
+          {canManage && languages
             .filter((l) => l.code !== (category.languageCode || "en"))
             .map((otherLang) => {
               const tr = category.translations?.find(

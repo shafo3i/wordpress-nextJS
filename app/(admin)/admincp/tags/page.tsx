@@ -1,5 +1,5 @@
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
 import { getTags } from "./query";
 import { TagTable, TagForm, TagFilter } from "./_components";

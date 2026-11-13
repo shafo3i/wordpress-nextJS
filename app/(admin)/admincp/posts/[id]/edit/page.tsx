@@ -5,7 +5,7 @@ import {
   getAdminLanguageContext,
 } from "@/components/admin/admin-shell"
 import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor"
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware"
 import {
   getPostByIdQuery,
   getAllCategoriesQuery,
@@ -34,7 +34,7 @@ export default async function EditPostPage({ params }: EditPostProps) {
     getAllTagsQuery(),
   ])
 
-  if (!result || !result.post) notFound()
+  if (!result || !result.post || (session.user.role === "editor" && result.post.status === "trash")) notFound()
 
   const { post, translations } = result
 
@@ -75,6 +75,8 @@ export default async function EditPostPage({ params }: EditPostProps) {
           key={post.id}
           action={updatePostAction}
           autosaveUserId={session.user.id}
+          canEditMediaDetails
+          canManageCategories={session.user.role === "admin"}
           uiLocale={langContext.code}
           initialModifiedAt={post.modifiedAt}
           initialPostPassword={post.postPassword}

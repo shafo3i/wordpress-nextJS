@@ -21,8 +21,10 @@ export function CategoryTable({
   direction = "ltr",
   languages = [],
   currentLanguage = "all",
+  canManage = true,
   dict = {},
 }: {
+  canManage?: boolean;
   categories: CategoryItem[];
   totalItems: number;
   currentPage?: number;
@@ -155,7 +157,7 @@ export function CategoryTable({
       )}
 
       {/* Top Tablenav */}
-      <CategoryTablenav
+      <CategoryTablenav canManage={canManage}
         bulkAction={bulkAction}
         currentPage={currentPage}
         currentLanguage={currentLanguage}
@@ -182,6 +184,7 @@ export function CategoryTable({
               <th className="w-8 px-3 py-2 text-center">
                 <input
                   aria-label={dict["admin.common.select_all"] || "Select all categories"}
+                  disabled={!canManage}
                   checked={allSelected}
                   className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   onChange={(e) => toggleSelectAll(e.target.checked)}
@@ -219,7 +222,7 @@ export function CategoryTable({
                     onSuccess={handleQuickEditSuccess}
                   />
                 ) : (
-                  <CategoryRowItem
+                  <CategoryRowItem canManage={canManage}
                     category={category}
                     dict={dict}
                     isSelected={selectedIds.includes(category.id)}
@@ -245,6 +248,7 @@ export function CategoryTable({
               <th className="w-8 px-3 py-2 text-center">
                 <input
                   aria-label={dict["admin.common.select_all"] || "Select all categories bottom"}
+                  disabled={!canManage}
                   checked={allSelected}
                   className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   onChange={(e) => toggleSelectAll(e.target.checked)}
@@ -272,7 +276,7 @@ export function CategoryTable({
       </div>
 
       {/* Bottom Tablenav */}
-      <CategoryTablenav
+      <CategoryTablenav canManage={canManage}
         bulkAction={bulkAction}
         currentPage={currentPage}
         currentLanguage={currentLanguage}

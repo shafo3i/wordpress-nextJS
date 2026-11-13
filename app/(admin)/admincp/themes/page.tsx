@@ -1,5 +1,5 @@
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { getThemesQuery } from "./query";
 import { ThemeHeader, ThemeGrid } from "./_components";
 
@@ -10,7 +10,7 @@ export default async function ThemesPage({
 }: {
   searchParams: Promise<{ s?: string }>;
 }) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
 
   const { s } = await searchParams;
   const langContext = await getAdminLanguageContext();

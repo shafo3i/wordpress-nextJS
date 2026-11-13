@@ -31,7 +31,7 @@ export function CreateUserModal({
 }: CreateUserModalProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState(roles[0]?.value || "subscriber");
+  const [role, setRole] = useState("subscriber");
   const [customPassword, setCustomPassword] = useState("");
   const [autoGenerate, setAutoGenerate] = useState(true);
   const [sendEmailNotification, setSendEmailNotification] = useState(true);
@@ -43,18 +43,20 @@ export function CreateUserModal({
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const resetForm = () => {
     setName("");
     setEmail("");
-    setRole(roles[0]?.value || "subscriber");
+    setRole("subscriber");
     setCustomPassword("");
     setAutoGenerate(true);
     setSendEmailNotification(true);
     setEmailVerified(true);
     setCreatedCredentials(null);
     setError(null);
+    setWarning(null);
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -82,7 +84,7 @@ export function CreateUserModal({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         role,
-        customPassword: autoGenerate ? undefined : customPassword.trim(),
+        customPassword: autoGenerate ? undefined : customPassword,
         sendEmailNotification,
         emailVerified,
       });
@@ -93,6 +95,7 @@ export function CreateUserModal({
       }
 
       if (res.plainPassword) {
+        setWarning(res.warning || null);
         setCreatedCredentials({
           email: email.trim().toLowerCase(),
           password: res.plainPassword,
@@ -125,6 +128,7 @@ export function CreateUserModal({
 
         {createdCredentials ? (
           <div className="space-y-4 py-2 text-[13px]">
+            {warning && <p role="status" className="text-[#996800]">{warning}</p>}
             <div className="rounded border border-[#00a32a] bg-[#f0f6f0] p-3 text-[#00a32a]">
               {dict["admin.users.created_success_msg"] ||
                 "User has been successfully created with the following login details:"}
@@ -247,6 +251,9 @@ export function CreateUserModal({
                   <input
                     type={showPassword ? "text" : "password"}
                     value={customPassword}
+                    minLength={12}
+                    maxLength={128}
+                    required
                     onChange={(e) => setCustomPassword(e.target.value)}
                     placeholder={dict["admin.users.enter_password"] || dict["admin.users.custom_password"] || "Enter secure password"}
                     className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white pe-9 ps-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -281,7 +288,7 @@ export function CreateUserModal({
                   onChange={(e) => setSendEmailNotification(e.target.checked)}
                   className="size-4 rounded border-[#8c8f94] text-[#2271b1]"
                 />
-                {dict["admin.users.send_notification"] || dict["admin.users.send_credentials_email"] || "Send user email notification with login details"}
+                {dict["admin.users.send_notification"]}
               </label>
             </div>
 

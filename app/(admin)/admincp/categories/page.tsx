@@ -1,5 +1,5 @@
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor } from "@/lib/authMIddleware";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
 import { getCategories, getParentCategories } from "./query";
 import { CategoryTable, CategoryForm, CategoryFilter } from "./_components";
@@ -17,7 +17,8 @@ type PageProps = {
 };
 
 export default async function CategoriesPage({ searchParams }: PageProps) {
-  await verifyAdminOrEditor();
+  const session = await verifyPostEditor();
+  const canManage = session.user.role === "admin";
 
   const { s, page, lang, targetLang, sourceTaxId } = await searchParams;
   const searchQuery = s?.trim() ?? "";
@@ -45,20 +46,20 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
   return (
     <AdminShell>
       <div className="mb-2">
-        <PostListHeader
+        {canManage ? <PostListHeader
           addNewHref="#add-category"
           addNewLabel=""
           dict={dict}
-          title={dict["admin.categories.title"] || "Categories"}
-        />
+          title={dict["admin.categories.title"]}
+        /> : <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">{dict["admin.categories.title"]}</h1>}
 
         {/* Top-Right Search Categories Bar */}
         <CategoryFilter dict={dict} searchQuery={searchQuery} />
       </div>
 
       {/* WordPress Classic 2-Column Split: Form on Left, Table on Right */}
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-[300px_1fr] lg:grid-cols-[340px_1fr]">
-        <div className="min-w-0" id="add-category">
+      <div className={canManage ? "grid grid-cols-1 gap-8 md:grid-cols-[300px_1fr] lg:grid-cols-[340px_1fr]" : ""}>
+        {canManage && <div className="min-w-0" id="add-category">
           <CategoryForm
             dict={dict}
             parentCategories={parentOptions}
@@ -68,10 +69,10 @@ export default async function CategoriesPage({ searchParams }: PageProps) {
             initialTargetLanguage={targetLang}
             initialSourceTaxId={sourceTaxId}
           />
-        </div>
+        </div>}
 
         <div className="min-w-0">
-          <CategoryTable
+          <CategoryTable canManage={canManage}
             categories={categories}
             currentPage={currentPage}
             currentLanguage={currentLanguage}

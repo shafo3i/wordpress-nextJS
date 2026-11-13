@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { wpPosts, wpTerms, wpTermTaxonomy, user, wpComments } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { verifyAdmin } from "@/lib/authMIddleware";
 
 export async function getToolsExportData() {
   const [categories, authors, postCountRes, pageCountRes, commentCountRes] =

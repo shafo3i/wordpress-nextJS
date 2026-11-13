@@ -3,7 +3,6 @@ import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { getSitemapStats } from "@/services/sitemap.service";
 import Link from "next/link";
 import { Globe, Rss, Newspaper, ExternalLink, CheckCircle, Copy } from "lucide-react";
-
 export const dynamic = "force-dynamic";
 
 export default async function SeoFeedsPage() {

@@ -2,18 +2,22 @@ import { z } from "zod"
 
 const text = z.string().max(10000)
 const emptyOrEmail = z.union([z.literal(""), z.email()])
-const httpUrl = z.string().refine((value) => {
-  try {
-    const url = new URL(value)
-    return (
-      ["http:", "https:"].includes(url.protocol) &&
-      !url.username &&
-      !url.password
-    )
-  } catch {
-    return false
-  }
-})
+const httpUrl = z
+  .string()
+  .max(2048)
+  .refine((value) => {
+    try {
+      if (/[\u0000-\u0020\\]/.test(value)) return false
+      const url = new URL(value)
+      return (
+        ["http:", "https:"].includes(url.protocol) &&
+        !url.username &&
+        !url.password
+      )
+    } catch {
+      return false
+    }
+  })
 export const siteIdentityTranslationsSchema = z.record(
   z.string().regex(/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,2}$/i),
   z
@@ -77,7 +81,12 @@ export const settingsPatchSchema = z
       }
     }),
     show_on_front: z.enum(["posts", "page"]),
-    page_on_front: z.string().regex(/^\d*$/),
+    page_on_front: z
+      .string()
+      .regex(/^$|^0$|^[1-9]\d{0,18}$/)
+      .refine(
+        (value) => !value || BigInt(value) <= BigInt("9223372036854775807")
+      ),
     blog_public: z.enum(["0", "1"]),
     seo_meta_title_template: z.string().max(1000),
     seo_default_meta_description: text,
@@ -99,17 +108,30 @@ export const settingsPatchSchema = z
     custom_header_scripts: z.literal(""),
     custom_footer_scripts: z.literal(""),
     enable_new_post_notifications: z.literal("0"),
-    smtp_host: z.string().max(1000),
+    smtp_host: z
+      .string()
+      .trim()
+      .max(253)
+      .regex(/^(?:[a-zA-Z0-9_.-]+|\[[a-fA-F0-9:]+\])?$/),
     smtp_port: z
       .string()
       .refine(
         (value) =>
           /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 65535
       ),
-    smtp_user: text,
-    smtp_pass: text,
+    smtp_user: z
+      .string()
+      .max(1000)
+      .regex(/^[^\r\n\u0000]*$/),
+    smtp_pass: z
+      .string()
+      .max(10000)
+      .refine((value) => !value.startsWith("enc:gcm:")),
     smtp_from_email: emptyOrEmail,
-    smtp_from_name: text,
+    smtp_from_name: z
+      .string()
+      .max(300)
+      .regex(/^[^\r\n\u0000]*$/),
     smtp_secure: z.enum(["tls", "ssl", "none"]),
     admin_notification_email: emptyOrEmail,
     enable_newsletter_notifications: z.enum(["0", "1"]),
@@ -124,3 +146,9 @@ export const settingsPatchSchema = z
   .strict()
 
 export const testEmailSchema = z.email()
+
+export const testEmailLocaleSchema = z
+  .string()
+  .max(35)
+  .regex(/^[a-z]{2,3}(?:-[a-z0-9]{2,8}){0,2}$/i)
+  .optional()

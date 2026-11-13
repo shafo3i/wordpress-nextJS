@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { getTagById } from "../../query";
 import { updateTag } from "../../action";
 

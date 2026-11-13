@@ -1,6 +1,6 @@
 "use server";
 
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import {
   getSiteHealthData,
   type SiteHealthData,
@@ -12,7 +12,7 @@ export async function fetchSiteHealthAction(): Promise<{
   error?: string;
 }> {
   try {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
     const data = await getSiteHealthData();
     return { success: true, data };
   } catch (error: any) {

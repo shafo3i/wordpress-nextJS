@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+vi.mock("server-only", () => ({}))
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { Client } from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"
 import type { DB } from "@/db"

@@ -1,8 +1,9 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { createPost } from "@/services/post.service";
+import { quickDraftSchema } from "@/db/schema/cms-dashboard";
+import { escapeMediaHtml } from "@/lib/post-media";
 
 export async function saveQuickDraftAction(formData: FormData): Promise<{
   success: boolean;
@@ -10,38 +11,24 @@ export async function saveQuickDraftAction(formData: FormData): Promise<{
   error?: string;
   postId?: string;
 }> {
+  const session = await verifyAdmin();
+  const parsed = quickDraftSchema.safeParse(
+    Object.fromEntries(formData.entries())
+  );
+  if (!parsed.success)
+    return { success: false, error: "admin.dashboard.draft_invalid" };
   try {
-    const session = await verifyAdminOrEditor();
-    const title = String(formData.get("title") ?? "").trim();
-    const content = String(formData.get("content") ?? "").trim();
-
-    if (!title && !content) {
-      return {
-        success: false,
-        error: "Please enter a title or some content for the draft.",
-      };
-    }
-
+    const { title, content } = parsed.data;
     const postId = await createPost({
-      title: title || "Untitled Draft",
-      content,
+      title,
+      content: escapeMediaHtml(content).replace(/\r?\n/g, "<br>"),
       status: "draft",
-      authorId: session.user?.id,
+      authorId: session.user.id,
     });
-
     revalidatePath("/admincp");
     revalidatePath("/admincp/posts");
-
-    return {
-      success: true,
-      message: "Draft saved successfully.",
-      postId,
-    };
-  } catch (error: any) {
-    console.error("saveQuickDraftAction error:", error);
-    return {
-      success: false,
-      error: error?.message || "Failed to save draft.",
-    };
+    return { success: true, message: "admin.dashboard.draft_saved", postId };
+  } catch {
+    return { success: false, error: "admin.dashboard.draft_error" };
   }
 }

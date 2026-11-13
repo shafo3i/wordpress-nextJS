@@ -16,30 +16,48 @@ export function MetaBoxTags({
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
 }) {
+  const uniqueTags = [
+    ...new Set(tags.map((tag) => tag.trim()).filter(Boolean)),
+  ];
+  const uniqueAvailableTags = [
+    ...new Map(availableTags.map((tag) => [tag.slug, tag])).values(),
+  ];
   const [isOpen, setIsOpen] = useState(true);
   const [inputVal, setInputVal] = useState("");
 
   const handleAdd = () => {
-    const raw = inputVal.split(",").map((s) => s.trim()).filter(Boolean);
+    const raw = inputVal
+      .split(/[,\u060c]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (!raw.length) return;
-    const combined = [...new Set([...tags, ...raw])];
+    const combined = [...new Set([...uniqueTags, ...raw])];
     onTagsChange(combined);
     setInputVal("");
   };
 
   const handleRemove = (tagToRemove: string) => {
-    onTagsChange(tags.filter((t) => t !== tagToRemove));
+    onTagsChange(uniqueTags.filter((t) => t !== tagToRemove));
   };
 
   return (
-    <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-start" dir={direction}>
+    <div
+      className="border border-[#c3c4c7] bg-white text-start shadow-[0_1px_1px_rgba(0,0,0,0.04)]"
+      dir={direction}
+    >
       <div
-        className="flex cursor-pointer select-none items-center justify-between border-b border-[#c3c4c7] px-3 py-2 text-[14px] font-semibold text-[#1d2327]"
+        className="flex cursor-pointer items-center justify-between border-b border-[#c3c4c7] px-3 py-2 text-[14px] font-semibold text-[#1d2327] select-none"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>{dict?.["admin.posts.tags.title"] || dict?.["admin.posts.table.tags"] || "Tags"}</span>
+        <span>
+          {dict?.["admin.posts.tags.title"] || dict?.["admin.posts.table.tags"]}
+        </span>
         <button className="text-[#50575e] hover:text-[#1d2327]" type="button">
-          {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+          {isOpen ? (
+            <ChevronUp className="size-4" />
+          ) : (
+            <ChevronDown className="size-4" />
+          )}
         </button>
       </div>
 
@@ -55,7 +73,7 @@ export function MetaBoxTags({
                   handleAdd();
                 }
               }}
-              placeholder={dict?.["admin.posts.tags.placeholder"] || "Add tag"}
+              placeholder={dict?.["admin.posts.tags.placeholder"]}
               type="text"
               value={inputVal}
             />
@@ -64,25 +82,25 @@ export function MetaBoxTags({
               onClick={handleAdd}
               type="button"
             >
-              {dict?.["admin.posts.tags.add_btn"] || "Add"}
+              {dict?.["admin.posts.tags.add_btn"]}
             </button>
           </div>
 
           <p className="text-[11px] text-[#646970]">
-            {dict?.["admin.posts.tags.hint"] || "Separate tags with commas"}
+            {dict?.["admin.posts.tags.hint"]}
           </p>
 
           {/* Tag Pills */}
-          {tags.length > 0 && (
+          {uniqueTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
-              {tags.map((tag) => (
+              {uniqueTags.map((tag) => (
                 <span
                   className="inline-flex items-center gap-1 rounded bg-[#f0f0f1] px-2 py-0.5 text-xs text-[#2c3338]"
                   key={tag}
                 >
                   <span>{tag}</span>
                   <button
-                    aria-label={`Remove tag ${tag}`}
+                    aria-label={`${dict?.["admin.common.remove"] || ""} ${tag}`}
                     className="text-[#787c82] hover:text-[#d63638]"
                     onClick={() => handleRemove(tag)}
                     type="button"
@@ -95,18 +113,19 @@ export function MetaBoxTags({
           )}
 
           {availableTags.length > 0 && (
-            <div className="pt-2 border-t border-[#f0f0f1]">
-              <p className="text-[11px] font-semibold text-[#50575e] mb-1">
-                {dict?.["admin.posts.tags.most_used"] || "Most Used Tags:"}
+            <div className="border-t border-[#f0f0f1] pt-2">
+              <p className="mb-1 text-[11px] font-semibold text-[#50575e]">
+                {dict?.["admin.posts.tags.most_used"]}
               </p>
               <div className="flex flex-wrap gap-1">
-                {availableTags.slice(0, 10).map((t) => (
+                {uniqueAvailableTags.slice(0, 10).map((t) => (
                   <button
                     key={t.slug}
                     type="button"
                     onClick={() => {
-                      if (!tags.includes(t.name)) {
-                        onTagsChange([...tags, t.name]);
+                      const name = t.name.trim();
+                      if (name && !uniqueTags.includes(name)) {
+                        onTagsChange([...uniqueTags, name]);
                       }
                     }}
                     className="text-[11px] text-[#2271b1] hover:underline"

@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { activateTheme } from "@/lib/themes/loader";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 
 export async function activateThemeAction(slug: string) {
+  await verifyAdmin();
   try {
-    await verifyAdminOrEditor();
     await activateTheme(slug);
 
     revalidatePath("/admincp");
@@ -15,8 +15,7 @@ export async function activateThemeAction(slug: string) {
     revalidatePath("/", "layout");
 
     return { success: true, slug };
-  } catch (error: any) {
-    console.error("Failed to activate theme:", error);
-    return { success: false, error: error?.message || "Failed to activate theme." };
+  } catch {
+    return { success: false, error: "admin.themes.activation_error" };
   }
 }

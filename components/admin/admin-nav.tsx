@@ -139,12 +139,12 @@ const navItems: NavItem[] = [
   },
 ];
 
-export function AdminNav({ dict = {} }: { dict?: Record<string, string> }) {
+export function AdminNav({ dict = {}, userRole }: { dict?: Record<string, string>; userRole?: string }) {
   const pathname = usePathname();
 
   return (
     <nav aria-label="Administrator navigation" className="py-2 ">
-      {navItems.map((item) => {
+      {navItems.filter(item => userRole === "editor" ? (item.href === "/admincp/posts" || item.href === "/admincp/media") : item.href !== "/admincp/users" || userRole === "admin").map((item) => {
         const Icon = item.icon;
         const isExact = pathname === item.href;
         const isSubActive =

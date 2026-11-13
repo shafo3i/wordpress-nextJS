@@ -3,9 +3,15 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { wpOptions } from "@/db/schema";
 import type { Theme } from "./types";
-import { THEME_MODULES, getThemeModule, resolveThemeSlug } from "@/themes/registry";
+import {
+  THEME_MODULES,
+  getThemeModule,
+  resolveThemeSlug,
+} from "@/themes/registry";
 
-export const AVAILABLE_THEMES: Theme[] = THEME_MODULES.map((mod) => mod.manifest);
+export const AVAILABLE_THEMES: Theme[] = THEME_MODULES.map(
+  (mod) => mod.manifest
+);
 
 /**
  * Get the active stylesheet slug from wp_options
@@ -43,39 +49,25 @@ export async function getActiveThemeName(): Promise<string> {
   }
 }
 
-async function setOption(name: string, value: string) {
-  const existing = await db
-    .select({ id: wpOptions.optionId })
-    .from(wpOptions)
-    .where(eq(wpOptions.optionName, name))
-    .limit(1);
-
-  if (existing.length) {
-    await db
-      .update(wpOptions)
-      .set({ optionValue: value })
-      .where(eq(wpOptions.optionId, existing[0].id));
-  } else {
-    await db.insert(wpOptions).values({
-      optionName: name,
-      optionValue: value,
-      autoload: "yes",
-    });
-  }
-}
-
 /**
  * Activate a theme by updating stylesheet, template, and current_theme in wp_options
  */
 export async function activateTheme(slug: string): Promise<void> {
+  const { verifyAdmin } = await import("@/lib/authMIddleware");
+  await verifyAdmin();
+  const { themeSlugSchema } = await import("@/db/schema/cms-themes");
+  slug = themeSlugSchema.parse(slug);
   const theme = AVAILABLE_THEMES.find((t) => t.slug === slug);
   if (!theme) {
-    throw new Error(`Theme '${slug}' not found`);
+    throw new Error("admin.themes.activation_error");
   }
 
-  await setOption("stylesheet", theme.slug);
-  await setOption("template", theme.slug);
-  await setOption("current_theme", theme.name);
+  const { setOption } = await import("@/services/settings.service");
+  await db.transaction(async (tx) => {
+    await setOption("stylesheet", theme.slug, tx);
+    await setOption("template", theme.slug, tx);
+    await setOption("current_theme", theme.name, tx);
+  });
 }
 
 /**

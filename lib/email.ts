@@ -1,5 +1,6 @@
 import { getEmailLanguage } from "@/lib/email-language"
-import { localizedEmail } from "@/templates/localized-email"
+import { absoluteWebUrl } from "@/lib/seo/urls"
+import { escapeEmailHtml, localizedEmail } from "@/templates/localized-email"
 import { localizedEmailTemplates } from "@/lib/email-template-settings"
 import nodemailer from "nodemailer"
 import { getOptions } from "@/services/settings.service"
@@ -108,7 +109,7 @@ export async function sendEmail({
 
     const dbHost = settings.smtp_host?.trim()
     const dbUser = settings.smtp_user?.trim()
-    const dbPass = settings.smtp_pass?.trim()
+    const dbPass = settings.smtp_pass
 
     const hasDbSmtp = Boolean(dbHost && dbUser && dbPass)
 
@@ -123,7 +124,13 @@ export async function sendEmail({
       (hasDbSmtp ? settings.smtp_port : process.env.SMTP_PORT) || "587",
       10
     )
-    const secureSetting = settings.smtp_secure || (port === 465 ? "ssl" : "tls")
+    const secureSetting = hasDbSmtp
+      ? settings.smtp_secure
+      : process.env.SMTP_SECURE === "true" || process.env.SMTP_SECURE === "ssl"
+        ? "ssl"
+        : process.env.SMTP_SECURE === "none"
+          ? "none"
+          : "tls"
     const isSecure = secureSetting === "ssl" || port === 465
 
     const fromEmail =
@@ -156,19 +163,27 @@ export async function sendEmail({
       host,
       port,
       secure: isSecure,
+      requireTLS: !isSecure && secureSetting !== "none",
+      ignoreTLS: secureSetting === "none",
+      disableFileAccess: true,
+      disableUrlAccess: true,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 30000,
       auth: {
         user,
         pass,
       },
       tls: {
-        rejectUnauthorized: false,
+        rejectUnauthorized: true,
+        minVersion: "TLSv1.2",
       },
     })
 
     const info = await transporter.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
+      from: { name: fromName.replace(/[\r\n]/g, " "), address: fromEmail },
       to,
-      subject,
+      subject: subject.replace(/[\r\n]/g, " "),
       text: text || "",
       html,
     })
@@ -177,11 +192,11 @@ export async function sendEmail({
       success: true,
       messageId: info.messageId,
     }
-  } catch (error) {
-    console.error("Error sending email:", error)
+  } catch {
+    console.error("SMTP delivery failed")
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to send email",
+      error: "Email delivery failed",
     }
   }
 }
@@ -225,13 +240,15 @@ export async function sendNewPostNotification(
       .replace(/{{siteName}}/g, siteName)
       .replace(/{{authorName}}/g, authorName)
 
+    const safePostUrl = absoluteWebUrl(postUrl)
+    if (!safePostUrl) throw new Error("Invalid notification URL")
     const html = newPostNotificationTemplate({
-      postTitle,
-      postUrl,
-      authorName,
-      siteName,
-      heading: settings.email_new_post_heading,
-      copyrightText: settings.email_footer_text,
+      postTitle: escapeEmailHtml(postTitle),
+      postUrl: escapeEmailHtml(safePostUrl),
+      authorName: escapeEmailHtml(authorName),
+      siteName: escapeEmailHtml(siteName),
+      heading: escapeEmailHtml(settings.email_new_post_heading),
+      copyrightText: escapeEmailHtml(settings.email_footer_text),
       direction,
     })
 

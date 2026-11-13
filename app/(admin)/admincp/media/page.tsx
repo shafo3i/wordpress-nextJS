@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { getMediaLibraryItems } from "@/services/media.service";
 import { MediaLibraryView } from "./_components/media-library-view";
 

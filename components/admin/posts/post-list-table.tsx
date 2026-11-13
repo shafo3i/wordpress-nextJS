@@ -24,6 +24,7 @@ export function PostListTable({
   emptyMessage = "No posts found.",
   pagination,
   isTrashView = false,
+  canDelete = true,
   dict = {},
   direction = "ltr",
   onNotice,
@@ -44,6 +45,7 @@ export function PostListTable({
     queryString?: string;
   };
   isTrashView?: boolean;
+  canDelete?: boolean;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
   onNotice?: (notice: { type?: "success" | "warning" | "error"; message: string } | null) => void;
@@ -181,6 +183,7 @@ export function PostListTable({
 
       {/* Top Tablenav */}
       <PostTablenav
+        canDelete={canDelete}
         basePath={basePath}
         bulkAction={bulkAction}
         categories={categories}
@@ -222,6 +225,7 @@ export function PostListTable({
                 <input
                   aria-label={dict["admin.common.select_all"] || "Select all posts"}
                   checked={allSelected}
+                  disabled={!canDelete}
                   className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   onChange={(e) => toggleSelectAll(e.target.checked)}
                   type="checkbox"
@@ -276,6 +280,7 @@ export function PostListTable({
                   />
                 ) : (
                   <PostRowItem
+                    canDelete={canDelete}
                     basePath={basePath}
                     dict={dict}
                     direction={direction}
@@ -343,6 +348,7 @@ export function PostListTable({
 
       {/* Bottom Tablenav */}
       <PostTablenav
+        canDelete={canDelete}
         basePath={basePath}
         bulkAction={bulkAction}
         categories={categories}

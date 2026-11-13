@@ -84,6 +84,7 @@ export function ManageRolesModal({
         </DialogHeader>
 
         <div className="space-y-4 py-2 text-[13px]">
+          <p className="text-xs text-[#646970]">{dict["admin.users.security.custom_roles_note"]}</p>
           {error && (
             <div className="rounded border-s-4 border-[#d63638] bg-[#fcf0f1] p-2.5 text-xs text-[#d63638]">
               {error}

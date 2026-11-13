@@ -1,3 +1,4 @@
+import { profileAuthBefore } from "@/lib/auth-profile"
 import { SESSION_POLICY } from "@/lib/session-policy"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
@@ -54,6 +55,7 @@ export const auth = betterAuth({
 
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path === "/update-user" || ctx.path === "/change-password") return profileAuthBefore(ctx)
       if (ctx.path === "/sign-up/email" || ctx.path.startsWith("/sign-up")) {
         const disableSignUp = await getOption("disableSignUp", "false")
         const usersCanRegister = await getOption("users_can_register", "1")
@@ -97,6 +99,10 @@ export const auth = betterAuth({
     storage: "database",
     customRules: {
       "/sign-in/email": { window: 60, max: 5 },
+      "/change-password": { window: 60, max: 5 },
+      "/update-user": { window: 60, max: 20 },
+      "/two-factor/enable": { window: 60, max: 5 },
+      "/two-factor/disable": { window: 60, max: 5 },
       "/request-password-reset": { window: 60, max: 3 },
       "/send-verification-email": { window: 60, max: 3 },
     },

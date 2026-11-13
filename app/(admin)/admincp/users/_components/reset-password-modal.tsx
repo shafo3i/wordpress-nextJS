@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Copy, Check, Eye, EyeOff, RefreshCw } from "lucide-react";
 import {
   Dialog,
@@ -36,21 +36,26 @@ export function ResetPasswordModal({
   const [copied, setCopied] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const targetUserId = user?.id;
 
   const handleGenerate = () => {
     setPassword(generateSecurePassword(14));
   };
 
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
+  useEffect(() => {
+    if (open && targetUserId) {
       setPassword(generateSecurePassword(14));
       setCompleted(false);
       setError(null);
       setCopied(false);
+      setWarning(null);
+    } else {
+      setPassword("");
     }
-    onOpenChange(isOpen);
-  };
+  }, [open, targetUserId]);
+  const handleOpenChange = (isOpen: boolean) => onOpenChange(isOpen);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(password);
@@ -75,6 +80,8 @@ export function ResetPasswordModal({
         return;
       }
 
+      setPassword(res.plainPassword);
+      setWarning(res.warning || null);
       setCompleted(true);
       onSuccess();
     });
@@ -92,6 +99,7 @@ export function ResetPasswordModal({
 
         {completed ? (
           <div className="space-y-4 py-2 text-[13px]">
+            {warning && <p role="status" className="text-[#996800]">{warning}</p>}
             <div className="rounded border border-[#00a32a] bg-[#f0f6f0] p-3 text-[#00a32a]">
               {dict["admin.users.password_reset_success"] ||
                 "Password has been successfully updated!"}
@@ -149,6 +157,8 @@ export function ResetPasswordModal({
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
+                    minLength={12}
+                    maxLength={128}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white pe-9 ps-2.5 font-mono text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -181,8 +191,7 @@ export function ResetPasswordModal({
                 onChange={(e) => setSendEmail(e.target.checked)}
                 className="size-4 rounded border-[#8c8f94] text-[#2271b1]"
               />
-              {dict["admin.users.send_new_password_email"] ||
-                "Send user an email with their new password"}
+              {dict["admin.users.send_new_password_email"]}
             </label>
 
             <DialogFooter className="gap-2 pt-2">

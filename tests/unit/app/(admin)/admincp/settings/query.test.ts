@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 vi.mock("@/lib/authMIddleware", () => ({
-  verifyAdminOrEditor: async () => ({ user: { role: "admin" } }),
+  verifyAdmin: async () => ({ user: { role: "admin" } }),
 }))
 vi.mock("@/services/settings.service", () => ({
   getAllSettings: async () => ({

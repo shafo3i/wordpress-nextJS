@@ -5,6 +5,43 @@ import en from "../templates/language/en.json" with { type: "json" }
 import ar from "../templates/language/ar.json" with { type: "json" }
 import { factReviewSchema } from "../db/schema/cms-fact-reviews"
 let bundle: string
+test("newsletter confirmation form preserves token, language and browser origin", async ({ page }) => {
+  const result = await build({
+    entryPoints: [fileURLToPath(new URL("../lib/newsletter/token-page.ts", import.meta.url))],
+    bundle: true, write: false, platform: "node", format: "cjs",
+    plugins: [{
+      name: "newsletter-language",
+      setup(builder) {
+        builder.onResolve({ filter: /^@\/lib\/email-language$/ }, () => ({ path: "language", namespace: "newsletter-fixture" }))
+        builder.onLoad({ filter: /.*/, namespace: "newsletter-fixture" }, () => ({
+          contents: 'export const getEmailLanguage=async()=>({code:"ar",direction:"rtl",dict:{"site.newsletter.confirm":"Confirm"}})',
+        }))
+      },
+    }],
+  })
+  const module = { exports: {} as typeof import("../lib/newsletter/token-page") }
+  new Function("module", "exports", result.outputFiles[0].text)(module, module.exports)
+  const url = "http://newsletter.test/api/newsletter/confirm?token=fixture&lang=ar"
+  const response = await module.exports.newsletterTokenPage(new Request(url), "site.newsletter.confirm")
+  const body = await response.text()
+  let submittedOrigin: string | undefined
+  let submittedUrl = ""
+  await page.route("http://newsletter.test/**", async route => {
+    if (route.request().method() === "POST") {
+      submittedOrigin = route.request().headers().origin
+      submittedUrl = route.request().url()
+      await route.fulfill({ status: submittedOrigin === "http://newsletter.test" ? 200 : 403, body: "Confirmed" })
+    } else {
+      await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body })
+    }
+  })
+  await page.goto(url)
+  await page.getByRole("button", { name: "Confirm" }).click()
+  await expect(page.locator("body")).toHaveText("Confirmed")
+  expect(submittedOrigin).toBe("http://newsletter.test")
+  expect(new URL(submittedUrl).searchParams.get("token")).toBe("fixture")
+  expect(new URL(submittedUrl).searchParams.get("lang")).toBe("ar")
+})
 test.beforeAll(async () => {
   const result = await build({
     entryPoints: [

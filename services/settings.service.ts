@@ -1,3 +1,4 @@
+import "server-only";
 import { eq, inArray } from "drizzle-orm";
 import { DB, db } from "@/db";
 import { wpOptions } from "@/db/schema/cms-options";
@@ -6,7 +7,29 @@ import { cache } from "react";
 import { localizedSiteOptions } from "@/lib/site-identity";
 import { buildSiteMetadata } from "@/lib/seo/metadata";
 
-const SEO_OPTION_NAMES = ["site_identity_translations", "timezone_string", "google_site_verification", "bing_site_verification", "google_analytics_id", "blogname", "blogdescription", "home", "siteurl", "show_on_front", "page_on_front", "blog_public", "seo_meta_title_template", "seo_default_meta_description", "seo_canonical_enabled", "seo_robots_extra", "og_default_image", "og_site_name", "twitter_card_type", "twitter_site_handle", "facebook_app_id"];
+const SEO_OPTION_NAMES = [
+  "site_identity_translations",
+  "timezone_string",
+  "google_site_verification",
+  "bing_site_verification",
+  "google_analytics_id",
+  "blogname",
+  "blogdescription",
+  "home",
+  "siteurl",
+  "show_on_front",
+  "page_on_front",
+  "blog_public",
+  "seo_meta_title_template",
+  "seo_default_meta_description",
+  "seo_canonical_enabled",
+  "seo_robots_extra",
+  "og_default_image",
+  "og_site_name",
+  "twitter_card_type",
+  "twitter_site_handle",
+  "facebook_app_id",
+];
 export const getSiteSeoOptions = cache(() => getOptions(SEO_OPTION_NAMES));
 
 export type SettingsMap = Record<string, string>;
@@ -32,7 +55,8 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   // SEO & Indexing
   blog_public: "1", // 1 = visible to search engines, 0 = noindex
   seo_meta_title_template: "%title% — %sitename%",
-  seo_default_meta_description: "Independent journalism covering breaking global events, politics, and technology.",
+  seo_default_meta_description:
+    "Independent journalism covering breaking global events, politics, and technology.",
   seo_canonical_enabled: "1",
   seo_robots_extra: "max-image-preview:large",
 
@@ -140,7 +164,8 @@ export async function setOption(
   value: string,
   database: Pick<DB, "select" | "insert" | "update"> = db
 ): Promise<void> {
-  const finalValue = name === "smtp_pass" && value ? encryptValue(value) : value;
+  const finalValue =
+    name === "smtp_pass" && value ? encryptValue(value) : value;
 
   const [existing] = await database
     .select({ id: wpOptions.optionId })
@@ -169,7 +194,7 @@ export async function setOptions(
   entries: SettingsMap,
   database: DB = db
 ): Promise<void> {
-  await database.transaction(async transaction => {
+  await database.transaction(async (transaction) => {
     for (const [name, value] of Object.entries(entries)) {
       await setOption(name, value, transaction);
     }
@@ -180,6 +205,8 @@ export async function setOptions(
  * Retrieve all core CMS settings grouped for the settings dashboard.
  */
 export async function getAllSettings(database: DB = db): Promise<SettingsMap> {
+  const { verifyAdmin } = await import("@/lib/authMIddleware");
+  await verifyAdmin();
   const allKeys = Object.keys(DEFAULT_SETTINGS);
   return await getOptions(allKeys, database);
 }
@@ -188,8 +215,76 @@ export async function getAllSettings(database: DB = db): Promise<SettingsMap> {
  * Resolves standard Next.js Metadata for the site from wp_options
  */
 export async function getSiteMetadata(database: DB = db) {
-  const options = database === db ? await getSiteSeoOptions() : await getOptions(SEO_OPTION_NAMES, database);
+  const options =
+    database === db
+      ? await getSiteSeoOptions()
+      : await getOptions(SEO_OPTION_NAMES, database);
   const { getPublicLanguageContext } = await import("@/lib/public-language");
   const language = await getPublicLanguageContext();
-  return buildSiteMetadata(localizedSiteOptions(options, language.code, language.defaultCode));
+  return buildSiteMetadata(
+    localizedSiteOptions(options, language.code, language.defaultCode)
+  );
+}
+
+/** Validated admin-only boundary; generic option helpers serve other CMS modules. */
+export async function saveAdminSettings(entries: unknown): Promise<void> {
+  const { verifyAdmin } = await import("@/lib/authMIddleware");
+  await verifyAdmin();
+  const { settingsPatchSchema } = await import("@/db/schema/cms-settings");
+  const values = settingsPatchSchema.parse(entries);
+  // Signup flags represent one setting; do not leave contradictory legacy values.
+  if (values.users_can_register !== undefined)
+    values.disableSignUp = values.users_can_register === "1" ? "false" : "true";
+  else if (values.disableSignUp !== undefined)
+    values.users_can_register = ["true", "1"].includes(values.disableSignUp)
+      ? "0"
+      : "1";
+  await db.transaction(async (tx) => {
+    if (values.page_on_front && values.page_on_front !== "0") {
+      const { wpPosts } = await import("@/db/schema/cms-posts");
+      const { and } = await import("drizzle-orm");
+      const [page] = await tx
+        .select({ id: wpPosts.id })
+        .from(wpPosts)
+        .where(
+          and(
+            eq(wpPosts.id, BigInt(values.page_on_front)),
+            eq(wpPosts.postType, "page")
+          )
+        )
+        .limit(1);
+      if (!page) throw new Error("Invalid front page");
+    }
+    for (const [name, value] of Object.entries(values))
+      await setOption(name, value, tx);
+  });
+}
+
+/** Shared database quota across instances, keyed by the authenticated administrator. */
+export async function reserveSettingsTestEmail(): Promise<void> {
+  const { verifyAdmin } = await import("@/lib/authMIddleware");
+  const session = await verifyAdmin();
+  const { rateLimit } = await import("@/db/schema/auth-schema");
+  const { sql } = await import("drizzle-orm");
+  const { randomUUID } = await import("node:crypto");
+  const now = Date.now(),
+    cutoff = now - 60000;
+  const [row] = await db
+    .insert(rateLimit)
+    .values({
+      id: randomUUID(),
+      key: `cms-settings-test-email:${session.user.id}`,
+      count: 1,
+      lastRequest: now,
+    })
+    .onConflictDoUpdate({
+      target: rateLimit.key,
+      set: {
+        count: sql`case when ${rateLimit.lastRequest} <= ${cutoff} then 1 else ${rateLimit.count} + 1 end`,
+        lastRequest: sql`case when ${rateLimit.lastRequest} <= ${cutoff} then ${now} else ${rateLimit.lastRequest} end`,
+      },
+    })
+    .returning({ count: rateLimit.count });
+  if (!row || Number(row.count) > 3)
+    throw new Error("Test email quota exceeded");
 }

@@ -1,25 +1,36 @@
 "use server"
 
-import { settingsPatchSchema, testEmailSchema } from "@/db/schema/cms-settings"
+import {
+  settingsPatchSchema,
+  testEmailSchema,
+  testEmailLocaleSchema,
+} from "@/db/schema/cms-settings"
 import { revalidatePath } from "next/cache"
-import { verifyAdminOrEditor } from "@/lib/authMIddleware"
-import { setOptions, type SettingsMap } from "@/services/settings.service"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import {
+  saveAdminSettings,
+  reserveSettingsTestEmail,
+  type SettingsMap,
+} from "@/services/settings.service"
 import { removeSiteLogo, selectSiteLogo } from "@/services/site-logo.service"
 
 export async function selectSettingsLogoAction(attachmentId: string) {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor()
     const logo = await selectSiteLogo(attachmentId)
     revalidatePath("/", "layout")
     return { success: true as const, logo }
   } catch {
-    return { success: false as const, error: "admin.settings.logo.invalid_selection" }
+    return {
+      success: false as const,
+      error: "admin.settings.logo.invalid_selection",
+    }
   }
 }
 
 export async function removeSettingsLogoAction(): Promise<SaveSettingsResult> {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor()
     await removeSiteLogo()
     revalidatePath("/", "layout")
     return { success: true }
@@ -34,9 +45,8 @@ export type SaveSettingsResult =
 export async function saveSettingsAction(
   entries: SettingsMap
 ): Promise<SaveSettingsResult> {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor()
-
     // Sanitize and save entries
     const values = { ...entries }
     if (values.siteurl && values.home === undefined)
@@ -46,7 +56,7 @@ export async function saveSettingsAction(
     const parsed = settingsPatchSchema.safeParse(values)
     if (!parsed.success)
       return { success: false, error: "admin.settings.invalid_values" }
-    await setOptions(parsed.data)
+    await saveAdminSettings(parsed.data)
 
     revalidatePath("/admincp/settings")
     revalidatePath("/admincp/customize")
@@ -57,8 +67,8 @@ export async function saveSettingsAction(
     revalidatePath("/posts/[slug]", "page")
 
     return { success: true, message: "admin.settings.saved_notice" }
-  } catch (error: unknown) {
-    console.error("Failed to save settings:", error)
+  } catch {
+    console.error("Failed to save settings")
     return {
       success: false,
       error: "admin.settings.save_error",
@@ -70,11 +80,15 @@ export async function sendTestEmailAction(
   targetEmail: string,
   locale?: string
 ): Promise<{ success: boolean; message?: string; error?: string }> {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor()
-    if (!testEmailSchema.safeParse(targetEmail).success) {
+    if (
+      !testEmailSchema.safeParse(targetEmail).success ||
+      !testEmailLocaleSchema.safeParse(locale).success
+    ) {
       return { success: false, error: "admin.settings.test_email_error" }
     }
+    await reserveSettingsTestEmail()
     const { sendTestEmail } = await import("@/lib/email")
     const res = await sendTestEmail(targetEmail, locale)
     if (!res.success) {

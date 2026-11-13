@@ -12,10 +12,12 @@ export function MediaAttachmentDetails({
   item,
   dict,
   onUpdated,
+  readOnly = false,
 }: {
   item: MediaItem
   dict: Record<string, string>
   onUpdated: (item: MediaItem) => void
+  readOnly?: boolean
 }) {
   const query = useQuery({
     queryKey: ["media-item", String(item.id)],
@@ -110,6 +112,7 @@ export function MediaAttachmentDetails({
           item={query.data}
           dict={dict}
           onUpdated={onUpdated}
+          readOnly={readOnly}
         />
       )}
       {value.imageMetadata && Object.keys(value.imageMetadata).length > 0 && (
@@ -130,10 +133,12 @@ function AttachmentFields({
   item,
   dict,
   onUpdated,
+  readOnly = false,
 }: {
   item: MediaItem
   dict: Record<string, string>
   onUpdated: (item: MediaItem) => void
+  readOnly?: boolean
 }) {
   const client = useQueryClient(),
     [values, setValues] = useState({
@@ -165,7 +170,7 @@ function AttachmentFields({
       <p className="text-xs text-[#646970]">
         {dict["admin.media.details_shared_help"]}
       </p>
-      <fieldset disabled={save.isPending} className="space-y-3">
+      <fieldset disabled={readOnly || save.isPending} className="space-y-3">
         {(
           [
             ["title", "admin.media.title_label"],
@@ -204,7 +209,7 @@ function AttachmentFields({
             )}
           </label>
         ))}
-        <button
+        {!readOnly && <button
           type="button"
           onClick={() => {
             setMessage("")
@@ -213,7 +218,7 @@ function AttachmentFields({
           className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3 text-xs text-white"
         >
           {dict["admin.media.details_save"]}
-        </button>
+        </button>}
       </fieldset>
       {message && (
         <p role="status" className="text-xs">

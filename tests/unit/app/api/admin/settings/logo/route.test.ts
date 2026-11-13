@@ -17,7 +17,7 @@ vi.mock("@/services/site-logo-upload.service", () => ({
 beforeEach(() => {
   vi.clearAllMocks()
   vi.unstubAllEnvs()
-  mocks.auth.mockResolvedValue({ user: { id: "editor", role: "editor" } })
+  mocks.auth.mockResolvedValue({ user: { id: "admin", role: "admin" } })
   mocks.upload.mockResolvedValue({ id: "900", url: "/uploads/logo.webp" })
 })
 function request(files = 1, origin = "http://localhost:3000") {
@@ -31,6 +31,11 @@ function request(files = 1, origin = "http://localhost:3000") {
   })
 }
 describe("Settings logo upload endpoint", () => {
+  it("denies editors access to site identity changes", async () => {
+    mocks.auth.mockResolvedValue({ user: { id: "editor", role: "editor" } })
+    expect((await POST(request())).status).toBe(403)
+    expect(mocks.upload).not.toHaveBeenCalled()
+  })
   it("rejects an unauthorized request before reading or uploading files", async () => {
     mocks.auth.mockResolvedValue(null)
     expect((await POST(request())).status).toBe(401)
@@ -64,7 +69,7 @@ describe("Settings logo upload endpoint", () => {
     })
     expect(mocks.upload).not.toHaveBeenCalled()
   })
-  it.each(["admin", "editor"])(
+  it.each(["admin"])(
     "accepts %s uploads behind a reverse proxy using the configured public URL",
     async (role) => {
       vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://news.example.test")

@@ -19,6 +19,7 @@ export function MetaBoxCategories({
   currentLanguage = "en",
   dict,
   direction = "ltr",
+  canManageCategories = true,
 }: {
   categories: CategoryItem[];
   selectedCategories: string[];
@@ -26,6 +27,7 @@ export function MetaBoxCategories({
   currentLanguage?: string;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  canManageCategories?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | "popular">("all");
@@ -150,7 +152,7 @@ export function MetaBoxCategories({
           </div>
 
           {/* Add New Category Toggle */}
-          <div className="mt-2.5">
+          {canManageCategories && <div className="mt-2.5">
             {!isAddingNew ? (
               <button
                 className="text-xs font-medium text-[#2271b1] underline hover:text-[#135e96]"
@@ -190,7 +192,7 @@ export function MetaBoxCategories({
                 </div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
       )}
     </div>

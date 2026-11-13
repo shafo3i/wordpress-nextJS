@@ -1,3 +1,6 @@
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
+import { themeSearchSchema } from "@/db/schema/cms-themes";
 import { getAllThemes } from "@/lib/themes/loader";
 import { Theme } from "@/lib/themes/types";
 
@@ -5,6 +8,8 @@ export async function getThemesQuery(search = ""): Promise<{
   themes: Theme[];
   activeTheme?: Theme;
 }> {
+  await verifyAdmin();
+  search = themeSearchSchema.parse(search);
   const allThemes = await getAllThemes();
   const q = search.trim().toLowerCase();
 

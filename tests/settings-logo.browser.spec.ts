@@ -34,7 +34,7 @@ test("Settings logo uploads, renders in both languages, and removes without chan
   try {
     await client.query(
       'INSERT INTO "user"(id,name,email,email_verified,role) VALUES($1,$2,$3,true,$4)',
-      [id, "Logo test editor", email, "editor"]
+      [id, "Logo test administrator", email, "admin"]
     )
     await client.query(
       "INSERT INTO account(id,account_id,provider_id,user_id,password,updated_at) VALUES($1,$2,$3,$4,$5,now())",

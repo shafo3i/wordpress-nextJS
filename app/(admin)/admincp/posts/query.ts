@@ -1,4 +1,4 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
 import {
   getPosts,
   getPostMonths,
