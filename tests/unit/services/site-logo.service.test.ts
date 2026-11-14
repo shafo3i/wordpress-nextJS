@@ -1,3 +1,5 @@
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: async () => ({ user: { id:"admin",role:"admin" } }) }));
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import sharp from "sharp"
 import { getGlobalSiteLogo, selectSiteLogo } from "@/services/site-logo.service"

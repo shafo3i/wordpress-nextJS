@@ -1,12 +1,14 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { db } from "@/db";
 import { postTranslationsTable, wpComments, wpPosts } from "@/db/schema";
 import { and, count, desc, eq, inArray, or, sql } from "drizzle-orm";
-import { SelectComment } from "@/db/schema/cms-comments";
+import { commentQuerySchema, commentIdSchema, type SelectComment } from "@/db/schema/cms-comments";
 
 export type CommentWithPost = SelectComment & {
     postTitle: string | null;
     postSlug: string | null;
+    postType?: string | null;
 };
 
 export interface GetCommentsOptions {
@@ -19,15 +21,17 @@ export interface GetCommentsOptions {
 }
 
 export async function getAllComments(options: GetCommentsOptions = {}) {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
-    const { status, search, commentType, language, page = 1, limit = 20 } = options;
+    const { status, search, commentType, language, page, limit } = commentQuerySchema.parse(options);
     const offset = Math.max(0, (page - 1) * limit);
 
     const conditions = [];
 
     if (status && status !== "all") {
-        conditions.push(eq(wpComments.commentApproved, status));
+        conditions.push(status === "pending" || status === "0"
+            ? or(eq(wpComments.commentApproved, "0"), eq(wpComments.commentApproved, "pending"))
+            : eq(wpComments.commentApproved, status));
     }
 
     if (commentType && commentType !== "all") {
@@ -41,16 +45,9 @@ export async function getAllComments(options: GetCommentsOptions = {}) {
     }
 
     if (language && language !== "all") {
-        const langPostRows = await db
-            .select({ postId: postTranslationsTable.postId })
-            .from(postTranslationsTable)
-            .where(eq(postTranslationsTable.languageCode, language));
-        const postIds = langPostRows.map((r) => r.postId);
-        if (postIds.length > 0) {
-            conditions.push(inArray(wpComments.commentPostId, postIds));
-        } else {
-            conditions.push(eq(wpComments.commentId, BigInt(-1)));
-        }
+        conditions.push(inArray(wpComments.commentPostId,
+            db.select({ postId: postTranslationsTable.postId })
+                .from(postTranslationsTable).where(eq(postTranslationsTable.languageCode, language))));
     }
 
     if (search && search.trim().length > 0) {
@@ -68,6 +65,7 @@ export async function getAllComments(options: GetCommentsOptions = {}) {
                 comment: wpComments,
                 postTitle: wpPosts.postTitle,
                 postSlug: wpPosts.postName,
+                postType: wpPosts.postType,
             })
             .from(wpComments)
             .leftJoin(wpPosts, eq(wpComments.commentPostId, wpPosts.id))
@@ -83,8 +81,9 @@ export async function getAllComments(options: GetCommentsOptions = {}) {
 
     const comments = rows.map((r) => ({
         ...r.comment,
-        postTitle: r.postTitle ?? "Unknown / Deleted Post",
+        postTitle: r.postTitle ?? null,
         postSlug: r.postSlug ?? "",
+        postType: r.postType,
     }));
 
     return {
@@ -94,14 +93,15 @@ export async function getAllComments(options: GetCommentsOptions = {}) {
 }
 
 export async function getCommentById(id: bigint | string | number): Promise<CommentWithPost | null> {
-    await verifyAdminOrEditor();
-    const commentId = typeof id === "bigint" ? id : BigInt(id);
+    await verifyAdmin();
+    const commentId = commentIdSchema.parse(id);
 
     const [row] = await db
         .select({
             comment: wpComments,
             postTitle: wpPosts.postTitle,
             postSlug: wpPosts.postName,
+                postType: wpPosts.postType,
         })
         .from(wpComments)
         .leftJoin(wpPosts, eq(wpComments.commentPostId, wpPosts.id))
@@ -112,18 +112,19 @@ export async function getCommentById(id: bigint | string | number): Promise<Comm
 
     return {
         ...row.comment,
-        postTitle: row.postTitle ?? "Unknown / Deleted Post",
+        postTitle: row.postTitle ?? null,
         postSlug: row.postSlug ?? "",
+        postType: row.postType,
     };
 }
 
 export async function getCommentCounts() {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
     const [allRes, approvedRes, pendingRes, spamRes, trashRes] = await Promise.all([
         db.select({ total: count() }).from(wpComments),
         db.select({ total: count() }).from(wpComments).where(eq(wpComments.commentApproved, "1")),
-        db.select({ total: count() }).from(wpComments).where(eq(wpComments.commentApproved, "0")),
+        db.select({ total: count() }).from(wpComments).where(or(eq(wpComments.commentApproved, "0"), eq(wpComments.commentApproved, "pending"))),
         db.select({ total: count() }).from(wpComments).where(eq(wpComments.commentApproved, "spam")),
         db.select({ total: count() }).from(wpComments).where(eq(wpComments.commentApproved, "trash")),
     ]);
@@ -138,7 +139,7 @@ export async function getCommentCounts() {
 }
 
 export async function getPostOptionsForComments() {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
     return db
         .select({

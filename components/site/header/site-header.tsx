@@ -4,8 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { getActiveNavigationId } from "./navigation"
 import styles from "./header.module.css"
-import { useEffect, useRef, useState, type CSSProperties } from "react"
-import { Search, Home } from "lucide-react"
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
+import { Search, Home, Menu, X } from "lucide-react"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
 import {
   formatDate,
@@ -27,6 +27,30 @@ const RULES: Record<string, string> = {
 export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const mods = theme.mods || {}
   const pathname = usePathname() || "/"
+  const navigationId = useId()
+  const menuButton = useRef<HTMLButtonElement>(null)
+  const [mobileMenu, setMobileMenu] = useState({ path: pathname, open: false })
+  const mobileOpen = mobileMenu.path === pathname && mobileMenu.open
+  const closeMobileMenu = () => setMobileMenu({ path: pathname, open: false })
+  useEffect(() => {
+    if (!mobileOpen) return
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenu({ path: pathname, open: false })
+        menuButton.current?.focus()
+      }
+    }
+    const desktop = window.matchMedia("(min-width: 768px)")
+    const resize = () => {
+      if (desktop.matches) setMobileMenu({ path: pathname, open: false })
+    }
+    document.addEventListener("keydown", keyboard)
+    desktop.addEventListener("change", resize)
+    return () => {
+      document.removeEventListener("keydown", keyboard)
+      desktop.removeEventListener("change", resize)
+    }
+  }, [mobileOpen, pathname])
   const activeId = getActiveNavigationId(theme.primaryNav || [], pathname)
   const headerRef = useRef<HTMLElement>(null)
   const navRef = useRef<HTMLElement>(null)
@@ -59,7 +83,9 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
     backgroundColor: "var(--theme-header-bg)",
     color: "var(--theme-header-text)",
     borderBottom,
-    top: stickyNavigation ? `calc(var(--site-admin-bar-height, 0px) - ${navOffset}px)` : undefined,
+    top: stickyNavigation
+      ? `calc(var(--site-admin-bar-height, 0px) - ${navOffset}px)`
+      : undefined,
   }
   const navStyle: CssVars = {
     backgroundColor: "var(--theme-nav-bg)",
@@ -90,9 +116,17 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const renderSearchIcon = () =>
     (mods.showSearchInNav !== false || showSocialsInNav) && (
       <div className={styles.utility}>
-        {showSocialsInNav && <SocialLinks mods={mods} />}
+        {showSocialsInNav && (
+          <div className={styles.navSocials}>
+            <SocialLinks mods={mods} />
+          </div>
+        )}
         {mods.showSearchInNav !== false && (
-          <Link href={localizePath("/search", theme.locale, theme.defaultLocale)} aria-label={t("site.search.label", theme, "")} className="inline-flex items-center justify-center p-2">
+          <Link
+            href={localizePath("/search", theme.locale, theme.defaultLocale)}
+            aria-label={t("site.search.label", theme, "")}
+            className="inline-flex items-center justify-center p-2"
+          >
             <Search className="size-4" aria-hidden="true" />
           </Link>
         )}
@@ -121,7 +155,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         }}
         className="border-b border-black/10 px-4 py-1.5 text-xs sm:px-6"
       >
-        <div className="theme-container mx-auto flex items-center justify-between">
+        <div className="theme-container mx-auto flex flex-wrap items-center justify-between gap-y-2">
           {showTicker && tickerText ? (
             <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
               <span
@@ -149,7 +183,11 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           ) : (
             <span />
           )}
-          <div className="flex items-center gap-3">
+          <div
+            className={["flex items-center gap-3", styles.topbarUtilities].join(
+              " "
+            )}
+          >
             {mods.showSocialIconsInHeader !== false && (
               <SocialLinks mods={mods} />
             )}
@@ -202,6 +240,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   )
   return (
     <header
+      dir={theme.direction}
       ref={headerRef}
       data-layout={headerLayout}
       style={headerStyle}
@@ -245,7 +284,31 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           <div
             className={["theme-container mx-auto", styles.navInner].join(" ")}
           >
+            <button
+              ref={menuButton}
+              type="button"
+              className={styles.menuToggle}
+              aria-controls={navigationId}
+              aria-expanded={mobileOpen}
+              aria-label={t(
+                mobileOpen ? "site.navigation.close" : "site.navigation.open",
+                theme,
+                ""
+              )}
+              onClick={() =>
+                setMobileMenu({ path: pathname, open: !mobileOpen })
+              }
+            >
+              {mobileOpen ? (
+                <X aria-hidden="true" size={20} />
+              ) : (
+                <Menu aria-hidden="true" size={20} />
+              )}
+              <span>{t("site.navigation.menu", theme, "")}</span>
+            </button>
             <div
+              id={navigationId}
+              data-mobile-open={mobileOpen ? "true" : "false"}
               className={styles.links}
               data-style={mods.navStyle || "classic-text"}
               style={{
@@ -256,6 +319,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               {theme.primaryNav.map((item) => (
                 <Link
                   key={item.id}
+                  onClick={closeMobileMenu}
                   href={item.url}
                   target={item.target || undefined}
                   rel={
@@ -273,6 +337,11 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
                   {item.title}
                 </Link>
               ))}
+              {showSocialsInNav && (
+                <div className={styles.mobileSocials}>
+                  <SocialLinks mods={mods} />
+                </div>
+              )}
             </div>
             {renderSearchIcon()}
           </div>

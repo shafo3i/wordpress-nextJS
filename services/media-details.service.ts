@@ -1,6 +1,8 @@
+import "server-only";
+import { verifyPostEditor } from "@/lib/authMIddleware";
 import path from "node:path"
 import fs from "node:fs/promises"
-import { and, eq } from "drizzle-orm"
+import { and, eq, inArray, sql } from "drizzle-orm"
 import { db, type DB } from "@/db"
 import { wpPosts, wpPostmeta, user } from "@/db/schema"
 import {
@@ -11,6 +13,7 @@ import {
 import { mapMediaAttachment } from "@/lib/media-attachment"
 
 export async function getMediaItemDetails(id: number, database: DB = db) {
+  await verifyPostEditor();
   mediaItemIdSchema.parse(id)
   const [row] = await database
     .select({
@@ -30,13 +33,13 @@ export async function getMediaItemDetails(id: number, database: DB = db) {
     .limit(1)
   if (!row) return null
   const metas = await database
-    .select({ key: wpPostmeta.metaKey, value: wpPostmeta.metaValue })
+    .select({ key: wpPostmeta.metaKey, value: sql<string>`left(${wpPostmeta.metaValue}, 100001)` })
     .from(wpPostmeta)
-    .where(eq(wpPostmeta.postId, BigInt(id)))
+    .where(and(eq(wpPostmeta.postId, BigInt(id)), inArray(wpPostmeta.metaKey, ["_wp_attached_file", "_wp_attachment_metadata", "_wp_attachment_image_alt"])))
   const item = mapMediaAttachment(
     row,
     Object.fromEntries(
-      metas.filter((m) => m.key && m.value).map((m) => [m.key!, m.value!])
+      metas.filter((m) => m.key && m.value && m.value.length <= 100000).map((m) => [m.key!, m.value!])
     ),
     true
   )
@@ -67,6 +70,7 @@ export async function updateMediaDetails(
   patch: MediaDetailsPatch,
   database: DB = db
 ) {
+  await verifyPostEditor();
   mediaItemIdSchema.parse(id)
   const data = mediaDetailsPatchSchema.parse(patch)
   await database.transaction(async (tx) => {

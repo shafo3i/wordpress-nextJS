@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import { hasTheme } from "@/themes/registry";
 import type { Metadata } from "next"
 import { verifyAdminOrEditor } from "@/lib/authMIddleware"
 import { getCustomizerData } from "@/lib/themes/customizer"
@@ -23,6 +25,7 @@ export default async function CustomizePreviewPage({
   await verifyAdminOrEditor()
 
   const { theme, lang } = await searchParams
+  if (theme && !hasTheme(theme)) notFound();
   const data = await getCustomizerData(theme)
   const [base, posts, homepageSettings, widgetAreas] = await Promise.all([
     // Locale aware context: dictionary, direction, translated menus and language switcher.

@@ -1,6 +1,8 @@
+import { languageQuerySchema, languageCodeSchema } from "@/db/schema/cms-languages";
+import { notFound } from "next/navigation";
 import { LanguageSync } from "./_components/language-sync";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
 import {
     getAllLanguagesQuery,
@@ -26,16 +28,17 @@ type PageProps = {
 };
 
 export default async function LanguagesPage({ searchParams }: PageProps) {
-    const session = await verifyAdminOrEditor();
+    const session = await verifyAdmin();
 
     const { s, status, page, edit, add } = await searchParams;
-    const currentStatus = status ?? "all";
-    const searchQuery = s?.trim() ?? "";
-    const currentPage = Number(page) > 0 ? Number(page) : 1;
+    const currentStatus = languageQuerySchema.shape.status.safeParse(status).data ?? "all";
+    const searchQuery = typeof s === "string" ? s.trim().slice(0, 200) : "";
+    const currentPage = languageQuerySchema.shape.page.safeParse(Number(page)).data ?? 1;
     const pageSize = 20;
 
     const isAdding = add === "true" || add === "1";
-    const editCode = edit?.trim();
+    const editCode = typeof edit === "string" ? edit.trim() : undefined;
+    if (editCode && !languageCodeSchema.safeParse(editCode).success) notFound();
 
     const [{ languages, total }, counts, editingLanguage, langContext] = await Promise.all([
         getAllLanguagesQuery({
@@ -49,6 +52,7 @@ export default async function LanguagesPage({ searchParams }: PageProps) {
         getAdminLanguageContext(),
     ]);
 
+    if (editCode && !editingLanguage) notFound();
     const dict = langContext.dict;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -57,9 +61,9 @@ export default async function LanguagesPage({ searchParams }: PageProps) {
             <div className="space-y-4">
                 <PostListHeader
                     addNewHref="/admincp/languages?add=true"
-                    addNewLabel={dict["admin.languages.add_new"] || "Add Language"}
+                    addNewLabel={dict["admin.languages.add_new"] || ""}
                     dict={dict}
-                    title={dict["admin.languages.title"] || "Languages"}
+                    title={dict["admin.languages.title"] || ""}
                 />
 
                 {session.user.role === "admin" && <LanguageSync dict={dict} />}

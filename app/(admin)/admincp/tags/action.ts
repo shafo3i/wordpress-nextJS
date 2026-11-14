@@ -1,55 +1,64 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { redirect, unstable_rethrow } from "next/navigation";
+import { verifyPostEditor } from "@/lib/authMIddleware";
 import {
-  tagService,
   createTag as createTagService,
   updateTag as updateTagService,
   quickUpdateTag as quickUpdateTagService,
   bulkDeleteTags as bulkDeleteTagsService,
 } from "@/services/tag.service";
-import { createTagSchema, updateTagSchema } from "@/db/schema/cms-taxonomy";
+import {
+  createTagSchema,
+  updateTagSchema,
+  quickUpdateTagSchema,
+  deleteTagsSchema,
+} from "@/db/schema/cms-taxonomy";
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { ZodError } from "zod";
+
+async function tagErrorMessage(error: unknown): Promise<string> {
+  unstable_rethrow(error);
+  const { dict } = await getAdminLanguageContext();
+  const key =
+    error instanceof Error && ["admin.tags.error.language", "admin.tags.error.translation", "admin.tags.error.shared", "admin.tags.error.missing"].includes(error.message)
+      ? error.message
+      : error instanceof ZodError
+        ? "admin.tags.error.invalid"
+        : "admin.tags.error.failed";
+  return dict[key] || dict["admin.tags.error.failed"] || "";
+}
+async function tagMutation<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    throw new Error(await tagErrorMessage(error));
+  }
+}
 
 export async function createTag(formData: FormData) {
-  await verifyAdminOrEditor();
+  await verifyPostEditor();
 
-  const raw = Object.fromEntries(formData.entries());
-  const parsed = createTagSchema.parse(raw);
-  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
-  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
-
-  const tag = await createTagService({
-    ...parsed,
-    languageCode,
-    sourceTermTaxonomyId,
-  });
+  const tag = await tagMutation(async () =>
+    createTagService(
+      createTagSchema.parse(Object.fromEntries(formData.entries()))
+    )
+  );
 
   revalidatePath("/admincp/tags");
   revalidatePath("/admincp/posts");
-  return { success: true, tag };
+  return { success: true, id: tag.id };
 }
 
 export async function updateTag(formData: FormData) {
-  await verifyAdminOrEditor();
+  await verifyPostEditor();
 
-  const raw = Object.fromEntries(formData.entries());
-  const parsed = updateTagSchema.parse(raw);
-
-  if (!parsed.termId) {
-    throw new Error("A valid tag ID is required.");
-  }
-
-  const languageCode = typeof raw.languageCode === "string" && raw.languageCode.trim() ? raw.languageCode.trim() : undefined;
-  const sourceTermTaxonomyId = raw.sourceTermTaxonomyId && String(raw.sourceTermTaxonomyId) !== "0" ? String(raw.sourceTermTaxonomyId) : undefined;
-
-  await updateTagService(parsed.termId, {
-    name: parsed.name,
-    slug: parsed.slug,
-    description: parsed.description,
-    languageCode,
-    sourceTermTaxonomyId,
+  await tagMutation(async () => {
+    const parsed = updateTagSchema.parse(
+      Object.fromEntries(formData.entries())
+    );
+    return updateTagService(parsed.termId, parsed);
   });
 
   revalidatePath("/admincp/tags");
@@ -62,16 +71,11 @@ export async function quickUpdateTag(data: {
   name: string;
   slug?: string;
 }) {
-  await verifyAdminOrEditor();
+  await verifyPostEditor();
 
-  const termId = BigInt(data.id);
-  if (termId <= BigInt(0)) {
-    throw new Error("A valid tag ID is required.");
-  }
-
-  const result = await quickUpdateTagService(termId, {
-    name: data.name,
-    slug: data.slug,
+  const result = await tagMutation(async () => {
+    const parsed = quickUpdateTagSchema.parse(data);
+    return quickUpdateTagService(parsed.id, parsed);
   });
 
   revalidatePath("/admincp/tags");
@@ -79,17 +83,20 @@ export async function quickUpdateTag(data: {
   return { success: true, ...result };
 }
 
-export async function deleteTags(ids: string[]) {
-  await verifyAdminOrEditor();
+export async function deleteTags(
+  ids: string[]
+): Promise<{ success?: boolean; count?: number; error?: string }> {
+  await verifyPostEditor();
 
-  const res = await bulkDeleteTagsService(ids);
+  let res;
+  try {
+    res = await bulkDeleteTagsService(deleteTagsSchema.parse(ids));
+  } catch (error) {
+    return { error: await tagErrorMessage(error) };
+  }
 
   revalidatePath("/admincp/tags");
   revalidatePath("/admincp/posts");
-
-  if (!res.success) {
-    return { error: res.error || "Failed to delete tag." };
-  }
 
   return { success: true, count: res.count };
 }

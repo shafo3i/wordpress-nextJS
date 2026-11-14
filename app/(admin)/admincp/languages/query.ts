@@ -1,8 +1,9 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { db } from "@/db";
 import { languagesTable } from "@/db/schema/cms-languages";
-import { and, count, desc, asc, eq, sql } from "drizzle-orm";
-import { SelectLanguage } from "@/db/schema/cms-languages";
+import { and, count, asc, eq, sql } from "drizzle-orm";
+import { languageQuerySchema, languageCodeSchema, type SelectLanguage } from "@/db/schema/cms-languages";
 
 export interface GetLanguagesOptions {
     status?: string;
@@ -12,9 +13,9 @@ export interface GetLanguagesOptions {
 }
 
 export async function getAllLanguagesQuery(options: GetLanguagesOptions = {}) {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
-    const { status, search, page = 1, limit = 20 } = options;
+    const { status, search, page, limit } = languageQuerySchema.parse(options);
     const offset = Math.max(0, (page - 1) * limit);
 
     const conditions = [];
@@ -55,8 +56,9 @@ export async function getAllLanguagesQuery(options: GetLanguagesOptions = {}) {
 }
 
 export async function getLanguageByCodeQuery(code: string): Promise<SelectLanguage | null> {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
+    code = languageCodeSchema.parse(code);
     const [row] = await db
         .select()
         .from(languagesTable)
@@ -67,7 +69,7 @@ export async function getLanguageByCodeQuery(code: string): Promise<SelectLangua
 }
 
 export async function getLanguageCounts() {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
     const [allCount, activeCount, inactiveCount] = await Promise.all([
         db.select({ total: count() }).from(languagesTable),

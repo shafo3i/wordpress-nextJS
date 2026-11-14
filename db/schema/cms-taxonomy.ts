@@ -224,18 +224,22 @@ export type CategoryInput = z.input<typeof createCategorySchema>;
 export type CategoryInputOutput = z.output<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.input<typeof updateCategorySchema>;
 
-export const createTagSchema = z.object({
-  name: z.string().min(1, "Tag name is required").max(200),
-  slug: z.string().max(200).optional().default(""),
-  description: z.string().optional().default(""),
+export const createTagSchema = createInsertSchema(wpTerms, {
+  name: z.string().trim().min(1).max(200),
+  slug: z.string().trim().max(200).default(""),
+}).pick({ name: true, slug: true }).extend({
+  description: z.string().trim().max(20000).default(""),
+  languageCode: createCategorySchema.shape.languageCode,
+  sourceTermTaxonomyId: createCategorySchema.shape.sourceTermTaxonomyId,
 });
-
 export const updateTagSchema = createTagSchema.partial().extend({
-  termId: z.preprocess(
-    (val) => (val === "" || val === null || val === undefined ? null : val),
-    z.coerce.bigint({ message: "Term ID is required" }).positive()
-  ),
+  termId: categoryIdSchema,
+  slug: z.string().trim().max(200).optional(),
+  description: z.string().trim().max(20000).optional(),
 });
+export const quickUpdateTagSchema = createTagSchema.pick({ name: true, slug: true }).extend({ id: categoryIdSchema });
+export const deleteTagsSchema = z.array(categoryIdSchema).min(1).max(100).transform(ids => [...new Set(ids)]);
+export const tagQuerySchema = categoryQuerySchema;
 
 export type TagInput = z.input<typeof createTagSchema>;
 export type TagInputOutput = z.output<typeof createTagSchema>;

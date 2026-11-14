@@ -1,5 +1,6 @@
 "use client"
 
+import { parsePreviewState } from "@/lib/customizer/preview-protocol";
 import { useEffect, useState, type FormEvent, type MouseEvent } from "react"
 import type { ContentItem } from "@/lib/site-content"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
@@ -60,14 +61,17 @@ export function PreviewHost({
         event.source !== window.parent
       )
         return
-      if (event.data?.type === "customizer:state") setState(event.data.state)
+      if (event.data?.type === "customizer:state") {
+        const next = parsePreviewState(event.data.state, themeSlug);
+        if (next) setState(next);
+      }
     }
     window.addEventListener("message", onMessage)
 
     const ready: PreviewToCustomizer = { type: "customizer:ready" }
     window.parent.postMessage(ready, window.location.origin)
     return () => window.removeEventListener("message", onMessage)
-  }, [])
+  }, [themeSlug])
 
   const { mods } = state
   const theme: FrontEndThemeContext = {

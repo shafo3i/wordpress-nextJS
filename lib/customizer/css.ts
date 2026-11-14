@@ -12,9 +12,8 @@ export interface BuildCssOptions {
 type Rule = { selectors: string[]; declarations: string[]; layer?: "base" };
 
 /** Custom CSS is admin supplied; stop it from closing our <style> element. */
-export function sanitizeCustomCss(css: string | undefined): string {
-  return (css ?? "").replace(/<\/?\s*style/gi, "");
-}
+export { sanitizeCustomCss } from "./css-policy";
+import { sanitizeCustomCss } from "./css-policy";
 
 /** Values end up inside a declaration, so statement and block delimiters are removed. */
 function sanitizeValue(value: string): string {

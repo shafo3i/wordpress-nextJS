@@ -30,7 +30,8 @@ export const factReviewSchema = z
             return u.protocol === "https:" && !u.username && !u.password
           })
       )
-      .max(20),
+      .max(20)
+      .transform((values) => [...new Set(values)]),
     status: factStatusSchema,
     approve: z.boolean(),
   })
@@ -71,7 +72,8 @@ export const factReviewHistorySchema = z.array(
             return url.protocol === "https:" && !url.username && !url.password
           })
       )
-      .max(20),
+      .max(20)
+      .transform((values) => [...new Set(values)]),
     status: z.enum([
       "unreviewed",
       "in_review",

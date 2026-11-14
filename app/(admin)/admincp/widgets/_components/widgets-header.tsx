@@ -26,7 +26,7 @@ export function WidgetsHeader({ dict, direction = "ltr" }: WidgetsHeaderProps) {
               showScreenOptions ? "border-b-0 bg-[#f0f0f1]" : ""
             }`}
           >
-            {dict?.["admin.common.screen_options"] || "Screen Options"} <span className="text-[9px]">{showScreenOptions ? "▲" : "▼"}</span>
+            {dict?.["admin.common.screen_options"] || ""} <span className="text-[9px]">{showScreenOptions ? "▲" : "▼"}</span>
           </button>
           <button
             type="button"
@@ -38,14 +38,14 @@ export function WidgetsHeader({ dict, direction = "ltr" }: WidgetsHeaderProps) {
               showHelp ? "border-b-0 bg-[#f0f0f1]" : ""
             }`}
           >
-            {dict?.["admin.common.help"] || "Help"} <span className="text-[9px]">{showHelp ? "▲" : "▼"}</span>
+            {dict?.["admin.common.help"] || ""} <span className="text-[9px]">{showHelp ? "▲" : "▼"}</span>
           </button>
         </div>
       </div>
 
       {showScreenOptions && (
         <div className="border border-[#c3c4c7] bg-white p-4 shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-[13px] text-[#2c3338]">
-          <h4 className="font-semibold mb-2">{dict?.["admin.common.screen_options"] || "Screen Options"}</h4>
+          <h4 className="font-semibold mb-2">{dict?.["admin.common.screen_options"] || ""}</h4>
           <p className="text-[12px] text-[#646970]">
             {direction === "rtl"
               ? "يمكنك سحب وإفلات الودجات بين القائمة الجانبية ومناطق الودجات المختلفة."
@@ -56,7 +56,7 @@ export function WidgetsHeader({ dict, direction = "ltr" }: WidgetsHeaderProps) {
 
       {showHelp && (
         <div className="border border-[#c3c4c7] bg-white p-4 shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-[13px] text-[#2c3338] space-y-2">
-          <h4 className="font-semibold">{dict?.["admin.common.help"] || "Help"}</h4>
+          <h4 className="font-semibold">{dict?.["admin.common.help"] || ""}</h4>
           <p className="text-[12px] text-[#646970]">
             {direction === "rtl"
               ? "الودجات هي كتل محتوى مستقلة يمكن إضافتها إلى الشريط الجانبي أو التذييل. تدعم الإضافات المنصبة أيضاً ودجات مخصصة تلقائياً."
@@ -68,11 +68,10 @@ export function WidgetsHeader({ dict, direction = "ltr" }: WidgetsHeaderProps) {
       {/* Main Title Row */}
       <div className="border-b border-[#c3c4c7] pb-3">
         <h1 className="text-[23px] font-normal leading-[1.3] text-[#1d2327]">
-          {dict?.["admin.widgets.title"] || "Widgets"}
+          {dict?.["admin.widgets.title"] || ""}
         </h1>
         <p className="text-[12px] text-[#646970] mt-0.5">
-          {dict?.["admin.widgets.subtitle"] ||
-            "Manage sidebars, dual-sidebar columns, and footer widget areas. Active plugins automatically provide widgets below."}
+          {dict?.["admin.widgets.subtitle"] || ""}
         </p>
       </div>
     </div>

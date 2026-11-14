@@ -27,14 +27,14 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
             <div className="mb-3 flex items-center justify-between border-b border-[#c3c4c7] pb-2">
                 <h2 className="text-[14px] font-semibold text-[#1d2327]">
                     {isUpdate
-                        ? dict["admin.comments.form.edit_title"] || `Edit Comment #${id}`
-                        : dict["admin.comments.form.create_title"] || "Add New Comment"}
+                        ? dict["admin.comments.form.edit_title"] || ""
+                        : dict["admin.comments.form.create_title"] || ""}
                 </h2>
                 <Link
                     href="/admincp/comments"
                     className="text-[13px] text-[#2271b1] hover:underline"
                 >
-                    {dict["admin.comments.form.back"] || "Back to Comments"}
+                    {dict["admin.comments.form.back"] || ""}
                 </Link>
             </div>
 
@@ -49,7 +49,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                 {/* Associated Post */}
                 <div className="flex flex-col gap-1">
                     <label htmlFor="commentPostId" className="font-semibold text-[#1d2327]">
-                        {dict["admin.comments.form.post"] || "Associated Post"}
+                        {dict["admin.comments.form.post"] || ""}
                     </label>
                     {postOptions.length > 0 ? (
                         <select
@@ -61,7 +61,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                         >
                             {postOptions.map((p) => (
                                 <option key={p.id.toString()} value={p.id.toString()}>
-                                    #{p.id.toString()} — {p.title || "(Untitled Post)"}
+                                    #{p.id.toString()} — {p.title || dict["admin.comments.untitled_post"] || ""}
                                 </option>
                             ))}
                         </select>
@@ -70,7 +70,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                             type="text"
                             name="commentPostId"
                             id="commentPostId"
-                            placeholder="Enter target Post ID"
+                            placeholder={dict["admin.comments.form.post_id_placeholder"] || ""}
                             required
                             defaultValue={defaultValues?.commentPostId?.toString() ?? ""}
                             className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -82,7 +82,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                     {/* Author */}
                     <div className="flex flex-col gap-1">
                         <label htmlFor="commentAuthor" className="font-semibold text-[#1d2327]">
-                            {dict["admin.comments.form.author"] || "Author Name"}
+                            {dict["admin.comments.form.author"] || ""}
                         </label>
                         <input
                             type="text"
@@ -98,7 +98,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                     {/* Email */}
                     <div className="flex flex-col gap-1">
                         <label htmlFor="commentAuthorEmail" className="font-semibold text-[#1d2327]">
-                            {dict["admin.comments.form.email"] || "Author Email"}
+                            {dict["admin.comments.form.email"] || ""}
                         </label>
                         <input
                             type="email"
@@ -115,7 +115,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                     {/* URL */}
                     <div className="flex flex-col gap-1">
                         <label htmlFor="commentAuthorUrl" className="font-semibold text-[#1d2327]">
-                            {dict["admin.comments.form.url"] || "Author URL"}
+                            {dict["admin.comments.form.url"] || ""}
                         </label>
                         <input
                             type="url"
@@ -130,7 +130,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                     {/* Status */}
                     <div className="flex flex-col gap-1">
                         <label htmlFor="commentApproved" className="font-semibold text-[#1d2327]">
-                            {dict["admin.comments.form.status"] || "Status"}
+                            {dict["admin.comments.form.status"] || ""}
                         </label>
                         <select
                             name="commentApproved"
@@ -138,10 +138,10 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                             defaultValue={defaultValues?.commentApproved ?? "1"}
                             className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                         >
-                            <option value="1">Approved</option>
-                            <option value="0">Pending</option>
-                            <option value="spam">Spam</option>
-                            <option value="trash">Trash</option>
+                            <option value="1">{dict["admin.comments.filter.approved"] || ""}</option>
+                            <option value="0">{dict["admin.comments.filter.pending"] || ""}</option>
+                            <option value="spam">{dict["admin.comments.filter.spam"] || ""}</option>
+                            <option value="trash">{dict["admin.comments.filter.trash"] || ""}</option>
                         </select>
                     </div>
                 </div>
@@ -149,7 +149,7 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                 {/* Comment Content */}
                 <div className="flex flex-col gap-1">
                     <label htmlFor="commentContent" className="font-semibold text-[#1d2327]">
-                        {dict["admin.comments.form.content"] || "Comment"}
+                        {dict["admin.comments.form.content"] || ""}
                     </label>
                     <textarea
                         name="commentContent"
@@ -168,14 +168,14 @@ export default function CommentForm({ defaultValues, postOptions = [], dict = {}
                         className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3 text-[13px] font-normal text-white hover:border-[#0a4b78] hover:bg-[#135e96] cursor-pointer"
                     >
                         {isUpdate
-                            ? dict["admin.comments.form.update"] || "Update Comment"
-                            : dict["admin.comments.form.create"] || "Submit Comment"}
+                            ? dict["admin.comments.form.update"] || ""
+                            : dict["admin.comments.form.create"] || ""}
                     </button>
                     <Link
                         href="/admincp/comments"
                         className="h-[30px] inline-flex items-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] px-3 text-[13px] text-[#2c3338] hover:bg-[#f0f0f1]"
                     >
-                        {dict["admin.comments.form.cancel"] || "Cancel"}
+                        {dict["admin.comments.form.cancel"] || ""}
                     </Link>
                 </div>
             </div>

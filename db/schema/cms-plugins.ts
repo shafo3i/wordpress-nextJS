@@ -115,3 +115,20 @@ export type PluginConfigMap = {
 export type PluginFormConfig = Record<string, unknown> & {
   translations?: Record<string, Record<string, string>>
 }
+
+export const pluginListQuerySchema = z
+  .object({
+    status: z.enum(["all", "active", "inactive"]).optional(),
+    search: z.string().max(200).optional(),
+    page: z.number().int().min(1).max(100000).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+  })
+  .strict()
+export const pluginCatalogQuerySchema = z
+  .object({
+    category: z.string().max(100).optional(),
+    search: z.string().max(200).optional(),
+  })
+  .strict()
+
+export const storedPluginSlugsSchema = z.array(z.string().max(200)).max(100)

@@ -1,3 +1,8 @@
+vi.mock("@/components/admin/admin-shell", () => ({
+  getAdminLanguageContext: async () => ({
+    dict: { "admin.editor.save_failed": "Save failed" },
+  }),
+}))
 import { beforeEach, describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
@@ -5,7 +10,10 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   clear: vi.fn(),
 }))
-vi.mock("@/lib/authMIddleware", () => ({ verifyPostEditor: mocks.auth, verifyAdmin: mocks.auth }))
+vi.mock("@/lib/authMIddleware", () => ({
+  verifyPostEditor: mocks.auth,
+  verifyAdmin: mocks.auth,
+}))
 vi.mock("@/services/post.service", () => ({
   createPost: mocks.create,
   updatePost: mocks.update,
@@ -74,7 +82,10 @@ describe("manual saves acknowledge recovery only after successful writes", () =>
     const values = form()
     values.set("editorRestricted", "false")
     expect((await updatePostAction(values)).success).toBe(true)
-    expect(mocks.update).toHaveBeenCalledWith("1", expect.objectContaining({ editorRestricted: true }))
+    expect(mocks.update).toHaveBeenCalledWith(
+      "1",
+      expect.objectContaining({ editorRestricted: true })
+    )
   })
   it("cannot clear an unrelated document's recovery", async () => {
     const values = form()
@@ -90,4 +101,47 @@ describe("manual saves acknowledge recovery only after successful writes", () =>
     expect(await savePostAction(values)).toEqual({ success: true, postId: "2" })
     warn.mockRestore()
   })
+})
+
+describe("actual editor form submissions", () => {
+  for (const video of [
+    "",
+    "/uploads/2026/04/WhatsApp-Video-2026-04-15-at-4.27.43-PM.mp4",
+    "https://youtu.be/dQw4w9WgXcQ",
+  ]) {
+    it(`creates and updates with the editor's string menu order and video ${video}`, async () => {
+      const values = form()
+      values.set("menuOrder", "0")
+      values.set("postParent", "0")
+      values.set("featuredImageId", "")
+      values.set("featuredVideoUrl", video)
+      values.set("categorySlugs", "")
+      values.set("tags", "")
+      values.set("isFeatured", "0")
+      values.set("status", "draft")
+      expect(await savePostAction(values)).toEqual({
+        success: true,
+        postId: "2",
+      })
+      expect(mocks.create).toHaveBeenCalledWith(
+        expect.objectContaining({ menuOrder: 0 })
+      )
+      expect(await updatePostAction(values)).toEqual({
+        success: true,
+        postId: "1",
+      })
+      expect(mocks.update).toHaveBeenCalledWith(
+        "1",
+        expect.objectContaining({ menuOrder: 0 })
+      )
+    })
+  }
+  for (const invalid of ["", "NaN", "1.5", "2147483648", "0x10"]) {
+    it(`rejects malformed menu order ${invalid}`, async () => {
+      const values = form()
+      values.set("menuOrder", invalid)
+      expect((await savePostAction(values)).success).toBe(false)
+      expect(mocks.create).not.toHaveBeenCalled()
+    })
+  }
 })

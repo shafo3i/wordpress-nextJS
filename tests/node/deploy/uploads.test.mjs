@@ -27,6 +27,8 @@ test("production uploads", async (t) => {
   await file(join(fixture, "outside.png"), "private")
   await file(join(root, ".quarantine", "secret.png"), "private")
   await file(join(root, "active.html"), "<script>alert(1)</script>")
+  await file(join(root, "report.pdf"), "%PDF-1.7\nexample")
+  await file(join(root, "notes.txt"), "<script>alert(1)</script>")
   const server = createServer(async (req, res) => {
     if (!(await serveUpload(req, res, root))) {
       res.writeHead(404)
@@ -104,6 +106,19 @@ test("production uploads", async (t) => {
       )
     }
   )
+  await t.test("serves documents as downloads with sandboxed content and no MIME sniffing", async () => {
+    for (const name of ["report.pdf", "notes.txt"]) {
+      const response = await fetch(base + "/uploads/" + name);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get("content-disposition"), /^attachment;/);
+      assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+      assert.match(response.headers.get("content-security-policy"), /default-src 'none'/);
+      assert.match(response.headers.get("content-security-policy"), /sandbox/);
+      assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+      await response.arrayBuffer();
+    }
+    assert.equal((await fetch(base + "/uploads/file.png%3Ahidden.png")).status, 404);
+  });
   await t.test(
     "blocks symlinks escaping the uploads directory",
     async (test) => {

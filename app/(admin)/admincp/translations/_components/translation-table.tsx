@@ -57,19 +57,19 @@ export function TranslationTable({
                     <thead className="border-b border-[#c3c4c7] bg-[#f6f7f7] text-[13px] text-[#2c3338]">
                         <tr>
                             <th className="px-3 py-2 font-medium w-64 text-start">
-                                {dict["admin.translations.table.key"] || "Key"}
+                                {dict["admin.translations.table.key"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium w-72 text-start">
-                                {dict["admin.translations.table.original"] || "Original (English)"}
+                                {dict["admin.translations.table.original"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium text-start">
-                                {dict["admin.translations.table.translation"] || "Translation"} ({locale.toUpperCase()})
+                                {dict["admin.translations.table.translation"] || ""} ({locale.toUpperCase()})
                             </th>
                             <th className="px-3 py-2 font-medium w-28 text-center">
-                                {dict["admin.translations.table.source"] || "Source"}
+                                {dict["admin.translations.table.source"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium w-36 text-end">
-                                {dict["admin.translations.table.action"] || "Action"}
+                                {dict["admin.translations.table.action"] || ""}
                             </th>
                         </tr>
                     </thead>
@@ -77,12 +77,12 @@ export function TranslationTable({
                         {items.length === 0 ? (
                             <tr>
                                 <td className="px-3 py-6 text-center text-[#646970]" colSpan={5}>
-                                    {dict["admin.translations.table.no_strings"] || "No translatable strings found matching your criteria."}
+                                    {dict["admin.translations.table.no_strings"] || ""}
                                 </td>
                             </tr>
                         ) : (
-                            items.map((item) => {
-                                const formId = `trans-${item.key.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+                            items.map((item, index) => {
+                                const formId = `trans-${index}`;
                                 return (
                                 <tr
                                     className="group hover:bg-[#f6f7f7] transition-colors"
@@ -118,7 +118,7 @@ export function TranslationTable({
                                                 defaultValue={item.currentValue}
                                                 dir={direction}
                                                 name="value"
-                                                placeholder={item.baseValue || "Enter translation..."}
+                                                placeholder={item.baseValue || dict["admin.translations.form.value_placeholder"] || ""}
                                                 required
                                                 type="text"
                                             />
@@ -129,15 +129,15 @@ export function TranslationTable({
                                     <td className="px-3 py-2.5 align-top text-center">
                                         {item.isOverridden ? (
                                             <span className="inline-block rounded-[3px] border border-[#2271b1] bg-[#f0f6fc] px-1.5 py-0.5 text-[10px] font-medium text-[#2271b1]">
-                                                {dict["admin.translations.table.source_override"] || "DB Override"}
+                                                {dict["admin.translations.table.source_override"] || ""}
                                             </span>
                                         ) : item.templateValue ? (
                                             <span className="inline-block rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] px-1.5 py-0.5 text-[10px] font-medium text-[#50575e]">
-                                                {dict["admin.translations.table.source_template"] || "File Template"}
+                                                {dict["admin.translations.table.source_template"] || ""}
                                             </span>
                                         ) : (
                                             <span className="inline-block rounded-[3px] border border-[#dba617] bg-[#fcf9e8] px-1.5 py-0.5 text-[10px] font-medium text-[#8a6d3b]">
-                                                {dict["admin.translations.table.source_missing"] || "Untranslated"}
+                                                {dict["admin.translations.table.source_missing"] || ""}
                                             </span>
                                         )}
                                     </td>
@@ -148,10 +148,10 @@ export function TranslationTable({
                                             <button
                                                 className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 text-[12px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] cursor-pointer whitespace-nowrap"
                                                 form={formId}
-                                                title="Save this string"
+                                                title={dict["admin.translations.table.save"] || ""}
                                                 type="submit"
                                             >
-                                                {dict["admin.translations.table.save"] || "Save"}
+                                                {dict["admin.translations.table.save"] || ""}
                                             </button>
 
                                             {item.isOverridden && (
@@ -161,10 +161,10 @@ export function TranslationTable({
                                                     <input name="returnUrl" type="hidden" value={returnUrl} />
                                                     <button
                                                         className="text-[12px] text-[#b32d2e] hover:text-[#a00] hover:underline cursor-pointer whitespace-nowrap"
-                                                        title="Revert back to file template"
+                                                        title={dict["admin.translations.table.reset"] || ""}
                                                         type="submit"
                                                     >
-                                                        {dict["admin.translations.table.reset"] || "Reset"}
+                                                        {dict["admin.translations.table.reset"] || ""}
                                                     </button>
                                                 </form>
                                             )}

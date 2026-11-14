@@ -16,6 +16,7 @@ export async function readNewsletterBody(request: Request) {
   return Buffer.concat(chunks).toString("utf8")
 }
 export function newsletterOriginAllowed(request: Request) {
+  if (request.headers.get("sec-fetch-site") === "cross-site") return false
   const origin = request.headers.get("origin")
   // Non-browser clients have no Origin; rate limits and email confirmation still apply.
   if (!origin) return true

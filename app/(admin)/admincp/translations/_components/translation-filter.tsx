@@ -47,9 +47,9 @@ export function TranslationFilter({
     };
 
     const filterTabs = [
-        { key: "all", label: dict["admin.translations.filter.all"] || "All", count: stats.total },
-        { key: "missing", label: dict["admin.translations.filter.missing"] || "Untranslated", count: stats.missing },
-        { key: "overridden", label: dict["admin.translations.filter.overridden"] || "Custom Overrides", count: stats.overridden },
+        { key: "all", label: dict["admin.translations.filter.all"] || "", count: stats.total },
+        { key: "missing", label: dict["admin.translations.filter.missing"] || "", count: stats.missing },
+        { key: "overridden", label: dict["admin.translations.filter.overridden"] || "", count: stats.overridden },
     ];
 
     return (
@@ -57,7 +57,7 @@ export function TranslationFilter({
             {/* Language Selection Bar */}
             <div className="flex flex-wrap items-center gap-2 border-b border-[#c3c4c7] pb-3">
                 <span className="text-[13px] font-semibold text-[#1d2327]">
-                    {dict["admin.menu.languages"] || "Language"}:
+                    {dict["admin.menu.languages"] || ""}:
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
                     {languages.map((lang) => {
@@ -74,7 +74,7 @@ export function TranslationFilter({
                             >
                                 {lang.name} ({lang.code.toUpperCase()})
                                 {lang.nativeName ? ` — ${lang.nativeName}` : ""}
-                                {lang.isDefault ? ` [${dict["admin.languages.table.default"] || "Default"}]` : ""}
+                                {lang.isDefault ? ` [${dict["admin.languages.table.default"] || ""}]` : ""}
                             </Link>
                         );
                     })}
@@ -120,7 +120,7 @@ export function TranslationFilter({
                         defaultValue={currentGroup}
                         name="group"
                     >
-                        <option value="all">{dict["admin.translations.all_groups"] || "All Groups"}</option>
+                        <option value="all">{dict["admin.translations.all_groups"] || ""}</option>
                         {groups.map((g) => (
                             <option key={g} value={g}>
                                 {g.charAt(0).toUpperCase() + g.slice(1)}
@@ -132,7 +132,7 @@ export function TranslationFilter({
                         className="h-[30px] w-48 rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none placeholder:text-[#a7aaad] focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                         defaultValue={searchQuery}
                         name="s"
-                        placeholder={dict["admin.translations.search_placeholder"] || "Search strings..."}
+                        placeholder={dict["admin.translations.search_placeholder"] || ""}
                         type="search"
                     />
 
@@ -140,7 +140,7 @@ export function TranslationFilter({
                         className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 text-[13px] text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] cursor-pointer"
                         type="submit"
                     >
-                        {dict["admin.translations.search_button"] || "Filter"}
+                        {dict["admin.translations.search_button"] || ""}
                     </button>
                 </form>
             </div>

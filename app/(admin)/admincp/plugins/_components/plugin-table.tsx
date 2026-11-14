@@ -1,4 +1,5 @@
 "use client"
+import { absoluteWebUrl } from "@/lib/seo/urls"
 import { retiredPlugins } from "@/db/schema/cms-plugins"
 
 import Link from "next/link"
@@ -404,7 +405,7 @@ export function PluginTable({
                           {plugin.authorUrl ? (
                             <a
                               className="text-[#2271b1] hover:underline"
-                              href={plugin.authorUrl}
+                              href={absoluteWebUrl(plugin.authorUrl)}
                               rel="noreferrer"
                               target="_blank"
                             >
@@ -423,7 +424,7 @@ export function PluginTable({
                             <span>|</span>
                             <a
                               className="text-[#2271b1] hover:underline"
-                              href={plugin.pluginUrl}
+                              href={absoluteWebUrl(plugin.pluginUrl)}
                               rel="noreferrer"
                               target="_blank"
                             >

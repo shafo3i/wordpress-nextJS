@@ -3,21 +3,6 @@
 import { useState, useTransition } from "react";
 import { quickUpdatePageAction } from "../action";
 
-const MONTH_NAMES = [
-  "01-Jan",
-  "02-Feb",
-  "03-Mar",
-  "04-Apr",
-  "05-May",
-  "06-Jun",
-  "07-Jul",
-  "08-Aug",
-  "09-Sep",
-  "10-Oct",
-  "11-Nov",
-  "12-Dec",
-];
-
 export type PageQuickEditProps = {
   page: {
     id: string;
@@ -41,6 +26,7 @@ export type PageQuickEditProps = {
   }) => void;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  locale?: string;
   colSpan?: number;
 };
 
@@ -51,6 +37,7 @@ export function PageQuickEditRow({
   onSuccess,
   dict = {},
   direction = "ltr",
+  locale,
   colSpan = 7,
 }: PageQuickEditProps) {
   const [title, setTitle] = useState(page.title || "");
@@ -63,8 +50,13 @@ export function PageQuickEditRow({
   const [isPrivate, setIsPrivate] = useState(page.status === "private");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const initialDate = new Date(page.date || Date.now());
-  const validInitialDate = Number.isNaN(initialDate.getTime()) ? new Date() : initialDate;
+  const [validInitialDate] = useState(() => {
+    const initial = new Date(page.date);
+    return Number.isNaN(initial.getTime()) ? new Date() : initial;
+  });
+  const monthNames = Array.from({ length: 12 }, (_, month) =>
+    new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2024, month, 1)))
+  );
 
   const [month, setMonth] = useState(validInitialDate.getMonth());
   const [day, setDay] = useState(validInitialDate.getDate());
@@ -86,7 +78,7 @@ export function PageQuickEditRow({
           title,
           slug,
           date: dateObj.toISOString(),
-          status: resolvedStatus as any,
+          status: resolvedStatus,
           postParent,
           menuOrder,
           commentStatus: allowComments ? "open" : "closed",
@@ -104,12 +96,12 @@ export function PageQuickEditRow({
         } else {
           setErrorMessage(
             ("error" in res && typeof res.error === "string" ? res.error : null) ||
-              dict["admin.common.failed_notice"] ||
-              "Failed to update page."
+              dict["admin.pages.error.failed"] ||
+              ""
           );
         }
-      } catch (err: any) {
-        setErrorMessage(err?.message || "Failed to update page.");
+      } catch {
+        setErrorMessage(dict["admin.pages.error.failed"] || "");
       }
     });
   };
@@ -120,7 +112,7 @@ export function PageQuickEditRow({
         <div className="space-y-3 text-[13px] text-[#2c3338]">
           <div className="flex items-center justify-between border-b border-[#dcdcde] pb-2">
             <h4 className="text-[13px] font-bold uppercase tracking-wider text-[#1d2327]">
-              {dict["admin.common.quick_edit"] || "Quick Edit"}
+              {dict["admin.common.quick_edit"] || ""}
             </h4>
             {errorMessage && (
               <span className="text-[12px] text-[#d63638] font-medium">{errorMessage}</span>
@@ -132,7 +124,7 @@ export function PageQuickEditRow({
             <div className="space-y-3">
               <div>
                 <label className="block text-[12px] font-semibold text-[#50575e] mb-1">
-                  {dict["admin.pages.table.title"] || "Title"}
+                  {dict["admin.pages.table.title"] || ""}
                 </label>
                 <input
                   type="text"
@@ -144,7 +136,7 @@ export function PageQuickEditRow({
 
               <div>
                 <label className="block text-[12px] font-semibold text-[#50575e] mb-1">
-                  {dict["admin.pages.slug"] || "Slug"}
+                  {dict["admin.pages.slug"] || ""}
                 </label>
                 <input
                   type="text"
@@ -157,7 +149,7 @@ export function PageQuickEditRow({
 
               <div>
                 <label className="block text-[12px] font-semibold text-[#50575e] mb-1">
-                  {dict["admin.posts.table.date"] || "Date"}
+                  {dict["admin.posts.table.date"] || ""}
                 </label>
                 <div className="flex flex-wrap items-center gap-1 text-[12px]" dir="ltr">
                   <select
@@ -165,7 +157,7 @@ export function PageQuickEditRow({
                     onChange={(e) => setMonth(Number(e.target.value))}
                     className="h-[28px] rounded-[3px] border border-[#8c8f94] bg-white px-1 text-[12px]"
                   >
-                    {MONTH_NAMES.map((name, i) => (
+                    {monthNames.map((name, i) => (
                       <option key={name} value={i}>
                         {name}
                       </option>
@@ -212,14 +204,14 @@ export function PageQuickEditRow({
             <div className="space-y-3">
               <div>
                 <label className="block text-[12px] font-semibold text-[#50575e] mb-1">
-                  {dict["admin.pages.parent"] || "Parent"}
+                  {dict["admin.pages.parent"] || ""}
                 </label>
                 <select
                   value={postParent}
                   onChange={(e) => setPostParent(e.target.value)}
                   className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
                 >
-                  <option value="0">{dict["admin.pages.no_parent"] || "(no parent)"}</option>
+                  <option value="0">{dict["admin.pages.no_parent"] || ""}</option>
                   {parentPages
                     .filter((p) => p.id !== page.id)
                     .map((p) => (
@@ -232,7 +224,7 @@ export function PageQuickEditRow({
 
               <div>
                 <label className="block text-[12px] font-semibold text-[#50575e] mb-1">
-                  {dict["admin.pages.order"] || "Order"}
+                  {dict["admin.pages.order"] || ""}
                 </label>
                 <input
                   type="number"
@@ -251,7 +243,7 @@ export function PageQuickEditRow({
                     className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   />
                   <span className="text-[12px] font-medium text-[#2c3338]">
-                    {dict["admin.pages.allow_comments"] || "Allow Comments"}
+                    {dict["admin.pages.allow_comments"] || ""}
                   </span>
                 </label>
               </div>
@@ -261,14 +253,14 @@ export function PageQuickEditRow({
             <div className="space-y-3">
               <div>
                 <label className="block text-[12px] font-semibold text-[#50575e] mb-1">
-                  {dict["admin.pages.password"] || "Password"}
+                  {dict["admin.pages.password"] || ""}
                 </label>
                 <input
                   type="text"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isPrivate}
-                  placeholder={dict["admin.pages.password_placeholder"] || "Or make it private"}
+                  placeholder={dict["admin.pages.password_placeholder"] || ""}
                   className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none disabled:bg-[#f6f7f7] disabled:opacity-60"
                 />
               </div>
@@ -282,14 +274,14 @@ export function PageQuickEditRow({
                     className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   />
                   <span className="text-[12px] font-medium text-[#2c3338]">
-                    {dict["admin.pages.private_checkbox"] || "Private page"}
+                    {dict["admin.pages.private_checkbox"] || ""}
                   </span>
                 </label>
               </div>
 
               <div>
                 <label className="block text-[12px] font-semibold text-[#50575e] mb-1">
-                  {dict["admin.posts.table.status"] || "Status"}
+                  {dict["admin.posts.table.status"] || ""}
                 </label>
                 <select
                   value={status}
@@ -297,9 +289,9 @@ export function PageQuickEditRow({
                   disabled={isPrivate}
                   className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none disabled:bg-[#f6f7f7] disabled:opacity-60"
                 >
-                  <option value="publish">{dict["admin.common.published"] || "Published"}</option>
-                  <option value="pending">{dict["admin.common.pending"] || "Pending Review"}</option>
-                  <option value="draft">{dict["admin.common.draft"] || "Draft"}</option>
+                  <option value="publish">{dict["admin.common.published"] || ""}</option>
+                  <option value="pending">{dict["admin.common.pending"] || ""}</option>
+                  <option value="draft">{dict["admin.common.draft"] || ""}</option>
                 </select>
               </div>
             </div>
@@ -312,7 +304,7 @@ export function PageQuickEditRow({
               onClick={onCancel}
               className="rounded-[3px] border border-[#8c8f94] bg-[#f6f7f7] px-3 py-1 text-[13px] text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
             >
-              {dict["admin.common.cancel"] || "Cancel"}
+              {dict["admin.common.cancel"] || ""}
             </button>
             <button
               type="button"
@@ -321,8 +313,8 @@ export function PageQuickEditRow({
               className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1 text-[13px] font-medium text-white hover:border-[#135e96] hover:bg-[#135e96] disabled:opacity-50"
             >
               {isPending
-                ? dict["admin.common.saving"] || "Updating..."
-                : dict["admin.common.update"] || "Update"}
+                ? dict["admin.pages.saving"] || ""
+                : dict["admin.common.update"] || ""}
             </button>
           </div>
         </div>

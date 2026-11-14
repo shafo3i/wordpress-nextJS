@@ -1,3 +1,5 @@
+import { verifyAdmin } from "@/lib/authMIddleware";
+import "server-only";
 import { initActivePlugins } from "@/lib/plugins/loader"
 import { getPalettes } from "@/lib/customizer/registry"
 import {
@@ -9,6 +11,7 @@ import type { CustomizeData } from "./_components/types"
 export async function getCustomizeQuery(
   targetThemeSlug?: string
 ): Promise<CustomizeData> {
+  await verifyAdmin();
   // Plugins register `customizer_sections` filters during init.
   const plugins = await initActivePlugins()
 

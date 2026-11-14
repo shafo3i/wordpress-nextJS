@@ -32,10 +32,12 @@ describe("administrator guard", () => {
   it("denies anonymous and banned callers but permits administrators", async () => {
     mocks.getSession.mockResolvedValue(null);
     await expect(verifyAdmin()).rejects.toThrow("redirect:/cms-login");
+    mocks.requestHeaders = new Headers();
     mocks.getSession.mockResolvedValue({
       user: { id: "admin-1", role: "admin", banned: true },
     });
     await expect(verifyAdmin()).rejects.toThrow("redirect:/cms-admin");
+    mocks.requestHeaders = new Headers();
     mocks.getSession.mockResolvedValue({
       user: { id: "admin-1", role: "admin", banned: false },
     });

@@ -20,6 +20,7 @@ export const postEditorSnapshotSchema = z
     content: z.string().max(2_000_000),
     excerpt: z.string().max(100000),
     featuredImageId: z.string().max(40),
+    featuredVideoUrl: z.string().max(2000).optional(),
     isFeatured: z.boolean(),
     status: z.string().max(20),
     template: z.string().max(100),

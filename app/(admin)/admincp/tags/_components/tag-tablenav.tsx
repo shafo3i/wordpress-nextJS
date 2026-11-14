@@ -71,7 +71,7 @@ export function TagTablenav({
       {/* Left: Bulk Actions */}
       <div className="flex flex-wrap items-center gap-2">
         <label className="sr-only" htmlFor={`bulk-action-selector-${position}`}>
-          {dict["admin.common.bulk_actions"] || "Bulk actions"}
+          {dict["admin.common.bulk_actions"] || ""}
         </label>
         <select
           className="h-8 rounded border border-[#8c8f94] bg-white px-2 py-1 text-xs text-[#2c3338] shadow-sm focus:border-[#2271b1] focus:outline-none"
@@ -80,8 +80,8 @@ export function TagTablenav({
           onChange={(e) => onBulkActionChange(e.target.value)}
           value={bulkAction}
         >
-          <option value="Bulk actions">{dict["admin.common.bulk_actions"] || "Bulk actions"}</option>
-          <option value="delete">{dict["admin.tags.delete"] || "Delete"}</option>
+          <option value="Bulk actions">{dict["admin.common.bulk_actions"] || ""}</option>
+          <option value="delete">{dict["admin.tags.delete"] || ""}</option>
         </select>
         <button
           className="h-8 rounded border border-[#2271b1] bg-[#f6f7f7] px-3 text-xs text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
@@ -90,20 +90,20 @@ export function TagTablenav({
           type="button"
         >
           {isPending
-            ? dict["admin.common.applying"] || "Applying..."
-            : dict["admin.common.apply"] || "Apply"}
+            ? dict["admin.common.applying"] || ""
+            : dict["admin.common.apply"] || ""}
         </button>
 
         {languages && languages.length > 0 && (
           <>
             <select
-              aria-label={dict["admin.common.filter_by_language"] || "Filter by language"}
+              aria-label={dict["admin.common.filter_by_language"] || ""}
               className="h-8 rounded border border-[#8c8f94] bg-white px-2 py-1 text-xs text-[#2c3338] shadow-sm focus:border-[#2271b1] focus:outline-none"
               onChange={(e) => setSelectedLang(e.target.value)}
               value={selectedLang}
             >
               <option value="all">
-                {dict["admin.common.all_languages"] || "All languages"}
+                {dict["admin.common.all_languages"] || ""}
               </option>
               {languages.map((l) => (
                 <option key={l.code} value={l.code}>
@@ -117,7 +117,7 @@ export function TagTablenav({
               onClick={handleFilter}
               type="button"
             >
-              {dict["admin.common.filter"] || "Filter"}
+              {dict["admin.common.filter"] || ""}
             </button>
           </>
         )}
@@ -126,12 +126,12 @@ export function TagTablenav({
       {/* Right: Authentic WP Pagination Controls */}
       <div className="flex items-center gap-3">
         <span className="text-xs text-[#646970]">
-          {totalItems} {dict["admin.pagination.items"] || "items"}
+          {totalItems} {dict["admin.pagination.items"] || ""}
         </span>
 
         <div className="flex items-center gap-1">
           <span className="mx-1 text-xs text-[#646970]">
-            {validCurrentPage} {dict["admin.pagination.of"] || "of"} {validTotalPages}
+            {validCurrentPage} {dict["admin.pagination.of"] || ""} {validTotalPages}
           </span>
 
           {validCurrentPage > 1 ? (

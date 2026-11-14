@@ -1,3 +1,4 @@
+import { categoryIdSchema } from "@/db/schema/cms-taxonomy";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
@@ -15,7 +16,9 @@ export default async function EditTagPage({
   await verifyAdminOrEditor();
 
   const { id } = await params;
-  const termId = BigInt(id);
+  const parsedId = categoryIdSchema.safeParse(id);
+  if (!parsedId.success) notFound();
+  const termId = parsedId.data;
 
   const langContext = await getAdminLanguageContext();
   const dict = langContext.dict;
@@ -28,13 +31,13 @@ export default async function EditTagPage({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[#c3c4c7] pb-3">
         <div className="flex items-center gap-3">
           <h1 className="text-[23px] font-normal text-[#1d2327]">
-            {dict["admin.tags.edit_title"] || "Edit Tag"}
+            {dict["admin.tags.edit_title"] || ""}
           </h1>
           <Link
             className="text-xs text-[#2271b1] hover:underline"
             href="/admincp/tags"
           >
-            {dict["admin.tags.back_to_tags"] || "← Go to Tags"}
+            {dict["admin.tags.back_to_tags"] || ""}
           </Link>
         </div>
         <div className="flex items-center gap-1 text-[13px]">
@@ -42,13 +45,13 @@ export default async function EditTagPage({
             className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             type="button"
           >
-            {dict["admin.common.screen_options"] || "Screen Options"} <span className="text-[9px]">▼</span>
+            {dict["admin.common.screen_options"] || ""} <span className="text-[9px]">▼</span>
           </button>
           <button
             className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
             type="button"
           >
-            {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
+            {dict["admin.common.help"] || ""} <span className="text-[9px]">▼</span>
           </button>
         </div>
       </div>
@@ -59,7 +62,7 @@ export default async function EditTagPage({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-              {dict["admin.tags.form.name"] || "Name"}
+              {dict["admin.tags.form.name"] || ""}
             </label>
             <input
               className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -70,13 +73,13 @@ export default async function EditTagPage({
             />
             <p className="mt-1 text-[11px] text-[#646970]">
               {dict["admin.tags.form.name_desc"] ||
-                "The name is how it appears on your site."}
+                ""}
             </p>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-              {dict["admin.tags.form.slug"] || "Slug"}
+              {dict["admin.tags.form.slug"] || ""}
             </label>
             <input
               className="h-[32px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -86,13 +89,13 @@ export default async function EditTagPage({
             />
             <p className="mt-1 text-[11px] text-[#646970]">
               {dict["admin.tags.form.slug_desc"] ||
-                "The “slug” is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens."}
+                ""}
             </p>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-              {dict["admin.tags.form.description"] || "Description"}
+              {dict["admin.tags.form.description"] || ""}
             </label>
             <textarea
               className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] resize-y"
@@ -102,7 +105,7 @@ export default async function EditTagPage({
             />
             <p className="mt-1 text-[11px] text-[#646970]">
               {dict["admin.tags.form.description_desc"] ||
-                "The description is not prominent by default; however, some themes may show it."}
+                ""}
             </p>
           </div>
 
@@ -111,13 +114,13 @@ export default async function EditTagPage({
               className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-5 py-1.5 text-[13px] font-medium text-white shadow-[0_1px_0_#135e96] hover:border-[#135e96] hover:bg-[#135e96] cursor-pointer"
               type="submit"
             >
-              {dict["admin.tags.update"] || "Update"}
+              {dict["admin.tags.update"] || ""}
             </button>
             <Link
               className="rounded-[3px] border border-[#8c8f94] bg-[#f6f7f7] px-3 py-1.5 text-[13px] text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
               href="/admincp/tags"
             >
-              {dict["admin.tags.cancel"] || "Cancel"}
+              {dict["admin.tags.cancel"] || ""}
             </Link>
           </div>
         </form>

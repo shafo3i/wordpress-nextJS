@@ -73,13 +73,27 @@ describe("newsletter confirmation and unsubscribe", () => {
   })
   it("accepts the same-origin browser confirmation and rejects opaque origins", async () => {
     const url = `https://site.test/api/newsletter/confirm?token=${token}&lang=ar`
-    expect((await confirm(new Request(url, {
-      method: "POST", headers: { origin: "https://site.test" },
-    }))).status).toBe(200)
+    expect(
+      (
+        await confirm(
+          new Request(url, {
+            method: "POST",
+            headers: { origin: "https://site.test" },
+          })
+        )
+      ).status
+    ).toBe(200)
     mocks.confirm.mockClear()
-    expect((await confirm(new Request(url, {
-      method: "POST", headers: { origin: "null" },
-    }))).status).toBe(403)
+    expect(
+      (
+        await confirm(
+          new Request(url, {
+            method: "POST",
+            headers: { origin: "null" },
+          })
+        )
+      ).status
+    ).toBe(403)
     expect(mocks.confirm).not.toHaveBeenCalled()
   })
   it("requires a subscriber-bound signature and rejects cross-origin POST", async () => {
@@ -104,4 +118,37 @@ describe("newsletter confirmation and unsubscribe", () => {
     ).toBe(200)
     expect(mocks.unsubscribe).toHaveBeenCalledWith(id)
   })
+})
+
+it("hardens token pages against embedding and injected base URLs", async () => {
+  const result = await confirmationPage(
+    new Request("https://site.test/api/newsletter/confirm")
+  )
+  expect(result.headers.get("content-security-policy")).toContain(
+    "base-uri 'none'"
+  )
+  expect(result.headers.get("cross-origin-opener-policy")).toBe("same-origin")
+  expect(result.headers.get("x-frame-options")).toBe("DENY")
+  expect(result.headers.get("cache-control")).toBe("no-store")
+})
+it("rejects cross-site POSTs even when Origin is missing", async () => {
+  const result = await confirm(
+    new Request("https://site.test/api/newsletter/confirm?token=" + token, {
+      method: "POST",
+      headers: { "sec-fetch-site": "cross-site" },
+    })
+  )
+  expect(result.status).toBe(403)
+  expect(mocks.confirm).not.toHaveBeenCalled()
+})
+it("fails safely when the unsubscribe signing secret is unavailable", async () => {
+  vi.stubEnv("BETTER_AUTH_SECRET", "")
+  const result = await unsubscribe(
+    new Request(
+      `https://site.test/api/newsletter/unsubscribe?id=${id}&token=${token}`,
+      { method: "POST" }
+    )
+  )
+  expect(result.status).toBe(503)
+  expect(mocks.unsubscribe).not.toHaveBeenCalled()
 })

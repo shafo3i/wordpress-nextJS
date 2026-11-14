@@ -31,7 +31,8 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
   const { s, status, date, from, to, sort, order, category, lang, page } = await searchParams;
   if (!canDelete && status === "trash") redirect("/admincp/posts");
   const search = s?.trim() ?? "";
-  const currentPage = Number(page) > 0 ? Number(page) : 1;
+  const requestedPage = Number(page);
+  const currentPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100000 ? requestedPage : 1;
   const currentLanguage = lang || "all";
   const selectedCategory = category && category !== "all" ? category : undefined;
 

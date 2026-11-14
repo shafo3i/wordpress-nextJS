@@ -1,9 +1,10 @@
 "use client";
 
+import { absoluteWebUrl } from "@/lib/seo/urls";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { CommentWithPost } from "../query";
+import type { CommentWithPost } from "../query";
 import {
     bulkDeleteComments,
     bulkUpdateCommentStatus,
@@ -66,59 +67,59 @@ export default function CommentTable({
         startTransition(async () => {
             try {
                 if (bulkAction === "approve") {
-                    await bulkUpdateCommentStatus(selectedIds, "1");
+                    const result = await bulkUpdateCommentStatus(selectedIds, "1");
                     setNotice({
                         type: "success",
-                        message: `${selectedIds.length} ${
-                            dict["admin.comments.bulk.approved_notice"] || "comments approved."
+                        message: `${result.count} ${
+                            dict["admin.comments.bulk.approved_notice"] || ""
                         }`,
                     });
                 } else if (bulkAction === "unapprove") {
-                    await bulkUpdateCommentStatus(selectedIds, "0");
+                    const result = await bulkUpdateCommentStatus(selectedIds, "0");
                     setNotice({
                         type: "success",
-                        message: `${selectedIds.length} ${
-                            dict["admin.comments.bulk.unapproved_notice"] || "comments unapproved."
+                        message: `${result.count} ${
+                            dict["admin.comments.bulk.unapproved_notice"] || ""
                         }`,
                     });
                 } else if (bulkAction === "spam") {
-                    await bulkUpdateCommentStatus(selectedIds, "spam");
+                    const result = await bulkUpdateCommentStatus(selectedIds, "spam");
                     setNotice({
                         type: "success",
-                        message: `${selectedIds.length} ${
-                            dict["admin.comments.bulk.spam_notice"] || "comments marked as spam."
+                        message: `${result.count} ${
+                            dict["admin.comments.bulk.spam_notice"] || ""
                         }`,
                     });
                 } else if (bulkAction === "trash") {
-                    await bulkUpdateCommentStatus(selectedIds, "trash");
+                    const result = await bulkUpdateCommentStatus(selectedIds, "trash");
                     setNotice({
                         type: "success",
-                        message: `${selectedIds.length} ${
-                            dict["admin.comments.bulk.trash_notice"] || "comments moved to the Trash."
+                        message: `${result.count} ${
+                            dict["admin.comments.bulk.trash_notice"] || ""
                         }`,
                     });
                 } else if (bulkAction === "restore") {
-                    await bulkUpdateCommentStatus(selectedIds, "0");
+                    const result = await bulkUpdateCommentStatus(selectedIds, "0");
                     setNotice({
                         type: "success",
-                        message: `${selectedIds.length} ${
-                            dict["admin.comments.bulk.restored_notice"] || "comments restored."
+                        message: `${result.count} ${
+                            dict["admin.comments.bulk.restored_notice"] || ""
                         }`,
                     });
                 } else if (bulkAction === "delete") {
-                    await bulkDeleteComments(selectedIds);
+                    const result = await bulkDeleteComments(selectedIds);
                     setNotice({
                         type: "success",
-                        message: `${selectedIds.length} ${
-                            dict["admin.comments.bulk.deleted_notice"] || "comments permanently deleted."
+                        message: `${result.count} ${
+                            dict["admin.comments.bulk.deleted_notice"] || ""
                         }`,
                     });
                 }
                 setSelectedIds([]);
                 setBulkAction("Bulk actions");
                 router.refresh();
-            } catch (err: unknown) {
-                const message = err instanceof Error ? err.message : "Failed to execute bulk action.";
+            } catch {
+                const message = dict["admin.comments.error.failed"] || "";
                 setNotice({
                     type: "error",
                     message,
@@ -149,7 +150,7 @@ export default function CommentTable({
                 >
                     <span>{notice.message}</span>
                     <button
-                        aria-label="Dismiss notice"
+                        aria-label={dict["admin.comments.dismiss_notice"] || ""}
                         className="text-[#787c82] hover:text-[#1d2327] cursor-pointer"
                         onClick={() => setNotice(null)}
                         type="button"
@@ -185,7 +186,7 @@ export default function CommentTable({
                         <tr>
                             <th className="w-8 px-2 py-2 text-center">
                                 <input
-                                    aria-label={dict["admin.common.select_all"] || "Select All"}
+                                    aria-label={dict["admin.common.select_all"] || ""}
                                     checked={allSelected}
                                     className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                                     onChange={(e) => toggleSelectAll(e.target.checked)}
@@ -193,22 +194,22 @@ export default function CommentTable({
                                 />
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.author"] || "Author"}
+                                {dict["admin.comments.table.author"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.comment"] || "Comment"}
+                                {dict["admin.comments.table.comment"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.response_to"] || "In Response To"}
+                                {dict["admin.comments.table.response_to"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.status"] || "Status"}
+                                {dict["admin.comments.table.status"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.submitted"] || "Submitted On"}
+                                {dict["admin.comments.table.submitted"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.actions"] || "Actions"}
+                                {dict["admin.comments.table.actions"] || ""}
                             </th>
                         </tr>
                     </thead>
@@ -216,12 +217,13 @@ export default function CommentTable({
                         {rows.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="px-4 py-8 text-center text-[#646970]">
-                                    {dict["admin.comments.table.no_comments"] || "No comments found."}
+                                    {dict["admin.comments.table.no_comments"] || ""}
                                 </td>
                             </tr>
                         ) : (
                             rows.map((comment) => {
                                 const idStr = comment.commentId.toString();
+                                const authorUrl = absoluteWebUrl(comment.commentAuthorUrl);
                                 const isChecked = selectedIds.includes(idStr);
                                 return (
                                     <tr
@@ -233,7 +235,7 @@ export default function CommentTable({
                                         {/* Row Checkbox */}
                                         <td className="w-8 px-2 py-2.5 text-center align-top">
                                             <input
-                                                aria-label={`Select comment ${idStr}`}
+                                                aria-label={`${dict["admin.common.select"] || ""} ${idStr}`}
                                                 checked={isChecked}
                                                 className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                                                 onChange={(e) =>
@@ -246,24 +248,24 @@ export default function CommentTable({
                                         {/* Author Details */}
                                         <td className="px-3 py-2.5 align-top whitespace-nowrap">
                                             <div className="font-semibold text-[#1d2327]">
-                                                {comment.commentAuthor || "(Anonymous)"}
+                                                {comment.commentAuthor || dict["admin.comments.anonymous"] || ""}
                                             </div>
                                             {comment.commentAuthorEmail && (
                                                 <div className="text-xs text-[#2271b1] truncate max-w-[180px]">
                                                     <a
-                                                        href={`mailto:${comment.commentAuthorEmail}`}
+                                                        href={`mailto:${encodeURIComponent(comment.commentAuthorEmail)}`}
                                                         className="hover:underline"
                                                     >
                                                         {comment.commentAuthorEmail}
                                                     </a>
                                                 </div>
                                             )}
-                                            {comment.commentAuthorUrl && (
+                                            {authorUrl && (
                                                 <div className="text-xs text-[#2271b1] truncate max-w-[180px]">
                                                     <a
-                                                        href={comment.commentAuthorUrl}
+                                                        href={authorUrl}
                                                         target="_blank"
-                                                        rel="noreferrer"
+                                                        rel="ugc nofollow noopener noreferrer"
                                                         className="hover:underline"
                                                     >
                                                         {comment.commentAuthorUrl}
@@ -289,20 +291,20 @@ export default function CommentTable({
                                             {comment.commentPostId ? (
                                                 <div className="flex flex-col gap-0.5">
                                                     <Link
-                                                        href={`/admincp/posts/${comment.commentPostId}`}
+                                                        href={`/admincp/${comment.postType === "page" ? "pages" : "posts"}/${comment.commentPostId}/edit`}
                                                         className="text-[13px] font-medium text-[#2271b1] hover:text-[#0a4b78] hover:underline max-w-[200px] truncate"
                                                         title={comment.postTitle || ""}
                                                     >
-                                                        {comment.postTitle || "View Post"}
+                                                        {comment.postTitle || dict["admin.comments.deleted_post"] || ""}
                                                     </Link>
                                                     {comment.postSlug && (
                                                         <Link
-                                                            href={`/posts/${comment.postSlug}`}
+                                                            href={`${comment.postType === "page" ? "/" : "/posts/"}${encodeURIComponent(comment.postSlug || "")}`}
                                                             target="_blank"
-                                                            rel="noreferrer"
+                                                            rel="ugc nofollow noopener noreferrer"
                                                             className="text-[11px] text-[#646970] hover:text-[#2271b1] hover:underline"
                                                         >
-                                                            {dict["admin.posts.view"] || "View Post"} ↗
+                                                            {dict["admin.comments.view_post"] || ""} ↗
                                                         </Link>
                                                     )}
                                                 </div>
@@ -339,7 +341,7 @@ export default function CommentTable({
                                                         href={`/admincp/comments?edit=${idStr}`}
                                                         className="text-[#2271b1] hover:text-[#0a4b78] font-medium underline"
                                                     >
-                                                        {dict["admin.comments.table.edit"] || "Edit"}
+                                                        {dict["admin.comments.table.edit"] || ""}
                                                     </Link>
 
                                                     {/* Quick Moderate: Approve / Unapprove */}
@@ -355,7 +357,7 @@ export default function CommentTable({
                                                                 type="submit"
                                                                 className="text-[#007017] hover:text-[#005110] font-medium underline cursor-pointer"
                                                             >
-                                                                {dict["admin.comments.table.approve"] || "Approve"}
+                                                                {dict["admin.comments.table.approve"] || ""}
                                                             </button>
                                                         </form>
                                                     ) : (
@@ -370,7 +372,7 @@ export default function CommentTable({
                                                                 type="submit"
                                                                 className="text-[#996800] hover:text-[#704d00] font-medium underline cursor-pointer"
                                                             >
-                                                                {dict["admin.comments.table.unapprove"] || "Unapprove"}
+                                                                {dict["admin.comments.table.unapprove"] || ""}
                                                             </button>
                                                         </form>
                                                     )}
@@ -388,7 +390,7 @@ export default function CommentTable({
                                                                 type="submit"
                                                                 className="text-[#b32d2e] hover:text-[#8a2424] font-medium underline cursor-pointer"
                                                             >
-                                                                {dict["admin.comments.table.spam"] || "Spam"}
+                                                                {dict["admin.comments.table.spam"] || ""}
                                                             </button>
                                                         </form>
                                                     )}
@@ -408,7 +410,7 @@ export default function CommentTable({
                                                                 type="submit"
                                                                 className="text-[#646970] hover:text-[#1d2327] font-medium underline cursor-pointer"
                                                             >
-                                                                {dict["admin.comments.table.trash"] || "Trash"}
+                                                                {dict["admin.comments.table.trash"] || ""}
                                                             </button>
                                                         </form>
                                                     )}
@@ -424,7 +426,7 @@ export default function CommentTable({
                                                             type="submit"
                                                             className="text-[#b32d2e] hover:text-[#8a2424] font-medium underline cursor-pointer"
                                                         >
-                                                            {dict["admin.comments.table.delete"] || "Delete"}
+                                                            {dict["admin.comments.table.delete"] || ""}
                                                         </button>
                                                     </form>
                                                 </div>
@@ -439,7 +441,7 @@ export default function CommentTable({
                         <tr>
                             <th className="w-8 px-2 py-2 text-center">
                                 <input
-                                    aria-label={dict["admin.common.select_all"] || "Select All"}
+                                    aria-label={dict["admin.common.select_all"] || ""}
                                     checked={allSelected}
                                     className="rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                                     onChange={(e) => toggleSelectAll(e.target.checked)}
@@ -447,22 +449,22 @@ export default function CommentTable({
                                 />
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.author"] || "Author"}
+                                {dict["admin.comments.table.author"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.comment"] || "Comment"}
+                                {dict["admin.comments.table.comment"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.response_to"] || "In Response To"}
+                                {dict["admin.comments.table.response_to"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.status"] || "Status"}
+                                {dict["admin.comments.table.status"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.submitted"] || "Submitted On"}
+                                {dict["admin.comments.table.submitted"] || ""}
                             </th>
                             <th className="px-3 py-2 text-start font-medium text-[#2c3338]">
-                                {dict["admin.comments.table.actions"] || "Actions"}
+                                {dict["admin.comments.table.actions"] || ""}
                             </th>
                         </tr>
                     </tfoot>

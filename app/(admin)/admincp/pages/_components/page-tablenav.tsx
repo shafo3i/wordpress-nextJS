@@ -14,7 +14,6 @@ export function PageTablenav({
   isTrashView,
   currentDate,
   pagination,
-  selectedCount,
   dict = {},
   direction = "ltr",
 }: {
@@ -72,23 +71,23 @@ export function PageTablenav({
         <select
           value={bulkAction}
           onChange={(e) => onBulkActionChange(e.target.value)}
-          aria-label={dict["admin.common.bulk_actions"] || "Bulk actions"}
+          aria-label={dict["admin.common.bulk_actions"] || ""}
           className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
         >
           <option value="Bulk actions">
-            {dict["admin.common.bulk_actions"] || "Bulk actions"}
+            {dict["admin.common.bulk_actions"] || ""}
           </option>
           {!isTrashView ? (
             <option value="Move to Trash">
-              {dict["admin.comments.bulk.trash"] || "Move to Trash"}
+              {dict["admin.comments.bulk.trash"] || ""}
             </option>
           ) : (
             <>
               <option value="Restore">
-                {dict["admin.comments.bulk.restore"] || "Restore"}
+                {dict["admin.comments.bulk.restore"] || ""}
               </option>
               <option value="Delete permanently">
-                {dict["admin.comments.bulk.delete"] || "Delete permanently"}
+                {dict["admin.comments.bulk.delete"] || ""}
               </option>
             </>
           )}
@@ -100,8 +99,8 @@ export function PageTablenav({
           className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] disabled:opacity-50"
         >
           {isPending
-            ? dict["admin.common.applying"] || "Applying..."
-            : dict["admin.common.apply"] || "Apply"}
+            ? dict["admin.common.applying"] || ""
+            : dict["admin.common.apply"] || ""}
         </button>
 
         {position === "top" && (
@@ -109,19 +108,19 @@ export function PageTablenav({
             <select
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              aria-label={dict["admin.common.filter_by_date"] || "Filter by date"}
+              aria-label={dict["admin.common.filter_by_date"] || ""}
               className="ms-2 h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none"
             >
-              <option value="all">{dict["admin.common.all_dates"] || "All dates"}</option>
-              <option value="today">{dict["admin.common.today"] || "Today"}</option>
-              <option value="month">{dict["admin.common.this_month"] || "This month"}</option>
+              <option value="all">{dict["admin.common.all_dates"] || ""}</option>
+              <option value="today">{dict["admin.common.today"] || ""}</option>
+              <option value="month">{dict["admin.common.this_month"] || ""}</option>
             </select>
             <button
               type="button"
               onClick={handleFilterDate}
               className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 font-normal text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
             >
-              {dict["admin.common.filter"] || "Filter"}
+              {dict["admin.common.filter"] || ""}
             </button>
           </>
         )}
@@ -130,19 +129,19 @@ export function PageTablenav({
       {/* Pagination & stats: ALWAYS VISIBLE */}
       <div className="flex items-center gap-3">
         <span className="text-[#646970] text-[13px]">
-          {totalItems} {dict["admin.pagination.items"] || "items"}
+          {totalItems} {dict["admin.pagination.items"] || ""}
         </span>
 
         <div className="flex items-center gap-1">
           <span className="text-[13px] text-[#646970] me-1">
-            {currentPage} {dict["admin.pagination.of"] || "of"} {totalPages}
+            {currentPage} {dict["admin.pagination.of"] || ""} {totalPages}
           </span>
 
           {currentPage > 1 ? (
             <Link
               href={buildPageUrl(1)}
               className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
-              title={dict["admin.pagination.first"] || "First Page"}
+              title={dict["admin.pagination.first"] || ""}
             >
               {direction === "rtl" ? <ChevronsRight className="size-3.5" /> : <ChevronsLeft className="size-3.5" />}
             </Link>
@@ -156,7 +155,7 @@ export function PageTablenav({
             <Link
               href={buildPageUrl(currentPage - 1)}
               className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
-              title={dict["admin.pagination.prev"] || "Previous Page"}
+              title={dict["admin.pagination.prev"] || ""}
             >
               {direction === "rtl" ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
             </Link>
@@ -170,7 +169,7 @@ export function PageTablenav({
             <Link
               href={buildPageUrl(currentPage + 1)}
               className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
-              title={dict["admin.pagination.next"] || "Next Page"}
+              title={dict["admin.pagination.next"] || ""}
             >
               {direction === "rtl" ? <ChevronLeft className="size-3.5" /> : <ChevronRight className="size-3.5" />}
             </Link>
@@ -184,7 +183,7 @@ export function PageTablenav({
             <Link
               href={buildPageUrl(totalPages)}
               className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
-              title={dict["admin.pagination.last"] || "Last Page"}
+              title={dict["admin.pagination.last"] || ""}
             >
               {direction === "rtl" ? <ChevronsLeft className="size-3.5" /> : <ChevronsRight className="size-3.5" />}
             </Link>

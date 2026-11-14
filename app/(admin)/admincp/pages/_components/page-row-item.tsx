@@ -26,17 +26,9 @@ export type PageRowData = {
   isFrontPage?: boolean;
 };
 
-function formatPageDate(value: string) {
+function formatPageDate(value: string, locale?: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "pm" : "am";
-  const hour12 = hours % 12 || 12;
-  return `${yyyy}/${mm}/${dd} at ${hour12}:${minutes} ${ampm}`;
+  return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 export function PageRowItem({
@@ -51,6 +43,7 @@ export function PageRowItem({
   languages = [],
   dict = {},
   direction = "ltr",
+  locale,
 }: {
   page: PageRowData;
   isSelected: boolean;
@@ -63,6 +56,7 @@ export function PageRowItem({
   languages?: { code: string; name: string; nativeName?: string }[];
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  locale?: string;
 }) {
   const isDraft = page.status === "draft";
   const isPendingReview = page.status === "pending";
@@ -71,10 +65,10 @@ export function PageRowItem({
   const hasParent = page.postParent && page.postParent !== "0";
 
   return (
-    <tr className="group border-b border-[#f0f0f1] bg-white hover:bg-[#f6f7f7] last:border-b-0 text-start">
+    <tr dir={direction} className="group border-b border-[#f0f0f1] bg-white hover:bg-[#f6f7f7] last:border-b-0 text-start">
       <td className="w-8 px-3 py-2 text-center align-top">
         <input
-          aria-label={`Select ${page.title || "page"}`}
+          aria-label={`${dict["admin.common.select"] || ""} ${page.title || dict["admin.pages.no_title"] || ""}`}
           checked={isSelected}
           className="mt-1 h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
           onChange={(e) => onToggleSelect(e.target.checked)}
@@ -89,31 +83,31 @@ export function PageRowItem({
             className="text-[14px] font-semibold text-[#2271b1] hover:text-[#135e96] hover:underline"
             href={`${basePath}/${page.id}/edit`}
           >
-            {page.title || dict["admin.pages.no_title"] || "(no title)"}
+            {page.title || dict["admin.pages.no_title"] || ""}
           </Link>
           {isDraft && (
             <span className="text-[13px] font-medium text-[#50575e]">
-              {" "}— {dict["admin.common.draft"] || "Draft"}
+              {" "}— {dict["admin.common.draft"] || ""}
             </span>
           )}
           {isPendingReview && (
             <span className="text-[13px] font-medium text-[#50575e]">
-              {" "}— {dict["admin.common.pending"] || "Pending"}
+              {" "}— {dict["admin.common.pending"] || ""}
             </span>
           )}
           {isPrivate && (
             <span className="text-[13px] font-medium text-[#50575e]">
-              {" "}— {dict["admin.common.private"] || "Private"}
+              {" "}— {dict["admin.common.private"] || ""}
             </span>
           )}
           {page.isFrontPage && (
             <span className="text-[13px] font-semibold text-[#1d2327]">
-              {" "}— {dict["admin.pages.front_page"] || "Front Page"}
+              {" "}— {dict["admin.pages.front_page"] || ""}
             </span>
           )}
           {page.isStudioBuilder && (
             <span className="text-[13px] font-semibold text-[#2563eb]">
-              {" "}— {dict["admin.studio.badge"] || "Studio"}
+              {" "}— {dict["admin.studio.badge"] || ""}
             </span>
           )}
         </div>
@@ -126,14 +120,14 @@ export function PageRowItem({
                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
                 href={`${basePath}/${page.id}/edit`}
               >
-                {dict["admin.common.edit"] || "Edit"}
+                {dict["admin.common.edit"] || ""}
               </Link>
               <span>|</span>
               <Link
                 className="font-medium text-[#2563eb] hover:text-[#1d4ed8] hover:underline"
                 href={`/admincp/studio/${page.id}`}
               >
-                {dict["admin.studio.edit_with_studio"] || "Edit with Studio"}
+                {dict["admin.studio.edit_with_studio"] || ""}
               </Link>
               <span>|</span>
               <button
@@ -141,7 +135,7 @@ export function PageRowItem({
                 onClick={onQuickEdit}
                 type="button"
               >
-                {dict["admin.common.quick_edit"] || "Quick Edit"}
+                {dict["admin.common.quick_edit"] || ""}
               </button>
               <span>|</span>
               <button
@@ -149,15 +143,15 @@ export function PageRowItem({
                 onClick={onTrash}
                 type="button"
               >
-                {dict["admin.common.trash"] || "Trash"}
+                {dict["admin.common.trash"] || ""}
               </button>
               <span>|</span>
               <Link
                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
-                href={`/${page.slug}`}
+                href={`/${encodeURIComponent(page.slug)}`}
                 target="_blank"
               >
-                {dict["admin.common.view"] || "View"}
+                {dict["admin.common.view"] || ""}
               </Link>
             </>
           ) : (
@@ -167,7 +161,7 @@ export function PageRowItem({
                 onClick={onRestore || onTrash}
                 type="button"
               >
-                {dict["admin.common.restore"] || "Restore"}
+                {dict["admin.common.restore"] || ""}
               </button>
               <span>|</span>
               <button
@@ -175,7 +169,7 @@ export function PageRowItem({
                 onClick={onDeletePermanently || onTrash}
                 type="button"
               >
-                {dict["admin.common.delete_permanently"] || "Delete Permanently"}
+                {dict["admin.common.delete_permanently"] || ""}
               </button>
             </>
           )}
@@ -245,10 +239,10 @@ export function PageRowItem({
 
       <td className="px-3 py-2 text-[13px] text-[#50575e] align-top whitespace-nowrap">
         {page.status === "publish"
-          ? dict["admin.pages.published"] || "Published"
-          : dict["admin.pages.last_modified"] || "Last Modified"}
+          ? dict["admin.pages.published"] || ""
+          : dict["admin.pages.last_modified"] || ""}
         <br />
-        <span className="text-[12px] text-[#646970]">{formatPageDate(page.date)}</span>
+        <span className="text-[12px] text-[#646970]">{formatPageDate(page.date, locale)}</span>
       </td>
     </tr>
   );

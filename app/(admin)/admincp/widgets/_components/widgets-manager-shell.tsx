@@ -9,7 +9,6 @@ import {
   ChevronUp,
   Copy,
   GripVertical,
-  Plus,
   Trash2,
   Sparkles,
 } from "lucide-react";
@@ -17,8 +16,6 @@ import {
   AvailableWidgetDescriptor,
   WidgetArea,
   WidgetItem,
-  WidgetType,
-  WidgetDisplayStyle,
   createDefaultWidgetItem,
 } from "@/lib/widgets/types";
 import { getWidget } from "@/widgets/registry";
@@ -238,7 +235,7 @@ export function WidgetsManagerShell({
 
     const clonedWidget: WidgetItem = {
       ...JSON.parse(JSON.stringify(widgetToClone)),
-      id: `w-${widgetToClone.type}-${Date.now()}`,
+      id: `w-${crypto.randomUUID()}`,
     };
 
     const updatedItems = [...currentArea.items];
@@ -258,7 +255,7 @@ export function WidgetsManagerShell({
       if (!res.success || res.error) {
         setFeedback({
           type: "error",
-          message: res.error || dict?.["admin.widgets.save_failed"] || "Failed to save widget area.",
+          message: res.error || dict?.["admin.widgets.save_failed"] || "",
         });
       } else {
         const areaTitle = getAreaTitle(currentArea);
@@ -295,8 +292,8 @@ export function WidgetsManagerShell({
           className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
         >
           {isPending
-            ? dict?.["admin.widgets.saving"] || "Saving..."
-            : dict?.["admin.widgets.save_area"] || "Save Widget Area"}
+            ? dict?.["admin.widgets.saving"] || ""
+            : dict?.["admin.widgets.save_area"] || ""}
         </button>
       </div>
 
@@ -328,18 +325,17 @@ export function WidgetsManagerShell({
         <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-4 shadow-[0_1px_1px_rgba(0,0,0,0.04)] space-y-4">
           <div>
             <h3 className="font-semibold text-[#1d2327] text-sm">
-              {dict?.["admin.widgets.available_widgets"] || "Available Widgets"}
+              {dict?.["admin.widgets.available_widgets"] || ""}
             </h3>
             <p className="text-[12px] text-[#646970]">
-              {dict?.["admin.widgets.available_desc"] ||
-                "Drag widgets onto any area on the right, or click to add:"}
+              {dict?.["admin.widgets.available_desc"] || ""}
             </p>
           </div>
 
           {/* Core Widgets */}
           <div className="space-y-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block border-b pb-1">
-              {dict?.["admin.widgets.core_widgets"] || "Core Newsroom Widgets"}
+              {dict?.["admin.widgets.core_widgets"] || ""}
             </span>
             {availableWidgets
               .filter((w) => !w.isPlugin)
@@ -378,7 +374,7 @@ export function WidgetsManagerShell({
             <div className="flex items-center justify-between border-b pb-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 flex items-center gap-1">
                 <Sparkles className="size-3" />{" "}
-                {dict?.["admin.widgets.plugin_widgets"] || "Installed Plugin Widgets"}
+                {dict?.["admin.widgets.plugin_widgets"] || ""}
               </span>
             </div>
 
@@ -415,8 +411,7 @@ export function WidgetsManagerShell({
                 ))
             ) : (
               <p className="text-[11px] text-slate-500 italic p-2 bg-slate-50 border rounded">
-                {dict?.["admin.widgets.no_plugin_widgets"] ||
-                  "No plugin widgets available. Activate plugins in Plugins → Installed Plugins to enable widgets here."}
+                {dict?.["admin.widgets.no_plugin_widgets"] || ""}
               </p>
             )}
           </div>
@@ -457,7 +452,7 @@ export function WidgetsManagerShell({
                     <span className="text-sm text-[#1d2327]">{areaTitle}</span>
                     {isSecondarySidebar && (
                       <span className="rounded bg-indigo-100 text-indigo-800 text-[10px] px-1.5 py-0.5 font-bold uppercase">
-                        {dict?.["admin.widgets.dual_sidebar"] || "Dual Sidebar"}
+                        {dict?.["admin.widgets.dual_sidebar"] || ""}
                       </span>
                     )}
                     <span className="text-[11px] font-normal text-[#646970] block sm:inline">
@@ -468,8 +463,8 @@ export function WidgetsManagerShell({
                     <span className="text-xs text-[#646970] font-normal">
                       {area.items.length}{" "}
                       {area.items.length === 1
-                        ? dict?.["admin.widgets.widget_count_single"] || "widget"
-                        : dict?.["admin.widgets.widgets_count"] || "widgets"}
+                        ? dict?.["admin.widgets.widget_count_single"] || ""
+                        : dict?.["admin.widgets.widgets_count"] || ""}
                     </span>
                     {isOpen ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                   </div>
@@ -630,7 +625,7 @@ export function WidgetsManagerShell({
                                       <div className="space-y-3">
                                         <div>
                                           <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                            {dict?.["admin.widgets.widget_title"] || "Widget Title"}
+                                            {dict?.["admin.widgets.widget_title"] || ""}
                                           </label>
                                           <input
                                             type="text"
@@ -641,7 +636,7 @@ export function WidgetsManagerShell({
                                         </div>
                                         <div>
                                           <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                                            {dict?.["admin.widgets.content"] || "Content"}
+                                            {dict?.["admin.widgets.content"] || ""}
                                           </label>
                                           <textarea
                                             rows={3}
@@ -662,7 +657,7 @@ export function WidgetsManagerShell({
                                         className="text-[12px] text-[#b32d2e] hover:underline flex items-center gap-1"
                                       >
                                         <Trash2 className="size-3" />{" "}
-                                        {dict?.["admin.widgets.delete"] || "Delete"}
+                                        {dict?.["admin.widgets.delete"] || ""}
                                       </button>
                                       <button
                                         type="button"
@@ -679,7 +674,7 @@ export function WidgetsManagerShell({
                                       onClick={() => setExpandedWidgetId(null)}
                                       className="text-[12px] text-[#2271b1] hover:underline"
                                     >
-                                      {dict?.["admin.widgets.close"] || "Close"}
+                                      {dict?.["admin.widgets.close"] || ""}
                                     </button>
                                   </div>
                                 </div>
@@ -720,8 +715,7 @@ export function WidgetsManagerShell({
                       >
                         {draggedPaletteWidget || draggedSource
                           ? (direction === "rtl" ? `أفلت الودجت هنا لإضافته إلى ${areaTitle}` : `Drop widget here to add to ${areaTitle}`)
-                          : dict?.["admin.widgets.no_widgets_in_area"] ||
-                          "No widgets in this area yet. Drag any widget from the left or click to add."}
+                          : dict?.["admin.widgets.no_widgets_in_area"] || ""}
                       </div>
                     )}
 
@@ -733,8 +727,8 @@ export function WidgetsManagerShell({
                         className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3.5 py-1 text-xs font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
                       >
                         {isPending
-                          ? dict?.["admin.widgets.saving"] || "Saving..."
-                          : `${dict?.["admin.widgets.save_area"] || "Save"} (${areaTitle})`}
+                          ? dict?.["admin.widgets.saving"] || ""
+                          : `${dict?.["admin.widgets.save_area"] || ""} (${areaTitle})`}
                       </button>
                     </div>
                   </div>

@@ -84,9 +84,11 @@ export default async function EditPostPage({ params }: EditPostProps) {
           initialPingStatus={post.pingStatus}
           postId={post.id}
           initialTitle={post.title}
+          initialSlug={post.slug}
           initialContent={post.content}
           initialExcerpt={post.excerpt}
           initialFeaturedImageId={post.featuredImageId}
+          initialFeaturedVideoUrl={post.featuredVideoUrl}
           initialIsFeatured={post.isFeatured}
           initialStatus={post.status}
           initialCategories={post.categorySlugs}
@@ -96,7 +98,7 @@ export default async function EditPostPage({ params }: EditPostProps) {
           tags={tags}
           postType="post"
           languages={langContext.allLanguages}
-          initialLanguageCode={post.languageCode || "en"}
+          initialLanguageCode={post.languageCode || langContext.code}
           translations={translations.map((t) => ({
             languageCode: t.languageCode,
             postId: t.postId.toString(),

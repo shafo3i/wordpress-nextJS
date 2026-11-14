@@ -1,3 +1,5 @@
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/authMIddleware", () => ({ verifyPostEditor: async () => ({ user: { id: "editor", role: "editor" } }) }));
 import { describe, it, expect, vi } from "vitest"
 import type { DB } from "@/db"
 vi.mock("@/db", () => ({ db: {} }))

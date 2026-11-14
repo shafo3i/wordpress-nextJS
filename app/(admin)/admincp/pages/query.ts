@@ -1,3 +1,4 @@
+import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import {
   getPages,

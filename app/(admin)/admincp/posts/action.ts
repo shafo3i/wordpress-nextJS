@@ -3,105 +3,88 @@
 import { autosaveDocumentKey } from "@/db/schema/cms-post-autosave"
 import { deletePostAutosave } from "@/services/post-autosave.service"
 import { revalidatePath } from "next/cache"
-import { z } from "zod"
+import { unstable_rethrow } from "next/navigation"
+import { getAdminLanguageContext } from "@/components/admin/admin-shell"
+import {
+  createPostEditorSchema,
+  updatePostEditorSchema,
+  quickPostEditorSchema,
+  postIdSchema,
+} from "@/db/schema/cms-post-editor"
 import { verifyPostEditor, verifyAdmin } from "@/lib/authMIddleware"
 import {
   PostChangedError,
   PostPermissionError,
   createPost as createPostService,
   updatePost as updatePostService,
+  getPostById,
   trashPosts as trashPostsService,
   restorePosts as restorePostsService,
   deletePosts as deletePostsService,
 } from "@/services/post.service"
 
-const VALID_STATUSES = new Set([
-  "draft",
-  "publish",
-  "pending",
-  "private",
-  "trash",
-])
-
-const quickUpdateSchema = z.object({
-  id: z.string().min(1, "Post ID is required"),
-  title: z.string().trim().min(1, "Post title is required"),
-  slug: z.string().trim().optional(),
-  date: z.string().optional(),
-  status: z.string().trim().refine(value => VALID_STATUSES.has(value)).optional(),
-  commentStatus: z.enum(["open", "closed"]).optional(),
-  pingStatus: z.enum(["open", "closed"]).optional(),
-  postPassword: z.string().optional(),
-  categorySlugs: z.array(z.string()).optional(),
-  tags: z.union([z.string(), z.array(z.string())]).optional(),
-})
-
-export type QuickUpdatePostInput = z.infer<typeof quickUpdateSchema>
-
-function parsePostFormData(formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim()
-  const content = String(formData.get("content") ?? "").trim()
-  const excerpt = String(formData.get("excerpt") ?? "").trim()
-  const requestedStatus = String(formData.get("status") ?? "draft")
-  const status = VALID_STATUSES.has(requestedStatus) ? requestedStatus : "draft"
-
-  const commentStatus = (
-    String(formData.get("commentStatus") ?? "open") === "closed"
-      ? "closed"
-      : "open"
-  ) as "open" | "closed"
-  const pingStatus = (
-    String(formData.get("pingStatus") ?? "open") === "closed"
-      ? "closed"
-      : "open"
-  ) as "open" | "closed"
-
-  const postPassword = String(formData.get("postPassword") ?? "")
-  const featuredImageId = String(formData.get("featuredImageId") ?? "").trim()
-  const isFeatured = formData.get("isFeatured") === "1"
-
-  const categorySlugs = String(formData.get("categorySlugs") ?? "")
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean)
-
-  const tags = String(formData.get("tags") ?? "")
-    .split(",")
-    .map((v) => v.trim())
-    .filter(Boolean)
-
-  const languageCode = String(formData.get("languageCode") ?? "").trim() || "en"
-  const translationOf =
-    String(formData.get("translationOf") ?? "").trim() || undefined
-
-  const seoTitle = String(formData.get("seoTitle") ?? "").trim()
-  const seoDescription = String(formData.get("seoDescription") ?? "").trim()
-  const seoOgImage = String(formData.get("seoOgImage") ?? "").trim()
-  const seoNoindex = formData.get("seoNoindex") === "1"
-  const seoCanonical = String(formData.get("seoCanonical") ?? "").trim()
-
-  return {
-    title,
-    content,
-    excerpt,
-    status,
-    commentStatus,
-    pingStatus,
-    postPassword,
-    featuredImageId,
-    isFeatured,
-    categorySlugs,
-    tags,
-    languageCode,
-    translationOf,
-    seo: {
-      seoTitle,
-      seoDescription,
-      seoOgImage,
-      seoNoindex,
-      seoCanonical,
-    },
+export type QuickUpdatePostInput = {
+  id: string
+  title: string
+  slug?: string
+  date?: string
+  status?: string
+  commentStatus?: "open" | "closed"
+  pingStatus?: "open" | "closed"
+  postPassword?: string
+  categorySlugs?: string[]
+  tags?: string | string[]
+}
+function parsePostFormData(form: FormData, update = false) {
+  const raw = Object.fromEntries(form)
+  const split = (value: unknown) =>
+    typeof value === "string"
+      ? value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : value
+  const input = {
+    ...raw,
+    ...(form.has("menuOrder")
+      ? {
+          menuOrder:
+            typeof raw.menuOrder === "string" && /^-?\d+$/.test(raw.menuOrder)
+              ? Number(raw.menuOrder)
+              : raw.menuOrder,
+        }
+      : {}),
+    ...(form.has("categorySlugs")
+      ? { categorySlugs: split(raw.categorySlugs) }
+      : {}),
+    ...(form.has("tags") ? { tags: split(raw.tags) } : {}),
+    ...(form.has("isFeatured") ? { isFeatured: raw.isFeatured === "1" } : {}),
+    ...(form.has("languageCode") && raw.languageCode === ""
+      ? { languageCode: undefined }
+      : {}),
+    ...(form.has("translationOf")
+      ? { translationOf: raw.translationOf || undefined }
+      : {}),
+    ...(form.has("expectedModifiedAt")
+      ? { expectedModified: raw.expectedModifiedAt || undefined }
+      : {}),
+    ...(Object.keys(raw).some((key) => key.startsWith("seo"))
+      ? {
+          seo: {
+            seoTitle: raw.seoTitle,
+            seoDescription: raw.seoDescription,
+            seoOgImage: raw.seoOgImage,
+            seoNoindex: form.has("seoNoindex")
+              ? raw.seoNoindex === "1"
+              : undefined,
+            seoCanonical: raw.seoCanonical,
+          },
+        }
+      : {}),
   }
+  return update
+    ? updatePostEditorSchema.parse(input)
+    : createPostEditorSchema.parse(input)
 }
 
 export type SavePostResult =
@@ -134,14 +117,24 @@ export async function savePostAction(
   formData: FormData
 ): Promise<SavePostResult> {
   const session = await verifyPostEditor()
-  const parsed = parsePostFormData(formData)
-  if (!parsed.title)
-    return { success: false, error: "admin.editor.title_required" }
   let postId: string
   try {
-    postId = await createPostService({ ...parsed, authorId: session.user.id, editorRestricted: session.user.role === "editor" })
+    const parsed = parsePostFormData(formData)
+    postId = await createPostService({
+      ...parsed,
+      title: parsed.title!,
+      authorId: session.user.id,
+      editorRestricted: session.user.role === "editor",
+    })
   } catch (error) {
-    return { success: false, error: error instanceof PostPermissionError ? "admin.editor.permission_denied" : "admin.editor.save_failed" }
+    unstable_rethrow(error)
+    return {
+      success: false,
+      error:
+        error instanceof PostPermissionError
+          ? "admin.editor.permission_denied"
+          : "admin.editor.save_failed",
+    }
   }
   await clearSavedRecovery(formData, session.user.id)
   revalidatePath("/admincp")
@@ -155,12 +148,10 @@ export async function updatePostAction(
 ): Promise<SavePostResult> {
   const session = await verifyPostEditor()
   const postId = String(formData.get("id") ?? "")
-  if (!/^[1-9]\d*$/.test(postId))
+  if (!postIdSchema.safeParse(postId).success)
     return { success: false, error: "admin.editor.save_failed" }
-  const parsed = parsePostFormData(formData)
-  if (!parsed.title)
-    return { success: false, error: "admin.editor.title_required" }
   try {
+    const parsed = parsePostFormData(formData, true)
     await updatePostService(postId, {
       ...parsed,
       editorRestricted: session.user.role === "editor",
@@ -168,12 +159,15 @@ export async function updatePostAction(
         String(formData.get("expectedModifiedAt") || "") || undefined,
     })
   } catch (error) {
+    unstable_rethrow(error)
     return {
       success: false,
       error:
-        error instanceof PostPermissionError ? "admin.editor.permission_denied" : error instanceof PostChangedError
-          ? "admin.editor.post_changed"
-          : "admin.editor.save_failed",
+        error instanceof PostPermissionError
+          ? "admin.editor.permission_denied"
+          : error instanceof PostChangedError
+            ? "admin.editor.post_changed"
+            : "admin.editor.save_failed",
     }
   }
   await clearSavedRecovery(formData, session.user.id, postId)
@@ -202,7 +196,7 @@ export async function quickUpdatePost(
 ): Promise<QuickUpdateResult> {
   const session = await verifyPostEditor()
   try {
-    const validated = quickUpdateSchema.parse(data)
+    const validated = quickPostEditorSchema.parse(data)
 
     const tagsArray =
       typeof validated.tags === "string"
@@ -222,31 +216,38 @@ export async function quickUpdatePost(
       postPassword: validated.postPassword,
       categorySlugs: validated.categorySlugs,
       tags: tagsArray,
+      date: validated.date,
     })
 
     revalidatePath("/admincp")
     revalidatePath("/admincp/posts")
     revalidatePath("/", "layout")
 
+    const result = await getPostById(validated.id)
+    if (!result) return { success: false, error: "admin.editor.save_failed" }
     return {
       success: true,
       id: validated.id,
-      title: validated.title,
-      slug: validated.slug || "",
-      status: validated.status || "draft",
-      date: validated.date || new Date().toISOString(),
+      title: result.post.title,
+      slug: result.post.slug,
+      status: result.post.status,
+      date: result.post.date,
     }
-  } catch (error: any) {
-    console.error("Failed to quick update post:", error)
-    return { success: false, error: error instanceof PostPermissionError ? "admin.editor.permission_denied" : "admin.editor.save_failed" }
+  } catch (error) {
+    unstable_rethrow(error)
+    return {
+      success: false,
+      error:
+        error instanceof PostPermissionError
+          ? "admin.editor.permission_denied"
+          : "admin.editor.save_failed",
+    }
   }
 }
 
 export async function trashPostsAction(ids: string[]) {
   await verifyAdmin()
   try {
-    if (!ids.length) return { success: false, error: "No post IDs provided." }
-
     await trashPostsService(ids)
 
     revalidatePath("/admincp")
@@ -254,17 +255,16 @@ export async function trashPostsAction(ids: string[]) {
     revalidatePath("/", "layout")
 
     return { success: true }
-  } catch (error: any) {
-    console.error("Failed to trash posts:", error)
-    return { success: false, error: error?.message || "Failed to trash posts." }
+  } catch (error) {
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return { success: false, error: dict["admin.editor.save_failed"] || "" }
   }
 }
 
 export async function restorePostsAction(ids: string[]) {
   await verifyAdmin()
   try {
-    if (!ids.length) return { success: false, error: "No post IDs provided." }
-
     await restorePostsService(ids)
 
     revalidatePath("/admincp")
@@ -272,20 +272,16 @@ export async function restorePostsAction(ids: string[]) {
     revalidatePath("/", "layout")
 
     return { success: true }
-  } catch (error: any) {
-    console.error("Failed to restore posts:", error)
-    return {
-      success: false,
-      error: error?.message || "Failed to restore posts.",
-    }
+  } catch (error) {
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return { success: false, error: dict["admin.editor.save_failed"] || "" }
   }
 }
 
 export async function deletePostsPermanentlyAction(ids: string[]) {
   await verifyAdmin()
   try {
-    if (!ids.length) return { success: false, error: "No post IDs provided." }
-
     await deletePostsService(ids)
 
     revalidatePath("/admincp")
@@ -293,12 +289,10 @@ export async function deletePostsPermanentlyAction(ids: string[]) {
     revalidatePath("/", "layout")
 
     return { success: true }
-  } catch (error: any) {
-    console.error("Failed to delete posts:", error)
-    return {
-      success: false,
-      error: error?.message || "Failed to delete posts.",
-    }
+  } catch (error) {
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return { success: false, error: dict["admin.editor.save_failed"] || "" }
   }
 }
 

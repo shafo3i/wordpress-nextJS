@@ -54,16 +54,16 @@ export function TranslationPagination({
 
             <div className="flex items-center gap-3">
                 <span className="text-[13px] text-[#646970]">
-                    {totalItems} {dict["admin.pagination.items"] || "items"}
+                    {totalItems} {dict["admin.pagination.items"] || ""}
                 </span>
 
                 <div className="flex items-center gap-1">
                     <span className="mx-1 text-[13px] text-[#646970]">
-                        {validCurrentPage} {dict["admin.pagination.of"] || "of"} {validTotalPages}
+                        {validCurrentPage} {dict["admin.pagination.of"] || ""} {validTotalPages}
                     </span>
                     {validCurrentPage > 1 ? (
                         <Link
-                            aria-label={dict["admin.pagination.first"] || "First page"}
+                            aria-label={dict["admin.pagination.first"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(1)}
                         >
@@ -76,7 +76,7 @@ export function TranslationPagination({
                     )}
                     {validCurrentPage > 1 ? (
                         <Link
-                            aria-label={dict["admin.pagination.prev"] || "Previous page"}
+                            aria-label={dict["admin.pagination.prev"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(validCurrentPage - 1)}
                         >
@@ -89,7 +89,7 @@ export function TranslationPagination({
                     )}
                     {validCurrentPage < validTotalPages ? (
                         <Link
-                            aria-label={dict["admin.pagination.next"] || "Next page"}
+                            aria-label={dict["admin.pagination.next"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(validCurrentPage + 1)}
                         >
@@ -102,7 +102,7 @@ export function TranslationPagination({
                     )}
                     {validCurrentPage < validTotalPages ? (
                         <Link
-                            aria-label={dict["admin.pagination.last"] || "Last page"}
+                            aria-label={dict["admin.pagination.last"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(validTotalPages)}
                         >

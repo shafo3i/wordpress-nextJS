@@ -1,3 +1,5 @@
+import { safeMediaUrl } from "@/lib/post-media";
+import { sanitizeCustomCss } from "./css-policy";
 import type { Mods, Palette, SettingDef, SettingValue, ShowIf } from "./types";
 import { DEFAULT_SETTINGS_BY_ID, getThemeSettings } from "./registry";
 import { getThemeModule } from "@/themes/registry";
@@ -16,7 +18,7 @@ const isSet = (value: unknown): value is Exclude<SettingValue, undefined> =>
 function normalizeStored(stored: ModBag | null | undefined): ModBag {
   const out: ModBag = {};
   for (const [key, value] of Object.entries(stored ?? {})) {
-    if (value !== null && value !== undefined) out[key] = value;
+    if (!["__proto__", "constructor", "prototype"].includes(key) && value !== null && value !== undefined) out[key] = value;
   }
 
   if (out.headingFontFamily === undefined && out.headingFont) {
@@ -40,7 +42,7 @@ export function resolveMods(themeSlug: string, stored?: ModBag | null): Mods {
   return {
     ...getSettingDefaults(getThemeSettings(themeSlug)),
     ...theme.defaults,
-    ...normalizeStored(stored),
+    ...sanitizeMods(themeSlug, normalizeStored(stored)),
   } as Mods;
 }
 
@@ -95,14 +97,14 @@ export function applyPalette(mods: Mods, palette: Palette, settings: SettingDef[
 }
 
 const MAX_TEXT_LENGTH = 2000;
-const MAX_CODE_LENGTH = 20000;
 
 /** Coerces one submitted value to what the setting accepts, or undefined to drop it. */
 function sanitizeValue(setting: SettingDef, value: unknown): SettingValue {
   switch (setting.type) {
     case "toggle":
-      return Boolean(value);
+      return typeof value === "boolean" ? value : value === "true" ? true : value === "false" ? false : undefined;
     case "range": {
+      if (typeof value !== "string" && typeof value !== "number") return undefined;
       const n = Number(value);
       if (!Number.isFinite(n)) return undefined;
       return Math.min(setting.max ?? n, Math.max(setting.min ?? n, n));
@@ -114,8 +116,15 @@ function sanitizeValue(setting: SettingDef, value: unknown): SettingValue {
       if (!match) return undefined;
       return setting.numeric ? Number(match.value) : match.value;
     }
+    case "image":
+      return typeof value === "string" && (value === "" || safeMediaUrl(value)) ? value : undefined;
+    case "color":
+      return typeof value === "string" && /^(?:|#[a-f0-9]{3,8}|[a-z]+|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s/-]+\)|var\(--[a-z0-9-]+\))$/i.test(value) ? value : undefined;
+    case "code":
+      return typeof value === "string" ? sanitizeCustomCss(value) : undefined;
     default:
-      return typeof value === "string" ? value.slice(0, setting.type === "code" ? MAX_CODE_LENGTH : MAX_TEXT_LENGTH) : undefined;
+      if (setting.id.startsWith("social") || /Url$/i.test(setting.id)) return typeof value === "string" && (value === "" || safeMediaUrl(value)) ? value : undefined;
+      return typeof value === "string" ? value.slice(0, MAX_TEXT_LENGTH) : undefined;
   }
 }
 
@@ -130,12 +139,11 @@ export function sanitizeMods(themeSlug: string, input: ModBag): Mods {
   for (const [key, value] of Object.entries(input ?? {})) {
     if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(key) || value === null || value === undefined) continue;
 
+    if (["constructor", "prototype", "__proto__"].includes(key)) continue;
     const setting = byId.get(key);
     if (setting) {
       const clean = sanitizeValue(setting, value);
       if (clean !== undefined) out[key] = clean;
-    } else if (typeof value === "boolean" || typeof value === "number" || (typeof value === "string" && value.length <= MAX_TEXT_LENGTH)) {
-      out[key] = value;
     }
   }
   return out as Mods;

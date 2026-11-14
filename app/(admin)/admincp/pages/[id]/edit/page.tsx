@@ -33,13 +33,13 @@ export default async function EditPagePage({ params }: EditPageProps) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-              {dict["admin.pages.edit_title"] || "Edit Page"}
+              {dict["admin.pages.edit_title"] || ""}
             </h1>
             <Link
               className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-2.5 py-0.5 text-[13px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
               href="/admincp/pages/new"
             >
-              {dict["admin.menu.add_new"] || "Add New"}
+              {dict["admin.menu.add_new"] || ""}
             </Link>
           </div>
           <div className="flex items-center gap-1 text-[13px]">
@@ -47,14 +47,14 @@ export default async function EditPagePage({ params }: EditPageProps) {
               className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
               type="button"
             >
-              {dict["admin.common.screen_options"] || "Screen Options"}{" "}
+              {dict["admin.common.screen_options"] || ""}{" "}
               <span className="text-[9px]">▼</span>
             </button>
             <button
               className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
               type="button"
             >
-              {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
+              {dict["admin.common.help"] || ""} <span className="text-[9px]">▼</span>
             </button>
           </div>
         </div>
@@ -69,12 +69,15 @@ export default async function EditPagePage({ params }: EditPageProps) {
           initialMenuOrder={page.menuOrder}
           initialPostParent={page.postParent}
           initialStatus={page.status}
+          initialPostPassword={page.postPassword}
+          initialCommentStatus={page.commentStatus}
+          initialPingStatus={page.pingStatus}
           initialTemplate={page.template}
           initialIsStudioBuilder={page.isStudioBuilder}
           parentPages={parentPages}
           postType="page"
           languages={langContext.allLanguages}
-          initialLanguageCode={page.languageCode || "en"}
+          initialLanguageCode={page.languageCode || langContext.code}
           translations={translations.map((t) => ({
             languageCode: t.languageCode,
             postId: t.postId.toString(),

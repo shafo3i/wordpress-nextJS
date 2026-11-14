@@ -3,7 +3,9 @@ const mocks = vi.hoisted(() => ({
   add: vi.fn(),
   send: vi.fn(),
   allowed: vi.fn(),
+  after: vi.fn(),
 }))
+vi.mock("next/server", () => ({ after: mocks.after }))
 vi.mock("@/lib/newsletter/db", () => ({
   addNewsletterSubscriber: mocks.add,
   newsletterRequestAllowed: mocks.allowed,
@@ -56,6 +58,8 @@ describe("newsletter email language", () => {
       "reader@example.test",
       expect.objectContaining({ locale: "en" })
     )
+    expect(mocks.send).not.toHaveBeenCalled()
+    await mocks.after.mock.calls[0][0]()
     expect(mocks.send).toHaveBeenCalledWith(
       "reader@example.test",
       "token",

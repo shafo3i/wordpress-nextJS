@@ -18,9 +18,10 @@ export default async function TagsPage({ searchParams }: PageProps) {
   await verifyAdminOrEditor();
 
   const { s, page, lang } = await searchParams;
-  const searchQuery = s?.trim() ?? "";
-  const currentPage = Number(page) > 0 ? Number(page) : 1;
-  const currentLanguage = lang ?? "all";
+  const searchQuery = typeof s === "string" ? s.trim().slice(0, 200) : "";
+  const requestedPage = Number(page);
+  const currentPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 100000 ? requestedPage : 1;
+  const currentLanguage = typeof lang === "string" && lang.length <= 10 ? lang : "all";
   const pageSize = 20;
 
   const langContext = await getAdminLanguageContext();
@@ -43,7 +44,7 @@ export default async function TagsPage({ searchParams }: PageProps) {
           addNewHref="#add-tag"
           addNewLabel=""
           dict={dict}
-          title={dict["admin.tags.title"] || "Tags"}
+          title={dict["admin.tags.title"] || ""}
         />
 
         {/* Top-Right Search Tags Bar */}

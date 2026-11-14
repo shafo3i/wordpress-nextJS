@@ -10,7 +10,7 @@ import {
     index,
     uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema, createUpdateSchema } from "drizzle-orm/zod";
+import { createInsertSchema } from "drizzle-orm/zod";
 import { InferSelectModel } from "drizzle-orm";
 import { z } from "zod";
 import { wpPosts } from "./cms-posts";
@@ -111,40 +111,44 @@ export const termTranslationsTable = pgTable(
 // Schemas & Types
 // ---------------------------------------------------------------------------
 
+export const languageCodeSchema = z.string().trim().min(2).max(10).regex(/^[a-z]{2,3}(?:[-_][a-z0-9]{2,8})*$/i).transform(value => value.toLowerCase());
+const languageBooleanSchema = z.union([z.boolean(), z.enum(["true", "false", "on", "off"])]).transform(value => value === true || value === "true" || value === "on");
 export const createLanguageSchema = createInsertSchema(languagesTable, {
-    code: (schema) =>
-        schema.min(2, "Language code must be at least 2 characters").max(10, "Language code cannot exceed 10 characters"),
-    name: (schema) => schema.min(1, "Language name is required").max(100),
-    nativeName: (schema) => schema.max(100).optional(),
-    direction: () => z.enum(["ltr", "rtl"]).default("ltr"),
-    isDefault: () => z.boolean().default(false),
-    isActive: () => z.boolean().default(true),
-    displayOrder: () => z.coerce.number().default(0),
-}).omit({
-    createdAt: true,
-    updatedAt: true,
+  code: () => languageCodeSchema, name: () => z.string().trim().min(1).max(100),
+  nativeName: () => z.string().trim().max(100).default(""), direction: () => z.enum(["ltr", "rtl"]).default("ltr"),
+  isDefault: () => languageBooleanSchema.default(false), isActive: () => languageBooleanSchema.default(true),
+  displayOrder: () => z.coerce.number().int().min(0).max(10000).default(0),
+}).omit({ createdAt: true, updatedAt: true });
+export const updateLanguageSchema = createLanguageSchema.omit({ code: true }).partial().extend({
+  nativeName: z.string().trim().max(100).optional(), direction: z.enum(["ltr", "rtl"]).optional(),
+  isDefault: languageBooleanSchema.optional(), isActive: languageBooleanSchema.optional(),
+  displayOrder: z.coerce.number().int().min(0).max(10000).optional(),
 });
-
-export const updateLanguageSchema = createUpdateSchema(languagesTable).omit({
-    createdAt: true,
-    updatedAt: true,
-});
-
+export const translationKeySchema = z.string().min(1).max(255).refine(key => !key.split(".").some(part => ["__proto__", "prototype", "constructor"].includes(part)));
+export const translationValueSchema = z.string().min(1).max(20000);
 export const createTranslationSchema = createInsertSchema(translationsTable, {
-    languageCode: (schema) => schema.min(2).max(10),
-    key: (schema) => schema.min(1, "Translation key is required").max(255),
-    value: (schema) => schema.min(1, "Translation text cannot be empty"),
-}).omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
+  languageCode: () => languageCodeSchema, key: () => translationKeySchema, value: () => translationValueSchema,
+}).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateTranslationSchema = createTranslationSchema.partial();
+export const translationBatchSchema = z.unknown().superRefine((value, context) => {
+  if (value && typeof value === "object" && Object.keys(value).some(key => !translationKeySchema.safeParse(key).success))
+    context.addIssue({ code: "custom", message: "Invalid translation key" });
+}).pipe(z.record(translationKeySchema, translationValueSchema)
+  .refine(entries => Object.keys(entries).length <= 10000 && JSON.stringify(entries).length <= 5000000));
+export const languageQuerySchema = z.object({
+  status: z.enum(["all", "active", "inactive"]).optional(), search: z.string().trim().max(200).optional(),
+  page: z.number().int().min(1).max(100000).default(1), limit: z.number().int().min(1).max(100).default(20),
 });
+export const translationQuerySchema = languageQuerySchema.omit({ status: true }).extend({
+  locale: languageCodeSchema.optional(), group: z.string().max(255).optional(),
+  filter: z.enum(["all", "missing", "overridden"]).optional(),
+});
+export const translationGroupSchema = z.string().min(1).max(64).regex(/^[a-zA-Z0-9_-]+$/);
+export const translationReturnUrlSchema = z.string().max(2000).refine(value => {
+  if (!value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value)) return false;
+  try { return new URL(value, "https://translations.invalid").pathname === "/admincp/translations"; } catch { return false; }
+}).transform(value => { const url = new URL(value, "https://translations.invalid"); return url.pathname + url.search; });
 
-export const updateTranslationSchema = createUpdateSchema(translationsTable).omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-});
 
 export const createPostTranslationSchema = createInsertSchema(postTranslationsTable).omit({
     id: true,

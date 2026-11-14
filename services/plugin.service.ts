@@ -1,7 +1,13 @@
-import { retiredPlugins, pluginSlugSchema } from "@/db/schema/cms-plugins"
+import "server-only"
+import {
+  retiredPlugins,
+  pluginSlugSchema,
+  pluginBulkSchema,
+  storedPluginSlugsSchema,
+} from "@/db/schema/cms-plugins"
 import { eq, sql } from "drizzle-orm"
 import { DB, db } from "@/db"
-import { wpOptions, pluginSlugsSchema } from "@/db/schema/cms-options"
+import { wpOptions } from "@/db/schema/cms-options"
 import { AVAILABLE_PLUGINS } from "@/plugins/registry"
 import type { PluginManifest } from "@/lib/plugins/types"
 
@@ -59,24 +65,31 @@ export async function getInstalledPluginSlugs(
 ): Promise<string[]> {
   try {
     const raw = await getOption(OPTION_INSTALLED_PLUGINS, "", database)
-    if (!raw) return DEFAULT_INSTALLED
+    if (!raw) return [...DEFAULT_INSTALLED]
+    if (raw.length > 32768) return []
 
     const parsed = JSON.parse(raw)
-    const validated = pluginSlugsSchema.safeParse(parsed)
+    const validated = storedPluginSlugsSchema.safeParse(parsed)
     if (validated.success) {
-      return validated.data.map(normalizeSlug).filter(Boolean)
+      return [
+        ...new Set(
+          validated.data
+            .map(normalizeSlug)
+            .filter((slug) => pluginSlugSchema.safeParse(slug).success)
+        ),
+      ]
     }
-    return DEFAULT_INSTALLED
+    return [...DEFAULT_INSTALLED]
   } catch (err) {
     console.error("Failed to read installed_plugins:", err)
-    return DEFAULT_INSTALLED
+    return [...DEFAULT_INSTALLED]
   }
 }
 
 /**
  * Save installed plugin slugs into wp_options
  */
-export async function setInstalledPluginSlugs(
+async function setInstalledPluginSlugs(
   slugs: string[],
   database: DB = db
 ): Promise<void> {
@@ -98,27 +111,40 @@ export async function getActivePluginSlugs(
   database: DB = db
 ): Promise<string[]> {
   try {
-    const raw = await getOption(OPTION_ACTIVE_PLUGINS, "", database)
-    if (!raw) return DEFAULT_ACTIVE
+    const raw = await getOption(
+      OPTION_ACTIVE_PLUGINS,
+      JSON.stringify(DEFAULT_ACTIVE),
+      database
+    )
+    if (!raw) return []
+    if (raw.length > 32768) return []
 
     const parsed = JSON.parse(raw)
-    const validated = pluginSlugsSchema.safeParse(parsed)
+    const validated = storedPluginSlugsSchema.safeParse(parsed)
     if (validated.success) {
-      return validated.data
-        .map(normalizeSlug)
-        .filter((slug) => !!slug && !retiredPlugins.has(slug))
+      return [
+        ...new Set(
+          validated.data
+            .map(normalizeSlug)
+            .filter(
+              (slug) =>
+                pluginSlugSchema.safeParse(slug).success &&
+                !retiredPlugins.has(slug)
+            )
+        ),
+      ]
     }
-    return DEFAULT_ACTIVE
+    return []
   } catch (err) {
     console.error("Failed to read active_plugins:", err)
-    return DEFAULT_ACTIVE
+    return []
   }
 }
 
 /**
  * Save active plugin slugs into wp_options
  */
-export async function setActivePluginSlugs(
+async function setActivePluginSlugs(
   slugs: string[],
   database: DB = db
 ): Promise<void> {
@@ -141,6 +167,11 @@ async function changePluginState(
   action: "install" | "activate" | "deactivate" | "delete",
   database: DB
 ) {
+  const { verifyPluginAdministrator } =
+    await import("@/lib/plugins/authorization")
+  await verifyPluginAdministrator()
+  if (!Array.isArray(slugs) || slugs.length > 9)
+    throw new Error("admin.plugins.invalid_config")
   slugs.forEach((slug) => {
     pluginSlugSchema.parse(slug)
     if (
@@ -155,10 +186,12 @@ async function changePluginState(
     )
     const connection = tx as unknown as DB
     const read = async (key: string, fallback: string[]) => {
-      const raw = await getOption(key, "", connection)
-      return raw
-        ? pluginSlugsSchema.parse(JSON.parse(raw)).map(normalizeSlug)
-        : fallback
+      const raw = await getOption(key, JSON.stringify(fallback), connection)
+      if (raw.length > 32768) throw new Error("admin.plugins.invalid_config")
+      return storedPluginSlugsSchema
+        .parse(JSON.parse(raw))
+        .map(normalizeSlug)
+        .filter((slug) => pluginSlugSchema.safeParse(slug).success)
     }
     let installed = await read(OPTION_INSTALLED_PLUGINS, DEFAULT_INSTALLED)
     let active = await read(OPTION_ACTIVE_PLUGINS, DEFAULT_ACTIVE)
@@ -181,6 +214,8 @@ export async function togglePlugin(
   activate: boolean,
   database: DB = db
 ) {
+  if (typeof activate !== "boolean")
+    throw new Error("admin.plugins.invalid_config")
   await changePluginState(
     [slug],
     activate ? "activate" : "deactivate",
@@ -198,7 +233,8 @@ export async function bulkUpdatePlugins(
   action: "activate" | "deactivate" | "delete",
   database: DB = db
 ) {
-  if (slugs.length) await changePluginState(slugs, action, database)
+  const parsed = pluginBulkSchema.parse({ slugs, action })
+  await changePluginState([...new Set(parsed.slugs)], parsed.action, database)
 }
 
 /**

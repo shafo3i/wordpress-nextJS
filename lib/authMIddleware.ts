@@ -5,10 +5,20 @@ import { redirect } from "next/navigation";
 import { canAccessAdminPath } from "@/lib/admin-permissions";
 
 
+// Next returns the same headers object within a request. Share only its session
+// lookup, including concurrent guards, rather than opening another DB connection
+// while a protected content transaction is already holding one. Weak keys keep
+// this cache request-scoped; equal cookie values in another request never reuse it.
+const requestSessions = new WeakMap<object, ReturnType<typeof auth.api.getSession>>();
+
 export const isAuthenticated = async () => {
-    const session = await auth.api.getSession({
-        headers: await headers(),
-    });
+    const requestHeaders = await headers();
+    let pending = requestSessions.get(requestHeaders);
+    if (!pending) {
+        pending = auth.api.getSession({ headers: requestHeaders });
+        requestSessions.set(requestHeaders, pending);
+    }
+    const session = await pending;
 
     if (!session) {
         redirect("/cms-login");

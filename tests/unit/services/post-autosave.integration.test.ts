@@ -1,4 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+vi.mock("server-only",()=>({}));
+const principal=vi.hoisted(()=>({id:"editor-a"}));
+vi.mock("@/lib/authMIddleware",()=>({verifyPostEditor:async()=>({user:{id:principal.id,role:"editor"}})}));
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { Client } from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"
 import type { DB } from "@/db"
@@ -57,7 +60,9 @@ describe.skipIf(process.env.POST_AUTOSAVE_INTEGRATION !== "1")(
         (await getPostAutosave("editor-a", "post:1", database))?.snapshot
           .content
       ).toBe(packet.snapshot.content)
-      expect(await getPostAutosave("editor-b", "post:1", database)).toBeNull()
+      principal.id="editor-b";
+      expect(await getPostAutosave("editor-b", "post:1", database)).toBeNull();
+      principal.id="editor-a";
       expect(
         (
           await client.query(
@@ -99,6 +104,7 @@ describe.skipIf(process.env.POST_AUTOSAVE_INTEGRATION !== "1")(
       )
     })
     it("cleans only the acknowledged private version and leaves other accounts intact", async () => {
+      principal.id="editor-b";
       await savePostAutosave(
         "editor-b",
         {
@@ -110,12 +116,14 @@ describe.skipIf(process.env.POST_AUTOSAVE_INTEGRATION !== "1")(
         },
         database
       )
+      principal.id="editor-a";
       await deletePostAutosave("editor-a", "post:1", 999, database)
       expect(
         await getPostAutosave("editor-a", "post:1", database)
       ).not.toBeNull()
       await deletePostAutosave("editor-a", "post:1", version, database)
       expect(await getPostAutosave("editor-a", "post:1", database)).toBeNull()
+      principal.id="editor-b";
       expect(
         (await getPostAutosave("editor-b", "post:1", database))?.snapshot.title
       ).toBe("Other editor")

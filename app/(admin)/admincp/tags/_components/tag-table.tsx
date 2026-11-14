@@ -15,7 +15,6 @@ export function TagTable({
   tags: initialTags,
   totalItems,
   currentPage = 1,
-  pageSize = 20,
   totalPages = 1,
   searchQuery = "",
   direction = "ltr",
@@ -74,10 +73,10 @@ export function TagTable({
 
     setConfirmDialog({
       open: true,
-      title: dict["admin.tags.bulk_delete_title"] || "Delete Tags",
+      title: dict["admin.tags.bulk_delete_title"] || "",
       description:
         dict["admin.tags.bulk_delete_confirm"] ||
-        "Are you sure you want to delete the selected tags?",
+        "",
       action: () => {
         startTransition(async () => {
           const res = await deleteTags(selectedIds);
@@ -86,7 +85,7 @@ export function TagTable({
           } else {
             setNotice({
               type: "success",
-              message: `${selectedIds.length} ${dict["admin.tags.bulk_deleted_notice"] || "tags deleted."}`,
+              message: `${res.count ?? 0} ${dict["admin.tags.bulk_deleted_notice"] || ""}`,
             });
           }
           setSelectedIds([]);
@@ -100,10 +99,10 @@ export function TagTable({
   const handleDeleteOne = (id: string) => {
     setConfirmDialog({
       open: true,
-      title: dict["admin.tags.delete_title"] || "Delete Tag",
+      title: dict["admin.tags.delete_title"] || "",
       description:
         dict["admin.tags.delete_confirm"] ||
-        "Are you sure you want to delete this tag?",
+        "",
       action: () => {
         startTransition(async () => {
           const res = await deleteTags([id]);
@@ -112,7 +111,7 @@ export function TagTable({
           } else {
             setNotice({
               type: "success",
-              message: dict["admin.tags.deleted_notice"] || "Tag deleted.",
+              message: dict["admin.tags.deleted_notice"] || "",
             });
           }
           router.refresh();
@@ -128,7 +127,7 @@ export function TagTable({
     setQuickEditId(null);
     setNotice({
       type: "success",
-      message: dict["admin.tags.updated_notice"] || "Tag updated.",
+      message: dict["admin.tags.updated_notice"] || "",
     });
     router.refresh();
   };
@@ -179,7 +178,7 @@ export function TagTable({
             <tr>
               <th className="w-8 px-3 py-2 text-center">
                 <input
-                  aria-label={dict["admin.common.select_all"] || "Select all tags"}
+                  aria-label={dict["admin.common.select_all"] || ""}
                   checked={allSelected}
                   className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   onChange={(e) => toggleSelectAll(e.target.checked)}
@@ -187,17 +186,17 @@ export function TagTable({
                 />
               </th>
               <th className="px-3 py-2 text-start font-semibold">
-                {dict["admin.tags.table.name"] || "Name"}{" "}
+                {dict["admin.tags.table.name"] || ""}{" "}
                 <ArrowUpDown className="inline size-3 text-[#a7aaad]" />
               </th>
               <th className="px-3 py-2 text-start font-semibold">
-                {dict["admin.tags.table.description"] || "Description"}
+                {dict["admin.tags.table.description"] || ""}
               </th>
               <th className="px-3 py-2 text-start font-semibold">
-                {dict["admin.tags.table.slug"] || "Slug"}
+                {dict["admin.tags.table.slug"] || ""}
               </th>
               <th className="px-3 py-2 text-center font-semibold">
-                {dict["admin.tags.table.count"] || "Count"}
+                {dict["admin.tags.table.count"] || ""}
               </th>
             </tr>
           </thead>
@@ -228,7 +227,7 @@ export function TagTable({
             ) : (
               <tr>
                 <td className="px-4 py-8 text-center text-[#646970]" colSpan={5}>
-                  {dict["admin.tags.table.no_tags"] || "No tags found."}
+                  {dict["admin.tags.table.no_tags"] || ""}
                 </td>
               </tr>
             )}
@@ -238,7 +237,7 @@ export function TagTable({
             <tr>
               <th className="w-8 px-3 py-2 text-center">
                 <input
-                  aria-label={dict["admin.common.select_all"] || "Select all tags bottom"}
+                  aria-label={dict["admin.common.select_all"] || ""}
                   checked={allSelected}
                   className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   onChange={(e) => toggleSelectAll(e.target.checked)}
@@ -246,16 +245,16 @@ export function TagTable({
                 />
               </th>
               <th className="px-3 py-2 text-start font-semibold">
-                {dict["admin.tags.table.name"] || "Name"}
+                {dict["admin.tags.table.name"] || ""}
               </th>
               <th className="px-3 py-2 text-start font-semibold">
-                {dict["admin.tags.table.description"] || "Description"}
+                {dict["admin.tags.table.description"] || ""}
               </th>
               <th className="px-3 py-2 text-start font-semibold">
-                {dict["admin.tags.table.slug"] || "Slug"}
+                {dict["admin.tags.table.slug"] || ""}
               </th>
               <th className="px-3 py-2 text-center font-semibold">
-                {dict["admin.tags.table.count"] || "Count"}
+                {dict["admin.tags.table.count"] || ""}
               </th>
             </tr>
           </tfoot>
@@ -288,8 +287,8 @@ export function TagTable({
         description={confirmDialog.description}
         direction={direction}
         dict={dict}
-        confirmText={dict["admin.common.delete"] || "Delete"}
-        cancelText={dict["admin.common.cancel"] || "Cancel"}
+        confirmText={dict["admin.common.delete"] || ""}
+        cancelText={dict["admin.common.cancel"] || ""}
         onConfirm={confirmDialog.action}
         isLoading={isPending}
       />

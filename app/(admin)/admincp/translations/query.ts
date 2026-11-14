@@ -1,12 +1,12 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import {
     getAllLanguages,
     getDefaultLanguage,
     getLanguageByCode,
     getTranslationCatalog,
-    TranslationCatalogItem,
 } from "@/services/language.service";
-import { SelectLanguage } from "@/db/schema/cms-languages";
+import { translationQuerySchema } from "@/db/schema/cms-languages";
 
 export interface GetTranslationsQueryOptions {
     locale?: string;
@@ -18,8 +18,9 @@ export interface GetTranslationsQueryOptions {
 }
 
 export async function getTranslationsPageData(options: GetTranslationsQueryOptions = {}) {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
+    options = translationQuerySchema.parse(options);
     const [allLanguages, defaultLang] = await Promise.all([
         getAllLanguages(),
         getDefaultLanguage(),

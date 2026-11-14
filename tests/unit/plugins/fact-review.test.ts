@@ -1,3 +1,4 @@
+vi.mock("server-only", () => ({}))
 import { describe, it, expect, vi } from "vitest"
 vi.mock("@/db", () => ({ db: {} }))
 import {

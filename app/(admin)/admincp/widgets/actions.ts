@@ -1,12 +1,14 @@
 "use server";
 
+import { unstable_rethrow } from "next/navigation";
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { revalidatePath } from "next/cache";
 import { saveWidgetArea, WidgetItem } from "@/lib/widgets/db";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 
 export async function saveWidgetAreaAction(areaId: string, items: WidgetItem[]) {
+  await verifyAdmin();
   try {
-    await verifyAdminOrEditor();
     await saveWidgetArea(areaId, items);
 
     revalidatePath("/admincp");
@@ -16,8 +18,9 @@ export async function saveWidgetAreaAction(areaId: string, items: WidgetItem[]) 
     revalidatePath("/", "layout");
 
     return { success: true };
-  } catch (error: any) {
-    console.error("Failed to save widget area:", error);
-    return { success: false, error: error?.message || "Failed to save widget area." };
+  } catch (error) {
+    unstable_rethrow(error);
+    const { dict } = await getAdminLanguageContext();
+    return { success: false, error: dict["admin.widgets.save_failed"] || "" };
   }
 }

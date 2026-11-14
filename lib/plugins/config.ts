@@ -1,3 +1,4 @@
+import "server-only"
 import {
   pluginSlugSchema,
   pluginConfigSchemas,
@@ -5,7 +6,7 @@ import {
 } from "@/db/schema/cms-plugins"
 import { sanitizePluginMarkup } from "./markup"
 import { eq } from "drizzle-orm"
-import { db } from "@/db"
+import { db, type DB } from "@/db"
 import { wpOptions } from "@/db/schema"
 
 export const PLUGIN_DEFAULTS: {
@@ -69,7 +70,8 @@ export const PLUGIN_DEFAULTS: {
  * Retrieve configuration for a specific plugin from wp_options
  */
 export async function getPluginConfig<S extends keyof PluginConfigMap>(
-  slug: S
+  slug: S,
+  database: DB = db
 ): Promise<PluginConfigMap[S]> {
   const normalizedSlug = pluginSlugSchema.parse(slug.replace(/_/g, "-"))
   const optionKey = `plugin_config_${normalizedSlug}`
@@ -78,13 +80,15 @@ export async function getPluginConfig<S extends keyof PluginConfigMap>(
   } as PluginConfigMap[S]
 
   try {
-    const row = await db
+    const row = await database
       .select({ value: wpOptions.optionValue })
       .from(wpOptions)
       .where(eq(wpOptions.optionName, optionKey))
       .limit(1)
 
     if (row[0]?.value) {
+      if (row[0].value.length > 1048576)
+        throw new Error("Invalid stored configuration size")
       const parsed = JSON.parse(row[0].value)
       const candidate = { ...defaultValues, ...parsed }
       if (["reading-time", "social-share"].includes(normalizedSlug))
@@ -107,22 +111,34 @@ export async function savePluginConfig(
   slug: string,
   config: Record<string, unknown>
 ): Promise<void> {
+  const { verifyPluginAdministrator } =
+    await import("@/lib/plugins/authorization")
+  await verifyPluginAdministrator()
   const normalizedSlug = pluginSlugSchema.parse(slug.replace(/_/g, "-"))
-  const optionKey = `plugin_config_${normalizedSlug}`
-
-  const current = await getPluginConfig(normalizedSlug)
-  const validSlug = pluginSlugSchema.parse(normalizedSlug)
-  const validated = pluginConfigSchemas[validSlug].parse(config)
-  const updated: Record<string, unknown> = { ...current, ...validated }
-  if (validSlug === "ad-manager" && typeof updated.customHtml === "string")
-    updated.customHtml = sanitizePluginMarkup(updated.customHtml)
-  const serialized = JSON.stringify(updated)
-
-  await db
-    .insert(wpOptions)
-    .values({ optionName: optionKey, optionValue: serialized, autoload: "yes" })
-    .onConflictDoUpdate({
-      target: wpOptions.optionName,
-      set: { optionValue: serialized },
-    })
+  const validated = pluginConfigSchemas[normalizedSlug].parse(config)
+  const { sql } = await import("drizzle-orm")
+  await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('cms-plugin-config'), hashtext(${normalizedSlug}))`
+    )
+    const current = await getPluginConfig(normalizedSlug, tx as unknown as DB)
+    const updated: Record<string, unknown> = { ...current, ...validated }
+    if (
+      normalizedSlug === "ad-manager" &&
+      typeof updated.customHtml === "string"
+    )
+      updated.customHtml = sanitizePluginMarkup(updated.customHtml)
+    const serialized = JSON.stringify(updated)
+    await tx
+      .insert(wpOptions)
+      .values({
+        optionName: `plugin_config_${normalizedSlug}`,
+        optionValue: serialized,
+        autoload: "yes",
+      })
+      .onConflictDoUpdate({
+        target: wpOptions.optionName,
+        set: { optionValue: serialized },
+      })
+  })
 }

@@ -1,3 +1,8 @@
+import "server-only"
+import {
+  pluginListQuerySchema,
+  pluginCatalogQuerySchema,
+} from "@/db/schema/cms-plugins"
 import { verifyAdminOrEditor } from "@/lib/authMIddleware"
 import {
   getAllPlugins as getPluginsFromService,
@@ -17,7 +22,7 @@ export async function getPlugins(
   } = {}
 ) {
   await verifyAdminOrEditor()
-  return getPluginsFromService(options)
+  return getPluginsFromService(pluginListQuerySchema.parse(options))
 }
 
 export async function getPluginCounts() {
@@ -32,5 +37,5 @@ export async function getCatalogPlugins(
   } = {}
 ) {
   await verifyAdminOrEditor()
-  return getCatalogFromService(options)
+  return getCatalogFromService(pluginCatalogQuerySchema.parse(options))
 }

@@ -39,3 +39,10 @@ export const newsletterSubscriberPageSchema = z.object({
     .max(20)
     .regex(/^$|^[a-z]{2,3}(?:-[a-zA-Z0-9]{2,8})*$/),
 })
+
+export const newsletterEmailSchema = z
+  .string()
+  .trim()
+  .email()
+  .max(254)
+  .transform((value) => value.toLowerCase())

@@ -36,15 +36,15 @@ export default async function MenusPage({ searchParams }: MenusPageProps) {
       <div dir={direction} className="space-y-6 text-start">
         <div>
           <h1 className="text-[23px] font-normal leading-[1.3] text-[#1d2327]">
-            {dict["admin.menus.title"] || "Menus"}
+            {dict["admin.menus.title"] || ""}
           </h1>
           <p className="text-[12px] text-[#646970] mt-1">
-            {dict["admin.menus.desc"] ||
-              "Manage your navigation menus and assign them to site theme locations."}
+            {dict["admin.menus.desc"] || ""}
           </p>
         </div>
 
         <MenuSelectorBar
+          key={`selector:${activeMenuId || currentLanguage}`}
           menus={allMenus}
           currentMenuId={activeMenuId || undefined}
           currentLanguage={currentLanguage}
@@ -55,7 +55,7 @@ export default async function MenusPage({ searchParams }: MenusPageProps) {
 
         {currentMenu ? (
           <MenuManagerShell
-            key={currentMenu.id}
+            key={`editor:${currentMenu.id}`}
             menu={currentMenu}
             initialItems={currentMenu.items}
             locations={currentMenu.locations}
@@ -68,8 +68,7 @@ export default async function MenusPage({ searchParams }: MenusPageProps) {
           />
         ) : (
           <div className="rounded-[3px] border border-[#c3c4c7] bg-white p-8 text-center text-[13px] text-[#646970]">
-            {dict["admin.menus.no_menus_found"] ||
-              "No menus found. Use the selector above to create your first navigation menu."}
+            {dict["admin.menus.no_menus_found"] || ""}
           </div>
         )}
       </div>

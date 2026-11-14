@@ -1,113 +1,61 @@
 "use server";
-
-import { mediaItemIdSchema, mediaDetailsPatchSchema } from "@/db/schema/cms-media-details";
+import { mediaItemIdSchema, mediaDetailsPatchSchema, mediaListQuerySchema, mediaDeleteIdsSchema } from "@/db/schema/cms-media-details";
 import { getMediaItemDetails } from "@/services/media-details.service";
+import { getMediaLibraryItems, uploadMediaFile, updateMediaItem, deleteMediaItems, type MediaItem, type MediaListResult } from "@/services/media.service";
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import { verifyPostEditor } from "@/lib/authMIddleware";
-import { MAX_MEDIA_UPLOAD_BYTES } from "@/lib/media-upload";
-import {
-  getMediaLibraryItems,
-  uploadMediaFile,
-  updateMediaItem,
-  deleteMediaItems,
-  type MediaItem,
-  type MediaListResult,
-} from "@/services/media.service";
-
-export async function fetchMediaItemsAction(params: {
-  type?: string;
-  month?: string;
-  search?: string;
-  page?: number;
-  perPage?: number;
-}): Promise<{ success: boolean; data?: MediaListResult; error?: string }> {
-  await verifyPostEditor();
-  try {
-    const data = await getMediaLibraryItems(params);
-    return { success: true, data };
-  } catch (error: unknown) {
-    console.error("fetchMediaItemsAction error:", error);
-    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to fetch media items" };
-  }
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { MAX_MEDIA_UPLOAD_BYTES, MAX_MEDIA_UPLOAD_FILES, MediaUploadError, validateMediaUpload } from "@/lib/media-upload";
+async function message(key: string) { const { dict } = await getAdminLanguageContext(); return dict[key] || dict["admin.media.error_failed"] || ""; }
+async function failure(error: unknown) {
+  unstable_rethrow(error);
+  const key = error instanceof MediaUploadError ? error.key : error instanceof Error && error.message === "admin.media.details_not_found" ? error.message : "admin.media.error_failed";
+  return message(key);
 }
-
-export async function uploadMediaAction(
-  formData: FormData
-): Promise<{ success: boolean; items?: MediaItem[]; error?: string }> {
+export async function fetchMediaItemsAction(params: { type?: string; month?: string; search?: string; page?: number; perPage?: number }): Promise<{ success: boolean; data?: MediaListResult; error?: string }> {
+  await verifyPostEditor();
+  try { return { success: true, data: await getMediaLibraryItems(mediaListQuerySchema.parse(params)) }; }
+  catch (error) { return { success: false, error: await failure(error) }; }
+}
+export async function uploadMediaAction(formData: FormData): Promise<{ success: boolean; items?: MediaItem[]; error?: string; warning?: string }> {
   const session = await verifyPostEditor();
+  const uploaded: MediaItem[] = [];
   try {
-    const files = formData.getAll("file") as File[];
-    if (files.some(file => !(file instanceof File)) || files.reduce((sum, file) => sum + file.size, 0) > MAX_MEDIA_UPLOAD_BYTES) {
-      return { success: false, error: "Invalid upload or upload exceeds 32 MB" };
+    const files = formData.getAll("file");
+    if (!files.length || files.length > MAX_MEDIA_UPLOAD_FILES || files.some(file => !(file instanceof File) || !file.size) || files.reduce((sum, file) => sum + (file instanceof File ? file.size : 0), 0) > MAX_MEDIA_UPLOAD_BYTES)
+      throw new MediaUploadError("admin.media.invalid_upload");
+    // Preflight every file's policy before writing any member of the batch.
+    const pending: { file: File; bytes: Buffer }[] = [];
+    for (const entry of files) {
+      const file = entry as File, bytes = Buffer.from(await file.arrayBuffer());
+      validateMediaUpload(file.name, file.type, bytes); pending.push({ file, bytes });
     }
-
-    if (!files || files.length === 0) {
-      return { success: false, error: "No files uploaded" };
-    }
-
-    const uploadedItems: MediaItem[] = [];
-
-    for (const file of files) {
-      if (!(file instanceof File)) continue;
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const mimeType = file.type || "application/octet-stream";
-
-      const item = await uploadMediaFile(
-        buffer,
-        file.name,
-        mimeType,
-        session.user?.id
-      );
-      uploadedItems.push(item);
-    }
-
-    revalidatePath("/admincp/media");
-    return { success: true, items: uploadedItems };
-  } catch (error: unknown) {
-    console.error("uploadMediaAction error:", error);
-    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to upload media" };
+    for (const { file, bytes } of pending) uploaded.push(await uploadMediaFile(bytes, file.name, file.type, session.user.id));
+    revalidatePath("/admincp/media"); return { success: true, items: uploaded };
+  } catch (error) {
+    unstable_rethrow(error);
+    if (uploaded.length) { revalidatePath("/admincp/media"); return { success: true, items: uploaded, warning: await message("admin.media.partial_upload") }; }
+    return { success: false, error: await failure(error) };
   }
 }
-
-export async function updateMediaAction(
-  id: number,
-  data: {
-    title?: string;
-    altText?: string;
-    caption?: string;
-    description?: string;
-  }
-): Promise<{ success: boolean; item?: MediaItem; error?: string }> {
+export async function updateMediaAction(id: number, data: { title?: string; altText?: string; caption?: string; description?: string }): Promise<{ success: boolean; item?: MediaItem; error?: string }> {
   await verifyPostEditor();
   try {
-    mediaItemIdSchema.parse(id);
-    await updateMediaItem(id, mediaDetailsPatchSchema.parse(data));
-    revalidatePath("/admincp/media");
+    mediaItemIdSchema.parse(id); await updateMediaItem(id, mediaDetailsPatchSchema.parse(data));
+    revalidatePath("/", "layout"); return { success: true, item: (await getMediaItemDetails(id)) || undefined };
+  } catch (error) { return { success: false, error: await failure(error) }; }
+}
+export async function deleteMediaAction(ids: number[]): Promise<{ success: boolean; deletedCount?: number; error?: string; warning?: string }> {
+  await verifyPostEditor();
+  try {
+    const result = await deleteMediaItems(mediaDeleteIdsSchema.parse(ids));
     revalidatePath("/", "layout");
-    return { success: true, item: (await getMediaItemDetails(id)) || undefined };
-  } catch (error: unknown) {
-    console.error("updateMediaAction error:", error);
-    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to update media item" };
-  }
+    return { success: true, deletedCount: result.deletedCount, ...(result.cleanupPending ? { warning: await message("admin.media.cleanup_pending") } : {}) };
+  } catch (error) { return { success: false, error: await failure(error) }; }
 }
-
-export async function deleteMediaAction(
-  ids: number[]
-): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
+export async function fetchMediaItemAction(id: number): Promise<{ success: boolean; item?: MediaItem; error?: string }> {
   await verifyPostEditor();
-  try {
-    const result = await deleteMediaItems(ids);
-    revalidatePath("/admincp/media");
-    return { success: true, deletedCount: result.deletedCount };
-  } catch (error: unknown) {
-    console.error("deleteMediaAction error:", error);
-    return { success: false, error: (error instanceof Error ? error.message : "") || "Failed to delete media" };
-  }
-}
-
-export async function fetchMediaItemAction(id:number):Promise<{success:boolean;item?:MediaItem;error?:string}>{
-  await verifyPostEditor();
-  try { mediaItemIdSchema.parse(id); const item=await getMediaItemDetails(id);return item?{success:true,item}:{success:false,error:"admin.media.details_not_found"}; }
-  catch { return {success:false,error:"admin.media.details_load_failed"}; }
+  try { mediaItemIdSchema.parse(id); const item = await getMediaItemDetails(id); return item ? { success: true, item } : { success: false, error: await message("admin.media.details_not_found") }; }
+  catch (error) { return { success: false, error: await failure(error) }; }
 }

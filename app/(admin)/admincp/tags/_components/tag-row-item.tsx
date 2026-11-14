@@ -26,7 +26,7 @@ export function TagRowItem({
     <tr className="group border-b border-[#f0f0f1] bg-white hover:bg-[#f6f7f7] last:border-b-0">
       <td className="w-8 px-3 py-2 text-center align-top">
         <input
-          aria-label={`Select ${tag.name}`}
+          aria-label={`${dict["admin.common.select"] || ""} ${tag.name}`}
           checked={isSelected}
           className="mt-1 h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
           onChange={(e) => onToggleSelect(e.target.checked)}
@@ -50,7 +50,7 @@ export function TagRowItem({
             className="text-[#2271b1] hover:text-[#135e96] hover:underline"
             href={`${basePath}/${tag.id}/edit`}
           >
-            {dict["admin.tags.edit"] || "Edit"}
+            {dict["admin.tags.edit"] || ""}
           </Link>
           <span className="text-[#c3c4c7]">|</span>
           <button
@@ -58,7 +58,7 @@ export function TagRowItem({
             onClick={onQuickEdit}
             type="button"
           >
-            {dict["admin.tags.quick_edit"] || "Quick Edit"}
+            {dict["admin.tags.quick_edit"] || ""}
           </button>
           <span className="text-[#c3c4c7]">|</span>
           <button
@@ -66,16 +66,16 @@ export function TagRowItem({
             onClick={onDelete}
             type="button"
           >
-            {dict["admin.tags.delete"] || "Delete"}
+            {dict["admin.tags.delete"] || ""}
           </button>
           <span className="text-[#c3c4c7]">|</span>
           <Link
             className="text-[#2271b1] hover:text-[#135e96] hover:underline"
-            href={`/tag/${tag.slug}`}
+            href={`/tag/${encodeURIComponent(tag.slug)}`}
             rel="noreferrer"
             target="_blank"
           >
-            {dict["admin.tags.view"] || "View"}
+            {dict["admin.tags.view"] || ""}
           </Link>
         </div>
       </td>
@@ -95,7 +95,7 @@ export function TagRowItem({
       <td className="px-3 py-2 text-center align-top font-medium text-[#2271b1]">
         <Link
           className="hover:underline"
-          href={`/admincp/posts?tag=${tag.slug}`}
+          href={`/admincp/posts?tag=${encodeURIComponent(tag.slug)}`}
         >
           {tag.count}
         </Link>

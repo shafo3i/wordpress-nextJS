@@ -1,17 +1,21 @@
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
+import { sql } from "drizzle-orm";
 import { db, type DB } from "@/db"
 import { languagesTable, translationsTable } from "@/db/schema/cms-languages"
 import { getTemplateTranslations } from "./language.service"
 
 /** Additive only: existing database wording remains authoritative. */
 export async function syncMissingTranslations(database: DB = db) {
-  const languages = await database
-    .select({ code: languagesTable.code })
-    .from(languagesTable)
+  await verifyAdmin();
+  let languages: { code: string }[] = []
   let added = 0,
     preserved = 0,
     missing = 0
   const base = getTemplateTranslations("en")
   await database.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:languages'))`);
+    languages = await tx.select({ code: languagesTable.code }).from(languagesTable);
     for (const { code } of languages) {
       const template = getTemplateTranslations(code)
       const entries = Object.entries(template).filter(

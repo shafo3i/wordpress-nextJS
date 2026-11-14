@@ -1,3 +1,6 @@
+import { vi } from "vitest";
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: async () => ({ user: { role: "admin", id: "admin" } }), verifyPostEditor: async () => ({ user: { role: "admin", id: "admin" } }) }));
 import { describe, expect, it } from "vitest"
 import type { DB } from "@/db"
 import { getTranslations } from "@/services/language.service"

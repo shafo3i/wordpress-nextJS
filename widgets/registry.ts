@@ -2,6 +2,7 @@ import type {
   AvailableWidgetDescriptor,
   WidgetItem,
   WidgetModule,
+  WidgetManifest,
 } from "./types";
 
 // Core widgets
@@ -50,22 +51,22 @@ import relatedPostsModule from "./related-posts";
 
 export const REGISTERED_WIDGETS: Record<string, WidgetModule> = {
   // Core
-  search: { ...searchModule, manifest: searchManifest as any },
-  recent_posts: { ...recentPostsModule, manifest: recentPostsManifest as any },
-  categories: { ...categoriesModule, manifest: categoriesManifest as any },
-  author_bio: { ...authorBioModule, manifest: authorBioManifest as any },
-  custom_html: { ...customHtmlModule, manifest: customHtmlManifest as any },
-  weather: { ...weatherModule, manifest: weatherManifest as any },
+  search: { ...searchModule, manifest: searchManifest as WidgetManifest },
+  recent_posts: { ...recentPostsModule, manifest: recentPostsManifest as WidgetManifest },
+  categories: { ...categoriesModule, manifest: categoriesManifest as WidgetManifest },
+  author_bio: { ...authorBioModule, manifest: authorBioManifest as WidgetManifest },
+  custom_html: { ...customHtmlModule, manifest: customHtmlManifest as WidgetManifest },
+  weather: { ...weatherModule, manifest: weatherManifest as WidgetManifest },
 
   // Plugin widgets
-  plugin_newsletter: { ...newsletterModule, manifest: newsletterManifest as any },
-  plugin_breaking: { ...breakingNewsModule, manifest: breakingNewsManifest as any },
-  plugin_audio: { ...audioModule, manifest: audioManifest as any },
-  plugin_factcheck: { ...factCheckModule, manifest: factCheckManifest as any },
-  plugin_social: { ...socialShareModule, manifest: socialShareManifest as any },
-  plugin_ad: { ...adManagerModule, manifest: adManagerManifest as any },
-  plugin_reading_time: { ...readingTimeModule, manifest: readingTimeManifest as any },
-  plugin_related_posts: { ...relatedPostsModule, manifest: relatedPostsManifest as any },
+  plugin_newsletter: { ...newsletterModule, manifest: newsletterManifest as WidgetManifest },
+  plugin_breaking: { ...breakingNewsModule, manifest: breakingNewsManifest as WidgetManifest },
+  plugin_audio: { ...audioModule, manifest: audioManifest as WidgetManifest },
+  plugin_factcheck: { ...factCheckModule, manifest: factCheckManifest as WidgetManifest },
+  plugin_social: { ...socialShareModule, manifest: socialShareManifest as WidgetManifest },
+  plugin_ad: { ...adManagerModule, manifest: adManagerManifest as WidgetManifest },
+  plugin_reading_time: { ...readingTimeModule, manifest: readingTimeManifest as WidgetManifest },
+  plugin_related_posts: { ...relatedPostsModule, manifest: relatedPostsManifest as WidgetManifest },
 };
 
 const WIDGET_ALIASES: Record<string, string> = {
@@ -109,17 +110,17 @@ const WIDGET_ALIASES: Record<string, string> = {
  * Get a widget module by its unique identifier / type
  */
 export function getWidget(id: string): WidgetModule | undefined {
-  if (!id) return undefined;
+  if (typeof id !== "string" || !id || ["__proto__", "constructor", "prototype"].includes(id)) return undefined;
   
   // 1. Direct key match
-  if (REGISTERED_WIDGETS[id]) return REGISTERED_WIDGETS[id];
+  if (Object.hasOwn(REGISTERED_WIDGETS, id)) return REGISTERED_WIDGETS[id];
   
   // 2. Normalized underscore match
   const normalized = id.replace(/-/g, "_");
-  if (REGISTERED_WIDGETS[normalized]) return REGISTERED_WIDGETS[normalized];
+  if (Object.hasOwn(REGISTERED_WIDGETS, normalized)) return REGISTERED_WIDGETS[normalized];
   
   // 3. Alias dictionary check
-  const alias = WIDGET_ALIASES[id] || WIDGET_ALIASES[normalized];
+  const alias = Object.hasOwn(WIDGET_ALIASES, id) ? WIDGET_ALIASES[id] : Object.hasOwn(WIDGET_ALIASES, normalized) ? WIDGET_ALIASES[normalized] : undefined;
   if (alias && REGISTERED_WIDGETS[alias]) return REGISTERED_WIDGETS[alias];
   
   // 4. "plugin_" prefix checks
@@ -191,20 +192,18 @@ export function createDefaultWidgetItem(desc: AvailableWidgetDescriptor): Widget
     return mod.createDefault(desc);
   }
 
-  const manifest = mod?.manifest;
-
   return {
     id: `w-${desc.pluginSlug || desc.type}-${Date.now()}`,
     type: desc.type,
-    title: manifest?.defaultTitle || desc.name,
-    content: manifest?.defaultContent,
+    title: "",
+    content: "",
     pluginSlug: desc.pluginSlug,
     displayStyle: desc.type === "recent_posts" ? "list" : undefined,
     showThumbnail: true,
     showDate: true,
     showExcerpt: false,
     count: desc.type === "recent_posts" ? 5 : undefined,
-    config: desc.type === "weather" ? { city: "London", temp: "18", condition: "Sunny" } : undefined,
+    config: undefined,
     locale: "all",
   };
 }

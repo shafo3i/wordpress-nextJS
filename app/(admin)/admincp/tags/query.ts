@@ -1,3 +1,4 @@
+import "server-only";
 import { verifyPostEditor as verifyAdminOrEditor } from "@/lib/authMIddleware";
 import {
   getAllTags as getTagsFromService,

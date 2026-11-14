@@ -1,5 +1,17 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "@/db";
+import "server-only"
+import { randomUUID } from "node:crypto"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import {
+  createMenuSchema,
+  saveMenuSchema,
+  menuIdSchema,
+  menuLocationsSchema,
+  menuQuerySchema,
+  appearanceUrlSchema,
+} from "@/db/schema/cms-appearance"
+import { getActiveLanguages } from "@/services/language.service"
+import { and, asc, eq, inArray, lte, sql } from "drizzle-orm"
+import { db, type DB } from "@/db"
 import {
   wpOptions,
   wpPosts,
@@ -7,57 +19,61 @@ import {
   wpTermTaxonomy,
   wpTerms,
   wpTermmeta,
-} from "@/db/schema";
-import { postTranslationsTable } from "@/db/schema/cms-languages";
-import { Menu, MenuItem, MenuLocation } from "@/lib/menus/types";
+} from "@/db/schema"
+import {
+  postTranslationsTable,
+  termTranslationsTable,
+} from "@/db/schema/cms-languages"
+import { Menu, MenuItem, MenuLocation } from "@/lib/menus/types"
 
-export type { Menu, MenuItem, MenuLocation };
+export type { Menu, MenuItem, MenuLocation }
 
-const NAV_MENU_LOCATIONS_OPTION = "nav_menu_locations";
+const NAV_MENU_LOCATIONS_OPTION = "nav_menu_locations"
 
 export interface MenuItemInput {
-  id?: string;
-  title: string;
-  url: string;
-  order: number;
-  target?: string;
-  type?: "page" | "category" | "custom" | "post";
+  id?: string
+  title: string
+  url: string
+  order: number
+  target?: string
+  type?: "page" | "category" | "custom" | "post"
 }
 
 export interface SaveMenuInput {
-  name: string;
-  items: MenuItemInput[];
-  locations: string[];
-  language?: string;
+  name: string
+  items: MenuItemInput[]
+  locations: string[]
+  language?: string
 }
 
 export interface CreateMenuInput {
-  name: string;
-  slug?: string;
-  language?: string;
+  name: string
+  slug?: string
+  language?: string
 }
 
 export interface GetMenusOptions {
-  language?: string;
+  language?: string
 }
 
 /**
  * Convert value to BigInt safely
  */
 export function toBigInt(val: unknown): bigint {
-  if (val === null || val === undefined || val === "") return BigInt(0);
-  if (typeof val === "bigint") return val;
-  if (typeof val === "number" || typeof val === "string") return BigInt(val);
-  return BigInt(0);
+  return menuIdSchema.parse(val)
 }
 
 /**
  * Get all menus registered in wp_terms + wp_term_taxonomy (taxonomy = 'nav_menu')
  */
-export async function getAllMenus(options: GetMenusOptions = {}): Promise<{ id: string; name: string; slug: string; language?: string }[]> {
-  const { language } = options;
+export async function getAllMenus(
+  options: GetMenusOptions = {},
+  database: DB = db
+): Promise<{ id: string; name: string; slug: string; language?: string }[]> {
+  await verifyAdmin()
+  const { language } = menuQuerySchema.parse(options)
 
-  let query = db
+  const query = database
     .select({
       id: wpTermTaxonomy.termTaxonomyId,
       termId: wpTerms.termId,
@@ -75,13 +91,15 @@ export async function getAllMenus(options: GetMenusOptions = {}): Promise<{ id: 
       )
     )
     .where(eq(wpTermTaxonomy.taxonomy, "nav_menu"))
-    .orderBy(asc(wpTerms.name));
+    .orderBy(asc(wpTerms.name))
 
-  const rows = await query;
+  const rows = await query
 
-  let filtered = rows;
+  let filtered = rows
   if (language && language !== "all") {
-    filtered = rows.filter((r) => r.metaLanguage === language || !r.metaLanguage);
+    filtered = rows.filter(
+      (r) => r.metaLanguage === language || !r.metaLanguage
+    )
   }
 
   return filtered.map((r) => ({
@@ -89,63 +107,76 @@ export async function getAllMenus(options: GetMenusOptions = {}): Promise<{ id: 
     name: r.name,
     slug: r.slug,
     language: r.metaLanguage || undefined,
-  }));
+  }))
 }
 
 /**
  * Get location mapping from wp_options (e.g. { "primary": "14", "footer": "15" })
  */
-export async function getNavMenuLocations(): Promise<Record<string, string>> {
+export async function getNavMenuLocations(
+  database: DB = db
+): Promise<Record<string, string>> {
   try {
-    const row = await db
+    const row = await database
       .select({ value: wpOptions.optionValue })
       .from(wpOptions)
       .where(eq(wpOptions.optionName, NAV_MENU_LOCATIONS_OPTION))
-      .limit(1);
+      .limit(1)
 
-    if (!row.length || !row[0].value) return {};
-    const parsed = JSON.parse(row[0].value);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
+    if (!row.length || !row[0].value) return {}
+    const parsed = JSON.parse(row[0].value)
+    const result = menuLocationsSchema.safeParse(parsed)
+    return result.success ? result.data : {}
   } catch (err) {
-    console.error("Failed to read nav_menu_locations:", err);
-    return {};
+    void err
+    return {}
   }
 }
 
 /**
  * Save location mapping into wp_options
  */
-export async function setNavMenuLocations(locations: Record<string, string>): Promise<void> {
-  const serialized = JSON.stringify(locations);
-
-  const existing = await db
-    .select({ id: wpOptions.optionId })
-    .from(wpOptions)
-    .where(eq(wpOptions.optionName, NAV_MENU_LOCATIONS_OPTION))
-    .limit(1);
-
-  if (existing.length) {
-    await db
-      .update(wpOptions)
-      .set({ optionValue: serialized })
-      .where(eq(wpOptions.optionId, existing[0].id));
-  } else {
-    await db.insert(wpOptions).values({
+async function writeLocations(locations: Record<string, string>, database: DB) {
+  await database
+    .insert(wpOptions)
+    .values({
       optionName: NAV_MENU_LOCATIONS_OPTION,
-      optionValue: serialized,
+      optionValue: JSON.stringify(locations),
       autoload: "yes",
-    });
-  }
+    })
+    .onConflictDoUpdate({
+      target: wpOptions.optionName,
+      set: { optionValue: JSON.stringify(locations) },
+    })
+}
+export async function setNavMenuLocations(
+  raw: Record<string, string>,
+  database: DB = db
+): Promise<void> {
+  await verifyAdmin()
+  const locations = menuLocationsSchema.parse(raw)
+  await database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await lockMenus(tx)
+    for (const id of new Set(Object.values(locations)))
+      await requireMenu(BigInt(id), tx)
+    await validateMenuLanguage(undefined, Object.keys(locations))
+    await writeLocations(locations, tx)
+  })
 }
 
 /**
  * Get a specific menu with all its menu items and assigned locations
  */
-export async function getMenuById(menuId: string | number | bigint): Promise<Menu | null> {
-  const menuTaxonomyId = toBigInt(menuId);
-  if (menuTaxonomyId <= BigInt(0)) return null;
+export async function getMenuById(
+  menuId: string | number | bigint,
+  database: DB = db
+): Promise<Menu | null> {
+  const parsedId = menuIdSchema.safeParse(menuId)
+  if (!parsedId.success) return null
+  const menuTaxonomyId = parsedId.data
 
-  const menuRow = await db
+  const menuRow = await database
     .select({
       id: wpTermTaxonomy.termTaxonomyId,
       termId: wpTerms.termId,
@@ -168,21 +199,21 @@ export async function getMenuById(menuId: string | number | bigint): Promise<Men
         eq(wpTermTaxonomy.taxonomy, "nav_menu")
       )
     )
-    .limit(1);
+    .limit(1)
 
-  if (!menuRow.length) return null;
+  if (!menuRow.length) return null
 
   // Query menu item post IDs linked to this menu term
-  const relationships = await db
+  const relationships = await database
     .select({ objectId: wpTermRelationships.objectId })
     .from(wpTermRelationships)
-    .where(eq(wpTermRelationships.termTaxonomyId, menuTaxonomyId));
+    .where(eq(wpTermRelationships.termTaxonomyId, menuTaxonomyId))
 
-  const itemPostIds = relationships.map((r) => r.objectId);
+  const itemPostIds = relationships.map((r) => r.objectId)
 
-  let items: MenuItem[] = [];
+  let items: MenuItem[] = []
   if (itemPostIds.length > 0) {
-    const postRows = await db
+    const postRows = await database
       .select({
         id: wpPosts.id,
         title: wpPosts.postTitle,
@@ -196,27 +227,29 @@ export async function getMenuById(menuId: string | number | bigint): Promise<Men
           eq(wpPosts.postType, "nav_menu_item")
         )
       )
-      .orderBy(asc(wpPosts.menuOrder));
+      .orderBy(asc(wpPosts.menuOrder))
 
-    items = postRows.map((p) => ({
-      id: p.id.toString(),
-      title: p.title,
-      url: p.url,
-      order: p.order ?? 0,
-      type: p.url.startsWith("/category/")
-        ? "category"
-        : p.url.startsWith("http://") || p.url.startsWith("https://")
-          ? "custom"
-          : "page",
-    }));
+    items = postRows
+      .filter((p) => appearanceUrlSchema.safeParse(p.url).success)
+      .map((p) => ({
+        id: p.id.toString(),
+        title: p.title,
+        url: p.url,
+        order: p.order ?? 0,
+        type: p.url.startsWith("/category/")
+          ? "category"
+          : p.url.startsWith("http://") || p.url.startsWith("https://")
+            ? "custom"
+            : "page",
+      }))
   }
 
   // Find which locations this menu is assigned to
-  const allLocations = await getNavMenuLocations();
-  const stringMenuId = menuId.toString();
+  const allLocations = await getNavMenuLocations(database)
+  const stringMenuId = menuId.toString()
   const assignedLocations = Object.entries(allLocations)
-    .filter(([_, id]) => id === stringMenuId)
-    .map(([loc]) => loc);
+    .filter((entry) => entry[1] === stringMenuId)
+    .map(([loc]) => loc)
 
   return {
     id: stringMenuId,
@@ -225,293 +258,279 @@ export async function getMenuById(menuId: string | number | bigint): Promise<Men
     language: menuRow[0].metaLanguage || undefined,
     items,
     locations: assignedLocations,
-  };
+  }
 }
 
 /**
  * Backward compatibility alias for getMenuById
  */
-export const getMenuWithItems = getMenuById;
+export const getMenuWithItems = getMenuById
 
 /**
  * Create a new nav menu
  */
-export async function createMenu(
-  input: string | CreateMenuInput
-): Promise<string> {
-  const name = typeof input === "string" ? input : input.name;
-  const trimmed = name.trim();
-  if (!trimmed) {
-    throw new Error("Menu name is required.");
-  }
-
-  const explicitSlug = typeof input === "object" ? input.slug : undefined;
-  const slug =
-    explicitSlug?.trim() ||
-    trimmed
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") ||
-    `menu-${Date.now()}`;
-
-  const language = typeof input === "object" ? input.language : undefined;
-
-  const [term] = await db
-    .insert(wpTerms)
-    .values({ name: trimmed, slug })
-    .returning({ id: wpTerms.termId });
-
-  const [taxonomy] = await db
-    .insert(wpTermTaxonomy)
-    .values({
-      termId: term.id,
-      taxonomy: "nav_menu",
-      count: BigInt(0),
-    })
-    .returning({ id: wpTermTaxonomy.termTaxonomyId });
-
-  if (language && language !== "all") {
-    await db.insert(wpTermmeta).values({
-      termId: term.id,
-      metaKey: "language",
-      metaValue: language,
-    });
-  }
-
-  return taxonomy.id.toString();
+export class MenuMutationError extends Error {}
+async function lockMenus(database: DB) {
+  await database.execute(
+    sql`select pg_advisory_xact_lock(hashtext('pressforge:menus'))`
+  )
 }
-
-/**
- * Delete a nav menu and its menu items
- */
-export async function deleteMenu(menuId: string | number | bigint): Promise<void> {
-  const menuTaxonomyId = toBigInt(menuId);
-  if (menuTaxonomyId <= BigInt(0)) return;
-
-  // 1. Get menu items to delete
-  const relationships = await db
-    .select({ objectId: wpTermRelationships.objectId })
+async function requireMenu(id: bigint, database: DB) {
+  const [menu] = await database
+    .select({ termId: wpTermTaxonomy.termId })
+    .from(wpTermTaxonomy)
+    .where(
+      and(
+        eq(wpTermTaxonomy.termTaxonomyId, id),
+        eq(wpTermTaxonomy.taxonomy, "nav_menu")
+      )
+    )
+    .for("update")
+  if (!menu) throw new MenuMutationError("Invalid menu")
+  return menu
+}
+async function validateMenuLanguage(
+  language?: string,
+  locations: string[] = []
+) {
+  const codes = (await getActiveLanguages()).map((locale) => locale.code)
+  if (language && language !== "all" && !codes.includes(language))
+    throw new MenuMutationError("Invalid language")
+  if (
+    locations.some(
+      (location) =>
+        location.includes("_") &&
+        !codes.includes(location.slice(location.indexOf("_") + 1))
+    )
+  )
+    throw new MenuMutationError("Invalid location")
+}
+async function ownedItems(id: bigint, database: DB) {
+  const rows = await database
+    .select({ id: wpPosts.id, type: wpPosts.postType })
     .from(wpTermRelationships)
-    .where(eq(wpTermRelationships.termTaxonomyId, menuTaxonomyId));
-
-  const postIds = relationships.map((r) => r.objectId);
-
-  // 2. Remove relationships
-  await db
-    .delete(wpTermRelationships)
-    .where(eq(wpTermRelationships.termTaxonomyId, menuTaxonomyId));
-
-  // 3. Delete nav_menu_item posts
-  if (postIds.length > 0) {
-    await db
-      .delete(wpPosts)
+    .innerJoin(wpPosts, eq(wpPosts.id, wpTermRelationships.objectId))
+    .where(eq(wpTermRelationships.termTaxonomyId, id))
+  if (rows.some((row) => row.type !== "nav_menu_item"))
+    throw new MenuMutationError("Invalid menu items")
+  const ids = rows.map((row) => row.id)
+  if (ids.length) {
+    const links = await database
+      .select({ menuId: wpTermRelationships.termTaxonomyId })
+      .from(wpTermRelationships)
+      .where(inArray(wpTermRelationships.objectId, ids))
+    if (links.some((link) => link.menuId !== id))
+      throw new MenuMutationError("Shared menu items cannot be mutated")
+  }
+  return ids
+}
+export async function createMenu(
+  raw: string | CreateMenuInput,
+  database: DB = db
+): Promise<string> {
+  await verifyAdmin()
+  const input = createMenuSchema.parse(
+    typeof raw === "string" ? { name: raw } : raw
+  )
+  await validateMenuLanguage(input.language)
+  return database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await lockMenus(tx)
+    const slug =
+      input.slug ||
+      `${input.name
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 160)}-${randomUUID()}`
+    const [term] = await tx
+      .insert(wpTerms)
+      .values({ name: input.name, slug })
+      .returning({ id: wpTerms.termId })
+    const [taxonomy] = await tx
+      .insert(wpTermTaxonomy)
+      .values({ termId: term.id, taxonomy: "nav_menu", count: BigInt(0) })
+      .returning({ id: wpTermTaxonomy.termTaxonomyId })
+    if (input.language && input.language !== "all")
+      await tx
+        .insert(wpTermmeta)
+        .values({
+          termId: term.id,
+          metaKey: "language",
+          metaValue: input.language,
+        })
+    return taxonomy.id.toString()
+  })
+}
+export async function deleteMenu(
+  raw: string | number | bigint,
+  database: DB = db
+): Promise<void> {
+  await verifyAdmin()
+  const id = menuIdSchema.parse(raw)
+  await database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await lockMenus(tx)
+    const menu = await requireMenu(id, tx)
+    const ids = await ownedItems(id, tx)
+    await tx
+      .delete(wpTermRelationships)
+      .where(eq(wpTermRelationships.termTaxonomyId, id))
+    if (ids.length)
+      await tx
+        .delete(wpPosts)
+        .where(
+          and(inArray(wpPosts.id, ids), eq(wpPosts.postType, "nav_menu_item"))
+        )
+    await tx
+      .delete(wpTermTaxonomy)
       .where(
         and(
-          inArray(wpPosts.id, postIds),
-          eq(wpPosts.postType, "nav_menu_item")
+          eq(wpTermTaxonomy.termTaxonomyId, id),
+          eq(wpTermTaxonomy.taxonomy, "nav_menu")
         )
-      );
-  }
-
-  // 4. Delete taxonomy and term
-  const tax = await db
-    .select({ termId: wpTermTaxonomy.termId })
-    .from(wpTermTaxonomy)
-    .where(eq(wpTermTaxonomy.termTaxonomyId, menuTaxonomyId))
-    .limit(1);
-
-  await db
-    .delete(wpTermTaxonomy)
-    .where(eq(wpTermTaxonomy.termTaxonomyId, menuTaxonomyId));
-
-  if (tax.length) {
-    await db.delete(wpTermmeta).where(eq(wpTermmeta.termId, tax[0].termId));
-    await db.delete(wpTerms).where(eq(wpTerms.termId, tax[0].termId));
-  }
-
-  // 5. Clean from locations
-  const locations = await getNavMenuLocations();
-  let updatedLocations = false;
-  const stringMenuId = menuId.toString();
-  for (const [key, val] of Object.entries(locations)) {
-    if (val === stringMenuId) {
-      delete locations[key];
-      updatedLocations = true;
+      )
+    const others = await tx
+      .select({ id: wpTermTaxonomy.termTaxonomyId })
+      .from(wpTermTaxonomy)
+      .where(eq(wpTermTaxonomy.termId, menu.termId))
+      .limit(1)
+    if (!others.length) {
+      await tx.delete(wpTermmeta).where(eq(wpTermmeta.termId, menu.termId))
+      await tx.delete(wpTerms).where(eq(wpTerms.termId, menu.termId))
     }
-  }
-  if (updatedLocations) {
-    await setNavMenuLocations(locations);
-  }
+    const locations = await getNavMenuLocations(tx)
+    for (const [key, value] of Object.entries(locations))
+      if (value === id.toString()) delete locations[key]
+    await writeLocations(locations, tx)
+  })
 }
-
-/**
- * Save menu structure, items, and assigned locations
- */
 export async function saveMenu(
-  menuId: string | number | bigint,
-  menuName: string,
+  rawId: string | number | bigint,
+  name: string,
   items: MenuItemInput[],
   locations: string[],
-  language?: string
+  language?: string,
+  database: DB = db
 ): Promise<void> {
-  const menuTaxonomyId = toBigInt(menuId);
-  const trimmedName = menuName.trim();
-  if (!trimmedName) {
-    throw new Error("Menu name is required.");
-  }
-
-  // Update Menu Term name
-  const taxRow = await db
-    .select({ termId: wpTermTaxonomy.termId })
-    .from(wpTermTaxonomy)
-    .where(eq(wpTermTaxonomy.termTaxonomyId, menuTaxonomyId))
-    .limit(1);
-
-  if (taxRow.length) {
-    await db
+  const session = await verifyAdmin()
+  const input = saveMenuSchema.parse({
+    menuId: rawId,
+    name,
+    items,
+    locations,
+    language,
+  })
+  await validateMenuLanguage(input.language, input.locations)
+  await database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await lockMenus(tx)
+    const menu = await requireMenu(input.menuId, tx)
+    const oldIds = await ownedItems(input.menuId, tx)
+    if (
+      input.items.some(
+        (item) =>
+          item.id &&
+          !item.id.startsWith("temp-") &&
+          !oldIds.includes(BigInt(item.id))
+      )
+    )
+      throw new MenuMutationError("Invalid item owner")
+    await tx
       .update(wpTerms)
-      .set({ name: trimmedName })
-      .where(eq(wpTerms.termId, taxRow[0].termId));
-
-    if (language !== undefined) {
-      const existingLangMeta = await db
-        .select({ metaId: wpTermmeta.metaId })
-        .from(wpTermmeta)
+      .set({ name: input.name })
+      .where(eq(wpTerms.termId, menu.termId))
+    if (input.language !== undefined) {
+      await tx
+        .delete(wpTermmeta)
         .where(
           and(
-            eq(wpTermmeta.termId, taxRow[0].termId),
+            eq(wpTermmeta.termId, menu.termId),
             eq(wpTermmeta.metaKey, "language")
           )
         )
-        .limit(1);
-
-      if (language && language !== "all") {
-        if (existingLangMeta.length > 0) {
-          await db
-            .update(wpTermmeta)
-            .set({ metaValue: language })
-            .where(eq(wpTermmeta.metaId, existingLangMeta[0].metaId));
-        } else {
-          await db.insert(wpTermmeta).values({
-            termId: taxRow[0].termId,
+      if (input.language && input.language !== "all")
+        await tx
+          .insert(wpTermmeta)
+          .values({
+            termId: menu.termId,
             metaKey: "language",
-            metaValue: language,
-          });
-        }
-      } else if (existingLangMeta.length > 0) {
-        await db
-          .delete(wpTermmeta)
-          .where(eq(wpTermmeta.metaId, existingLangMeta[0].metaId));
+            metaValue: input.language,
+          })
+    }
+    const retained = new Set<bigint>()
+    for (const [order, item] of input.items.entries()) {
+      if (item.id && !item.id.startsWith("temp-")) {
+        const id = BigInt(item.id)
+        retained.add(id)
+        await tx
+          .update(wpPosts)
+          .set({ postTitle: item.title, guid: item.url, menuOrder: order })
+          .where(and(eq(wpPosts.id, id), eq(wpPosts.postType, "nav_menu_item")))
+      } else {
+        const [post] = await tx
+          .insert(wpPosts)
+          .values({
+            postAuthor: session.user.id,
+            postTitle: item.title,
+            guid: item.url,
+            menuOrder: order,
+            postType: "nav_menu_item",
+            postStatus: "publish",
+            commentStatus: "closed",
+            pingStatus: "closed",
+            postName: randomUUID(),
+          })
+          .returning({ id: wpPosts.id })
+        await tx
+          .insert(wpTermRelationships)
+          .values({
+            objectId: post.id,
+            termTaxonomyId: input.menuId,
+            termOrder: order,
+          })
+        retained.add(post.id)
       }
     }
-  }
-
-  // Get current item IDs
-  const oldRel = await db
-    .select({ objectId: wpTermRelationships.objectId })
-    .from(wpTermRelationships)
-    .where(eq(wpTermRelationships.termTaxonomyId, menuTaxonomyId));
-  const oldItemIds = oldRel.map((r) => r.objectId.toString());
-
-  const retainedItemIds = new Set<string>();
-  const date = new Date();
-
-  for (const item of items) {
-    if (item.id && !item.id.startsWith("temp-") && oldItemIds.includes(item.id)) {
-      // Update existing item
-      const pId = toBigInt(item.id);
-      await db
-        .update(wpPosts)
-        .set({
-          postTitle: item.title,
-          guid: item.url,
-          menuOrder: item.order,
-        })
-        .where(eq(wpPosts.id, pId));
-      retainedItemIds.add(item.id);
-    } else {
-      // Create new nav_menu_item post
-      const [newPost] = await db
-        .insert(wpPosts)
-        .values({
-          postDate: date,
-          postDateGmt: date,
-          postContent: "",
-          postTitle: item.title,
-          postExcerpt: "",
-          postStatus: "publish",
-          commentStatus: "closed",
-          pingStatus: "closed",
-          postName: `menu-item-${Date.now()}-${item.order}`,
-          guid: item.url,
-          menuOrder: item.order,
-          postType: "nav_menu_item",
-          commentCount: BigInt(0),
-        })
-        .returning({ id: wpPosts.id });
-
-      await db.insert(wpTermRelationships).values({
-        objectId: newPost.id,
-        termTaxonomyId: menuTaxonomyId,
-        termOrder: 0,
-      });
-
-      retainedItemIds.add(newPost.id.toString());
-    }
-  }
-
-  // Delete removed items
-  const toDelete = oldItemIds.filter((id) => !retainedItemIds.has(id));
-  if (toDelete.length > 0) {
-    const toDeleteBigInt = toDelete.map((id) => toBigInt(id));
-    await db
-      .delete(wpTermRelationships)
-      .where(
-        and(
-          inArray(wpTermRelationships.objectId, toDeleteBigInt),
-          eq(wpTermRelationships.termTaxonomyId, menuTaxonomyId)
+    const removed = oldIds.filter((id) => !retained.has(id))
+    if (removed.length) {
+      await tx
+        .delete(wpTermRelationships)
+        .where(
+          and(
+            eq(wpTermRelationships.termTaxonomyId, input.menuId),
+            inArray(wpTermRelationships.objectId, removed)
+          )
         )
-      );
-
-    await db
-      .delete(wpPosts)
-      .where(
-        and(
-          inArray(wpPosts.id, toDeleteBigInt),
-          eq(wpPosts.postType, "nav_menu_item")
+      await tx
+        .delete(wpPosts)
+        .where(
+          and(
+            inArray(wpPosts.id, removed),
+            eq(wpPosts.postType, "nav_menu_item")
+          )
         )
-      );
-  }
-
-  // Update locations mapping
-  const stringMenuId = menuId.toString();
-  const currentLocations = await getNavMenuLocations();
-  for (const [key, val] of Object.entries(currentLocations)) {
-    if (val === stringMenuId) {
-      delete currentLocations[key];
     }
-  }
-  for (const loc of locations) {
-    currentLocations[loc] = stringMenuId;
-    if ((loc === "primary_en" || loc === "primary_ar") && !currentLocations["primary"]) {
-      currentLocations["primary"] = stringMenuId;
-    }
-    if ((loc === "footer_en" || loc === "footer_ar") && !currentLocations["footer"]) {
-      currentLocations["footer"] = stringMenuId;
-    }
-  }
-  await setNavMenuLocations(currentLocations);
+    const current = await getNavMenuLocations(tx)
+    for (const [key, value] of Object.entries(current))
+      if (value === input.menuId.toString()) delete current[key]
+    for (const location of input.locations)
+      current[location] = input.menuId.toString()
+    await writeLocations(current, tx)
+  })
 }
 
 /**
  * Get list of published pages for the menu accordion
  */
-export async function getPublishedPagesForMenu(options: { language?: string } = {}): Promise<
-  { id: string; title: string; slug: string; language?: string }[]
-> {
-  const { language } = options;
+export async function getPublishedPagesForMenu(
+  options: { language?: string } = {},
+  database: DB = db
+): Promise<{ id: string; title: string; slug: string; language?: string }[]> {
+  await verifyAdmin()
+  const { language } = menuQuerySchema.parse(options)
 
-  let query = db
+  const query = database
     .select({
       id: wpPosts.id,
       title: wpPosts.postTitle,
@@ -519,28 +538,31 @@ export async function getPublishedPagesForMenu(options: { language?: string } = 
       languageCode: postTranslationsTable.languageCode,
     })
     .from(wpPosts)
-    .leftJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
+    .leftJoin(
+      postTranslationsTable,
+      eq(wpPosts.id, postTranslationsTable.postId)
+    )
     .where(
       and(
         eq(wpPosts.postType, "page"),
-        eq(wpPosts.postStatus, "publish")
+        eq(wpPosts.postStatus, "publish"),
+        eq(wpPosts.postPassword, ""),
+        lte(wpPosts.postDateGmt, new Date()),
+        language && language !== "all"
+          ? eq(postTranslationsTable.languageCode, language)
+          : undefined
       )
     )
-    .orderBy(asc(wpPosts.postTitle));
+    .orderBy(asc(wpPosts.postTitle))
 
-  const rows = await query;
+  const rows = await query
 
-  let filtered = rows;
+  let filtered = rows
   if (language && language !== "all") {
     const matched = rows.filter((r) => {
-      if (language === "en") {
-        return r.languageCode === "en" || !r.languageCode;
-      }
-      return r.languageCode === language;
-    });
-    if (matched.length > 0) {
-      filtered = matched;
-    }
+      return r.languageCode === language
+    })
+    filtered = matched
   }
 
   return filtered.map((r) => ({
@@ -548,49 +570,43 @@ export async function getPublishedPagesForMenu(options: { language?: string } = 
     title: r.title,
     slug: r.slug,
     language: r.languageCode || undefined,
-  }));
+  }))
 }
 
 /**
  * Get list of categories for the menu accordion
  */
-export async function getCategoriesForMenu(options: { language?: string } = {}): Promise<
-  { id: string; name: string; slug: string; language?: string }[]
-> {
-  const { language } = options;
+export async function getCategoriesForMenu(
+  options: { language?: string } = {},
+  database: DB = db
+): Promise<{ id: string; name: string; slug: string; language?: string }[]> {
+  await verifyAdmin()
+  const { language } = menuQuerySchema.parse(options)
 
-  let query = db
+  const query = database
     .select({
       id: wpTermTaxonomy.termTaxonomyId,
       name: wpTerms.name,
       slug: wpTerms.slug,
-      metaLanguage: wpTermmeta.metaValue,
+      metaLanguage: termTranslationsTable.languageCode,
     })
     .from(wpTermTaxonomy)
     .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
     .leftJoin(
-      wpTermmeta,
-      and(
-        eq(wpTermmeta.termId, wpTerms.termId),
-        eq(wpTermmeta.metaKey, "language")
-      )
+      termTranslationsTable,
+      eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
     )
     .where(eq(wpTermTaxonomy.taxonomy, "category"))
-    .orderBy(asc(wpTerms.name));
+    .orderBy(asc(wpTerms.name))
 
-  const rows = await query;
+  const rows = await query
 
-  let filtered = rows;
+  let filtered = rows
   if (language && language !== "all") {
     const matched = rows.filter((r) => {
-      if (language === "en") {
-        return r.metaLanguage === "en" || !r.metaLanguage;
-      }
-      return r.metaLanguage === language;
-    });
-    if (matched.length > 0) {
-      filtered = matched;
-    }
+      return r.metaLanguage === language
+    })
+    filtered = matched
   }
 
   return filtered.map((r) => ({
@@ -598,18 +614,20 @@ export async function getCategoriesForMenu(options: { language?: string } = {}):
     name: r.name,
     slug: r.slug,
     language: r.metaLanguage || undefined,
-  }));
+  }))
 }
 
 /**
  * Get list of published posts for the menu accordion
  */
-export async function getPublishedPostsForMenu(options: { language?: string; limit?: number } = {}): Promise<
-  { id: string; title: string; slug: string; language?: string }[]
-> {
-  const { language, limit = 20 } = options;
+export async function getPublishedPostsForMenu(
+  options: { language?: string; limit?: number } = {},
+  database: DB = db
+): Promise<{ id: string; title: string; slug: string; language?: string }[]> {
+  await verifyAdmin()
+  const { language, limit } = menuQuerySchema.parse(options)
 
-  let query = db
+  const query = database
     .select({
       id: wpPosts.id,
       title: wpPosts.postTitle,
@@ -617,29 +635,32 @@ export async function getPublishedPostsForMenu(options: { language?: string; lim
       languageCode: postTranslationsTable.languageCode,
     })
     .from(wpPosts)
-    .leftJoin(postTranslationsTable, eq(wpPosts.id, postTranslationsTable.postId))
+    .leftJoin(
+      postTranslationsTable,
+      eq(wpPosts.id, postTranslationsTable.postId)
+    )
     .where(
       and(
         eq(wpPosts.postType, "post"),
-        eq(wpPosts.postStatus, "publish")
+        eq(wpPosts.postStatus, "publish"),
+        eq(wpPosts.postPassword, ""),
+        lte(wpPosts.postDateGmt, new Date()),
+        language && language !== "all"
+          ? eq(postTranslationsTable.languageCode, language)
+          : undefined
       )
     )
     .orderBy(asc(wpPosts.postTitle))
-    .limit(limit);
+    .limit(limit)
 
-  const rows = await query;
+  const rows = await query
 
-  let filtered = rows;
+  let filtered = rows
   if (language && language !== "all") {
     const matched = rows.filter((r) => {
-      if (language === "en") {
-        return r.languageCode === "en" || !r.languageCode;
-      }
-      return r.languageCode === language;
-    });
-    if (matched.length > 0) {
-      filtered = matched;
-    }
+      return r.languageCode === language
+    })
+    filtered = matched
   }
 
   return filtered.map((r) => ({
@@ -647,7 +668,7 @@ export async function getPublishedPostsForMenu(options: { language?: string; lim
     title: r.title,
     slug: r.slug,
     language: r.languageCode || undefined,
-  }));
+  }))
 }
 
 export const menuService = {
@@ -662,4 +683,4 @@ export const menuService = {
   getPublishedPagesForMenu,
   getCategoriesForMenu,
   getPublishedPostsForMenu,
-};
+}

@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from "vitest"
+import { vi } from "vitest";
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: async () => ({ user: { role: "admin", id: "admin" } }), verifyPostEditor: async () => ({ user: { role: "admin", id: "admin" } }) }));
+import { describe, expect, it } from "vitest"
 import type { DB } from "@/db"
 vi.mock("@/db", () => ({ db: {} }))
 vi.mock("@/services/language.service", () => ({
@@ -11,6 +14,8 @@ describe("language template synchronization", () => {
   it("adds missing native entries, preserves edits and is idempotent", async () => {
     const stored = new Map([["en:old", "Custom wording"]])
     const tx = {
+      execute: async () => {},
+      select: () => ({ from: async () => [{ code: "en" }, { code: "ar" }] }),
       insert: () => ({
         values: (
           rows: { languageCode: string; key: string; value: string }[]

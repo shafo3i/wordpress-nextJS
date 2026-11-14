@@ -43,12 +43,12 @@ export function TagPagination({
 
       <div className="flex items-center gap-3">
         <span className="text-[13px] text-[#646970]">
-          {totalItems} {dict["admin.pagination.items"] || "items"}
+          {totalItems} {dict["admin.pagination.items"] || ""}
         </span>
 
         <div className="flex items-center gap-1">
           <span className="mx-1 text-[13px] text-[#646970]">
-            {validCurrentPage} {dict["admin.pagination.of"] || "of"} {validTotalPages}
+            {validCurrentPage} {dict["admin.pagination.of"] || ""} {validTotalPages}
           </span>
           {validCurrentPage > 1 ? (
             <Link

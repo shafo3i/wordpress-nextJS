@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   X,
   Copy,
@@ -9,51 +9,40 @@ import {
   ExternalLink,
   FileText,
   Music,
-  Video,
-  File as FileIcon,
 } from "lucide-react";
 import type { MediaItem } from "@/services/media.service";
+import { safeMediaUrl } from "@/lib/post-media";
 import { updateMediaAction } from "../actions";
 
 interface AttachmentDetailsModalProps {
   item: MediaItem | null;
   onClose: () => void;
   onUpdate: (updated: MediaItem) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: number) => Promise<boolean>;
   dict: Record<string, string>;
   direction: "rtl" | "ltr";
 }
 
-export function AttachmentDetailsModal({
-  item,
-  onClose,
-  onUpdate,
-  onDelete,
-  dict,
-  direction,
-}: AttachmentDetailsModalProps) {
-  const [altText, setAltText] = useState("");
-  const [title, setTitle] = useState("");
-  const [caption, setCaption] = useState("");
-  const [description, setDescription] = useState("");
+export function AttachmentDetailsModal(props: AttachmentDetailsModalProps) {
+  if (!props.item) return null;
+  return <AttachmentDetailsEditor key={props.item.id} {...props} item={props.item} />;
+}
+function AttachmentDetailsEditor({ item, onClose, onUpdate, onDelete, dict, direction }: AttachmentDetailsModalProps & { item: MediaItem }) {
+  const [altText, setAltText] = useState(item.altText || "");
+  const [title, setTitle] = useState(item.title || "");
+  const [caption, setCaption] = useState(item.caption || "");
+  const [description, setDescription] = useState(item.description || "");
   const [copied, setCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (item) {
-      setAltText(item.altText || "");
-      setTitle(item.title || "");
-      setCaption(item.caption || "");
-      setDescription(item.description || "");
-      setIsSaved(false);
-    }
-  }, [item]);
-
-  if (!item) return null;
+  const fileUrl = safeMediaUrl(item.url) || "";
+  const displayUrl = fileUrl && typeof window !== "undefined" ? new URL(fileUrl, window.location.origin).href : fileUrl;
 
   async function handleSaveField() {
     if (!item) return;
+    setError("");
     setIsSaving(true);
     setIsSaved(false);
     try {
@@ -74,31 +63,31 @@ export function AttachmentDetailsModal({
           description,
         });
         setTimeout(() => setIsSaved(false), 2000);
-      }
+      } else setError(res.error || dict["admin.media.error_failed"] || "");
     } catch {
-      // ignore
+      setError(dict["admin.media.error_failed"] || "");
     } finally {
       setIsSaving(false);
     }
   }
 
-  function handleCopyUrl() {
-    if (!item) return;
-    const fullUrl = window.location.origin + item.url;
-    navigator.clipboard.writeText(fullUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  async function handleCopyUrl() {
+    if (!fileUrl) return;
+    try {
+      await navigator.clipboard.writeText(displayUrl);
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    } catch { setError(dict["admin.media.error_failed"] || ""); }
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!item) return;
     const confirmed = window.confirm(
       dict["admin.media.confirm_delete"] ||
-        "Are you sure you want to permanently delete this media file? It will be removed from all articles."
+        ""
     );
     if (confirmed) {
-      onDelete(item.id);
-      onClose();
+      if (await onDelete(item.id)) onClose();
+      else setError(dict["admin.media.error_failed"] || "");
     }
   }
 
@@ -108,6 +97,7 @@ export function AttachmentDetailsModal({
 
   return (
     <div
+      role="dialog" aria-modal="true" aria-label={dict["admin.media.details_title"] || ""}
       className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 sm:p-6"
       dir={direction}
       onClick={onClose}
@@ -119,7 +109,7 @@ export function AttachmentDetailsModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#dcdcde] bg-[#f6f7f7]">
           <h2 className="text-base font-bold text-[#1d2327]">
-            {dict["admin.media.details_title"] || "Attachment Details"}
+            {dict["admin.media.details_title"] || ""}
           </h2>
           <button
             onClick={onClose}
@@ -136,29 +126,29 @@ export function AttachmentDetailsModal({
             {isImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={item.url}
+                src={fileUrl || undefined}
                 alt={item.title}
                 className="max-h-[500px] max-w-full object-contain rounded shadow"
               />
             ) : isVideo ? (
-              <video src={item.url} controls className="max-h-[400px] max-w-full rounded" />
+              <video src={fileUrl || undefined} controls className="max-h-[400px] max-w-full rounded" />
             ) : isAudio ? (
               <div className="text-center p-6 bg-white/10 rounded-lg">
                 <Music className="w-16 h-16 text-white/60 mx-auto mb-4" />
-                <audio src={item.url} controls className="w-full" />
+                <audio src={fileUrl || undefined} controls className="w-full" />
               </div>
             ) : (
               <div className="text-center p-6 text-white/70">
                 <FileText className="w-20 h-20 mx-auto mb-3 text-white/50" />
                 <p className="text-sm font-semibold">{item.filename}</p>
                 <a
-                  href={item.url}
+                  href={fileUrl || undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2271b1] text-white text-xs font-semibold rounded hover:bg-[#135e96]"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Open File</span>
+                  <span>{dict["admin.media.open_file"] || ""}</span>
                 </a>
               </div>
             )}
@@ -166,23 +156,24 @@ export function AttachmentDetailsModal({
 
           {/* Right Column: Details & Edit Fields */}
           <div className="md:col-span-5 p-5 overflow-y-auto space-y-4 bg-white text-xs">
+            {error && <p role="alert" className="text-[#b32d2e]">{error}</p>}
             {/* Metadata Summary */}
             <div className="border-b border-[#f0f0f1] pb-3 text-[#646970] space-y-1">
               <p>
                 <strong className="text-[#1d2327]">
-                  {dict["admin.media.file_name"] || "File name"}:
+                  {dict["admin.media.file_name"] || ""}:
                 </strong>{" "}
                 <span className="font-mono text-[11px]">{item.filename}</span>
               </p>
               <p>
                 <strong className="text-[#1d2327]">
-                  {dict["admin.media.file_type"] || "File type"}:
+                  {dict["admin.media.file_type"] || ""}:
                 </strong>{" "}
                 {item.mimeType}
               </p>
               <p>
                 <strong className="text-[#1d2327]">
-                  {dict["admin.media.uploaded_on"] || "Uploaded on"}:
+                  {dict["admin.media.uploaded_on"] || ""}:
                 </strong>{" "}
                 {new Date(item.uploadedAt).toLocaleDateString("en-US", {
                   month: "long",
@@ -193,9 +184,9 @@ export function AttachmentDetailsModal({
               {item.width && item.height ? (
                 <p>
                   <strong className="text-[#1d2327]">
-                    {dict["admin.media.dimensions"] || "Dimensions"}:
+                    {dict["admin.media.dimensions"] || ""}:
                   </strong>{" "}
-                  {item.width} by {item.height} pixels
+                  {(dict["admin.media.dimensions_value"] || "").replace("{width}", String(item.width)).replace("{height}", String(item.height))}
                 </p>
               ) : null}
             </div>
@@ -204,7 +195,7 @@ export function AttachmentDetailsModal({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-semibold text-[#1d2327] mb-1">
-                  {dict["admin.media.alt_text"] || "Alternative Text"}
+                  {dict["admin.media.alt_text"] || ""}
                 </label>
                 <input
                   type="text"
@@ -215,13 +206,13 @@ export function AttachmentDetailsModal({
                 />
                 <p className="text-[11px] text-[#646970] mt-1 leading-snug">
                   {dict["admin.media.alt_text_desc"] ||
-                    "Describe the purpose of the image for search engines and screen readers."}
+                    ""}
                 </p>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-[#1d2327] mb-1">
-                  {dict["admin.media.title_label"] || "Title"}
+                  {dict["admin.media.title_label"] || ""}
                 </label>
                 <input
                   type="text"
@@ -234,7 +225,7 @@ export function AttachmentDetailsModal({
 
               <div>
                 <label className="block text-xs font-semibold text-[#1d2327] mb-1">
-                  {dict["admin.media.caption"] || "Caption"}
+                  {dict["admin.media.caption"] || ""}
                 </label>
                 <textarea
                   rows={2}
@@ -247,7 +238,7 @@ export function AttachmentDetailsModal({
 
               <div>
                 <label className="block text-xs font-semibold text-[#1d2327] mb-1">
-                  {dict["admin.media.description"] || "Description"}
+                  {dict["admin.media.description"] || ""}
                 </label>
                 <textarea
                   rows={3}
@@ -261,13 +252,13 @@ export function AttachmentDetailsModal({
               {/* File URL Copy Field */}
               <div>
                 <label className="block text-xs font-semibold text-[#1d2327] mb-1">
-                  {dict["admin.media.file_url"] || "File URL"}
+                  {dict["admin.media.file_url"] || ""}
                 </label>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="text"
                     readOnly
-                    value={typeof window !== "undefined" ? window.location.origin + item.url : item.url}
+                    value={displayUrl}
                     className="flex-1 px-2.5 py-1.5 bg-[#f6f7f7] border border-[#dcdcde] rounded text-[11px] font-mono text-[#50575e] outline-none"
                   />
                   <button
@@ -276,7 +267,7 @@ export function AttachmentDetailsModal({
                     className="px-2.5 py-1.5 bg-white border border-[#2271b1] text-[#2271b1] hover:bg-[#f0f6fc] rounded text-xs font-medium flex items-center gap-1 transition-colors shrink-0"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? dict["admin.media.url_copied"] || "Copied!" : dict["admin.media.copy_url"] || "Copy URL"}</span>
+                    <span>{copied ? dict["admin.media.url_copied"] || "" : dict["admin.media.copy_url"] || ""}</span>
                   </button>
                 </div>
               </div>
@@ -284,7 +275,7 @@ export function AttachmentDetailsModal({
               {/* Status / Saved Indicator */}
               <div className="flex items-center justify-between pt-2">
                 <span className="text-xs text-[#2271b1] font-medium">
-                  {isSaving ? dict["admin.media.saving"] || "Saving..." : isSaved ? dict["admin.media.saved"] || "Saved." : ""}
+                  {isSaving ? dict["admin.media.saving"] || "" : isSaved ? dict["admin.media.saved"] || "" : ""}
                 </span>
                 <button
                   type="button"
@@ -292,7 +283,7 @@ export function AttachmentDetailsModal({
                   className="text-xs font-medium text-[#b32d2e] hover:underline flex items-center gap-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>{dict["admin.media.delete_permanently"] || "Delete permanently"}</span>
+                  <span>{dict["admin.media.delete_permanently"] || ""}</span>
                 </button>
               </div>
             </div>

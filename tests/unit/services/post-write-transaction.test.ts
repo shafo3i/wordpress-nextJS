@@ -1,3 +1,5 @@
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: async () => ({ user: { role: "admin", id: "admin" } }), verifyPostEditor: async () => ({ user: { role: "admin", id: "admin" } }) }));
 import { describe, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({ transaction: vi.fn() }))
 vi.mock("@/db", () => ({ db: { transaction: mocks.transaction } }))

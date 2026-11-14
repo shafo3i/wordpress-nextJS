@@ -1,5 +1,6 @@
+import { translationQuerySchema } from "@/db/schema/cms-languages";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
 import { getTranslationsPageData } from "./query";
 import {
@@ -22,18 +23,18 @@ type PageProps = {
 };
 
 export default async function TranslationsPage({ searchParams }: PageProps) {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
     const { dict } = await getAdminLanguageContext();
 
     const { locale, group, filter, s, page, add } = await searchParams;
-    const currentGroup = group ?? "all";
-    const currentFilter = filter ?? "all";
-    const searchQuery = s?.trim() ?? "";
-    const currentPage = Number(page) > 0 ? Number(page) : 1;
+    const currentGroup = typeof group === "string" && group.length <= 255 ? group : "all";
+    const currentFilter = translationQuerySchema.shape.filter.safeParse(filter).data ?? "all";
+    const searchQuery = typeof s === "string" ? s.trim().slice(0, 200) : "";
+    const currentPage = translationQuerySchema.shape.page.safeParse(Number(page)).data ?? 1;
     const pageSize = 20;
 
     const data = await getTranslationsPageData({
-        locale,
+        locale: translationQuerySchema.shape.locale.safeParse(locale).data,
         group: currentGroup,
         filter: currentFilter,
         search: searchQuery,

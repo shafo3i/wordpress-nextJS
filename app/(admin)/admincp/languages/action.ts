@@ -1,126 +1,61 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import {
-    createLanguage,
-    updateLanguage,
-    deleteLanguage,
-    setDefaultLanguage,
-} from "@/services/language.service";
-import { createLanguageSchema } from "@/db/schema/cms-languages";
-
+import { redirect, unstable_rethrow } from "next/navigation";
+import { cookies } from "next/headers";
+import { verifyAdmin, verifyPostEditor } from "@/lib/authMIddleware";
+import { createLanguage, updateLanguage, deleteLanguage, setDefaultLanguage, getLanguageByCode, LanguageMutationError } from "@/services/language.service";
+import { createLanguageSchema, updateLanguageSchema, languageCodeSchema } from "@/db/schema/cms-languages";
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
+import { ZodError } from "zod";
+async function mutation<T>(operation: () => Promise<T>): Promise<T> {
+  try { return await operation(); } catch (error) {
+    unstable_rethrow(error);
+    const { dict } = await getAdminLanguageContext();
+    const key = error instanceof LanguageMutationError ? error.key : error instanceof ZodError ? "admin.languages.error.invalid" : "admin.languages.error.failed";
+    throw new Error(dict[key] || dict["admin.languages.error.failed"] || "");
+  }
+}
+function refresh() { revalidatePath("/", "layout"); }
 export async function createLanguageAction(formData: FormData) {
-    await verifyAdminOrEditor();
-
-    const raw = Object.fromEntries(formData);
-    const data = createLanguageSchema.parse({
-        code: raw.code,
-        name: raw.name,
-        nativeName: raw.nativeName || "",
-        direction: raw.direction || "ltr",
-        isDefault: raw.isDefault === "on" || raw.isDefault === "true",
-        isActive: raw.isActive === "on" || raw.isActive === "true" || raw.isActive === undefined,
-        displayOrder: raw.displayOrder ? Number(raw.displayOrder) : 0,
-    });
-
-    await createLanguage(data);
-
-    revalidatePath("/admincp/languages");
-    redirect("/admincp/languages");
+  await verifyAdmin();
+  await mutation(() => createLanguage(createLanguageSchema.parse(Object.fromEntries(formData))));
+  refresh(); redirect("/admincp/languages");
 }
-
 export async function updateLanguageAction(formData: FormData) {
-    await verifyAdminOrEditor();
-
-    const code = formData.get("originalCode")?.toString() || formData.get("code")?.toString();
-    if (!code) {
-        throw new Error("Language code is required to update");
-    }
-
-    const raw = Object.fromEntries(formData);
-    const data = createLanguageSchema.partial().parse({
-        name: raw.name,
-        nativeName: raw.nativeName,
-        direction: raw.direction as "ltr" | "rtl",
-        isDefault: raw.isDefault ? (raw.isDefault === "on" || raw.isDefault === "true") : undefined,
-        isActive: raw.isActive !== undefined ? (raw.isActive === "on" || raw.isActive === "true") : undefined,
-        displayOrder: raw.displayOrder !== undefined ? Number(raw.displayOrder) : undefined,
-    });
-
-    await updateLanguage(code, data);
-
-    revalidatePath("/admincp/languages");
-    redirect("/admincp/languages");
+  await verifyAdmin();
+  await mutation(() => updateLanguage(languageCodeSchema.parse(formData.get("originalCode") || formData.get("code")), updateLanguageSchema.parse(Object.fromEntries(formData))));
+  refresh(); redirect("/admincp/languages");
 }
-
 export async function deleteLanguageAction(formData: FormData) {
-    await verifyAdminOrEditor();
-
-    const code = formData.get("code")?.toString();
-    if (!code) {
-        throw new Error("Language code is required to delete");
-    }
-
-    const result = await deleteLanguage(code);
-    if (!result.success) {
-        throw new Error(result.message || "Failed to delete language");
-    }
-
-    revalidatePath("/admincp/languages");
-    redirect("/admincp/languages");
+  await verifyAdmin();
+  await mutation(() => deleteLanguage(languageCodeSchema.parse(formData.get("code"))));
+  refresh(); redirect("/admincp/languages");
 }
-
 export async function setDefaultLanguageAction(formData: FormData) {
-    await verifyAdminOrEditor();
-
-    const code = formData.get("code")?.toString();
-    if (!code) {
-        throw new Error("Language code is required to set default");
-    }
-
-    await setDefaultLanguage(code);
-
-    revalidatePath("/admincp/languages");
-    redirect("/admincp/languages");
+  await verifyAdmin();
+  await mutation(() => setDefaultLanguage(languageCodeSchema.parse(formData.get("code"))));
+  refresh(); redirect("/admincp/languages");
 }
-
 export async function toggleLanguageStatusAction(formData: FormData) {
-    await verifyAdminOrEditor();
-
-    const code = formData.get("code")?.toString();
-    const isActive = formData.get("isActive") === "true";
-
-    if (!code) {
-        throw new Error("Language code is required");
-    }
-
-    await updateLanguage(code, { isActive });
-
-    revalidatePath("/admincp/languages");
-    redirect("/admincp/languages");
+  await verifyAdmin();
+  await mutation(() => updateLanguage(languageCodeSchema.parse(formData.get("code")), updateLanguageSchema.pick({ isActive: true }).parse({ isActive: formData.get("isActive") })));
+  refresh(); redirect("/admincp/languages");
 }
-
 export async function switchAdminLanguageAction(formData: FormData) {
-    const code = formData.get("code")?.toString();
-    if (code) {
-        const { cookies } = await import("next/headers");
-        const cookieStore = await cookies();
-        cookieStore.set("admin_lang", code, { path: "/", maxAge: 31536000 });
-    }
-    revalidatePath("/admincp");
+  await verifyPostEditor();
+  await mutation(async () => {
+    const code = languageCodeSchema.parse(formData.get("code"));
+    const language = await getLanguageByCode(code);
+    if (!language?.isActive) throw new LanguageMutationError("admin.languages.error.missing");
+    (await cookies()).set("admin_lang", code, { path: "/", maxAge: 31536000, httpOnly: true, sameSite: "lax", secure: (process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "").startsWith("https://") });
+  });
+  revalidatePath("/admincp", "layout");
 }
-
-
 export async function syncLanguageTemplatesAction() {
-  const session = await verifyAdminOrEditor();
-  if (session.user.role !== "admin") return { success:false as const };
+  await verifyAdmin();
   try {
     const { syncMissingTranslations } = await import("@/services/language-sync.service");
-    const result = await syncMissingTranslations();
-    revalidatePath("/", "layout");
-    revalidatePath("/admincp/translations");
-    return {success:true as const,...result};
-  } catch { return {success:false as const}; }
+    const result = await syncMissingTranslations(); refresh();
+    return { success: true as const, ...result };
+  } catch (error) { unstable_rethrow(error); return { success: false as const }; }
 }

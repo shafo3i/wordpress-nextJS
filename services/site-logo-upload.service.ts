@@ -1,3 +1,5 @@
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import sharp from "sharp"
 import { randomUUID } from "node:crypto"
 import { uploadMediaFile } from "./media.service"
@@ -44,6 +46,7 @@ export async function uploadSiteLogo(
   file: File,
   authorId: string
 ): Promise<SiteLogo> {
+  await verifyAdmin();
   const buffer = await normalizeSiteLogo(file)
   const item = await uploadMediaFile(
     buffer,

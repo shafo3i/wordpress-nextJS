@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn(),
   revalidate: vi.fn(),
 }))
-vi.mock("@/lib/authMIddleware", () => ({ verifyAdminOrEditor: mocks.guard }))
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: mocks.guard }))
 vi.mock("@/lib/themes/loader", () => ({
   getAllThemes: async () => [{ slug: "theme" }],
 }))
@@ -26,9 +26,9 @@ describe("theme layout action", () => {
     mocks.guard.mockResolvedValue({})
     mocks.save.mockResolvedValue(undefined)
   })
-  it("does not write without an editor/admin session", async () => {
+  it("does not write without an administrator session", async () => {
     mocks.guard.mockRejectedValue(new Error("Forbidden"))
-    expect((await saveThemeLayoutAction("theme", patch)).success).toBe(false)
+    await expect(saveThemeLayoutAction("theme", patch)).rejects.toThrow("Forbidden")
     expect(mocks.save).not.toHaveBeenCalled()
   })
   it("rejects unknown themes and forged builder content", async () => {

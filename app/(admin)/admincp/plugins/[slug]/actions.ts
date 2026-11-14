@@ -1,5 +1,5 @@
 "use server"
-import { z } from "zod"
+import { newsletterEmailSchema } from "@/db/schema/cms-newsletter"
 
 import { revalidatePath } from "next/cache"
 import { verifyPluginAdministrator } from "@/lib/plugins/authorization"
@@ -13,8 +13,8 @@ export async function savePluginConfigAction(
   slug: string,
   config: Record<string, unknown>
 ) {
+  await verifyPluginAdministrator()
   try {
-    await verifyPluginAdministrator()
     await savePluginConfig(slug, config)
 
     revalidatePath(`/admincp/plugins/${slug}`)
@@ -24,7 +24,7 @@ export async function savePluginConfigAction(
 
     return { success: true }
   } catch (err) {
-    console.error("Failed to save plugin config:", err)
+    console.error("Failed to save plugin config:")
     return {
       success: false,
       error:
@@ -36,9 +36,9 @@ export async function savePluginConfigAction(
 }
 
 export async function deleteSubscriberAction(email: string) {
+  await verifyPluginAdministrator()
   try {
-    await verifyPluginAdministrator()
-    await removeNewsletterSubscriber(z.string().email().max(254).parse(email))
+    await removeNewsletterSubscriber(newsletterEmailSchema.parse(email))
     revalidatePath("/admincp/plugins/newsletter")
     return { success: true }
   } catch {
@@ -47,8 +47,8 @@ export async function deleteSubscriberAction(email: string) {
 }
 
 export async function clearSubscribersAction() {
+  await verifyPluginAdministrator()
   try {
-    await verifyPluginAdministrator()
     await clearAllNewsletterSubscribers()
     revalidatePath("/admincp/plugins/newsletter")
     return { success: true }

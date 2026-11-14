@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import { pageQuerySchema } from "@/db/schema/cms-pages";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import { getPagesQuery, getPageCountsQuery, getParentPagesQuery } from "./query";
@@ -20,7 +22,9 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
 
   const { s, status, date, lang, page } = await searchParams;
   const search = s?.trim() ?? "";
-  const currentPage = Number(page) > 0 ? Number(page) : 1;
+  const validated = pageQuerySchema.safeParse({ search, status, date, language: lang, page: page || 1 });
+  if (!validated.success) notFound();
+  const currentPage = validated.data.page;
   const currentLanguage = lang || "all";
 
   const langContext = await getAdminLanguageContext();
@@ -56,7 +60,7 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
     <AdminShell>
       <div dir={direction} className="space-y-4 text-start">
         <PageListHeader
-          title={dict["admin.menu.pages"] || "Pages"}
+          title={dict["admin.menu.pages"] || ""}
           addNewHref="/admincp/pages/new"
           dict={dict}
           direction={direction}
@@ -75,7 +79,7 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
         <PageListTable
           basePath="/admincp/pages"
           currentDate={date}
-          emptyMessage={dict["admin.pages.no_pages"] || "No pages found."}
+          emptyMessage={dict["admin.pages.no_pages"] || ""}
           pagination={{
             currentPage,
             totalPages: pagesData.totalPages,
@@ -83,6 +87,7 @@ export default async function PagesPage({ searchParams }: PagesPageProps) {
             queryString: queryString.toString(),
           }}
           pages={pagesData.pages}
+          locale={langContext.code}
           parentPages={parentPages}
           languages={langContext.allLanguages}
           isTrashView={status === "trash"}

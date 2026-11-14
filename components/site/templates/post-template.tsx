@@ -1,6 +1,8 @@
 "use client"
 import { NewsletterBlock } from "@/components/site/blocks/newsletter"
 import type { NewsletterPresentation } from "@/lib/newsletter/presentation"
+import { FeaturedVideoPlayer } from "@/components/site/featured-video-player"
+import { renderPostMedia } from "@/lib/post-content-media"
 import { ContentImage } from "@/components/site/content-image"
 
 import { ArticleShare } from "@/components/site/article-share"
@@ -25,7 +27,7 @@ import {
  * Single post article template with configurable layout architectures
  */
 export function PostTemplate({
-  article,
+  article: sourceArticle,
   relatedPosts,
   theme = DEFAULT_THEME,
   sidebarWidgets = [],
@@ -49,6 +51,13 @@ export function PostTemplate({
   }
 }) {
   const isSerif = isSerifHeading(theme)
+  const useFeaturedVideo =
+    !!sourceArticle.featuredVideoUrl &&
+    !(sourceArticle.hasFeaturedImage ?? Boolean(sourceArticle.imageUrl))
+  const article = {
+    ...sourceArticle,
+    content: renderPostMedia(sourceArticle.content),
+  }
   const mods = theme.mods || {}
 
   const singleLayout = mods.singleLayout || "sidebar-right"
@@ -202,7 +211,7 @@ export function PostTemplate({
         </div>
 
         {/* Featured Image */}
-        {showFeaturedImage && article.imageUrl && (
+        {showFeaturedImage && !useFeaturedVideo && article.imageUrl && (
           <div
             data-article-image=""
             className="mb-8 overflow-hidden rounded-2xl border border-theme-border shadow-sm"
@@ -224,6 +233,18 @@ export function PostTemplate({
               decoding="async"
               alt={article.title}
               className="max-h-[520px] w-full object-cover"
+            />
+          </div>
+        )}
+
+        {showFeaturedImage && useFeaturedVideo && article.featuredVideoUrl && (
+          <div
+            data-article-video=""
+            className="mb-8 overflow-hidden rounded-2xl border border-theme-border"
+          >
+            <FeaturedVideoPlayer
+              url={article.featuredVideoUrl}
+              title={article.title}
             />
           </div>
         )}

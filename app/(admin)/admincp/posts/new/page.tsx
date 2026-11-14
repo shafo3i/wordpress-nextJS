@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { randomUUID } from "node:crypto"
 import { redirect } from "next/navigation"
 import { autosaveDocumentKey } from "@/db/schema/cms-post-autosave"
@@ -40,7 +41,8 @@ export default async function NewPostPage({ searchParams }: NewPostProps) {
     langContext.direction === "rtl" ? "rtl" : "ltr"
 
   // Determine initial language
-  const targetLanguage = lang || langContext.code || "en"
+  const targetLanguage = lang || langContext.code;
+  if(!langContext.allLanguages.some(language=>language.code===targetLanguage))notFound();
 
   const [categories, tags] = await Promise.all([
     getAllCategoriesQuery(),
@@ -52,6 +54,7 @@ export default async function NewPostPage({ searchParams }: NewPostProps) {
   let initialCategories: string[] = []
   if (translation_of) {
     const sourcePost = await getPostByIdQuery(translation_of)
+    if(!sourcePost?.post)notFound();
     if (sourcePost?.post) {
       translationOfTitle = sourcePost.post.title
       const sourceCatSlugs = sourcePost.post.categorySlugs || []

@@ -26,7 +26,7 @@ interface MediaSelectModalProps {
   title?: string;
   selectButtonText?: string;
   dict?: Record<string, string>;
-  mediaType?: "image" | "all";
+  mediaType?: "image" | "all" | "video";
   canEditDetails?: boolean;
 }
 
@@ -72,7 +72,7 @@ export function MediaSelectModal({
   // Handle file drop or selection
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if ([...files].some(file => !file.size || (mediaType === "image" && !file.type.startsWith("image/"))) || [...files].reduce((total, file) => total + file.size, 0) > MAX_MEDIA_UPLOAD_BYTES) {
+    if ([...files].some(file => !file.size || (mediaType !== "all" && !file.type.startsWith(`${mediaType}/`))) || [...files].reduce((total, file) => total + file.size, 0) > MAX_MEDIA_UPLOAD_BYTES) {
       setUploadError(dict["admin.media.picker_upload_error"]);
       return;
     }
@@ -87,6 +87,7 @@ export function MediaSelectModal({
 
       const res = await uploadMediaAction(formData);
       if (res.success && res.items && res.items.length > 0) {
+        if (res.warning) setUploadError(res.warning);
         const first = res.items[0];
         setSelectedItem(first);
         setActiveTab("library");
@@ -124,6 +125,7 @@ export function MediaSelectModal({
           </button>
         </div>
 
+        {uploadError && <p role="alert" className="px-4 py-2 text-[12px] text-[#d63638]">{uploadError}</p>}
         {/* Tabs Bar */}
         <div className="flex items-center justify-between border-b border-[#dcdcde] bg-[#f0f0f1] px-4">
           <div className="flex gap-2">
@@ -200,7 +202,7 @@ export function MediaSelectModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={mediaType === "image" ? "image/*" : "image/*,video/mp4,video/webm,video/ogg,audio/*,application/pdf"}
+                  accept={mediaType === "video" ? "video/mp4,video/webm,video/ogg,video/x-m4v" : mediaType === "image" ? "image/jpeg,image/png,image/webp,image/gif,image/avif" : "image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/ogg,audio/*,application/pdf"}
                   onChange={(e) => handleFileUpload(e.target.files)}
                   className="hidden"
                 />
@@ -219,9 +221,6 @@ export function MediaSelectModal({
                     <span>{dict["admin.media.select_files"]}</span>
                   )}
                 </button>
-                {uploadError && (
-                  <p className="text-[12px] text-[#d63638]">{uploadError}</p>
-                )}
                 <p className="text-[11px] text-[#8c8f94]">
                   {dict["admin.media.picker_upload_hint"]}
                 </p>

@@ -16,6 +16,8 @@ const types = {
   ".tif": "image/tiff",
   ".tiff": "image/tiff",
   ".pdf": "application/pdf",
+  ".txt": "text/plain",
+  ".csv": "text/csv",
   ".mp4": "video/mp4",
   ".m4v": "video/mp4",
   ".mov": "video/quicktime",
@@ -40,7 +42,11 @@ const types = {
 }
 
 export async function resolveUpload(req, directory) {
-  const headers = {}
+  const headers = {
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox",
+    "Referrer-Policy": "no-referrer",
+  }
   const setHeader = (name, value) => { headers[name] = String(value) }
   let pathname = (req.url || "").split("?", 1)[0]
   try {
@@ -62,8 +68,7 @@ export async function resolveUpload(req, directory) {
   const parts = relative.split("/")
   if (
     !relative ||
-    relative.includes("\\") ||
-    relative.includes("\0") ||
+    /[\\:\u0000-\u001f]/.test(relative) ||
     parts.some((p) => !p || p.startsWith("."))
   )
     return end(404)
@@ -112,6 +117,10 @@ export async function resolveUpload(req, directory) {
     setHeader("Content-Range", `bytes ${start}-${finish}/${info.size}`)
   }
   setHeader("Content-Type", contentType)
+  if (!/^(?:image|video|audio|font)\//.test(contentType)) {
+    const encodedName = encodeURIComponent(parts.at(-1)).replace(/[!'()*]/g, char => `%${char.charCodeAt(0).toString(16)}`)
+    setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodedName}`)
+  }
   setHeader("X-Content-Type-Options", "nosniff")
   setHeader("Cache-Control", "public, max-age=3600")
   setHeader("Accept-Ranges", "bytes")

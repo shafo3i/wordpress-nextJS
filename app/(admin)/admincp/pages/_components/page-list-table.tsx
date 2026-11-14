@@ -17,12 +17,13 @@ export function PageListTable({
   parentPages = [],
   currentDate,
   basePath = "/admincp/pages",
-  emptyMessage = "No pages found.",
+  emptyMessage = "",
   pagination,
   languages = [],
   isTrashView = false,
   dict = {},
   direction = "ltr",
+  locale,
 }: {
   pages: PageRowData[];
   parentPages?: { id: string; title: string }[];
@@ -39,6 +40,7 @@ export function PageListTable({
   isTrashView?: boolean;
   dict?: Record<string, string>;
   direction?: "rtl" | "ltr";
+  locale?: string;
 }) {
   const [pages, setPages] = useState<PageRowData[]>(initialPages);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -74,30 +76,30 @@ export function PageListTable({
         if (res.success) {
           setNotice({
             type: "success",
-            message: `${selectedIds.length} ${dict["admin.pages.moved_to_trash"] || "page(s) moved to Trash."}`,
+            message: `${selectedIds.length} ${dict["admin.pages.moved_to_trash"] || ""}`,
           });
         } else {
-          setNotice({ type: "error", message: res.error || "Failed to move pages to Trash." });
+          setNotice({ type: "error", message: res.error || dict["admin.pages.error.failed"] || "" });
         }
       } else if (bulkAction === "Restore") {
         const res = await restorePagesAction(selectedIds);
         if (res.success) {
           setNotice({
             type: "success",
-            message: `${selectedIds.length} ${dict["admin.pages.restored"] || "page(s) restored."}`,
+            message: `${selectedIds.length} ${dict["admin.pages.restored"] || ""}`,
           });
         } else {
-          setNotice({ type: "error", message: res.error || "Failed to restore pages." });
+          setNotice({ type: "error", message: res.error || dict["admin.pages.error.failed"] || "" });
         }
       } else if (bulkAction === "Delete permanently") {
         const res = await deletePagesPermanentlyAction(selectedIds);
         if (res.success) {
           setNotice({
             type: "success",
-            message: `${selectedIds.length} ${dict["admin.pages.permanently_deleted"] || "page(s) permanently deleted."}`,
+            message: `${selectedIds.length} ${dict["admin.pages.permanently_deleted"] || ""}`,
           });
         } else {
-          setNotice({ type: "error", message: res.error || "Failed to delete pages." });
+          setNotice({ type: "error", message: res.error || dict["admin.pages.error.failed"] || "" });
         }
       }
       setSelectedIds([]);
@@ -112,10 +114,10 @@ export function PageListTable({
       if (res.success) {
         setNotice({
           type: "success",
-          message: dict["admin.pages.single_moved_to_trash"] || "1 page moved to Trash.",
+          message: dict["admin.pages.single_moved_to_trash"] || "",
         });
       } else {
-        setNotice({ type: "error", message: res.error || "Failed to move page to Trash." });
+        setNotice({ type: "error", message: res.error || dict["admin.pages.error.failed"] || "" });
       }
       router.refresh();
     });
@@ -127,10 +129,10 @@ export function PageListTable({
       if (res.success) {
         setNotice({
           type: "success",
-          message: dict["admin.pages.single_restored"] || "1 page restored.",
+          message: dict["admin.pages.single_restored"] || "",
         });
       } else {
-        setNotice({ type: "error", message: res.error || "Failed to restore page." });
+        setNotice({ type: "error", message: res.error || dict["admin.pages.error.failed"] || "" });
       }
       router.refresh();
     });
@@ -142,10 +144,10 @@ export function PageListTable({
       if (res.success) {
         setNotice({
           type: "success",
-          message: dict["admin.pages.single_permanently_deleted"] || "1 page permanently deleted.",
+          message: dict["admin.pages.single_permanently_deleted"] || "",
         });
       } else {
-        setNotice({ type: "error", message: res.error || "Failed to delete page." });
+        setNotice({ type: "error", message: res.error || dict["admin.pages.error.failed"] || "" });
       }
       router.refresh();
     });
@@ -164,7 +166,7 @@ export function PageListTable({
     setQuickEditId(null);
     setNotice({
       type: "success",
-      message: dict["admin.pages.updated_notice"] || "Page updated.",
+      message: dict["admin.pages.updated_notice"] || "",
     });
     router.refresh();
   };
@@ -212,7 +214,7 @@ export function PageListTable({
             <tr className="border-b border-[#c3c4c7] bg-[#f6f7f7] font-semibold text-[#2c3338]">
               <th className="w-8 px-3 py-2 text-center">
                 <input
-                  aria-label={dict["admin.common.select_all"] || "Select all pages"}
+                  aria-label={dict["admin.common.select_all"] || ""}
                   checked={allSelected}
                   className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                   onChange={(e) => toggleSelectAll(e.target.checked)}
@@ -221,19 +223,19 @@ export function PageListTable({
               </th>
               <th className="px-3 py-2 text-start font-semibold">
                 <span className="inline-flex items-center gap-1">
-                  {dict["admin.pages.table.title"] || dict["admin.posts.form.title"] || "Title"}
+                  {dict["admin.pages.table.title"] || dict["admin.posts.form.title"] || ""}
                   <ArrowUpDown className="size-3 text-[#8c8f94]" />
                 </span>
               </th>
 
               {languages.length > 0 && (
                 <th className="px-3 py-2 text-start font-semibold">
-                  {dict["admin.posts.form.language"] || "Languages"}
+                  {dict["admin.posts.form.language"] || ""}
                 </th>
               )}
 
               <th className="px-3 py-2 text-start font-semibold">
-                {dict["admin.posts.table.author"] || "Author"}
+                {dict["admin.posts.table.author"] || ""}
               </th>
 
               <th className="px-3 py-2 text-center font-semibold">
@@ -242,7 +244,7 @@ export function PageListTable({
 
               <th className="px-3 py-2 text-start font-semibold whitespace-nowrap">
                 <span className="inline-flex items-center gap-1">
-                  {dict["admin.posts.table.date"] || "Date"}
+                  {dict["admin.posts.table.date"] || ""}
                   <ArrowUpDown className="size-3 text-[#8c8f94]" />
                 </span>
               </th>
@@ -261,6 +263,7 @@ export function PageListTable({
                     onSuccess={handleQuickEditSuccess}
                     dict={dict}
                     direction={direction}
+                    locale={locale}
                   />
                 ) : (
                   <PageRowItem
@@ -276,6 +279,7 @@ export function PageListTable({
                     languages={languages}
                     dict={dict}
                     direction={direction}
+                    locale={locale}
                   />
                 )
               )

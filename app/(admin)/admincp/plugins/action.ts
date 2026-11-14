@@ -15,8 +15,8 @@ import {
 } from "@/services/plugin.service"
 
 export async function togglePluginAction(slug: string, activate: boolean) {
+  await verifyPluginAdministrator()
   try {
-    await verifyPluginAdministrator()
     slug = pluginSlugSchema.parse(slug)
     if (typeof activate !== "boolean" || (activate && retiredPlugins.has(slug)))
       throw new Error("admin.plugins.invalid_config")
@@ -25,8 +25,8 @@ export async function togglePluginAction(slug: string, activate: boolean) {
     revalidatePath("/posts/[slug]", "page")
     revalidatePath("/", "layout")
     return { success: true }
-  } catch (error) {
-    console.error("Failed to toggle plugin:", error)
+  } catch {
+    console.error("Failed to toggle plugin:")
     return { error: "admin.plugins.save_failed" }
   }
 }
@@ -40,30 +40,30 @@ export async function deactivatePluginAction(slug: string) {
 }
 
 export async function installPluginAction(slug: string) {
+  await verifyPluginAdministrator()
   try {
-    await verifyPluginAdministrator()
     slug = pluginSlugSchema.parse(slug)
     if (retiredPlugins.has(slug)) throw new Error("admin.plugins.retired")
     await installPlugin(slug)
     revalidatePath("/admincp/plugins")
     return { success: true }
-  } catch (error) {
-    console.error("Failed to install plugin:", error)
+  } catch {
+    console.error("Failed to install plugin:")
     return { error: "admin.plugins.save_failed" }
   }
 }
 
 export async function uninstallPluginAction(slug: string) {
+  await verifyPluginAdministrator()
   try {
-    await verifyPluginAdministrator()
     slug = pluginSlugSchema.parse(slug)
     await uninstallPlugin(slug)
     revalidatePath("/admincp/plugins")
     revalidatePath("/posts/[slug]", "page")
     revalidatePath("/", "layout")
     return { success: true }
-  } catch (error) {
-    console.error("Failed to uninstall plugin:", error)
+  } catch {
+    console.error("Failed to uninstall plugin:")
     return { error: "admin.plugins.save_failed" }
   }
 }
@@ -72,8 +72,8 @@ export async function bulkPluginsAction(
   slugs: string[],
   action: "activate" | "deactivate" | "delete"
 ) {
+  await verifyPluginAdministrator()
   try {
-    await verifyPluginAdministrator()
     const parsed = pluginBulkSchema.parse({ slugs, action })
     if (action === "activate" && slugs.some((slug) => retiredPlugins.has(slug)))
       throw new Error("admin.plugins.retired")
@@ -82,8 +82,8 @@ export async function bulkPluginsAction(
     revalidatePath("/posts/[slug]", "page")
     revalidatePath("/", "layout")
     return { success: true }
-  } catch (error) {
-    console.error("Failed to execute bulk action on plugins:", error)
+  } catch {
+    console.error("Failed to execute bulk action on plugins:")
     return { error: "admin.plugins.save_failed" }
   }
 }

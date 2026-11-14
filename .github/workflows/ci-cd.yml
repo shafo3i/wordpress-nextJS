@@ -1,0 +1,123 @@
+name: Check, publish and deploy to Coolify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Serialize releases so another run cannot replace latest during deployment.
+concurrency:
+  group: coolify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Isolated build/test values only. Never connect CI tests to production.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:9/ci
+      BETTER_AUTH_SECRET: ci-only-placeholder-not-a-production-secret
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      PLUGIN_INTEGRATION: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: TypeScript
+        run: pnpm typecheck
+      - name: Unit and security regression tests
+        run: pnpm exec vitest run --maxWorkers=2
+      - name: Upload-serving security tests
+        run: pnpm test:uploads
+      - name: Production dependency security audit
+        run: pnpm audit --prod --audit-level=high
+      - name: Install browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Isolated browser smoke tests
+        run: >-
+          pnpm exec playwright test --config playwright.studio.config.ts
+          tests/profile-security.browser.spec.ts
+          tests/themes-security.browser.spec.ts
+          tests/tags-key.browser.spec.ts
+          tests/settings-identity.browser.spec.ts
+
+  image:
+    needs: checks
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate public build URL and image name
+        id: release
+        env:
+          PUBLIC_URL: ${{ vars.NEXT_PUBLIC_APP_URL }}
+        shell: bash
+        run: |
+          node -e 'const u=new URL(process.env.PUBLIC_URL);if(!["http:","https:"].includes(u.protocol)||u.username||u.password)throw new Error("Set the Actions variable NEXT_PUBLIC_APP_URL to your public application URL");'
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish the existing Dockerfile
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ vars.NEXT_PUBLIC_APP_URL }}
+          tags: |
+            ${{ steps.release.outputs.image }}:latest
+            ${{ steps.release.outputs.image }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: image
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Coolify only after checks and registry push succeed
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        shell: bash
+        run: |
+          test -n "$COOLIFY_WEBHOOK" || { echo "Missing COOLIFY_WEBHOOK secret"; exit 1; }
+          test -n "$COOLIFY_TOKEN" || { echo "Missing COOLIFY_TOKEN secret"; exit 1; }
+          curl --proto '=https' --tlsv1.2 --fail --silent --show-error \
+            --connect-timeout 10 --max-time 60 --output /dev/null \
+            --request POST "$COOLIFY_WEBHOOK" \
+            --header "Authorization: Bearer $COOLIFY_TOKEN"
+          echo "Coolify accepted the deployment request. Check container health in Coolify."

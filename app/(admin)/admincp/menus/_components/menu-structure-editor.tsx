@@ -112,12 +112,6 @@ export function MenuStructureEditor({
     onUpdateItems(updated);
   };
 
-  const toggleLocation = (loc: string, checked: boolean) => {
-    setSelectedLocations((curr) =>
-      checked ? [...new Set([...curr, loc])] : curr.filter((l) => l !== loc)
-    );
-  };
-
   const handleSave = () => {
     if (!menuName.trim()) return;
 
@@ -165,15 +159,15 @@ export function MenuStructureEditor({
 
   const getItemTypeBadge = (item: MenuItem) => {
     if (item.type === "category" || item.url.startsWith("/category")) {
-      return dict["admin.menus.type_category"] || "Category";
+      return dict["admin.menus.type_category"] || "";
     }
     if (item.type === "post" || item.url.startsWith("/post")) {
-      return dict["admin.menus.type_post"] || "Post";
+      return dict["admin.menus.type_post"] || "";
     }
     if (item.type === "custom" || item.url.startsWith("http")) {
-      return dict["admin.menus.type_custom"] || "Custom Link";
+      return dict["admin.menus.type_custom"] || "";
     }
-    return dict["admin.menus.type_page"] || "Page";
+    return dict["admin.menus.type_page"] || "";
   };
 
   return (
@@ -185,7 +179,7 @@ export function MenuStructureEditor({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#c3c4c7] bg-[#f6f7f7] px-4 py-3">
         <div className="flex items-center gap-2">
           <label htmlFor="menu-name-top" className="font-semibold text-[#1d2327]">
-            {dict["admin.menus.menu_name"] || "Menu Name"}
+            {dict["admin.menus.menu_name"] || ""}
           </label>
           <input
             id="menu-name-top"
@@ -203,8 +197,8 @@ export function MenuStructureEditor({
           className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
         >
           {isPending
-            ? dict["admin.menus.saving"] || "Saving..."
-            : dict["admin.menus.save_button"] || "Save Menu"}
+            ? dict["admin.menus.saving"] || ""
+            : dict["admin.menus.save_button"] || ""}
         </button>
       </div>
 
@@ -230,11 +224,10 @@ export function MenuStructureEditor({
       <div className="p-4 space-y-4">
         <div>
           <h3 className="font-semibold text-[#1d2327] text-sm">
-            {dict["admin.menus.menu_structure"] || "Menu Structure"}
+            {dict["admin.menus.menu_structure"] || ""}
           </h3>
           <p className="text-[12px] text-[#646970] mt-0.5">
-            {dict["admin.menus.drag_instruction"] ||
-              "Drag each item into the order you prefer, or click the arrows to move items."}
+            {dict["admin.menus.drag_instruction"] || ""}
           </p>
         </div>
 
@@ -324,7 +317,7 @@ export function MenuStructureEditor({
                     <div className="border-t border-[#dcdcde] bg-white p-3.5 space-y-3">
                       <div>
                         <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                          {dict["admin.menus.navigation_label"] || "Navigation Label"}
+                          {dict["admin.menus.navigation_label"] || ""}
                         </label>
                         <input
                           type="text"
@@ -336,7 +329,7 @@ export function MenuStructureEditor({
 
                       <div>
                         <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                          {dict["admin.menus.url"] || "URL"}
+                          {dict["admin.menus.url"] || ""}
                         </label>
                         <input
                           type="text"
@@ -353,14 +346,14 @@ export function MenuStructureEditor({
                           onClick={() => removeItem(item.id)}
                           className="text-[12px] text-[#b32d2e] hover:underline"
                         >
-                          {dict["admin.menus.remove"] || "Remove"}
+                          {dict["admin.menus.remove"] || ""}
                         </button>
                         <button
                           type="button"
                           onClick={() => setExpandedItemId(null)}
                           className="text-[12px] text-[#2271b1] hover:underline"
                         >
-                          {dict["common.cancel"] || "Cancel"}
+                          {dict["common.cancel"] || ""}
                         </button>
                       </div>
                     </div>
@@ -379,20 +372,20 @@ export function MenuStructureEditor({
         {/* Menu Settings Section */}
         <div className="border-t border-[#dcdcde] pt-4 mt-6 space-y-4">
           <h4 className="font-semibold text-[#1d2327]">
-            {dict["admin.menus.menu_settings"] || "Menu Settings"}
+            {dict["admin.menus.menu_settings"] || ""}
           </h4>
 
           {languages.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 items-center">
               <span className="text-[12px] text-[#50575e]">
-                {dict["admin.menus.filter_by_language"] || "Menu Language"}:
+                {dict["admin.menus.filter_by_language"] || ""}:
               </span>
               <select
                 value={menuLanguage}
                 onChange={(e) => setMenuLanguage(e.target.value)}
                 className="h-[30px] w-64 rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
               >
-                <option value="">{dict["admin.menus.all_languages"] || "All Languages"}</option>
+                <option value="">{dict["admin.menus.all_languages"] || ""}</option>
                 {languages.map((l) => (
                   <option key={l.code} value={l.code}>
                     {l.nativeName ? `${l.nativeName} (${l.name})` : l.name}
@@ -404,7 +397,7 @@ export function MenuStructureEditor({
 
           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] gap-2 items-start">
             <span className="text-[12px] text-[#50575e]">
-              {dict["admin.menus.display_location"] || "Display location:"}
+              {dict["admin.menus.display_location"] || ""}
             </span>
             <div className="space-y-1.5">
               {(() => {
@@ -445,7 +438,7 @@ export function MenuStructureEditor({
                         className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                       />
                       <span className="text-[#2c3338]">
-                        {dict["admin.menus.location_primary"] || "Primary Navigation (Header)"}
+                        {dict["admin.menus.location_primary"] || ""}
                       </span>
                     </label>
 
@@ -470,7 +463,7 @@ export function MenuStructureEditor({
                         className="h-4 w-4 rounded border-[#8c8f94] text-[#2271b1] focus:ring-[#2271b1]"
                       />
                       <span className="text-[#2c3338]">
-                        {dict["admin.menus.location_footer"] || "Footer Menu"}
+                        {dict["admin.menus.location_footer"] || ""}
                       </span>
                     </label>
                   </>
@@ -489,7 +482,7 @@ export function MenuStructureEditor({
           onClick={handleDelete}
           className="text-[13px] text-[#b32d2e] hover:underline disabled:opacity-50"
         >
-          {dict["admin.menus.delete_button"] || "Delete Menu"}
+          {dict["admin.menus.delete_button"] || ""}
         </button>
 
         <button
@@ -499,21 +492,21 @@ export function MenuStructureEditor({
           className="rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
         >
           {isPending
-            ? dict["admin.menus.saving"] || "Saving..."
-            : dict["admin.menus.save_button"] || "Save Menu"}
+            ? dict["admin.menus.saving"] || ""
+            : dict["admin.menus.save_button"] || ""}
         </button>
       </div>
 
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={dict["admin.menus.delete_title"] || "Delete Menu"}
+        title={dict["admin.menus.delete_title"] || ""}
         description={
           dict["admin.menus.delete_confirm"] ||
           `Are you sure you want to delete the menu "${menu.name}"?`
         }
-        confirmText={dict["admin.common.delete"] || "Delete"}
-        cancelText={dict["admin.common.cancel"] || "Cancel"}
+        confirmText={dict["admin.common.delete"] || ""}
+        cancelText={dict["admin.common.cancel"] || ""}
         onConfirm={executeDelete}
         isLoading={isPending}
         direction={direction}

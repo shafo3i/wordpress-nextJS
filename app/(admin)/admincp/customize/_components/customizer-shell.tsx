@@ -100,7 +100,7 @@ export function CustomizerShell({
         </aside>
 
         <main className="flex-1 overflow-hidden bg-slate-400/80 p-4 sm:p-6 flex justify-center">
-          <PreviewFrame themeSlug={customizer.themeSlug} lang={previewLang} state={previewState} device={device} />
+          <PreviewFrame title={dict?.["admin.customizer.preview"] || ""} themeSlug={customizer.themeSlug} lang={previewLang} state={previewState} device={device} />
         </main>
       </div>
     </div>

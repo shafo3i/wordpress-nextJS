@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { ClassicPostEditor } from "@/components/admin/posts/editor/classic-post-editor";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
@@ -22,12 +23,14 @@ export default async function NewPagePage({ searchParams }: NewPageProps) {
   const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
   // Determine initial language
-  const targetLanguage = lang || langContext.code || "en";
+  const targetLanguage = lang || langContext.code;
+  if (!langContext.allLanguages.some(language => language.code === targetLanguage)) notFound();
 
   // Fetch translation source info if creating a translation
   let translationOfTitle: string | undefined;
   if (translation_of) {
     const sourcePage = await getPageByIdQuery(translation_of);
+    if (!sourcePage?.page || sourcePage.page.status === "trash") notFound();
     if (sourcePage?.page) {
       translationOfTitle = sourcePage.page.title;
     }
@@ -42,7 +45,7 @@ export default async function NewPagePage({ searchParams }: NewPageProps) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-              {dict["admin.menu.add_new"] || "Add New Page"}
+              {dict["admin.menu.add_new"] || ""}
             </h1>
           </div>
           <div className="flex items-center gap-1 text-[13px]">
@@ -50,14 +53,14 @@ export default async function NewPagePage({ searchParams }: NewPageProps) {
               className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
               type="button"
             >
-              {dict["admin.common.screen_options"] || "Screen Options"}{" "}
+              {dict["admin.common.screen_options"] || ""}{" "}
               <span className="text-[9px]">▼</span>
             </button>
             <button
               className="flex items-center gap-1 rounded-b-[4px] border border-[#c3c4c7] bg-white px-2.5 py-0.5 text-[#50575e] hover:border-[#8c8f94] hover:text-[#1d2327]"
               type="button"
             >
-              {dict["admin.common.help"] || "Help"} <span className="text-[9px]">▼</span>
+              {dict["admin.common.help"] || ""} <span className="text-[9px]">▼</span>
             </button>
           </div>
         </div>

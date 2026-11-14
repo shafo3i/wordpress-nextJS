@@ -25,8 +25,10 @@ export async function newsletterTokenPage(
         // Cross-origin destinations still receive no referrer/token URL.
         "Referrer-Policy": "same-origin",
         "Content-Security-Policy":
-          "default-src 'none'; form-action 'self'; frame-ancestors 'none'",
+          "default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
         "X-Content-Type-Options": "nosniff",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "X-Frame-Options": "DENY",
         "X-Robots-Tag": "noindex, nofollow",
       },
     }

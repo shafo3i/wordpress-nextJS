@@ -1,4 +1,5 @@
 vi.mock("server-only", () => ({}))
+vi.mock("@/lib/plugins/authorization", () => ({verifyPluginAdministrator: async () => ({user:{id:"editor",name:"Editor",role:"admin"}})}))
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { Client } from "pg"
 import { drizzle } from "drizzle-orm/node-postgres"

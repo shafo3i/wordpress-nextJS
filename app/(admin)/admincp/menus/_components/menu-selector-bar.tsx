@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createMenuAction } from "../action";
 
@@ -28,13 +28,6 @@ export function MenuSelectorBar({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // Keep selectedId synchronized when currentMenuId changes
-  useEffect(() => {
-    if (currentMenuId) {
-      setSelectedId(currentMenuId);
-    }
-  }, [currentMenuId]);
 
   const navigateToMenu = (menuId: string) => {
     if (!menuId) return;
@@ -80,7 +73,7 @@ export function MenuSelectorBar({
         params.set("menu", res.menuId);
         router.push(`/admincp/menus?${params.toString()}`);
       } else {
-        setErrorNotice(res.error || dict["admin.menus.failed_notice"] || "Failed to create menu");
+        setErrorNotice(res.error || dict["admin.menus.failed_notice"] || "");
       }
     });
   };
@@ -106,12 +99,12 @@ export function MenuSelectorBar({
       {isCreating ? (
         <form onSubmit={handleCreate} className="flex flex-wrap items-center gap-2">
           <label htmlFor="new-menu-name" className="font-semibold text-[#1d2327]">
-            {dict["admin.menus.menu_name"] || "Menu Name"}:
+            {dict["admin.menus.menu_name"] || ""}:
           </label>
           <input
             id="new-menu-name"
             type="text"
-            placeholder={dict["admin.menus.menu_name_placeholder"] || "e.g. Primary Navigation"}
+            placeholder={dict["admin.menus.menu_name_placeholder"] || ""}
             value={newMenuName}
             onChange={(e) => setNewMenuName(e.target.value)}
             className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
@@ -123,22 +116,22 @@ export function MenuSelectorBar({
             className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-3 font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50"
           >
             {isPending
-              ? dict["admin.menus.creating"] || "Creating..."
-              : dict["admin.menus.create_button"] || "Create Menu"}
+              ? dict["admin.menus.creating"] || ""
+              : dict["admin.menus.create_button"] || ""}
           </button>
           <button
             type="button"
             onClick={() => setIsCreating(false)}
             className="h-[30px] rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] px-3 text-[#50575e] hover:bg-[#f0f0f1]"
           >
-            {dict["common.cancel"] || "Cancel"}
+            {dict["common.cancel"] || ""}
           </button>
         </form>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <label htmlFor="select-menu-to-edit" className="text-[#50575e]">
-              {dict["admin.menus.select_menu_to_edit"] || "Select a menu to edit:"}
+              {dict["admin.menus.select_menu_to_edit"] || ""}
             </label>
             <select
               id="select-menu-to-edit"
@@ -157,22 +150,22 @@ export function MenuSelectorBar({
               onClick={handleSelect}
               className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] transition-colors"
             >
-              {dict["admin.menus.select_button"] || "Select"}
+              {dict["admin.menus.select_button"] || ""}
             </button>
-            <span className="text-[#a7aaad]">{dict["admin.menus.or"] || "or"}</span>
+            <span className="text-[#a7aaad]">{dict["admin.menus.or"] || ""}</span>
             <button
               type="button"
               onClick={() => setIsCreating(true)}
               className="text-[#2271b1] hover:text-[#135e96] hover:underline"
             >
-              {dict["admin.menus.create_new_menu"] || "create a new menu"}
+              {dict["admin.menus.create_new_menu"] || ""}
             </button>
           </div>
 
           {languages.length > 0 && (
             <div className="flex items-center gap-2">
               <label htmlFor="menu-lang-filter" className="text-[12px] text-[#50575e]">
-                {dict["admin.menus.filter_by_language"] || "Filter by Language"}:
+                {dict["admin.menus.filter_by_language"] || ""}:
               </label>
               <select
                 id="menu-lang-filter"
@@ -181,7 +174,7 @@ export function MenuSelectorBar({
                 className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[12px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
               >
                 <option value="all">
-                  {dict["admin.menus.all_languages"] || "All Languages"}
+                  {dict["admin.menus.all_languages"] || ""}
                 </option>
                 {languages.map((lang) => (
                   <option key={lang.code} value={lang.code}>

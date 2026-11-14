@@ -1,3 +1,4 @@
+import { getActivePluginSlugs } from "@/services/plugin.service"
 import { sendEmail, getSmtpSettings } from "@/lib/email"
 import { getEmailLanguage } from "@/lib/email-language"
 import { localizedEmail, escapeEmailHtml } from "@/templates/localized-email"
@@ -32,6 +33,7 @@ export async function sendConfirmedNewsletterWelcome(subscriber: {
   name: string | null
   locale: string | null
 }) {
+  if (!(await getActivePluginSlugs()).includes("newsletter")) return
   const [config, settings, language] = await Promise.all([
     getPluginConfig("newsletter"),
     getSmtpSettings(),

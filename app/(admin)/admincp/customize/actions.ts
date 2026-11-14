@@ -1,9 +1,11 @@
 "use server";
 
+import { unstable_rethrow } from "next/navigation";
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { revalidatePath } from "next/cache";
 import { saveCustomizerData } from "@/lib/themes/customizer";
 import { ThemeMods } from "@/lib/themes/types";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 
 export async function saveCustomizerAction(
   stylesheet: string,
@@ -11,8 +13,8 @@ export async function saveCustomizerAction(
   identity: { siteTitle: string; siteTagline: string },
   activate = false
 ) {
+  await verifyAdmin();
   try {
-    await verifyAdminOrEditor();
     await saveCustomizerData(stylesheet, mods, identity, activate);
 
     revalidatePath("/admincp/customize");
@@ -25,7 +27,8 @@ export async function saveCustomizerAction(
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to save customizer data:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Failed to publish customizer settings." };
+    unstable_rethrow(error);
+    const { dict } = await getAdminLanguageContext();
+    return { success: false, error: dict["admin.customizer.notice.failed"] || "" };
   }
 }

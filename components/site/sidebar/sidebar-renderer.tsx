@@ -1,4 +1,5 @@
 "use client";
+import { sanitizeWidgetItem } from "@/lib/widgets/security";
 
 import React from "react";
 import type { WidgetItem } from "@/widgets/types";
@@ -18,6 +19,9 @@ export function SidebarWidgetRenderer({
   theme = DEFAULT_THEME,
   posts = [],
 }: SidebarWidgetRendererProps) {
+  const safeItem = sanitizeWidgetItem(item);
+  if (!safeItem) return null;
+  item = safeItem;
   const activeLocale = theme?.locale || theme?.defaultLocale || "en";
 
   // If this widget is assigned to a specific language, only render on that language

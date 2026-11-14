@@ -1,3 +1,4 @@
+import { after } from "next/server"
 import { getEmailLanguage } from "@/lib/email-language"
 import {
   addNewsletterSubscriber,
@@ -44,15 +45,18 @@ export async function POST(request: Request) {
       locale: language.code,
     })
     if (result.confirmationToken) {
-      const sent = await sendNewsletterConfirmation(
-        input.data.email,
-        result.confirmationToken,
-        language.code
-      ).catch(() => ({ success: false }))
-      if (!sent.success)
-        console.error(
-          "Newsletter confirmation delivery failed; pending subscriber may retry after cooldown"
-        )
+      const token = result.confirmationToken
+      after(async () => {
+        const sent = await sendNewsletterConfirmation(
+          input.data.email,
+          token,
+          language.code
+        ).catch(() => ({ success: false }))
+        if (!sent.success)
+          console.error(
+            "Newsletter confirmation delivery failed; pending subscriber may retry after cooldown"
+          )
+      })
     }
     // Same response for active, pending and unknown addresses: do not expose membership.
     return json({

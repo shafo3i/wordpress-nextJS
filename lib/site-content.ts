@@ -1,3 +1,9 @@
+import {
+  resolveFeaturedVideo,
+  featuredVideoThumbnail,
+} from "@/lib/featured-video"
+import { safeMediaUrl } from "@/lib/post-media"
+import { renderPostMedia } from "@/lib/post-content-media"
 import { getRelatedPublishedPostIds } from "@/services/related-posts.service"
 import { isVideoPost } from "@/lib/post-video"
 import { contentPlainText } from "@/lib/content-text"
@@ -33,6 +39,8 @@ export type ContentItem = {
   authorName: string
   categories: string[]
   tags: string[]
+  featuredVideoUrl?: string
+  hasFeaturedImage?: boolean
   hasVideo?: boolean
   imageUrl: string
   imageWidth?: number
@@ -292,6 +300,7 @@ export async function getPublishedContent(
     featuredSet,
     viewCounts,
     seoMap,
+    videoMap,
   ] = await Promise.all([
     getTermData(postIds),
     getPostImageAssets(postIds),
@@ -304,6 +313,9 @@ export async function getPublishedContent(
       ? getPostViewCounts(postIds)
       : Promise.resolve(new Map<string, number>()),
     getPostSeoMap(postIds),
+    type === "post"
+      ? getFeaturedVideos(postIds)
+      : Promise.resolve(new Map<string, string>()),
   ])
 
   return base.map((item) => {
@@ -317,7 +329,15 @@ export async function getPublishedContent(
     const idStr = item.id.toString()
     const attachedImage = imageMap.get(idStr)
     const attachedImg = attachedImage?.url
-    const resolvedImg = attachedImg || contentImg || ""
+    const video =
+      type === "post"
+        ? resolveFeaturedVideo(videoMap.get(idStr), item.content)
+        : null
+    const resolvedImg =
+      safeMediaUrl(attachedImg || "") ||
+      featuredVideoThumbnail(video) ||
+      safeMediaUrl(contentImg) ||
+      ""
     const studioInfo = studioMap.get(idStr)
     const cats = termMap.get(idStr)?.categories ?? []
     const postTags = termMap.get(idStr)?.tags ?? []
@@ -331,10 +351,12 @@ export async function getPublishedContent(
       title: contentPlainText(item.title || ""),
       slug: item.slug || "untitled",
       excerpt: contentPlainText(item.excerpt || item.content).slice(0, 180),
-      content: item.content || "",
+      content: renderPostMedia(item.content || ""),
+      featuredVideoUrl: video || undefined,
+      hasFeaturedImage: Boolean(attachedImg),
       hasVideo: isVideoPost({
         content: item.content,
-        hasVideo: termMap.get(item.id.toString())?.hasVideo,
+        hasVideo: Boolean(video) || termMap.get(idStr)?.hasVideo,
       }),
       date: item.date,
       publishedDate: item.publishedDate,
@@ -623,40 +645,42 @@ export async function getPublishedPostsByCategory(
   }
 
   const postIds = postIdsQuery.map((r) => r.id.toString())
-  const [basePosts, termMap, imageMap, templateMap] = await Promise.all([
-    db
-      .select({
-        id: wpPosts.id,
-        title: wpPosts.postTitle,
-        slug: wpPosts.postName,
-        excerpt: wpPosts.postExcerpt,
-        content: wpPosts.postContent,
-        date: wpPosts.postDate,
-        authorName: user.name,
-        locale: postTranslationsTable.languageCode,
-        direction: languagesTable.direction,
-      })
-      .from(wpPosts)
-      .innerJoin(
-        postTranslationsTable,
-        eq(wpPosts.id, postTranslationsTable.postId)
-      )
-      .leftJoin(
-        languagesTable,
-        eq(postTranslationsTable.languageCode, languagesTable.code)
-      )
-      .leftJoin(user, eq(wpPosts.postAuthor, user.id))
-      .where(
-        inArray(
-          wpPosts.id,
-          postIdsQuery.map((r) => r.id)
+  const [basePosts, termMap, imageMap, templateMap, videoMap] =
+    await Promise.all([
+      db
+        .select({
+          id: wpPosts.id,
+          title: wpPosts.postTitle,
+          slug: wpPosts.postName,
+          excerpt: wpPosts.postExcerpt,
+          content: wpPosts.postContent,
+          date: wpPosts.postDate,
+          authorName: user.name,
+          locale: postTranslationsTable.languageCode,
+          direction: languagesTable.direction,
+        })
+        .from(wpPosts)
+        .innerJoin(
+          postTranslationsTable,
+          eq(wpPosts.id, postTranslationsTable.postId)
         )
-      )
-      .orderBy(desc(wpPosts.postDate)),
-    getTermData(postIds),
-    getPostImageAssets(postIds),
-    getPageTemplateData(postIds),
-  ])
+        .leftJoin(
+          languagesTable,
+          eq(postTranslationsTable.languageCode, languagesTable.code)
+        )
+        .leftJoin(user, eq(wpPosts.postAuthor, user.id))
+        .where(
+          inArray(
+            wpPosts.id,
+            postIdsQuery.map((r) => r.id)
+          )
+        )
+        .orderBy(desc(wpPosts.postDate)),
+      getTermData(postIds),
+      getPostImageAssets(postIds),
+      getPageTemplateData(postIds),
+      getFeaturedVideos(postIds),
+    ])
 
   const posts: ContentItem[] = basePosts.map((item) => {
     let contentImg = ""
@@ -667,17 +691,27 @@ export async function getPublishedPostsByCategory(
 
     const asset = imageMap.get(item.id.toString())
     const attachedImg = asset?.url
-    const resolvedImg = attachedImg || contentImg || ""
+    const video = resolveFeaturedVideo(
+      videoMap.get(item.id.toString()),
+      item.content
+    )
+    const resolvedImg =
+      safeMediaUrl(attachedImg || "") ||
+      featuredVideoThumbnail(video) ||
+      safeMediaUrl(contentImg) ||
+      ""
 
     return {
       id: item.id.toString(),
       title: contentPlainText(item.title || ""),
       slug: item.slug || "untitled",
       excerpt: contentPlainText(item.excerpt || item.content).slice(0, 400),
-      content: item.content || "",
+      content: renderPostMedia(item.content || ""),
+      featuredVideoUrl: video || undefined,
+      hasFeaturedImage: Boolean(attachedImg),
       hasVideo: isVideoPost({
         content: item.content,
-        hasVideo: termMap.get(item.id.toString())?.hasVideo,
+        hasVideo: Boolean(video) || termMap.get(item.id.toString())?.hasVideo,
       }),
       date: item.date,
       authorName: item.authorName || "",
@@ -737,4 +771,18 @@ export async function getRelatedPublishedPosts(
   return ids
     .map((id) => posts.find((p) => p.id === id.toString()))
     .filter((p): p is NonNullable<typeof p> => !!p)
+}
+
+async function getFeaturedVideos(ids: string[]): Promise<Map<string, string>> {
+  if (!ids.length) return new Map()
+  const rows = await db
+    .select({ id: wpPostmeta.postId, value: wpPostmeta.metaValue })
+    .from(wpPostmeta)
+    .where(
+      and(
+        inArray(wpPostmeta.postId, ids.map(BigInt)),
+        eq(wpPostmeta.metaKey, "_featured_video_url")
+      )
+    )
+  return new Map(rows.map((row) => [row.id.toString(), row.value || ""]))
 }

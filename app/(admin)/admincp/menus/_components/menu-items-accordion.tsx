@@ -20,7 +20,7 @@ export function MenuItemsAccordion({
   dict,
   direction = "ltr",
 }: MenuItemsAccordionProps) {
-  const [openSection, setOpenSection] = useState<"pages" | "categories" | "posts" | "custom">("pages");
+  const [openSection, setOpenSection] = useState<"pages" | "categories" | "posts" | "custom" | null>("pages");
 
   // Selection states
   const [selectedPages, setSelectedPages] = useState<string[]>([]);
@@ -78,17 +78,17 @@ export function MenuItemsAccordion({
   return (
     <div dir={direction} className="space-y-3 text-[13px] text-start">
       <p className="font-semibold text-[#1d2327]">
-        {dict["admin.menus.add_menu_items"] || "Add menu items"}
+        {dict["admin.menus.add_menu_items"] || ""}
       </p>
 
       {/* 1. PAGES ACCORDION */}
       <div className="rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
         <button
           type="button"
-          onClick={() => setOpenSection(openSection === "pages" ? (null as any) : "pages")}
+          onClick={() => setOpenSection(openSection === "pages" ? null : "pages")}
           className="flex w-full items-center justify-between border-b border-[#c3c4c7] bg-[#f6f7f7] px-3.5 py-2.5 font-semibold text-[#2c3338] hover:bg-[#f0f0f1]"
         >
-          <span>{dict["admin.menus.pages"] || "Pages"}</span>
+          <span>{dict["admin.menus.pages"] || ""}</span>
           {openSection === "pages" ? <ChevronDown className="size-4" /> : <CollapseIcon className="size-4" />}
         </button>
 
@@ -113,7 +113,7 @@ export function MenuItemsAccordion({
                 ))
               ) : (
                 <div className="py-2 text-center text-[#8c8f94] text-[12px]">
-                  {dict["site.no_posts_found"] || "No pages available."}
+                  {dict["site.no_posts_found"] || ""}
                 </div>
               )}
             </div>
@@ -129,8 +129,8 @@ export function MenuItemsAccordion({
                 className="text-[12px] text-[#2271b1] hover:underline"
               >
                 {selectedPages.length === pages.length
-                  ? dict["admin.menus.deselect_all"] || "Deselect All"
-                  : dict["admin.menus.select_all"] || "Select All"}
+                  ? dict["admin.menus.deselect_all"] || ""
+                  : dict["admin.menus.select_all"] || ""}
               </button>
 
               <button
@@ -139,7 +139,7 @@ export function MenuItemsAccordion({
                 onClick={handleAddPages}
                 className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[12px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] transition-colors disabled:opacity-50"
               >
-                {dict["admin.menus.add_to_menu"] || "Add to Menu"}
+                {dict["admin.menus.add_to_menu"] || ""}
               </button>
             </div>
           </div>
@@ -150,10 +150,10 @@ export function MenuItemsAccordion({
       <div className="rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
         <button
           type="button"
-          onClick={() => setOpenSection(openSection === "categories" ? (null as any) : "categories")}
+          onClick={() => setOpenSection(openSection === "categories" ? null : "categories")}
           className="flex w-full items-center justify-between border-b border-[#c3c4c7] bg-[#f6f7f7] px-3.5 py-2.5 font-semibold text-[#2c3338] hover:bg-[#f0f0f1]"
         >
-          <span>{dict["admin.menus.categories"] || "Categories"}</span>
+          <span>{dict["admin.menus.categories"] || ""}</span>
           {openSection === "categories" ? <ChevronDown className="size-4" /> : <CollapseIcon className="size-4" />}
         </button>
 
@@ -178,7 +178,7 @@ export function MenuItemsAccordion({
                 ))
               ) : (
                 <div className="py-2 text-center text-[#8c8f94] text-[12px]">
-                  {dict["admin.categories.table.no_categories"] || "No categories found."}
+                  {dict["admin.categories.table.no_categories"] || ""}
                 </div>
               )}
             </div>
@@ -194,8 +194,8 @@ export function MenuItemsAccordion({
                 className="text-[12px] text-[#2271b1] hover:underline"
               >
                 {selectedCategories.length === categories.length
-                  ? dict["admin.menus.deselect_all"] || "Deselect All"
-                  : dict["admin.menus.select_all"] || "Select All"}
+                  ? dict["admin.menus.deselect_all"] || ""
+                  : dict["admin.menus.select_all"] || ""}
               </button>
 
               <button
@@ -204,7 +204,7 @@ export function MenuItemsAccordion({
                 onClick={handleAddCategories}
                 className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[12px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] transition-colors disabled:opacity-50"
               >
-                {dict["admin.menus.add_to_menu"] || "Add to Menu"}
+                {dict["admin.menus.add_to_menu"] || ""}
               </button>
             </div>
           </div>
@@ -216,10 +216,10 @@ export function MenuItemsAccordion({
         <div className="rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
           <button
             type="button"
-            onClick={() => setOpenSection(openSection === "posts" ? (null as any) : "posts")}
+            onClick={() => setOpenSection(openSection === "posts" ? null : "posts")}
             className="flex w-full items-center justify-between border-b border-[#c3c4c7] bg-[#f6f7f7] px-3.5 py-2.5 font-semibold text-[#2c3338] hover:bg-[#f0f0f1]"
           >
-            <span>{dict["admin.menus.posts"] || "Posts"}</span>
+            <span>{dict["admin.menus.posts"] || ""}</span>
             {openSection === "posts" ? <ChevronDown className="size-4" /> : <CollapseIcon className="size-4" />}
           </button>
 
@@ -254,8 +254,8 @@ export function MenuItemsAccordion({
                   className="text-[12px] text-[#2271b1] hover:underline"
                 >
                   {selectedPosts.length === posts.length
-                    ? dict["admin.menus.deselect_all"] || "Deselect All"
-                    : dict["admin.menus.select_all"] || "Select All"}
+                    ? dict["admin.menus.deselect_all"] || ""
+                    : dict["admin.menus.select_all"] || ""}
                 </button>
 
                 <button
@@ -264,7 +264,7 @@ export function MenuItemsAccordion({
                   onClick={handleAddPosts}
                   className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[12px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] transition-colors disabled:opacity-50"
                 >
-                  {dict["admin.menus.add_to_menu"] || "Add to Menu"}
+                  {dict["admin.menus.add_to_menu"] || ""}
                 </button>
               </div>
             </div>
@@ -276,10 +276,10 @@ export function MenuItemsAccordion({
       <div className="rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
         <button
           type="button"
-          onClick={() => setOpenSection(openSection === "custom" ? (null as any) : "custom")}
+          onClick={() => setOpenSection(openSection === "custom" ? null : "custom")}
           className="flex w-full items-center justify-between border-b border-[#c3c4c7] bg-[#f6f7f7] px-3.5 py-2.5 font-semibold text-[#2c3338] hover:bg-[#f0f0f1]"
         >
-          <span>{dict["admin.menus.custom_links"] || "Custom Links"}</span>
+          <span>{dict["admin.menus.custom_links"] || ""}</span>
           {openSection === "custom" ? <ChevronDown className="size-4" /> : <CollapseIcon className="size-4" />}
         </button>
 
@@ -287,7 +287,7 @@ export function MenuItemsAccordion({
           <form onSubmit={handleAddCustom} className="p-3.5 space-y-3">
             <div>
               <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                {dict["admin.menus.url"] || "URL"}
+                {dict["admin.menus.url"] || ""}
               </label>
               <input
                 type="text"
@@ -299,11 +299,11 @@ export function MenuItemsAccordion({
             </div>
             <div>
               <label className="block text-[12px] font-medium text-[#50575e] mb-1">
-                {dict["admin.menus.link_text"] || "Link Text"}
+                {dict["admin.menus.link_text"] || ""}
               </label>
               <input
                 type="text"
-                placeholder={dict["admin.menus.link_text_placeholder"] || "e.g. Special Coverage"}
+                placeholder={dict["admin.menus.link_text_placeholder"] || ""}
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
                 className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[inset_0_1px_2px_rgba(0,0,0,0.07)] focus:border-[#2271b1] focus:outline-none focus:ring-1 focus:ring-[#2271b1]"
@@ -316,7 +316,7 @@ export function MenuItemsAccordion({
                 disabled={!customText.trim() || !customUrl.trim()}
                 className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-[12px] font-medium text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] transition-colors disabled:opacity-50"
               >
-                {dict["admin.menus.add_to_menu"] || "Add to Menu"}
+                {dict["admin.menus.add_to_menu"] || ""}
               </button>
             </div>
           </form>

@@ -1,45 +1,33 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import {
-    saveTranslation,
-    deleteTranslationOverride,
-} from "@/services/language.service";
-import { createTranslationSchema } from "@/db/schema/cms-languages";
-
-export async function saveTranslationAction(formData: FormData) {
-    await verifyAdminOrEditor();
-
-    const raw = Object.fromEntries(formData);
-    const data = createTranslationSchema.parse({
-        languageCode: raw.languageCode,
-        key: raw.key,
-        value: raw.value,
-    });
-
-    await saveTranslation(data.languageCode, data.key, data.value);
-
-    const redirectUrl = raw.returnUrl?.toString() || `/admincp/translations?locale=${data.languageCode}`;
-    revalidatePath("/admincp/translations");
-    redirect(redirectUrl);
+import { redirect, unstable_rethrow } from "next/navigation";
+import { verifyAdmin } from "@/lib/authMIddleware";
+import { saveTranslation, deleteTranslationOverride } from "@/services/language.service";
+import { createTranslationSchema, translationReturnUrlSchema } from "@/db/schema/cms-languages";
+import { getAdminLanguageContext } from "@/components/admin/admin-shell";
+async function mutation<T>(operation: () => Promise<T>): Promise<T> {
+  try { return await operation(); } catch (error) {
+    unstable_rethrow(error);
+    const { dict } = await getAdminLanguageContext();
+    throw new Error(dict["admin.languages.error.failed"] || "");
+  }
 }
-
+function returnUrl(value: FormDataEntryValue | null, code: string) {
+  return translationReturnUrlSchema.safeParse(value).data || `/admincp/translations?locale=${encodeURIComponent(code)}`;
+}
+export async function saveTranslationAction(formData: FormData) {
+  await verifyAdmin();
+  const data = await mutation(async () => {
+    const data = createTranslationSchema.parse(Object.fromEntries(formData));
+    await saveTranslation(data.languageCode, data.key, data.value); return data;
+  });
+  revalidatePath("/", "layout"); redirect(returnUrl(formData.get("returnUrl"), data.languageCode));
+}
 export async function deleteTranslationOverrideAction(formData: FormData) {
-    await verifyAdminOrEditor();
-
-    const languageCode = formData.get("languageCode")?.toString();
-    const key = formData.get("key")?.toString();
-    const returnUrl = formData.get("returnUrl")?.toString();
-
-    if (!languageCode || !key) {
-        throw new Error("Language code and key are required to reset translation");
-    }
-
-    await deleteTranslationOverride(languageCode, key);
-
-    const redirectUrl = returnUrl || `/admincp/translations?locale=${languageCode}`;
-    revalidatePath("/admincp/translations");
-    redirect(redirectUrl);
+  await verifyAdmin();
+  const data = await mutation(async () => {
+    const data = createTranslationSchema.pick({ languageCode: true, key: true }).parse(Object.fromEntries(formData));
+    await deleteTranslationOverride(data.languageCode, data.key); return data;
+  });
+  revalidatePath("/", "layout"); redirect(returnUrl(formData.get("returnUrl"), data.languageCode));
 }

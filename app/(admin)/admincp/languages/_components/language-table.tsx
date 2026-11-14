@@ -56,25 +56,25 @@ export function LanguageTable({
                     <thead className="border-b border-[#c3c4c7] bg-[#f6f7f7] text-[13px] text-[#2c3338]">
                         <tr>
                             <th className="px-3 py-2 font-medium w-16 text-start">
-                                {dict["admin.languages.table.code"] || "Code"}
+                                {dict["admin.languages.table.code"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium text-start">
-                                {dict["admin.languages.table.name"] || "Name"}
+                                {dict["admin.languages.table.name"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium text-start">
-                                {dict["admin.languages.table.native_name"] || "Native Name"}
+                                {dict["admin.languages.table.native_name"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium w-24 text-start">
-                                {dict["admin.languages.table.direction"] || "Direction"}
+                                {dict["admin.languages.table.direction"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium w-24 text-start">
-                                {dict["admin.languages.table.default"] || "Default"}
+                                {dict["admin.languages.table.default"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium w-24 text-start">
-                                {dict["admin.languages.table.status"] || "Status"}
+                                {dict["admin.languages.table.status"] || ""}
                             </th>
                             <th className="px-3 py-2 font-medium w-20 text-center">
-                                {dict["admin.languages.table.order"] || "Order"}
+                                {dict["admin.languages.table.order"] || ""}
                             </th>
                         </tr>
                     </thead>
@@ -82,7 +82,7 @@ export function LanguageTable({
                         {rows.length === 0 ? (
                             <tr>
                                 <td className="px-3 py-6 text-center text-[#646970]" colSpan={7}>
-                                    {dict["admin.languages.table.no_languages"] || "No languages found."}
+                                    {dict["admin.languages.table.no_languages"] || ""}
                                 </td>
                             </tr>
                         ) : (
@@ -101,7 +101,7 @@ export function LanguageTable({
                                         <div className="font-medium text-[#1d2327]">
                                             <Link
                                                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
-                                                href={`/admincp/languages?edit=${lang.code}`}
+                                                href={`/admincp/languages?edit=${encodeURIComponent(lang.code)}`}
                                             >
                                                 {lang.name}
                                             </Link>
@@ -111,16 +111,16 @@ export function LanguageTable({
                                         <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[#646970]">
                                             <Link
                                                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
-                                                href={`/admincp/languages?edit=${lang.code}`}
+                                                href={`/admincp/languages?edit=${encodeURIComponent(lang.code)}`}
                                             >
-                                                {dict["admin.languages.table.edit"] || "Edit"}
+                                                {dict["admin.languages.table.edit"] || ""}
                                             </Link>
                                             <span className="text-[#c3c4c7]">|</span>
                                             <Link
                                                 className="text-[#2271b1] hover:text-[#135e96] hover:underline"
-                                                href={`/admincp/translations?locale=${lang.code}`}
+                                                href={`/admincp/translations?locale=${encodeURIComponent(lang.code)}`}
                                             >
-                                                {dict["admin.languages.table.translate"] || "Translate"}
+                                                {dict["admin.languages.table.translate"] || ""}
                                             </Link>
 
                                             {!lang.isDefault && (
@@ -132,7 +132,7 @@ export function LanguageTable({
                                                             className="text-[#2271b1] hover:text-[#135e96] hover:underline cursor-pointer"
                                                             type="submit"
                                                         >
-                                                            {dict["admin.languages.table.set_default"] || "Set Default"}
+                                                            {dict["admin.languages.table.set_default"] || ""}
                                                         </button>
                                                     </form>
                                                 </>
@@ -146,7 +146,7 @@ export function LanguageTable({
                                                         onClick={() => setDeleteTarget(lang)}
                                                         type="button"
                                                     >
-                                                        {dict["admin.languages.table.delete"] || "Delete"}
+                                                        {dict["admin.languages.table.delete"] || ""}
                                                     </button>
                                                 </>
                                             )}
@@ -167,7 +167,7 @@ export function LanguageTable({
                                     <td className="px-3 py-2.5">
                                         {lang.isDefault ? (
                                             <span className="inline-block rounded-[3px] border border-[#c3c4c7] bg-[#f0f0f1] px-2 py-0.5 text-[11px] font-semibold text-[#1d2327]">
-                                                {dict["admin.languages.table.default"] || "Default"}
+                                                {dict["admin.languages.table.default"] || ""}
                                             </span>
                                         ) : (
                                             <span className="text-[12px] text-[#8c8f94]">—</span>
@@ -199,8 +199,8 @@ export function LanguageTable({
                                                 type="submit"
                                             >
                                                 {lang.isActive
-                                                    ? dict["admin.languages.status.active"] || "Active"
-                                                    : dict["admin.languages.status.inactive"] || "Inactive"}
+                                                    ? dict["admin.languages.status.active"] || ""
+                                                    : dict["admin.languages.status.inactive"] || ""}
                                             </button>
                                         </form>
                                     </td>
@@ -233,7 +233,7 @@ export function LanguageTable({
                 onOpenChange={(open) => {
                     if (!open) setDeleteTarget(null);
                 }}
-                title={dict["admin.languages.delete_title"] || "Delete Language"}
+                title={dict["admin.languages.delete_title"] || ""}
                 description={
                     deleteTarget
                         ? `Are you sure you want to delete the "${deleteTarget.name}" language? All associated custom translations will also be removed.`
@@ -241,8 +241,8 @@ export function LanguageTable({
                 }
                 direction={direction}
                 dict={dict}
-                confirmText={dict["admin.common.delete"] || "Delete"}
-                cancelText={dict["admin.common.cancel"] || "Cancel"}
+                confirmText={dict["admin.common.delete"] || ""}
+                cancelText={dict["admin.common.cancel"] || ""}
                 isLoading={isPending}
                 onConfirm={() => {
                     if (!deleteTarget) return;

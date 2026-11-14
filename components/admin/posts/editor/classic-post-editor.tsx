@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useTransition, useRef, useMemo, useCallback } from "react"
+import { renderPostMedia } from "@/lib/post-content-media"
 import { usePostAutosave } from "@/lib/use-post-autosave"
 import type { PostEditorSnapshot } from "@/db/schema/cms-post-autosave"
 import type { SavePostResult } from "@/app/(admin)/admincp/posts/action"
 import { PostAutosaveNotice } from "./post-autosave-notice"
 import type { Editor as TinyEditor } from "tinymce"
 import { MediaSelectModal } from "@/components/admin/media-select-modal"
-import { attachmentMarkup, videoMarkup, videoEmbedUrl } from "@/lib/post-media"
+import { attachmentMarkup, videoMarkup } from "@/lib/post-media"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 import { Camera, Music } from "lucide-react"
@@ -19,6 +20,7 @@ import { MetaBoxPublish } from "./meta-box-publish"
 import { MetaBoxFormat } from "./meta-box-format"
 import { MetaBoxCategories, type CategoryItem } from "./meta-box-categories"
 import { MetaBoxTags } from "./meta-box-tags"
+import { MetaBoxFeaturedVideo } from "./meta-box-featured-video"
 import { MetaBoxFeaturedImage } from "./meta-box-featured-image"
 import { MetaBoxExcerpt } from "./meta-box-excerpt"
 import { MetaBoxPageAttributes } from "./meta-box-page-attributes"
@@ -54,9 +56,11 @@ export type ClassicPostEditorProps = {
   initialPostPassword?: string
   initialCommentStatus?: string
   initialPingStatus?: string
+  initialSlug?: string
   initialTitle?: string
   initialContent?: string
   initialExcerpt?: string
+  initialFeaturedVideoUrl?: string
   initialFeaturedImageId?: string
   initialIsFeatured?: boolean
   initialStatus?: string
@@ -93,9 +97,11 @@ export function ClassicPostEditor({
   initialPostPassword = "",
   initialCommentStatus = "open",
   initialPingStatus = "open",
+  initialSlug = "",
   initialTitle = "",
   initialContent = "",
   initialExcerpt = "",
+  initialFeaturedVideoUrl = "",
   initialFeaturedImageId = "",
   initialIsFeatured = false,
   initialStatus = "draft",
@@ -129,6 +135,9 @@ export function ClassicPostEditor({
   const editorRef = useRef<TinyEditor | null>(null)
   const textRef = useRef<HTMLTextAreaElement>(null)
   const [excerpt, setExcerpt] = useState(initialExcerpt)
+  const [featuredVideoUrl, setFeaturedVideoUrl] = useState(
+    initialFeaturedVideoUrl
+  )
   const [featuredImageId, setFeaturedImageId] = useState(initialFeaturedImageId)
   const [isFeatured, setIsFeatured] = useState(initialIsFeatured)
   const [status, setStatus] = useState(initialStatus)
@@ -147,7 +156,7 @@ export function ClassicPostEditor({
   )
   const [editorMode, setEditorMode] = useState<"visual" | "text">("visual")
   const [isEditingSlug, setIsEditingSlug] = useState(false)
-  const [customSlug, setCustomSlug] = useState("")
+  const [customSlug, setCustomSlug] = useState(initialSlug)
   const [languageCode, setLanguageCode] = useState(initialLanguageCode)
   const [seo, setSeo] = useState(initialSeo)
   const [recoveryRevision, setRecoveryRevision] = useState(0)
@@ -161,6 +170,7 @@ export function ClassicPostEditor({
       content,
       excerpt,
       featuredImageId,
+      featuredVideoUrl,
       isFeatured,
       status,
       template,
@@ -177,6 +187,7 @@ export function ClassicPostEditor({
       content,
       excerpt,
       featuredImageId,
+      featuredVideoUrl,
       isFeatured,
       status,
       template,
@@ -192,9 +203,10 @@ export function ClassicPostEditor({
   const [initialSnapshot] = useState(() => snapshot)
   const restoreSnapshot = useCallback((value: PostEditorSnapshot) => {
     setTitle(value.title)
-    setContent(value.content)
+    setContent(renderPostMedia(value.content))
     setExcerpt(value.excerpt)
     setFeaturedImageId(value.featuredImageId)
+    setFeaturedVideoUrl(value.featuredVideoUrl || "")
     setIsFeatured(value.isFeatured)
     setStatus(value.status)
     setTemplate(value.template)
@@ -227,7 +239,8 @@ export function ClassicPostEditor({
       ? title
           .trim()
           .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
+          .normalize("NFKC")
+          .replace(/[^\p{L}\p{N}]+/gu, "-")
           .replace(/^-+|-+$/g, "")
       : "post")
 
@@ -257,6 +270,7 @@ export function ClassicPostEditor({
     const finalStatus = submitterStatus || status || "publish"
 
     formData.set("title", title)
+    if (postType === "post" && customSlug) formData.set("slug", customSlug)
     formData.set(
       "content",
       editorMode === "visual"
@@ -265,6 +279,7 @@ export function ClassicPostEditor({
     )
     formData.set("excerpt", excerpt)
     formData.set("featuredImageId", featuredImageId)
+    if (postType === "post") formData.set("featuredVideoUrl", featuredVideoUrl)
     formData.set("isFeatured", isFeatured ? "1" : "0")
     formData.set("status", finalStatus)
     formData.set("categorySlugs", selectedCategories.join(","))
@@ -360,6 +375,9 @@ export function ClassicPostEditor({
       <input name="content" type="hidden" value={content} />
       <input name="excerpt" type="hidden" value={excerpt} />
       <input name="featuredImageId" type="hidden" value={featuredImageId} />
+      {postType === "post" && (
+        <input name="featuredVideoUrl" type="hidden" value={featuredVideoUrl} />
+      )}
       <input name="isFeatured" type="hidden" value={isFeatured ? "1" : "0"} />
       <input name="status" type="hidden" value={status} />
       <input name="pageTemplate" type="hidden" value={template} />
@@ -454,7 +472,12 @@ export function ClassicPostEditor({
               {dict?.["admin.editor.permalink"]}
             </span>
             <span className="text-[#2271b1]" dir="ltr">
-              http://localhost:3000/{postType === "page" ? "" : "posts/"}
+              /
+              {languages.find((language) => language.code === languageCode)
+                ?.isDefault === false
+                ? `${languageCode}/`
+                : ""}
+              {postType === "page" ? "" : "posts/"}
               {isEditingSlug ? (
                 <input
                   className="h-[22px] rounded border border-[#8c8f94] bg-white px-1 text-xs text-[#2c3338]"
@@ -577,23 +600,7 @@ export function ClassicPostEditor({
                       ],
                       setup: (editor: TinyEditor) => {
                         editor.on("BeforeSetContent", (event) => {
-                          if (!event.content.includes("sandbox")) return
-                          const doc = new DOMParser().parseFromString(
-                            event.content,
-                            "text/html"
-                          )
-                          for (const frame of doc.querySelectorAll(
-                            "iframe[sandbox]"
-                          )) {
-                            const source = videoEmbedUrl(
-                              frame.getAttribute("src") || ""
-                            )
-                            if (source) {
-                              frame.setAttribute("src", source)
-                              frame.removeAttribute("sandbox")
-                            }
-                          }
-                          event.content = doc.body.innerHTML
+                          event.content = renderPostMedia(event.content)
                         })
                         editor.ui.registry.addButton("postvideo", {
                           text: dict?.["admin.editor.insert_video"],
@@ -764,6 +771,14 @@ export function ClassicPostEditor({
             />
           )}
 
+          {postType === "post" && (
+            <MetaBoxFeaturedVideo
+              value={featuredVideoUrl}
+              content={content}
+              onChange={setFeaturedVideoUrl}
+              dict={dict}
+            />
+          )}
           <MetaBoxFeaturedImage
             canEditMediaDetails={canEditMediaDetails}
             dict={dict}

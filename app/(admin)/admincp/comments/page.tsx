@@ -1,5 +1,7 @@
+import { commentQuerySchema, commentIdSchema } from "@/db/schema/cms-comments";
+import { notFound } from "next/navigation";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
 import {
     getAllComments,
@@ -29,18 +31,19 @@ type PageProps = {
 };
 
 export default async function CommentsPage({ searchParams }: PageProps) {
-    await verifyAdminOrEditor();
+    await verifyAdmin();
 
     const { s, status, page, edit, add, comment_type, lang } = await searchParams;
-    const currentStatus = status ?? "all";
-    const currentCommentType = comment_type ?? "all";
-    const currentLanguage = lang ?? "all";
-    const searchQuery = s?.trim() ?? "";
-    const currentPage = Number(page) > 0 ? Number(page) : 1;
+    const currentStatus = commentQuerySchema.shape.status.safeParse(status).data ?? "all";
+    const currentCommentType = commentQuerySchema.shape.commentType.safeParse(comment_type).data ?? "all";
+    const currentLanguage = typeof lang === "string" && lang.length <= 10 ? lang : "all";
+    const searchQuery = typeof s === "string" ? s.trim().slice(0, 200) : "";
+    const currentPage = commentQuerySchema.shape.page.safeParse(Number(page)).data ?? 1;
     const pageSize = 20;
 
     const isAdding = add === "true" || add === "1";
-    const editId = edit?.trim();
+    const editId = typeof edit === "string" ? edit.trim() : undefined;
+    if (editId && !commentIdSchema.safeParse(editId).success) notFound();
 
     // Fetch comments list, count summary, language context, and editing context
     const [{ comments, total }, counts, editingComment, postOptions, langContext, allLanguages] = await Promise.all([
@@ -59,6 +62,10 @@ export default async function CommentsPage({ searchParams }: PageProps) {
         getAllLanguages(),
     ]);
 
+    if (editId && !editingComment) notFound();
+    if (editingComment?.commentPostId && !postOptions.some(post => post.id === editingComment.commentPostId)) {
+        postOptions.push({ id: editingComment.commentPostId, title: editingComment.postTitle || "" });
+    }
     const dict = langContext.dict;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -73,9 +80,9 @@ export default async function CommentsPage({ searchParams }: PageProps) {
             <div className="space-y-4">
                 <PostListHeader
                     addNewHref="/admincp/comments?add=true"
-                    addNewLabel={dict["admin.comments.add_new"] || "Add Comment"}
+                    addNewLabel={dict["admin.comments.add_new"] || ""}
                     dict={dict}
-                    title={dict["admin.comments.title"] || "Comments"}
+                    title={dict["admin.comments.title"] || ""}
                 />
 
                 {/* Create or Edit Form Modal / Block */}

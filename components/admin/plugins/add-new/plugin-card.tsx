@@ -1,4 +1,5 @@
 "use client"
+import { absoluteWebUrl } from "@/lib/seo/urls"
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"

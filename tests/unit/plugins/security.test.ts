@@ -1,3 +1,4 @@
+vi.mock("server-only", () => ({}))
 import { describe, it, expect, vi, beforeEach } from "vitest"
 const { session, mutate, configWrite, subscriberWrite } = vi.hoisted(() => ({
   session: vi.fn(),
@@ -10,7 +11,7 @@ vi.mock("@/lib/newsletter/db", () => ({
   removeNewsletterSubscriber: subscriberWrite,
   clearAllNewsletterSubscribers: subscriberWrite,
 }))
-vi.mock("@/lib/authMIddleware", () => ({ verifyAdminOrEditor: session }))
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: session }))
 vi.mock("@/services/plugin.service", () => ({
   togglePlugin: mutate,
   installPlugin: mutate,
@@ -38,13 +39,15 @@ beforeEach(() => {
 describe("plugin mutation boundary", () => {
   it("also protects configuration and subscriber actions from editors", async () => {
     session.mockResolvedValue({ user: { id: "editor", role: "editor" } })
-    expect(await savePluginConfigAction("newsletter", {})).toMatchObject({
-      success: false,
-    })
-    expect(await deleteSubscriberAction("reader@example.org")).toMatchObject({
-      success: false,
-    })
-    expect(await clearSubscribersAction()).toMatchObject({ success: false })
+    await expect(savePluginConfigAction("newsletter", {})).rejects.toThrow(
+      "admin.plugins.forbidden"
+    )
+    await expect(deleteSubscriberAction("reader@example.org")).rejects.toThrow(
+      "admin.plugins.forbidden"
+    )
+    await expect(clearSubscribersAction()).rejects.toThrow(
+      "admin.plugins.forbidden"
+    )
     expect(configWrite).not.toHaveBeenCalled()
     expect(subscriberWrite).not.toHaveBeenCalled()
   })
@@ -58,13 +61,15 @@ describe("plugin mutation boundary", () => {
         () => uninstallPluginAction("newsletter"),
         () => bulkPluginsAction(["newsletter"], "delete"),
       ])
-        expect(await action()).toHaveProperty("error")
+        await expect(action()).rejects.toThrow("admin.plugins.forbidden")
       expect(mutate).not.toHaveBeenCalled()
     }
   )
   it("rejects unauthenticated calls, unknown slugs, retired activation and invalid bulk actions", async () => {
     session.mockRejectedValueOnce(new Error("unauthenticated"))
-    expect(await togglePluginAction("newsletter", true)).toHaveProperty("error")
+    await expect(togglePluginAction("newsletter", true)).rejects.toThrow(
+      "unauthenticated"
+    )
     expect(await installPluginAction("../evil")).toHaveProperty("error")
     expect(await togglePluginAction("social-share", true)).toHaveProperty(
       "error"
@@ -98,4 +103,14 @@ describe("plugin mutation boundary", () => {
     expect(html).not.toMatch(/onerror|<script|javascript:/)
     expect(html).toContain("/ad.jpg")
   })
+})
+
+it("removes active URL schemes from ad HTML and protects new-window links", () => {
+  const html = sanitizePluginMarkup(
+    '<a target="_blank" href="https://sponsor.test">Ad</a><img src="data:image/svg+xml,evil"><a href="//evil.test">bad</a><a href="file:///private">file</a>'
+  )
+  expect(html).not.toContain("data:")
+  expect(html).not.toContain("file:")
+  expect(html).not.toContain("//evil.test")
+  expect(html).toContain("noopener noreferrer")
 })

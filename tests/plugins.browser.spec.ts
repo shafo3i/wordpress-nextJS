@@ -1,38 +1,73 @@
 import { test, expect, type Page } from "@playwright/test"
+import { sanitizePluginMarkup } from "../lib/plugins/markup"
 import { build } from "esbuild"
 import { fileURLToPath } from "node:url"
 import en from "../templates/language/en.json" with { type: "json" }
 import ar from "../templates/language/ar.json" with { type: "json" }
 import { factReviewSchema } from "../db/schema/cms-fact-reviews"
 let bundle: string
-test("newsletter confirmation form preserves token, language and browser origin", async ({ page }) => {
+test("newsletter confirmation form preserves token, language and browser origin", async ({
+  page,
+}) => {
   const result = await build({
-    entryPoints: [fileURLToPath(new URL("../lib/newsletter/token-page.ts", import.meta.url))],
-    bundle: true, write: false, platform: "node", format: "cjs",
-    plugins: [{
-      name: "newsletter-language",
-      setup(builder) {
-        builder.onResolve({ filter: /^@\/lib\/email-language$/ }, () => ({ path: "language", namespace: "newsletter-fixture" }))
-        builder.onLoad({ filter: /.*/, namespace: "newsletter-fixture" }, () => ({
-          contents: 'export const getEmailLanguage=async()=>({code:"ar",direction:"rtl",dict:{"site.newsletter.confirm":"Confirm"}})',
-        }))
+    entryPoints: [
+      fileURLToPath(
+        new URL("../lib/newsletter/token-page.ts", import.meta.url)
+      ),
+    ],
+    bundle: true,
+    write: false,
+    platform: "node",
+    format: "cjs",
+    plugins: [
+      {
+        name: "newsletter-language",
+        setup(builder) {
+          builder.onResolve({ filter: /^@\/lib\/email-language$/ }, () => ({
+            path: "language",
+            namespace: "newsletter-fixture",
+          }))
+          builder.onLoad(
+            { filter: /.*/, namespace: "newsletter-fixture" },
+            () => ({
+              contents:
+                'export const getEmailLanguage=async()=>({code:"ar",direction:"rtl",dict:{"site.newsletter.confirm":"Confirm"}})',
+            })
+          )
+        },
       },
-    }],
+    ],
   })
-  const module = { exports: {} as typeof import("../lib/newsletter/token-page") }
-  new Function("module", "exports", result.outputFiles[0].text)(module, module.exports)
-  const url = "http://newsletter.test/api/newsletter/confirm?token=fixture&lang=ar"
-  const response = await module.exports.newsletterTokenPage(new Request(url), "site.newsletter.confirm")
+  const loadedModule = {
+    exports: {} as typeof import("../lib/newsletter/token-page"),
+  }
+  new Function("module", "exports", result.outputFiles[0].text)(
+    loadedModule,
+    loadedModule.exports
+  )
+  const url =
+    "http://newsletter.test/api/newsletter/confirm?token=fixture&lang=ar"
+  const response = await loadedModule.exports.newsletterTokenPage(
+    new Request(url),
+    "site.newsletter.confirm"
+  )
   const body = await response.text()
   let submittedOrigin: string | undefined
   let submittedUrl = ""
-  await page.route("http://newsletter.test/**", async route => {
+  await page.route("http://newsletter.test/**", async (route) => {
     if (route.request().method() === "POST") {
       submittedOrigin = route.request().headers().origin
       submittedUrl = route.request().url()
-      await route.fulfill({ status: submittedOrigin === "http://newsletter.test" ? 200 : 403, body: "Confirmed" })
+      await route.fulfill({
+        status: submittedOrigin === "http://newsletter.test" ? 200 : 403,
+        body: "Confirmed",
+      })
     } else {
-      await route.fulfill({ status: response.status, headers: Object.fromEntries(response.headers), body })
+      await route.fulfill({
+        status: response.status,
+        headers: Object.fromEntries(response.headers),
+        body,
+      })
     }
   })
   await page.goto(url)
@@ -82,8 +117,8 @@ async function setup(page: Page, kind: string, locale: "en" | "ar" = "en") {
   page.on("pageerror", (error) =>
     console.error("Plugin fixture:", error.message)
   )
-  let current: any = null,
-    saved: any = null,
+  let current: Record<string, unknown> | null = null,
+    saved: Record<string, unknown> | null = null,
     conflict = false
   const data = () => ({
     postId: "1",
@@ -141,7 +176,11 @@ async function setup(page: Page, kind: string, locale: "en" | "ar" = "en") {
   await page.addScriptTag({ content: bundle })
   await page.evaluate(
     ({ dict, locale, kind }) =>
-      (window as any).PluginFixture.mount(dict, locale, kind),
+      (
+        window as unknown as {
+          PluginFixture: typeof import("./fixtures/plugins.fixture")
+        }
+      ).PluginFixture.mount(dict, locale, kind),
     { dict: locale === "ar" ? ar : en, locale, kind }
   )
   return {
@@ -190,7 +229,7 @@ test("fact review requires explicit approval and exposes history only after a su
     })
     .click()
   await expect(page.locator("summary")).toContainText("(1)")
-  expect(state.saved().approve).toBe(true)
+  expect(state.saved()?.approve).toBe(true)
 })
 test("Arabic review retains entered evidence when the source changed", async ({
   page,
@@ -236,7 +275,7 @@ test("related post controls submit the chosen matching and display settings", as
     })
     .click()
   await expect(page.getByRole("status")).toBeVisible()
-  expect(state.saved().config).toMatchObject({
+  expect(state.saved()?.config).toMatchObject({
     count: 6,
     matchStrategy: "tags",
     showThumbnail: false,
@@ -260,3 +299,25 @@ for (const locale of ["en", "ar"] as const)
     ).toBeVisible()
     expect(state.saved()).toMatchObject({ email: "reader@example.org", locale })
   })
+
+test("ad HTML does not execute in the browser without relying on CSP", async ({
+  page,
+}) => {
+  const markup = sanitizePluginMarkup(
+    '<script>window.__pluginXss=true</script><svg onload="window.__pluginXss=true"></svg><img src=x onerror="window.__pluginXss=true"><a href="javascript:window.__pluginXss=true" target="_blank">Unsafe</a><a href="/sponsor" target="_blank">Sponsor</a>'
+  )
+  await page.setContent("<main>" + markup + "</main>")
+  await page.getByText("Unsafe", { exact: true }).click()
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __pluginXss?: boolean }).__pluginXss
+    )
+  ).toBeUndefined()
+  await expect(
+    page.locator("script,svg,[onerror],a[href^='javascript:']")
+  ).toHaveCount(0)
+  await expect(page.getByText("Sponsor", { exact: true })).toHaveAttribute(
+    "rel",
+    "sponsored noopener noreferrer"
+  )
+})

@@ -1,17 +1,18 @@
 "use client";
+import { sanitizePluginMarkup } from "@/lib/plugins/markup";
 
 import React from "react";
 import manifest from "./widget.json";
-import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
+import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps, WidgetManifest } from "../types";
 
-export function CustomHtmlAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
-  const isRtl = direction === "rtl";
+export function CustomHtmlAdminForm({ item, onChange, dict }: WidgetAdminFormProps) {
+
 
   return (
     <div className="space-y-3 text-start">
       <div>
         <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
-          {dict?.["admin.widgets.widget_title"] || (isRtl ? "عنوان الأداة" : "Widget Title")}
+          {dict?.["admin.widgets.widget_title"] || ""}
         </label>
         <input
           type="text"
@@ -23,13 +24,13 @@ export function CustomHtmlAdminForm({ item, onChange, dict, direction }: WidgetA
 
       <div>
         <label className="block text-[0.75rem] font-medium text-[#50575e] mb-1">
-          {isRtl ? "كود HTML مخصص / تضمين أو برمجيات" : "HTML Code / Content"}
+          {dict?.["admin.widgets.content"] || ""}
         </label>
         <textarea
           rows={5}
           value={item.content || ""}
           onChange={(e) => onChange({ content: e.target.value })}
-          placeholder="<div>Custom HTML, embed codes, widgets, scripts...</div>"
+          placeholder={dict?.["admin.widgets.safe_html_placeholder"] || ""}
           className="w-full font-mono rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[0.75rem] text-[#2c3338]"
         />
       </div>
@@ -37,7 +38,7 @@ export function CustomHtmlAdminForm({ item, onChange, dict, direction }: WidgetA
   );
 }
 
-export function CustomHtmlRender({ item, theme }: WidgetRenderProps) {
+export function CustomHtmlRender({ item }: WidgetRenderProps) {
   if (!item.content?.trim()) return null;
 
   return (
@@ -50,7 +51,7 @@ export function CustomHtmlRender({ item, theme }: WidgetRenderProps) {
       <div
         className="text-xs text-theme-text overflow-hidden"
         dangerouslySetInnerHTML={{
-          __html: item.content,
+          __html: sanitizePluginMarkup(item.content),
         }}
       />
     </div>
@@ -58,7 +59,7 @@ export function CustomHtmlRender({ item, theme }: WidgetRenderProps) {
 }
 
 export const customHtmlWidgetModule: WidgetModule = {
-  manifest: manifest as any,
+  manifest: manifest as WidgetManifest,
   AdminForm: CustomHtmlAdminForm,
   render: CustomHtmlRender,
 };

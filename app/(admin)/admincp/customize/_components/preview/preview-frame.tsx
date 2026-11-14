@@ -20,11 +20,13 @@ const DEVICE_WIDTH: Record<DeviceMode, string> = {
  * theme CSS can't touch the admin UI. Unpublished state is pushed in with postMessage.
  */
 export function PreviewFrame({
+  title,
   themeSlug,
   lang,
   state,
   device,
 }: {
+  title: string;
   themeSlug: string;
   lang?: string;
   state: PreviewState;
@@ -55,7 +57,7 @@ export function PreviewFrame({
   return (
     <iframe
       ref={frame}
-      title="Theme preview"
+      title={title}
       src={previewUrl(themeSlug, lang)}
       className={`h-full max-w-full bg-white rounded border border-slate-500/40 shadow-2xl transition-all duration-300 ${DEVICE_WIDTH[device]}`}
     />

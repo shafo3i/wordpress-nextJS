@@ -22,7 +22,7 @@ const json = (body: unknown, status = 200) =>
   })
 async function editor() {
   const session = await auth.api.getSession({ headers: await headers() })
-  return session && ["admin", "editor"].includes(session.user.role || "")
+  return session && !session.user.banned && ["admin", "editor"].includes(session.user.role || "")
     ? session
     : null
 }

@@ -1,4 +1,5 @@
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
 import {
   getAllMenus as getAllMenusService,
   getMenuById as getMenuByIdService,
@@ -14,19 +15,19 @@ export type { Menu, MenuItem, MenuLocation };
 export async function getMenus(
   options: GetMenusOptions = {}
 ): Promise<{ id: string; name: string; slug: string; language?: string }[]> {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return getAllMenusService(options);
 }
 
 export async function getMenu(
   menuId: string | number | bigint
 ): Promise<Menu | null> {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   return getMenuByIdService(menuId);
 }
 
 export async function getMenuAvailableItems(options: { language?: string } = {}) {
-  await verifyAdminOrEditor();
+  await verifyAdmin();
   const [pages, categories, posts] = await Promise.all([
     getPagesService(options),
     getCategoriesService(options),

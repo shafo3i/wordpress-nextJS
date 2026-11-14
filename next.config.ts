@@ -1,6 +1,15 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  async headers() {
+    // Also protect files served directly by Next's public-file handler in dev
+    // or on hosts that do not use deploy/server.mjs.
+    return [{ source: "/uploads/:path*", headers: [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Content-Security-Policy", value: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox" },
+      { key: "Referrer-Policy", value: "no-referrer" },
+    ] }]
+  },
   images: { localPatterns: [{ pathname: "/uploads/**", search: "" }] },
   experimental: {
     serverActions: { bodySizeLimit: "34mb" },

@@ -28,7 +28,7 @@ export function TagQuickEditRow({
   const handleUpdate = () => {
     setErrorMessage(null);
     if (!name.trim()) {
-      setErrorMessage(dict["admin.tags.form.name_required"] || "Tag name is required.");
+      setErrorMessage(dict["admin.tags.form.name_required"] || "");
       return;
     }
 
@@ -42,10 +42,10 @@ export function TagQuickEditRow({
         if (res?.success) {
           onSuccess(res);
         } else {
-          setErrorMessage(dict["admin.tags.single_failed"] || "Failed to update tag.");
+          setErrorMessage(dict["admin.tags.single_failed"] || "");
         }
       } catch (err: unknown) {
-        setErrorMessage(err instanceof Error ? err.message : "Error saving tag.");
+        setErrorMessage(err instanceof Error ? err.message : dict["admin.tags.error.failed"] || "");
       }
     });
   };
@@ -55,7 +55,7 @@ export function TagQuickEditRow({
       <td className="p-3 text-start" colSpan={5}>
         <div className="space-y-3 text-start text-[13px] text-[#2c3338]">
           <h4 className="text-[13px] font-bold uppercase tracking-wider text-start text-[#1d2327]">
-            {dict["admin.tags.quick_edit"] || "QUICK EDIT"}
+            {dict["admin.tags.quick_edit"] || ""}
           </h4>
 
           {errorMessage && (
@@ -67,7 +67,7 @@ export function TagQuickEditRow({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-                {dict["admin.tags.table.name"] || "Name"}
+                {dict["admin.tags.table.name"] || ""}
               </label>
               <input
                 className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -81,7 +81,7 @@ export function TagQuickEditRow({
 
             <div>
               <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-                {dict["admin.tags.table.slug"] || "Slug"}
+                {dict["admin.tags.table.slug"] || ""}
               </label>
               <input
                 className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -101,8 +101,8 @@ export function TagQuickEditRow({
               type="button"
             >
               {isPending
-                ? dict["admin.tags.updating"] || "Updating..."
-                : dict["admin.tags.update"] || "Update Tag"}
+                ? dict["admin.tags.updating"] || ""
+                : dict["admin.tags.update"] || ""}
             </button>
             <button
               className="inline-flex h-[30px] items-center rounded-[3px] border border-[#8c8f94] bg-[#f6f7f7] px-3 text-[13px] text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] disabled:opacity-50 cursor-pointer"
@@ -110,7 +110,7 @@ export function TagQuickEditRow({
               onClick={onCancel}
               type="button"
             >
-              {dict["admin.tags.cancel"] || "Cancel"}
+              {dict["admin.tags.cancel"] || ""}
             </button>
           </div>
         </div>

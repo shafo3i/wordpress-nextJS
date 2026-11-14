@@ -43,8 +43,8 @@ describe('post videos', () => {
     expect(videoMarkup('//evil.test/a.mp4')).toBeNull()
   })
   it('checks video extension, MIME and container signatures', () => {
-    expect(() => validateVideoUpload('a.mp4','video/mp4',new Uint8Array([0,0,0,24,102,116,121,112,105,115,111,109]))).not.toThrow()
-    expect(() => validateVideoUpload('a.webm','video/webm',new Uint8Array([26,69,223,163]))).not.toThrow()
+    expect(() => validateVideoUpload('a.mp4','video/mp4',new Uint8Array([0,0,0,24,102,116,121,112,105,115,111,109,0,0,0,0,105,115,111,109,109,112,52,50]))).not.toThrow()
+    expect(() => validateVideoUpload('a.webm','video/webm',new Uint8Array([26,69,223,163,0,0,119,101,98,109,0,0]))).not.toThrow()
     expect(() => validateVideoUpload('a.html','video/mp4',new Uint8Array([1]))).toThrow()
     expect(() => validateVideoUpload('a.mp4','text/html',new Uint8Array([1]))).toThrow()
     expect(() => validateVideoUpload('a.mp4','video/mp4',new Uint8Array([1]))).toThrow()

@@ -1,4 +1,5 @@
 "use client"
+import { newsletterCsvCell } from "@/lib/newsletter/csv"
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getSubscriberPage } from "../../newsletter-query"
@@ -57,11 +58,6 @@ export function NewsletterSubscribers({
         className="border border-[#2271b1] px-2 text-[#2271b1]"
         disabled={!data?.items.length}
         onClick={() => {
-          const cell = (value: string) =>
-            '"' +
-            (/^[=+@\t\r-]/.test(value) ? "'" : "") +
-            value.replaceAll('"', '""') +
-            '"'
           const rows = [
             [
               dict["admin.plugins.subscribers.email"],
@@ -80,7 +76,9 @@ export function NewsletterSubscribers({
               new Blob(
                 [
                   "\uFEFF" +
-                    rows.map((row) => row.map(cell).join(",")).join("\r\n"),
+                    rows
+                      .map((row) => row.map(newsletterCsvCell).join(","))
+                      .join("\r\n"),
                 ],
                 { type: "text/csv;charset=utf-8" }
               )

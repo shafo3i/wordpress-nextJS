@@ -1,3 +1,4 @@
+import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware"
 import { getActiveThemeSlug, getAllThemes } from "@/lib/themes/loader"
 import {

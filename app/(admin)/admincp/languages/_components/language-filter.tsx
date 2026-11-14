@@ -13,9 +13,9 @@ type Props = {
 
 export function LanguageFilter({ currentStatus, searchQuery, counts, dict = {} }: Props) {
     const tabs = [
-        { key: "all", label: dict["admin.languages.filter.all"] || "All", count: counts.all },
-        { key: "active", label: dict["admin.languages.filter.active"] || "Active", count: counts.active },
-        { key: "inactive", label: dict["admin.languages.filter.inactive"] || "Inactive", count: counts.inactive },
+        { key: "all", label: dict["admin.languages.filter.all"] || "", count: counts.all },
+        { key: "active", label: dict["admin.languages.filter.active"] || "", count: counts.active },
+        { key: "inactive", label: dict["admin.languages.filter.inactive"] || "", count: counts.inactive },
     ];
 
     const buildHref = (statusKey: string) => {
@@ -65,14 +65,14 @@ export function LanguageFilter({ currentStatus, searchQuery, counts, dict = {} }
                     className="h-[30px] w-48 rounded-[3px] border border-[#8c8f94] bg-white px-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none placeholder:text-[#a7aaad] focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                     defaultValue={searchQuery}
                     name="s"
-                    placeholder={dict["admin.languages.search_placeholder"] || "Search languages..."}
+                    placeholder={dict["admin.languages.search_placeholder"] || ""}
                     type="search"
                 />
                 <button
                     className="h-[30px] rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 text-[13px] text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78] cursor-pointer"
                     type="submit"
                 >
-                    {dict["admin.languages.search_button"] || "Search"}
+                    {dict["admin.languages.search_button"] || ""}
                 </button>
             </form>
         </div>

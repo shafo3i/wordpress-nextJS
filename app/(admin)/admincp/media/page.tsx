@@ -19,7 +19,7 @@ export default async function MediaLibraryPage() {
 
   return (
     <AdminShell>
-      <Suspense fallback={<div className="p-8 text-center text-xs text-[#646970]">Loading Media Library...</div>}>
+      <Suspense fallback={<div className="p-8 text-center text-xs text-[#646970]">{dict["admin.media.loading"] || ""}</div>}>
         <MediaLibraryView
           initialData={initialData}
           dict={dict}

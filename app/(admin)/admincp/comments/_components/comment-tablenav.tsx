@@ -85,40 +85,40 @@ export function CommentTablenav({
         >
             <div className="flex flex-wrap items-center gap-1.5">
                 <select
-                    aria-label={dict["admin.common.bulk_actions"] || "Bulk actions"}
+                    aria-label={dict["admin.common.bulk_actions"] || ""}
                     className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 py-1 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                     onChange={(e) => onBulkActionChange(e.target.value)}
                     value={bulkAction}
                 >
-                    <option value="Bulk actions">{dict["admin.common.bulk_actions"] || "Bulk actions"}</option>
+                    <option value="Bulk actions">{dict["admin.common.bulk_actions"] || ""}</option>
                     {!isTrash ? (
                         <>
                             {currentStatus !== "0" && (
                                 <option value="unapprove">
-                                    {dict["admin.comments.bulk.unapprove"] || "Unapprove"}
+                                    {dict["admin.comments.bulk.unapprove"] || ""}
                                 </option>
                             )}
                             {currentStatus !== "1" && (
                                 <option value="approve">
-                                    {dict["admin.comments.bulk.approve"] || "Approve"}
+                                    {dict["admin.comments.bulk.approve"] || ""}
                                 </option>
                             )}
                             {currentStatus !== "spam" && (
                                 <option value="spam">
-                                    {dict["admin.comments.bulk.spam"] || "Mark as Spam"}
+                                    {dict["admin.comments.bulk.spam"] || ""}
                                 </option>
                             )}
                             <option value="trash">
-                                {dict["admin.comments.bulk.trash"] || "Move to Trash"}
+                                {dict["admin.comments.bulk.trash"] || ""}
                             </option>
                         </>
                     ) : (
                         <>
                             <option value="restore">
-                                {dict["admin.comments.bulk.restore"] || "Restore"}
+                                {dict["admin.comments.bulk.restore"] || ""}
                             </option>
                             <option value="delete">
-                                {dict["admin.comments.bulk.delete"] || "Delete permanently"}
+                                {dict["admin.comments.bulk.delete"] || ""}
                             </option>
                         </>
                     )}
@@ -131,38 +131,38 @@ export function CommentTablenav({
                     type="button"
                 >
                     {isPending
-                        ? dict["admin.common.applying"] || "Applying..."
-                        : dict["admin.common.apply"] || "Apply"}
+                        ? dict["admin.common.applying"] || ""
+                        : dict["admin.common.apply"] || ""}
                 </button>
 
                 {position === "top" && (
                     <>
                         <select
-                            aria-label={dict["admin.comments.type.filter_label"] || "Filter by comment type"}
+                            aria-label={dict["admin.comments.type.filter_label"] || ""}
                             className="ms-2 h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 py-1 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                             onChange={(e) => setSelectedType(e.target.value)}
                             value={selectedType}
                         >
                             <option value="all">
-                                {dict["admin.comments.type.all"] || "All comment types"}
+                                {dict["admin.comments.type.all"] || ""}
                             </option>
                             <option value="comment">
-                                {dict["admin.comments.type.comments"] || "Comments"}
+                                {dict["admin.comments.type.comments"] || ""}
                             </option>
                             <option value="pings">
-                                {dict["admin.comments.type.pings"] || "Pings"}
+                                {dict["admin.comments.type.pings"] || ""}
                             </option>
                         </select>
 
                         {languages.length > 0 && (
                             <select
-                                aria-label={dict["admin.common.filter_by_language"] || "Filter by language"}
+                                aria-label={dict["admin.common.filter_by_language"] || ""}
                                 className="h-[30px] rounded-[3px] border border-[#8c8f94] bg-white px-2 py-1 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
                                 onChange={(e) => setSelectedLang(e.target.value)}
                                 value={selectedLang}
                             >
                                 <option value="all">
-                                    {dict["admin.common.all_languages"] || "All languages"}
+                                    {dict["admin.common.all_languages"] || ""}
                                 </option>
                                 {languages.map((l) => (
                                     <option key={l.code} value={l.code}>
@@ -177,7 +177,7 @@ export function CommentTablenav({
                             onClick={handleFilter}
                             type="button"
                         >
-                            {dict["admin.common.filter"] || "Filter"}
+                            {dict["admin.common.filter"] || ""}
                         </button>
                     </>
                 )}
@@ -185,16 +185,16 @@ export function CommentTablenav({
 
             <div className="flex items-center gap-3">
                 <span className="text-[13px] text-[#646970]">
-                    {totalItems} {dict["admin.pagination.comments"] || "comments"}
+                    {totalItems} {dict["admin.pagination.comments"] || ""}
                 </span>
 
                 <div className="flex items-center gap-1">
                     <span className="mx-1 text-[13px] text-[#646970]">
-                        {validCurrentPage} {dict["admin.pagination.of"] || "of"} {validTotalPages}
+                        {validCurrentPage} {dict["admin.pagination.of"] || ""} {validTotalPages}
                     </span>
                     {validCurrentPage > 1 ? (
                         <Link
-                            aria-label={dict["admin.pagination.first"] || "First page"}
+                            aria-label={dict["admin.pagination.first"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(1)}
                         >
@@ -207,7 +207,7 @@ export function CommentTablenav({
                     )}
                     {validCurrentPage > 1 ? (
                         <Link
-                            aria-label={dict["admin.pagination.prev"] || "Previous page"}
+                            aria-label={dict["admin.pagination.prev"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(validCurrentPage - 1)}
                         >
@@ -220,7 +220,7 @@ export function CommentTablenav({
                     )}
                     {validCurrentPage < validTotalPages ? (
                         <Link
-                            aria-label={dict["admin.pagination.next"] || "Next page"}
+                            aria-label={dict["admin.pagination.next"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(validCurrentPage + 1)}
                         >
@@ -233,7 +233,7 @@ export function CommentTablenav({
                     )}
                     {validCurrentPage < validTotalPages ? (
                         <Link
-                            aria-label={dict["admin.pagination.last"] || "Last page"}
+                            aria-label={dict["admin.pagination.last"] || ""}
                             className="flex h-[26px] w-[26px] items-center justify-center rounded-[3px] border border-[#c3c4c7] bg-[#f6f7f7] text-[#2271b1] hover:border-[#8c8f94] hover:bg-[#f0f0f1]"
                             href={buildHref(validTotalPages)}
                         >

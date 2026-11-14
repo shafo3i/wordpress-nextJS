@@ -25,7 +25,9 @@ export default async function PluginSettingsPage({
   const session = await verifyAdminOrEditor()
 
   const { slug } = await params
-  const pluginModule = AVAILABLE_PLUGINS[slug]
+  const parsedSlug = pluginSlugSchema.safeParse(slug)
+  if (!parsedSlug.success) notFound()
+  const pluginModule = AVAILABLE_PLUGINS[parsedSlug.data]
 
   if (!pluginModule) {
     notFound()

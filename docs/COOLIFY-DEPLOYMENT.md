@@ -75,6 +75,48 @@ The upload runtime can be checked separately with `node --test tests/node/deploy
 
 Check both container health statuses, `/`, `/ar`, admin sign-in, Pages/Posts/Media/Settings, a migrated article image, and a new upload. Redeploy once and confirm that the uploaded file persists. Set Site Address in admin settings to the deployed public URL; imported local settings may still contain `http://localhost:3000`.
 
+## GitHub Actions builds and Coolify pulls the image
+
+The workflow is `.github/workflows/ci-cd.yml`. On pull requests it runs checks only. On pushes to `main` (or a manual run on `main`), checks must succeed before GitHub builds the existing Dockerfile, publishes the image and calls the Coolify deploy webhook. Tests use dummy credentials, not the deployed database. No database reset, seed or migration is run.
+
+The checks include TypeScript, the unit/security regression suite with two workers, upload-serving tests, a production dependency audit that blocks high/critical advisories, and selected isolated browser smoke tests. This is not a claim that the remaining security-plan work or every browser workflow has been audited. The image build is also a release gate. A webhook success means deployment was requested; it does not establish that the application became healthy.
+
+For this repository, images are published as:
+
+```text
+ghcr.io/shafo3i/wordpress-nextjs:latest
+ghcr.io/shafo3i/wordpress-nextjs:sha-<full-commit-sha>
+```
+
+The image name is derived from the repository owner/name and lowercased. If the repository is renamed, update `APP_IMAGE` in Coolify accordingly. The existing package lockfile, Node 24 and pnpm 10.28.0 are retained. Only the public URL is passed as an application build argument. Database, SMTP, encryption and authentication secrets remain in Coolify at runtime.
+
+### GitHub configuration
+
+In repository **Settings > Secrets and variables > Actions**, add:
+
+| Kind | Name | Value |
+| --- | --- | --- |
+| Variable | `NEXT_PUBLIC_APP_URL` | The public application origin, identical to the URL used at runtime in Coolify. This is public configuration, not a credential. |
+| Secret | `COOLIFY_WEBHOOK` | The authenticated deploy webhook for the existing Compose application, using HTTPS. |
+| Secret | `COOLIFY_TOKEN` | A Coolify API token with Deploy permission and an appropriate expiration. |
+
+`GITHUB_TOKEN` is supplied by Actions; do not create a personal access token for publishing. Image publishing gets `packages: write` only in the main-branch image job. Pull-request jobs never publish or deploy. Checkout credentials are not persisted. The workflow serializes releases so parallel runs cannot replace `latest` during the release steps. Secrets are passed through environment variables rather than interpolated into shell code; the webhook request does not follow redirects or retry POSTs automatically.
+
+### Switch the existing Coolify Compose resource
+
+1. Enable Coolify API access if necessary, create the Deploy token, and copy this application's deploy webhook. Do not paste the token into Git or this documentation.
+2. Authenticate Docker to GHCR on the deployment server if the package is private, as the server user Coolify uses. Use a separate read-packages credential for pulling. Alternatively, deliberately configure the image package as public.
+3. Keep the **same Coolify Compose resource** and change its Compose file location to `/compose.ghcr.yaml`. The original `/compose.yaml` is still available for source builds. Disable the resource's independent Git auto-deploy so it cannot bypass Actions checks or race the registry push.
+4. Keep the current domain, predefined-network connection, runtime environment and uploads storage. `compose.ghcr.yaml` changes the app from `build:` to `image:` and keeps PgBouncer, the `app`/`pgbouncer` service names and the `uploads:/app/public/uploads` mount. It does not create another database.
+5. Leave `APP_IMAGE` unset to use `ghcr.io/shafo3i/wordpress-nextjs:latest`, or explicitly set it to that value. GitHub must publish the first image before the resource can deploy it.
+6. Push the workflow/configuration changes to `main`, watch all three jobs, then check Coolify logs and both container health states. Confirm existing media and new uploads persist.
+
+Changing to a newly created Coolify resource can change the Compose project name and therefore create a different empty uploads volume. Reuse the existing resource; do not delete the old uploads volume. If a new resource is unavoidable, explicitly attach the existing volume before switching traffic.
+
+Automatic deployment uses `latest`; the commit-specific tags provide traceability and rollback images. To pin or roll back, set Coolify's `APP_IMAGE` to `ghcr.io/shafo3i/wordpress-nextjs:sha-<full-commit-sha>` and redeploy. A pinned value stays pinned across later webhook calls until you change it. The workflow does not silently rewrite Coolify environment variables or claim digest-pinned automatic releases.
+
+Local validation does not publish an image or call Coolify. The final Docker build/push and live pull/health check must be confirmed in GitHub Actions/Coolify; a local Docker Engine must be running to reproduce the build locally.
+
 ## References
 
 - [Coolify Compose configuration and networking](https://coolify.io/docs/applications/builds/docker-compose)

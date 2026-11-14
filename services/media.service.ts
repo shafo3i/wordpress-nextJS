@@ -1,14 +1,11 @@
+import "server-only";
+import { verifyPostEditor } from "@/lib/authMIddleware";
+import { mediaListQuerySchema } from "@/db/schema/cms-media-details";
 import { mapMediaAttachment } from "@/lib/media-attachment";
 import { updateMediaDetails } from "./media-details.service";
-import fs from "node:fs/promises";
-import fsSync from "node:fs";
-import path from "node:path";
-import sharp from "sharp";
-import { MAX_MEDIA_UPLOAD_BYTES, validateVideoUpload } from "@/lib/media-upload";
-import { db } from "@/db";
+import { db, type DB } from "@/db";
 import { wpPosts, wpPostmeta, user } from "@/db/schema";
-import { eq, and, desc, sql, like, inArray } from "drizzle-orm";
-import { THEME_THUMBNAIL_SIZES } from "./media-tools.service";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 
 export interface MediaItem {
   id: number;
@@ -37,21 +34,6 @@ export interface MediaListResult {
   availableMonths: Array<{ value: string; label: string }>;
 }
 
-function getUploadsDir(): string {
-  return path.join(process.cwd(), "public", "uploads");
-}
-
-function sanitizeFilename(originalName: string): string {
-  const parsed = path.parse(originalName);
-  const cleanBase = parsed.name
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
-  const ext = parsed.ext.toLowerCase();
-  return `${cleanBase || "file"}${ext}`;
-}
-
 /**
  * Queries paginated media attachments with type, date, and search filters
  */
@@ -61,9 +43,11 @@ export async function getMediaLibraryItems(params: {
   search?: string;
   page?: number;
   perPage?: number;
-}): Promise<MediaListResult> {
-  const page = Math.max(1, params.page || 1);
-  const perPage = Math.min(100, Math.max(1, params.perPage || 40));
+}, database: DB = db): Promise<MediaListResult> {
+  await verifyPostEditor();
+  const parsed = mediaListQuerySchema.parse(params);
+  params = parsed;
+  const { page, perPage } = parsed;
   const offset = (page - 1) * perPage;
 
   const conditions = [eq(wpPosts.postType, "attachment")];
@@ -102,16 +86,16 @@ export async function getMediaLibraryItems(params: {
   }
 
   // Get total count
-  const [totalCountRow] = await db
+  const [totalCountRow] = await database
     .select({ count: sql<number>`count(*)::int` })
     .from(wpPosts)
     .where(and(...conditions));
 
   const total = totalCountRow?.count || 0;
-  const totalPages = Math.ceil(total / perPage);
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   // Fetch paginated rows
-  const rows = await db
+  const rows = await database
     .select({
       id: wpPosts.id,
       title: wpPosts.postTitle,
@@ -133,11 +117,11 @@ export async function getMediaLibraryItems(params: {
   const metaMap = new Map<string, Record<string, string>>();
 
   if (postIds.length > 0) {
-    const metas = await db
+    const metas = await database
       .select({
         postId: wpPostmeta.postId,
         metaKey: wpPostmeta.metaKey,
-        metaValue: wpPostmeta.metaValue,
+        metaValue: sql<string>`left(${wpPostmeta.metaValue}, 100001)`,
       })
       .from(wpPostmeta)
       .where(
@@ -150,7 +134,7 @@ export async function getMediaLibraryItems(params: {
     for (const m of metas) {
       const key = m.postId.toString();
       if (!metaMap.has(key)) metaMap.set(key, {});
-      if (m.metaKey && m.metaValue) {
+      if (m.metaKey && m.metaValue && m.metaValue.length <= 100000) {
         metaMap.get(key)![m.metaKey] = m.metaValue;
       }
     }
@@ -161,7 +145,7 @@ export async function getMediaLibraryItems(params: {
   const authorMap = new Map<string, string>();
   if (authorIds.length > 0) {
     try {
-      const users = await db
+      const users = await database
         .select({ id: user.id, name: user.name })
         .from(user)
         .where(inArray(user.id, authorIds.map(String)));
@@ -176,7 +160,7 @@ export async function getMediaLibraryItems(params: {
   const items: MediaItem[] = rows.map(row => mapMediaAttachment({...row,authorName:authorMap.get(String(row.authorId))},metaMap.get(row.id.toString())||{}));
 
   // Calculate available distinct months for the dropdown
-  const monthRows = await db
+  const monthRows = await database
     .select({
       monthStr: sql<string>`TO_CHAR(${wpPosts.postDate}, 'YYYY-MM')`,
     })
@@ -188,9 +172,7 @@ export async function getMediaLibraryItems(params: {
   const availableMonths = monthRows
     .filter((m) => Boolean(m.monthStr))
     .map((m) => {
-      const [year, month] = m.monthStr.split("-");
-      const date = new Date(Number(year), Number(month) - 1, 1);
-      const label = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      const label = m.monthStr;
       return { value: m.monthStr, label };
     });
 
@@ -203,184 +185,7 @@ export async function getMediaLibraryItems(params: {
   };
 }
 
-/**
- * Handles single or multiple file uploads, image resizing via Sharp, and database registration
- */
-export async function uploadMediaFile(
-  fileBuffer: Buffer,
-  originalFilename: string,
-  mimeType: string,
-  authorId?: string
-): Promise<MediaItem> {
-  if (!fileBuffer.length || fileBuffer.length > MAX_MEDIA_UPLOAD_BYTES) throw new Error("Invalid media file size");
-  validateVideoUpload(originalFilename, mimeType, fileBuffer);
-  const uploadsDir = getUploadsDir();
-
-  // Create date-based folder: public/uploads/YYYY/MM
-  const now = new Date();
-  const year = now.getFullYear().toString();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const relDir = `${year}/${month}`;
-  const targetDir = path.join(uploadsDir, year, month);
-
-  if (!fsSync.existsSync(targetDir)) {
-    await fs.mkdir(targetDir, { recursive: true });
-  }
-
-  // Ensure unique filename
-  const cleanName = sanitizeFilename(originalFilename);
-  const parsed = path.parse(cleanName);
-  let finalFilename = cleanName;
-  let counter = 1;
-
-  while (fsSync.existsSync(path.join(targetDir, finalFilename))) {
-    finalFilename = `${parsed.name}-${counter}${parsed.ext}`;
-    counter++;
-  }
-
-  const finalFullPath = path.join(targetDir, finalFilename);
-  const relFilePath = `${relDir}/${finalFilename}`.replace(/\\/g, "/");
-  const fileUrl = `/uploads/${relFilePath}`;
-
-  // Write original file to disk
-  await fs.writeFile(finalFullPath, fileBuffer);
-
-  let width = 0;
-  let height = 0;
-  const sizesMetadata: Record<string, any> = {};
-  const isImage = mimeType.startsWith("image/");
-
-  if (isImage) {
-    try {
-      const imagePipeline = sharp(fileBuffer);
-      const meta = await imagePipeline.metadata();
-      width = meta.width || 0;
-      height = meta.height || 0;
-
-      // Generate responsive sizes & WebP variants
-      for (const size of THEME_THUMBNAIL_SIZES) {
-        const thumbName = `${parsed.name}-${size.width}x${size.height}${parsed.ext}`;
-        const thumbPath = path.join(targetDir, thumbName);
-
-        const thumb = sharp(fileBuffer);
-        if (size.crop) {
-          thumb.resize({
-            width: size.width,
-            height: size.height,
-            fit: "cover",
-            position: "center",
-          });
-        } else {
-          thumb.resize({
-            width: size.width,
-            height: size.height,
-            fit: "inside",
-            withoutEnlargement: true,
-          });
-        }
-
-        await thumb.toFile(thumbPath);
-
-        sizesMetadata[size.name] = {
-          file: thumbName,
-          width: size.width,
-          height: size.height,
-          mimeType: meta.format ? `image/${meta.format}` : mimeType,
-        };
-
-        // Also generate WebP variant
-        const webpName = `${parsed.name}-${size.width}x${size.height}.webp`;
-        const webpPath = path.join(targetDir, webpName);
-        await sharp(fileBuffer)
-          .resize({
-            width: size.width,
-            height: size.height,
-            fit: size.crop ? "cover" : "inside",
-            withoutEnlargement: true,
-          })
-          .webp({ quality: 82 })
-          .toFile(webpPath);
-      }
-    } catch (err) {
-      console.error("Error generating thumbnails for uploaded image:", err);
-    }
-  }
-
-  // Resolve valid post author ID matching foreign key to user table
-  let validAuthorId = authorId;
-  if (!validAuthorId) {
-    const defaultUser = await db.select({ id: user.id }).from(user).limit(1);
-    validAuthorId = defaultUser[0]?.id || "aDjV7Yapfqfz3JFOtn2zbLrzMcZ9w8ix";
-  }
-
-  // Insert attachment into wpPosts
-  const [inserted] = await db
-    .insert(wpPosts)
-    .values({
-      postTitle: parsed.name.replace(/[-_]/g, " "),
-      postName: parsed.name,
-      postType: "attachment",
-      postMimeType: mimeType,
-      postStatus: "inherit",
-      guid: fileUrl,
-      postDate: now,
-      postDateGmt: now,
-      postModified: now,
-      postModifiedGmt: now,
-      postAuthor: validAuthorId,
-    })
-    .returning({ id: wpPosts.id });
-
-  const id = Number(inserted.id);
-
-  // Insert metadata records into wpPostmeta
-  await db.insert(wpPostmeta).values([
-    {
-      postId: BigInt(id),
-      metaKey: "_wp_attached_file",
-      metaValue: relFilePath,
-    },
-    {
-      postId: BigInt(id),
-      metaKey: "_wp_attachment_metadata",
-      metaValue: JSON.stringify({
-        width,
-        height,
-        file: relFilePath,
-        sizes: sizesMetadata,
-        image_meta: {
-          created_timestamp: Date.now(),
-        },
-      }),
-    },
-    {
-      postId: BigInt(id),
-      metaKey: "_wp_attachment_image_alt",
-      metaValue: "",
-    },
-  ]);
-
-  const thumbUrl = sizesMetadata.thumbnail?.file
-    ? `/uploads/${relDir}/${sizesMetadata.thumbnail.file}`
-    : fileUrl;
-
-  return {
-    id,
-    title: parsed.name.replace(/[-_]/g, " "),
-    filename: finalFilename,
-    url: fileUrl,
-    thumbnailUrl: thumbUrl,
-    mimeType,
-    sizeBytes: fileBuffer.length,
-    width: width || undefined,
-    height: height || undefined,
-    altText: "",
-    caption: "",
-    description: "",
-    uploadedAt: now.toISOString(),
-    authorName: "Admin",
-  };
-}
+export { uploadMediaFile } from "./media-upload.service";
 
 /**
  * Updates metadata for a media item (Alt text, Title, Caption, Description)
@@ -398,85 +203,4 @@ export async function updateMediaItem(
   return {success:true};
 }
 
-/**
- * Permanently deletes media attachments from database and removes all physical files and thumbnails from disk
- */
-export async function deleteMediaItems(ids: number[]): Promise<{ deletedCount: number }> {
-  if (ids.length === 0) return { deletedCount: 0 };
-  const uploadsDir = getUploadsDir();
-
-  // 1. Retrieve all file paths and metadata before deleting from DB
-  const metaRows = await db
-    .select({
-      postId: wpPostmeta.postId,
-      metaKey: wpPostmeta.metaKey,
-      metaValue: wpPostmeta.metaValue,
-    })
-    .from(wpPostmeta)
-    .where(
-      and(
-        inArray(wpPostmeta.postId, ids.map((id) => BigInt(id))),
-        sql`${wpPostmeta.metaKey} IN ('_wp_attached_file', '_wp_attachment_metadata')`
-      )
-    );
-
-  const filesToDelete = new Set<string>();
-
-  for (const row of metaRows) {
-    if (row.metaKey === "_wp_attached_file" && row.metaValue) {
-      const origRel = row.metaValue;
-      filesToDelete.add(path.join(uploadsDir, origRel));
-      const origDir = path.dirname(origRel);
-
-      // Check metadata for thumbnails
-      const metaObj = metaRows.find(
-        (m) => m.postId === row.postId && m.metaKey === "_wp_attachment_metadata"
-      );
-      if (metaObj?.metaValue) {
-        try {
-          const parsed = JSON.parse(metaObj.metaValue);
-          if (parsed.sizes && typeof parsed.sizes === "object") {
-            for (const sizeKey of Object.keys(parsed.sizes)) {
-              const s = parsed.sizes[sizeKey];
-              if (s?.file) {
-                filesToDelete.add(path.join(uploadsDir, origDir, s.file));
-                // Also check for corresponding webp
-                const webpFile = s.file.replace(/\.[^.]+$/, ".webp");
-                filesToDelete.add(path.join(uploadsDir, origDir, webpFile));
-              }
-            }
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }
-
-  // 2. Delete physical files from disk
-  for (const filePath of filesToDelete) {
-    try {
-      if (fsSync.existsSync(filePath)) {
-        await fs.unlink(filePath);
-      }
-    } catch (err) {
-      console.error(`Failed to delete media file: ${filePath}`, err);
-    }
-  }
-
-  // 3. Delete postmeta and posts records
-  await db
-    .delete(wpPostmeta)
-    .where(inArray(wpPostmeta.postId, ids.map((id) => BigInt(id))));
-
-  await db
-    .delete(wpPosts)
-    .where(
-      and(
-        inArray(wpPosts.id, ids.map((id) => BigInt(id))),
-        eq(wpPosts.postType, "attachment")
-      )
-    );
-
-  return { deletedCount: ids.length };
-}
+export { deleteMediaItems } from "./media-delete.service";

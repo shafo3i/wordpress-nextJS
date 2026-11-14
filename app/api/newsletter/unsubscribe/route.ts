@@ -11,21 +11,21 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   if (!newsletterOriginAllowed(request))
     return new Response(null, { status: 403 })
-  const url = new URL(request.url),
-    id = z.string().uuid().safeParse(url.searchParams.get("id")),
-    token = newsletterTokenSchema.safeParse(url.searchParams.get("token"))
-  if (
-    !id.success ||
-    !token.success ||
-    !validUnsubscribeToken(id.data, token.data)
-  )
-    return newsletterTokenPage(
-      request,
-      "",
-      "site.newsletter.invalid_token",
-      400
-    )
   try {
+    const url = new URL(request.url),
+      id = z.string().uuid().safeParse(url.searchParams.get("id")),
+      token = newsletterTokenSchema.safeParse(url.searchParams.get("token"))
+    if (
+      !id.success ||
+      !token.success ||
+      !validUnsubscribeToken(id.data, token.data)
+    )
+      return newsletterTokenPage(
+        request,
+        "",
+        "site.newsletter.invalid_token",
+        400
+      )
     await unsubscribeNewsletterSubscriber(id.data)
     return newsletterTokenPage(request, "", "site.newsletter.unsubscribed")
   } catch {

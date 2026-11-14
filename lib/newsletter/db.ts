@@ -1,9 +1,11 @@
+import "server-only"
 import { and, eq, sql, desc } from "drizzle-orm"
 import { randomBytes, randomUUID } from "node:crypto"
 import { db, type DB } from "@/db"
 import {
   newsletterSubscribers as subscribers,
   newsletterRateLimits,
+  newsletterEmailSchema,
 } from "@/db/schema/cms-newsletter"
 import { newsletterTokenHash } from "./tokens"
 
@@ -19,6 +21,9 @@ export interface NewsletterSubscriber {
 export async function getNewsletterSubscribers(
   database: DB = db
 ): Promise<NewsletterSubscriber[]> {
+  const { verifyPluginAdministrator } =
+    await import("@/lib/plugins/authorization")
+  await verifyPluginAdministrator()
   const rows = await database
     .select()
     .from(subscribers)
@@ -132,11 +137,17 @@ export async function removeNewsletterSubscriber(
   email: string,
   database: DB = db
 ) {
+  const { verifyPluginAdministrator } =
+    await import("@/lib/plugins/authorization")
+  await verifyPluginAdministrator()
   await database
     .delete(subscribers)
-    .where(eq(subscribers.email, email.trim().toLowerCase()))
+    .where(eq(subscribers.email, newsletterEmailSchema.parse(email)))
   return true
 }
 export async function clearAllNewsletterSubscribers(database: DB = db) {
+  const { verifyPluginAdministrator } =
+    await import("@/lib/plugins/authorization")
+  await verifyPluginAdministrator()
   await database.delete(subscribers)
 }

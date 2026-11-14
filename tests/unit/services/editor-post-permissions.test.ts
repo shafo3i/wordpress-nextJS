@@ -1,3 +1,5 @@
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: async () => ({ user: { role: "editor", id: "editor" } }), verifyPostEditor: async () => ({ user: { role: "editor", id: "editor" } }) }));
 import { describe, expect, it, vi } from "vitest"
 import type { DB } from "@/db"
 vi.mock("@/db", () => ({ db: {} }))
@@ -10,7 +12,8 @@ describe("editor post lifecycle restrictions", () => {
   })
   it.each([["publish", "trash"], ["trash", "publish"]])("cannot change %s to %s", async (existing, requested) => {
     const chain = { from: () => chain, where: () => chain, limit: () => chain, for: async () => [{ id: BigInt(1), status: existing }] }
-    const database = { select: () => chain, update: vi.fn() } as unknown as DB
+    const tx = { select: () => chain, update: vi.fn(), execute:vi.fn() };
+    const database = { ...tx,transaction:async(callback:(value:typeof tx)=>unknown)=>callback(tx) } as unknown as DB
     await expect(updatePost("1", { status: requested, editorRestricted: true }, database)).rejects.toBeInstanceOf(PostPermissionError)
     expect(database.update).not.toHaveBeenCalled()
   })

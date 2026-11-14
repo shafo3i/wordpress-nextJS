@@ -1,3 +1,6 @@
+import "server-only";
+import { verifyAdmin } from "@/lib/authMIddleware";
+import { hasTheme } from "@/themes/registry";
 import { eq } from "drizzle-orm"
 import { db, type DB } from "@/db"
 import { wpOptions } from "@/db/schema"
@@ -13,6 +16,8 @@ export async function saveThemeLayout(
   input: ThemeLayoutSettings,
   database: Pick<DB, "transaction"> = db
 ) {
+  await verifyAdmin();
+  if (!hasTheme(themeSlug)) throw new Error("Invalid theme");
   const patch = themeLayoutSchema.parse(input)
   const fallback = await getHomepageSettings(themeSlug)
   const key = `homepage_settings_${themeSlug}`

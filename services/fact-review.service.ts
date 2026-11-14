@@ -1,3 +1,4 @@
+import "server-only"
 import { createHash } from "node:crypto"
 import { and, desc, eq, ilike, or } from "drizzle-orm"
 import { db, type DB } from "@/db"
@@ -74,6 +75,10 @@ export async function saveFactReview(
   reviewer: { id: string; name: string },
   database: DB = db
 ) {
+  const { verifyPluginAdministrator } =
+    await import("@/lib/plugins/authorization")
+  const session = await verifyPluginAdministrator()
+  reviewer = { id: session.user.id, name: session.user.name || "" }
   const value = factReviewSchema.parse(input)
   return database.transaction(async (tx) => {
     const id = BigInt(value.postId)

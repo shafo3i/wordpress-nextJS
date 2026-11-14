@@ -26,7 +26,7 @@ export function TagForm({
 
     if (!name.trim()) {
       setErrorMessage(
-        dict["admin.tags.form.name_required"] || "Please enter a tag name."
+        dict["admin.tags.form.name_required"] || ""
       );
       return;
     }
@@ -43,7 +43,7 @@ export function TagForm({
         setSlug("");
         setDescription("");
         setSuccessMessage(
-          dict["admin.tags.created_notice"] || "Tag added."
+          dict["admin.tags.created_notice"] || ""
         );
         onCreated?.();
         router.refresh();
@@ -51,7 +51,7 @@ export function TagForm({
         setErrorMessage(
           err instanceof Error
             ? err.message
-            : dict["admin.tags.single_failed"] || "Failed to create tag."
+            : dict["admin.tags.single_failed"] || ""
         );
       }
     });
@@ -60,7 +60,7 @@ export function TagForm({
   return (
     <div className="text-[13px] text-start text-[#2c3338]">
       <h2 className="mb-3 text-[14px] font-semibold text-[#1d2327]">
-        {dict["admin.tags.form.add_new_title"] || "Add New Tag"}
+        {dict["admin.tags.form.add_new_title"] || ""}
       </h2>
 
       {errorMessage && (
@@ -78,7 +78,7 @@ export function TagForm({
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-            {dict["admin.tags.form.name"] || "Name"}
+            {dict["admin.tags.form.name"] || ""}
           </label>
           <input
             className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -91,13 +91,13 @@ export function TagForm({
           />
           <p className="mt-1 text-[11px] text-[#646970]">
             {dict["admin.tags.form.name_desc"] ||
-              "The name is how it appears on your site."}
+              ""}
           </p>
         </div>
 
         <div>
           <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-            {dict["admin.tags.form.slug"] || "Slug"}
+            {dict["admin.tags.form.slug"] || ""}
           </label>
           <input
             className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2.5 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] focus:ring-1 focus:ring-[#2271b1]"
@@ -109,13 +109,13 @@ export function TagForm({
           />
           <p className="mt-1 text-[11px] text-[#646970]">
             {dict["admin.tags.form.slug_desc"] ||
-              "The “slug” is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens."}
+              ""}
           </p>
         </div>
 
         <div>
           <label className="mb-1 block text-xs font-semibold text-[#1d2327]">
-            {dict["admin.tags.form.description"] || "Description"}
+            {dict["admin.tags.form.description"] || ""}
           </label>
           <textarea
             className="w-full rounded-[3px] border border-[#8c8f94] bg-white p-2 text-[13px] text-[#2c3338] shadow-[0_1px_2px_rgba(0,0,0,0.07)_inset] outline-none focus:border-[#2271b1] resize-y"
@@ -127,7 +127,7 @@ export function TagForm({
           />
           <p className="mt-1 text-[11px] text-[#646970]">
             {dict["admin.tags.form.description_desc"] ||
-              "The description is not prominent by default; however, some themes may show it."}
+              ""}
           </p>
         </div>
 
@@ -137,8 +137,8 @@ export function TagForm({
           type="submit"
         >
           {isPending
-            ? dict["admin.tags.form.submitting"] || "Adding Tag..."
-            : dict["admin.tags.form.submit"] || "Add New Tag"}
+            ? dict["admin.tags.form.submitting"] || ""
+            : dict["admin.tags.form.submit"] || ""}
         </button>
       </form>
     </div>

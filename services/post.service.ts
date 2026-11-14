@@ -1,3 +1,15 @@
+import "server-only"
+import { verifyPostEditor, verifyAdmin } from "@/lib/authMIddleware"
+import {
+  createPostEditorSchema,
+  updatePostEditorSchema,
+  postIdSchema,
+  postIdsSchema,
+  postQuerySchema,
+} from "@/db/schema/cms-post-editor"
+import { renderPostMedia } from "@/lib/post-content-media"
+import { contentPlainText } from "@/lib/content-text"
+import { featuredVideoUrl } from "@/lib/featured-video"
 import { getPostDateBounds } from "@/lib/post-date-filter"
 import { postViewsExpression } from "./post-views.service"
 import {
@@ -11,7 +23,6 @@ import {
   ilike,
   inArray,
   ne,
-  or,
   sql,
 } from "drizzle-orm"
 import { DB, db } from "@/db"
@@ -31,7 +42,7 @@ import {
 } from "@/db/schema/cms-languages"
 import {
   getPostLanguage,
-  getPostTranslations,
+  getDefaultLanguage,
   setPostLanguage,
   type LinkedPostTranslation,
 } from "./language.service"
@@ -41,23 +52,15 @@ import {
 // ---------------------------------------------------------------------------
 
 export function toBigInt(val: unknown): bigint {
-  if (val === null || val === undefined || val === "") return BigInt(0)
-  if (typeof val === "bigint") return val
-  if (typeof val === "number" || typeof val === "string") {
-    try {
-      return BigInt(val)
-    } catch {
-      return BigInt(0)
-    }
-  }
-  return BigInt(0)
+  return postIdSchema.parse(val)
 }
 
 export function toSlug(value: string): string {
   return value
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 200)
 }
@@ -67,6 +70,7 @@ export async function uniquePostSlug(
   excludeId?: bigint | string | number,
   database: DB = db
 ): Promise<string> {
+  await verifyPostEditor()
   const base = toSlug(title) || `post-${Date.now()}`
   let slug = base
   let suffix = 2
@@ -86,7 +90,9 @@ export async function uniquePostSlug(
       .limit(1)
 
     if (!existing.length) return slug
-    slug = `${base}-${suffix++}`.slice(0, 200)
+    const tail = `-${suffix++}`
+    slug = `${base.slice(0, 200 - tail.length)}${tail}`
+    if (suffix > 10000) throw new Error("slug_collision")
   }
 }
 
@@ -115,6 +121,7 @@ export interface PostItem {
   commentStatus: string
   pingStatus: string
   postPassword: string
+  featuredVideoUrl?: string
   featuredImageId?: string
   isFeatured?: boolean
   languageCode?: string
@@ -179,6 +186,7 @@ export interface CreatePostInput {
   postPassword?: string
   postParent?: string | number
   menuOrder?: number
+  featuredVideoUrl?: string
   featuredImageId?: string
   isFeatured?: boolean
   categorySlugs?: string[]
@@ -196,6 +204,7 @@ export interface UpdatePostInput {
   /** Set by authenticated server actions, never copied from client fields. */
   editorRestricted?: boolean
   expectedModified?: string
+  date?: string
   title?: string
   content?: string
   excerpt?: string
@@ -206,6 +215,7 @@ export interface UpdatePostInput {
   postPassword?: string
   postParent?: string | number
   menuOrder?: number
+  featuredVideoUrl?: string
   featuredImageId?: string
   isFeatured?: boolean
   categorySlugs?: string[]
@@ -278,14 +288,26 @@ async function syncPostSeoMeta(
 ) {
   if (!seo) return
 
-  await database
-    .delete(wpPostmeta)
-    .where(
-      and(
-        eq(wpPostmeta.postId, postId),
-        inArray(wpPostmeta.metaKey, [...SEO_META_KEYS])
+  await database.delete(wpPostmeta).where(
+    and(
+      eq(wpPostmeta.postId, postId),
+      inArray(
+        wpPostmeta.metaKey,
+        Object.keys(seo)
+          .filter((key) => seo[key as keyof PostSeoMeta] !== undefined)
+          .map(
+            (key) =>
+              ({
+                seoTitle: "_seo_title",
+                seoDescription: "_seo_description",
+                seoOgImage: "_seo_og_image",
+                seoNoindex: "_seo_noindex",
+                seoCanonical: "_seo_canonical",
+              })[key as keyof PostSeoMeta]
+          )
       )
     )
+  )
 
   const metaToInsert: { postId: bigint; metaKey: string; metaValue: string }[] =
     []
@@ -333,17 +355,41 @@ async function syncPostSeoMeta(
 
 async function syncPostTerms(
   postId: bigint,
-  categorySlugs: string[] = [],
-  tags: string[] = [],
+  categorySlugs: string[] | undefined,
+  tags: string[] | undefined,
   database: DB = db
 ) {
-  await database
-    .delete(wpTermRelationships)
-    .where(eq(wpTermRelationships.objectId, postId))
+  const kinds = [
+    ...(categorySlugs !== undefined ? ["category"] : []),
+    ...(tags !== undefined ? ["post_tag"] : []),
+  ]
+  const previous = await database
+    .select({ id: wpTermTaxonomy.termTaxonomyId })
+    .from(wpTermRelationships)
+    .innerJoin(
+      wpTermTaxonomy,
+      eq(wpTermTaxonomy.termTaxonomyId, wpTermRelationships.termTaxonomyId)
+    )
+    .where(
+      and(
+        eq(wpTermRelationships.objectId, postId),
+        inArray(wpTermTaxonomy.taxonomy, kinds)
+      )
+    )
+  if (previous.length)
+    await database.delete(wpTermRelationships).where(
+      and(
+        eq(wpTermRelationships.objectId, postId),
+        inArray(
+          wpTermRelationships.termTaxonomyId,
+          previous.map((item) => item.id)
+        )
+      )
+    )
 
   const taxonomyIds: bigint[] = []
 
-  if (categorySlugs.length) {
+  if (categorySlugs?.length) {
     const categories = await database
       .select({ taxonomyId: wpTermTaxonomy.termTaxonomyId })
       .from(wpTermTaxonomy)
@@ -354,10 +400,12 @@ async function syncPostTerms(
           inArray(wpTerms.slug, categorySlugs)
         )
       )
+    if (categories.length !== categorySlugs.length)
+      throw new Error("invalid_categories")
     taxonomyIds.push(...categories.map((c) => c.taxonomyId))
   }
 
-  for (const tagName of tags) {
+  for (const tagName of tags || []) {
     const cleanTag = tagName.trim()
     if (!cleanTag) continue
     const slug = toSlug(cleanTag)
@@ -401,12 +449,16 @@ async function syncPostTerms(
 
   if (taxonomyIds.length) {
     await database.insert(wpTermRelationships).values(
-      taxonomyIds.map((termTaxonomyId) => ({
+      [...new Set(taxonomyIds)].map((termTaxonomyId) => ({
         objectId: postId,
         termTaxonomyId,
       }))
     )
   }
+  await refreshPostTaxonomyCounts(
+    [...previous.map((item) => item.id), ...taxonomyIds],
+    database
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -422,6 +474,7 @@ export async function getPosts(
   totalPages: number
   currentPage: number
 }> {
+  const session = await verifyPostEditor()
   const {
     search,
     status,
@@ -434,8 +487,10 @@ export async function getPosts(
     pageSize: requestedPageSize = 20,
     orderBy = "postModified",
     order = "desc",
-  } = options
+  } = postQuerySchema.parse(options)
 
+  if (session.user.role === "editor" && status === "trash")
+    throw new PostPermissionError()
   const pageSize = Number.isFinite(requestedPageSize)
     ? Math.max(1, Math.min(100, Math.trunc(requestedPageSize)))
     : 20
@@ -675,7 +730,8 @@ export async function getPostCounts(
   options: { language?: string } = {},
   database: DB = db
 ): Promise<PostCounts> {
-  const { language } = options
+  await verifyPostEditor()
+  const { language } = postQuerySchema.parse(options)
 
   let langPostIds: bigint[] | undefined
   if (language && language !== "all") {
@@ -725,6 +781,7 @@ export async function getPostById(
   post: {
     id: string
     modifiedAt: string
+    date: string
     title: string
     content: string
     excerpt: string
@@ -733,6 +790,7 @@ export async function getPostById(
     commentStatus: string
     pingStatus: string
     postPassword: string
+    featuredVideoUrl: string
     featuredImageId: string
     isFeatured: boolean
     categorySlugs: string[]
@@ -743,8 +801,10 @@ export async function getPostById(
   }
   translations: LinkedPostTranslation[]
 } | null> {
-  const postId = toBigInt(id)
-  if (postId <= BigInt(0)) return null
+  const session = await verifyPostEditor()
+  const parsedId = postIdSchema.safeParse(id)
+  if (!parsedId.success) return null
+  const postId = parsedId.data
 
   const [postRows, metaRows, termRows, langInfo, translations] =
     await Promise.all([
@@ -753,6 +813,7 @@ export async function getPostById(
           id: wpPosts.id,
           title: wpPosts.postTitle,
           modifiedAt: wpPosts.postModifiedGmt,
+          date: wpPosts.postDate,
           content: wpPosts.postContent,
           excerpt: wpPosts.postExcerpt,
           slug: wpPosts.postName,
@@ -774,6 +835,7 @@ export async function getPostById(
           and(
             eq(wpPostmeta.postId, postId),
             inArray(wpPostmeta.metaKey, [
+              "_featured_video_url",
               "_thumbnail_id",
               "_is_featured",
               ...SEO_META_KEYS,
@@ -794,11 +856,12 @@ export async function getPostById(
         .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
         .where(eq(wpTermRelationships.objectId, postId)),
       getPostLanguage(postId, database),
-      getPostTranslations(postId, database),
+      getAdminPostTranslations(postId, database),
     ])
 
   if (!postRows.length) return null
   const p = postRows[0]
+  if (session.user.role === "editor" && p.status === "trash") return null
   const thumb = metaRows.find((m) => m.metaKey === "_thumbnail_id")
   const isFeatured =
     metaRows.find((m) => m.metaKey === "_is_featured")?.metaValue === "1"
@@ -825,14 +888,19 @@ export async function getPostById(
     post: {
       id: p.id.toString(),
       modifiedAt: p.modifiedAt?.toISOString() || "",
+      date: p.date.toISOString(),
       title: p.title,
-      content: p.content,
+      content: renderPostMedia(p.content),
       excerpt: p.excerpt,
       slug: p.slug,
       status: p.status,
       commentStatus: p.commentStatus,
       pingStatus: p.pingStatus,
       postPassword: p.postPassword,
+      featuredVideoUrl:
+        featuredVideoUrl(
+          metaRows.find((m) => m.metaKey === "_featured_video_url")?.metaValue
+        ) || "",
       featuredImageId: thumb?.metaValue ?? "",
       isFeatured,
       categorySlugs: catSlugs,
@@ -855,6 +923,7 @@ export async function getAllCategoriesOptions(
   language?: string,
   database: DB = db
 ): Promise<CategoryOption[]> {
+  await verifyPostEditor()
   const conditions = [eq(wpTermTaxonomy.taxonomy, "category")]
 
   if (language && language !== "all") {
@@ -901,6 +970,7 @@ export async function getAllCategoriesOptions(
 export async function getAllTagOptions(
   database: DB = db
 ): Promise<TagOption[]> {
+  await verifyPostEditor()
   const rows = await database
     .select({
       id: wpTerms.termId,
@@ -923,19 +993,39 @@ export async function createPost(
   input: CreatePostInput,
   database: DB = db
 ): Promise<string> {
-  if (database !== db) return createPostRecord(input, database)
-  // The legacy DB alias includes root-only members; post helpers use the shared transaction query methods.
-  return db.transaction((tx) => createPostRecord(input, tx as unknown as DB))
+  const session = await verifyPostEditor()
+  const parsed = createPostEditorSchema.parse(input)
+  if (session.user.role === "editor" && parsed.status === "trash")
+    throw new PostPermissionError()
+  return database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('pressforge:posts'))`
+    )
+    await validatePostLinks(parsed, tx)
+    const locale = parsed.languageCode || (await getDefaultLanguage(tx))?.code
+    if (!locale) throw new Error("invalid_language")
+    return createPostRecord(
+      {
+        ...parsed,
+        languageCode: locale,
+        authorId: session.user.id,
+        editorRestricted: session.user.role === "editor",
+      },
+      tx
+    )
+  })
 }
 
 async function createPostRecord(
   input: CreatePostInput,
   database: DB = db
 ): Promise<string> {
-  if (input.editorRestricted && input.status === "trash") throw new PostPermissionError()
+  if (input.editorRestricted && input.status === "trash")
+    throw new PostPermissionError()
   const {
     title,
-    content = "",
+    content: rawContent = "",
     excerpt = "",
     status = "draft",
     commentStatus = "open",
@@ -951,6 +1041,7 @@ async function createPostRecord(
     authorId,
   } = input
 
+  const content = renderPostMedia(rawContent)
   const slug = await uniquePostSlug(title, undefined, database)
   const now = new Date()
   const generatedExcerpt =
@@ -970,7 +1061,7 @@ async function createPostRecord(
       postDateGmt: now,
       postContent: content,
       postTitle: title,
-      postExcerpt: generatedExcerpt,
+      postExcerpt: contentPlainText(generatedExcerpt),
       postStatus: status,
       commentStatus,
       pingStatus,
@@ -981,7 +1072,10 @@ async function createPostRecord(
       postModified: now,
       postModifiedGmt: now,
       postContentFiltered: "",
-      postParent: toBigInt(postParent),
+      postParent:
+        postParent === "0" || postParent === 0
+          ? BigInt(0)
+          : toBigInt(postParent),
       guid: `/posts/${slug}`,
       menuOrder,
       postType: "post",
@@ -994,6 +1088,7 @@ async function createPostRecord(
 
   await syncFeaturedImage(newId, featuredImageId, database)
   await syncFeaturedPostFlag(newId, input.isFeatured, database)
+  await syncFeaturedVideo(newId, input.featuredVideoUrl, database)
   await syncPostTerms(newId, categorySlugs, tags, database)
 
   if (input.seo) {
@@ -1011,10 +1106,22 @@ export async function updatePost(
   input: UpdatePostInput,
   database: DB = db
 ): Promise<void> {
-  if (database !== db) return updatePostRecord(id, input, database)
-  return db.transaction((tx) =>
-    updatePostRecord(id, input, tx as unknown as DB)
-  )
+  const session = await verifyPostEditor()
+  const postId = postIdSchema.parse(id)
+  const parsed = updatePostEditorSchema.parse(input)
+  if (session.user.role === "editor" && parsed.status === "trash")
+    throw new PostPermissionError()
+  return database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('pressforge:posts'))`
+    )
+    await updatePostRecord(
+      postId,
+      { ...parsed, editorRestricted: session.user.role === "editor" },
+      tx
+    )
+  })
 }
 
 async function updatePostRecord(
@@ -1030,6 +1137,7 @@ async function updatePostRecord(
       id: wpPosts.id,
       postTitle: wpPosts.postTitle,
       status: wpPosts.postStatus,
+      slug: wpPosts.postName,
       modified: wpPosts.postModifiedGmt,
     })
     .from(wpPosts)
@@ -1038,30 +1146,40 @@ async function updatePostRecord(
     .for("update")
 
   if (!existing.length) throw new Error("Post not found")
-  if (input.editorRestricted && (existing[0].status === "trash" || input.status === "trash")) throw new PostPermissionError()
+  if (
+    input.editorRestricted &&
+    (existing[0].status === "trash" || input.status === "trash")
+  )
+    throw new PostPermissionError()
   if (
     input.expectedModified &&
     existing[0].modified.toISOString() !== input.expectedModified
   )
     throw new PostChangedError("post_changed")
 
+  await validatePostLinks(input, database)
   const updates: Partial<typeof wpPosts.$inferInsert> = {
     postModified: new Date(),
     postModifiedGmt: new Date(),
   }
 
-  if (input.title !== undefined) {
-    updates.postTitle = input.title
+  if (input.title !== undefined) updates.postTitle = input.title
+  if (input.slug !== undefined) {
     const slug = input.slug?.trim()
       ? await uniquePostSlug(input.slug, postId, database)
-      : await uniquePostSlug(input.title, postId, database)
+      : await uniquePostSlug(
+          input.title || existing[0].postTitle,
+          postId,
+          database
+        )
     updates.postName = slug
     updates.guid = `/posts/${slug}`
   }
 
-  if (input.content !== undefined) updates.postContent = input.content
+  if (input.content !== undefined)
+    updates.postContent = renderPostMedia(input.content)
   if (input.excerpt !== undefined) {
-    updates.postExcerpt = input.excerpt
+    updates.postExcerpt = contentPlainText(input.excerpt)
   } else if (input.content !== undefined && updates.postContent) {
     updates.postExcerpt = updates.postContent
       .replace(/<[^>]*>/g, " ")
@@ -1070,6 +1188,10 @@ async function updatePostRecord(
       .slice(0, 200)
   }
 
+  if (input.date) {
+    updates.postDate = new Date(input.date)
+    updates.postDateGmt = new Date(input.date)
+  }
   if (input.status !== undefined) updates.postStatus = input.status
   if (input.commentStatus !== undefined)
     updates.commentStatus = input.commentStatus
@@ -1077,7 +1199,10 @@ async function updatePostRecord(
   if (input.postPassword !== undefined)
     updates.postPassword = input.postPassword
   if (input.postParent !== undefined)
-    updates.postParent = toBigInt(input.postParent)
+    updates.postParent =
+      input.postParent === "0" || input.postParent === 0
+        ? BigInt(0)
+        : toBigInt(input.postParent)
   if (input.menuOrder !== undefined) updates.menuOrder = input.menuOrder
 
   await database
@@ -1088,6 +1213,7 @@ async function updatePostRecord(
   if (input.featuredImageId !== undefined) {
     await syncFeaturedImage(postId, input.featuredImageId, database)
   }
+  await syncFeaturedVideo(postId, input.featuredVideoUrl, database)
   if (input.isFeatured !== undefined) {
     await syncFeaturedPostFlag(postId, input.isFeatured, database)
   }
@@ -1100,6 +1226,20 @@ async function updatePostRecord(
     await syncPostSeoMeta(postId, input.seo, database)
   }
 
+  if (
+    input.status !== undefined &&
+    input.categorySlugs === undefined &&
+    input.tags === undefined
+  ) {
+    const assigned = await database
+      .select({ id: wpTermRelationships.termTaxonomyId })
+      .from(wpTermRelationships)
+      .where(eq(wpTermRelationships.objectId, postId))
+    await refreshPostTaxonomyCounts(
+      assigned.map((item) => item.id),
+      database
+    )
+  }
   if (input.languageCode) {
     const sourcePostId = input.translationOf
       ? toBigInt(input.translationOf)
@@ -1108,62 +1248,79 @@ async function updatePostRecord(
   }
 }
 
+async function changePostLifecycle(
+  raw: (bigint | string | number)[],
+  mode: "trash" | "restore" | "delete",
+  database: DB
+) {
+  await verifyAdmin()
+  const ids = postIdsSchema.parse(raw)
+  await database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('pressforge:posts'))`
+    )
+    const rows = await tx
+      .select({ id: wpPosts.id, status: wpPosts.postStatus })
+      .from(wpPosts)
+      .where(and(inArray(wpPosts.id, ids), eq(wpPosts.postType, "post")))
+      .for("update")
+    if (rows.length !== ids.length) throw new Error("missing_posts")
+    if (mode !== "trash" && rows.some((row) => row.status !== "trash"))
+      throw new Error("invalid_status")
+    const assigned = await tx
+      .select({ id: wpTermRelationships.termTaxonomyId })
+      .from(wpTermRelationships)
+      .where(inArray(wpTermRelationships.objectId, ids))
+    if (mode !== "delete") {
+      await tx
+        .update(wpPosts)
+        .set({
+          postStatus: mode === "trash" ? "trash" : "draft",
+          postModified: new Date(),
+          postModifiedGmt: new Date(),
+        })
+        .where(and(inArray(wpPosts.id, ids), eq(wpPosts.postType, "post")))
+    } else {
+      await tx.delete(wpPostmeta).where(inArray(wpPostmeta.postId, ids))
+      await tx
+        .delete(wpTermRelationships)
+        .where(inArray(wpTermRelationships.objectId, ids))
+      await tx
+        .delete(postTranslationsTable)
+        .where(inArray(postTranslationsTable.postId, ids))
+      await tx.delete(wpComments).where(inArray(wpComments.commentPostId, ids))
+      await tx
+        .delete(wpPosts)
+        .where(and(inArray(wpPosts.id, ids), eq(wpPosts.postType, "post")))
+    }
+    await refreshPostTaxonomyCounts(
+      assigned.map((item) => item.id),
+      tx
+    )
+  })
+}
 export async function trashPosts(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<void> {
-  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0))
-  if (!bigIds.length) return
-
-  await database
-    .update(wpPosts)
-    .set({
-      postStatus: "trash",
-      postModified: new Date(),
-      postModifiedGmt: new Date(),
-    })
-    .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")))
+  return changePostLifecycle(ids, "trash", database)
 }
-
 export async function restorePosts(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<void> {
-  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0))
-  if (!bigIds.length) return
-
-  await database
-    .update(wpPosts)
-    .set({
-      postStatus: "draft",
-      postModified: new Date(),
-      postModifiedGmt: new Date(),
-    })
-    .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")))
+  return changePostLifecycle(ids, "restore", database)
 }
-
 export async function deletePosts(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<void> {
-  const bigIds = ids.map(toBigInt).filter((i) => i > BigInt(0))
-  if (!bigIds.length) return
-
-  await database.transaction(async (tx) => {
-    await tx.delete(wpPostmeta).where(inArray(wpPostmeta.postId, bigIds))
-    await tx
-      .delete(wpTermRelationships)
-      .where(inArray(wpTermRelationships.objectId, bigIds))
-    await tx
-      .delete(postTranslationsTable)
-      .where(inArray(postTranslationsTable.postId, bigIds))
-    await tx
-      .delete(wpPosts)
-      .where(and(inArray(wpPosts.id, bigIds), eq(wpPosts.postType, "post")))
-  })
+  return changePostLifecycle(ids, "delete", database)
 }
 
 export async function getPostMonths(database: DB = db): Promise<string[]> {
+  await verifyPostEditor()
   const month = sql<string>`to_char(${wpPosts.postDate},'YYYY-MM')`
   const rows = await database
     .select({ month })
@@ -1174,4 +1331,106 @@ export async function getPostMonths(database: DB = db): Promise<string[]> {
     .groupBy(month)
     .orderBy(desc(month))
   return rows.map((row) => row.month)
+}
+
+async function validatePostLinks(input: UpdatePostInput, database: DB) {
+  if (input.featuredImageId) {
+    const [image] = await database
+      .select({ id: wpPosts.id })
+      .from(wpPosts)
+      .where(
+        and(
+          eq(wpPosts.id, postIdSchema.parse(input.featuredImageId)),
+          eq(wpPosts.postType, "attachment"),
+          ilike(wpPosts.postMimeType, "image/%")
+        )
+      )
+      .limit(1)
+    if (!image) throw new Error("invalid_image")
+  }
+  if (input.postParent && String(input.postParent) !== "0")
+    throw new Error("invalid_parent")
+  if (input.translationOf) {
+    const [source] = await database
+      .select({ id: wpPosts.id })
+      .from(wpPosts)
+      .where(
+        and(
+          eq(wpPosts.id, postIdSchema.parse(input.translationOf)),
+          eq(wpPosts.postType, "post"),
+          ne(wpPosts.postStatus, "trash")
+        )
+      )
+      .limit(1)
+    if (!source) throw new Error("invalid_translation")
+  }
+}
+async function syncFeaturedVideo(
+  postId: bigint,
+  url: string | undefined,
+  database: DB
+) {
+  if (url === undefined) return
+  await database
+    .delete(wpPostmeta)
+    .where(
+      and(
+        eq(wpPostmeta.postId, postId),
+        eq(wpPostmeta.metaKey, "_featured_video_url")
+      )
+    )
+  if (url)
+    await database
+      .insert(wpPostmeta)
+      .values({ postId, metaKey: "_featured_video_url", metaValue: url })
+}
+async function getAdminPostTranslations(
+  id: bigint,
+  database: DB
+): Promise<LinkedPostTranslation[]> {
+  const language = await getPostLanguage(id, database)
+  if (!language) return []
+  return database
+    .select({
+      postId: wpPosts.id,
+      slug: wpPosts.postName,
+      title: wpPosts.postTitle,
+      languageCode: languagesTable.code,
+      languageName: languagesTable.name,
+      nativeName: languagesTable.nativeName,
+      direction: languagesTable.direction,
+      isDefault: languagesTable.isDefault,
+    })
+    .from(postTranslationsTable)
+    .innerJoin(wpPosts, eq(wpPosts.id, postTranslationsTable.postId))
+    .innerJoin(
+      languagesTable,
+      eq(languagesTable.code, postTranslationsTable.languageCode)
+    )
+    .where(
+      and(
+        eq(
+          postTranslationsTable.translationGroupId,
+          language.translationGroupId
+        ),
+        eq(wpPosts.postType, "post"),
+        ne(wpPosts.postStatus, "trash"),
+        eq(languagesTable.isActive, true)
+      )
+    )
+}
+
+async function refreshPostTaxonomyCounts(ids: bigint[], database: DB) {
+  if (!ids.length) return
+  await database
+    .update(wpTermTaxonomy)
+    .set({
+      count: sql`(select count(distinct rel.object_id)::bigint from wp_term_relationships rel join wp_posts p on p."ID"=rel.object_id where rel.term_taxonomy_id=${wpTermTaxonomy.termTaxonomyId} and p.post_type='post' and p.post_status='publish')`,
+    })
+    .where(
+      and(
+        inArray(wpTermTaxonomy.termTaxonomyId, [...new Set(ids)]),
+        inArray(wpTermTaxonomy.taxonomy, ["category", "post_tag"])
+      )
+    )
 }

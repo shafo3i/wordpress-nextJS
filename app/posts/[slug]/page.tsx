@@ -4,7 +4,6 @@ import { getPostTranslations } from "@/services/language.service"
 import { articleMetadata } from "@/lib/seo/article"
 import { ArticleStructuredData } from "@/components/site/article-structured-data"
 import { notFound } from "next/navigation"
-import { renderPostMedia } from "@/lib/post-content-media"
 import { Metadata } from "next"
 import { PostTemplate } from "@/components/site/news-patterns"
 import { getPublishedPostBySlug, getPublishedPosts } from "@/lib/site-content"
@@ -82,7 +81,7 @@ export default async function PostPage({
   // Apply the_content filters registered by active plugins (e.g. reading time, newsletter)
   const filteredContent = await plugins.applyFilters(
     "the_content",
-    renderPostMedia(article.content),
+    article.content,
     { article, theme }
   )
 

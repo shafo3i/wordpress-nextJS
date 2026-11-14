@@ -1,3 +1,4 @@
+import { absoluteWebUrl } from "@/lib/seo/urls";
 import {
   pgTable,
   bigserial,
@@ -70,53 +71,51 @@ export const wpCommentmeta = pgTable(
 
 
 
+const commentIntegerSchema = z.union([
+  z.bigint(), z.string().regex(/^\d{1,19}$/).transform(value => BigInt(value)),
+  z.number().int().nonnegative().refine(Number.isSafeInteger).transform(value => BigInt(value)),
+]).pipe(z.bigint().min(BigInt(0)).max(BigInt("9223372036854775807")));
+export const commentIdSchema = commentIntegerSchema.refine(value => value > BigInt(0));
+export const commentStatusSchema = z.enum(["0", "1", "spam", "trash", "pending"]).transform(value => value === "pending" ? "0" : value);
 export const createCommentSchema = createInsertSchema(wpComments, {
-  commentPostId: () =>
-    z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? null : val),
-      z.coerce.bigint({ message: "Post ID must be a valid ID" }).positive()
-    ),
-  commentAuthor: (schema) => schema.min(1, "Comment author is required").max(255),
-  commentAuthorEmail: (schema) => schema.email("Invalid email address").max(100),
-  commentAuthorUrl: () =>
-    z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? "" : val),
-      z.string().url("Invalid URL").or(z.literal("")).default("")
-    ),
-  commentAuthorIp: () => z.string().max(100).default(""),
-  commentContent: (schema) => schema.min(1, "Comment content is required"),
-  commentKarma: () => z.coerce.number().default(0),
-  commentApproved: () =>
-    z.enum(["0", "1", "spam", "trash", "pending"]).default("1"),
-  commentAgent: () => z.string().max(255).default(""),
-  commentType: () => z.string().max(20).default("comment"),
-  commentParent: () =>
-    z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? BigInt(0) : val),
-      z.coerce.bigint().default(BigInt(0))
-    ),
-  userId: () =>
-    z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? null : val),
-      z.string().nullable().optional()
-    ),
-}).omit({
-  commentId: true,
-  commentDate: true,
-  commentDateGmt: true,
+  commentPostId: () => commentIdSchema,
+  commentAuthor: () => z.string().trim().min(1).max(255),
+  commentAuthorEmail: () => z.string().trim().email().max(100),
+  commentAuthorUrl: () => z.string().trim().max(200).refine(value => value === "" || !!absoluteWebUrl(value)).default(""),
+  commentContent: () => z.string().trim().min(1).max(20000),
+  commentApproved: () => commentStatusSchema.default("0"),
+  commentType: () => z.enum(["comment", "pingback", "trackback"]).default("comment"),
+  commentParent: () => commentIntegerSchema.default(BigInt(0)),
+}).pick({ commentPostId: true, commentAuthor: true, commentAuthorEmail: true, commentAuthorUrl: true,
+  commentContent: true, commentApproved: true, commentType: true, commentParent: true }).extend({ commentPostId: commentIdSchema });
+export const updateCommentSchema = createCommentSchema.partial().extend({
+  commentAuthorUrl: z.string().trim().max(200).refine(value => value === "" || !!absoluteWebUrl(value)).optional(),
+  commentApproved: commentStatusSchema.optional(),
+  commentType: z.enum(["comment", "pingback", "trackback"]).optional(),
+  commentParent: commentIntegerSchema.optional(),
 });
-
+export const commentIdsSchema = z.array(commentIdSchema).min(1).max(100).transform(ids => [...new Set(ids)]);
+export const commentStatusMutationSchema = z.object({ id: commentIdSchema, status: commentStatusSchema });
+export const commentQuerySchema = z.object({
+  status: z.enum(["all", "0", "1", "spam", "trash", "pending"]).optional(),
+  search: z.string().trim().max(200).optional(),
+  commentType: z.enum(["all", "comment", "pings", "pingback", "trackback"]).optional(),
+  language: z.string().max(10).optional(),
+  page: z.number().int().min(1).max(100000).default(1),
+  limit: z.number().int().min(1).max(100).default(20),
+});
+export const commentListSchema = z.object({
+  postId: commentIdSchema.optional(), approved: commentStatusSchema.optional(),
+  search: z.string().trim().max(200).optional(), userId: z.string().max(255).optional(),
+  limit: z.number().int().min(1).max(1000).default(20),
+  offset: z.number().int().min(0).max(10000000).default(0), order: z.enum(["asc", "desc"]).default("desc"),
+});
+export const postCommentsSchema = commentListSchema.pick({ limit: true, offset: true, order: true }).extend({ approvedOnly: z.boolean().default(true) });
 export const createCommentMetaSchema = createInsertSchema(wpCommentmeta, {
-  commentId: () =>
-    z.preprocess(
-      (val) => (val === "" || val === null || val === undefined ? null : val),
-      z.coerce.bigint({ message: "Comment ID must be a valid ID" }).positive()
-    ),
-  metaKey: (schema) => schema.max(255).optional(),
-  metaValue: () => z.string().nullable().optional(),
-}).omit({
-  metaId: true,
-});
+  commentId: () => commentIdSchema,
+  metaKey: () => z.string().trim().min(1).max(255),
+  metaValue: () => z.string().max(20000).nullable().optional(),
+}).omit({ metaId: true }).extend({ metaKey: z.string().trim().min(1).max(255) });
 
 // Type definitions
 export type SelectComment = InferSelectModel<typeof wpComments>;

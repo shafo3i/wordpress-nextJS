@@ -1,5 +1,7 @@
+import "server-only"
+import { categoryIdSchema } from "@/db/schema/cms-taxonomy"
 import { randomUUID } from "node:crypto"
-import { and, eq, inArray, sql } from "drizzle-orm"
+import { and, eq, inArray, lte, sql } from "drizzle-orm"
 import { db, type DB } from "@/db"
 import { wpPosts, wpPostmeta } from "@/db/schema"
 import { VIEW_WINDOW_MS } from "@/lib/post-view-token"
@@ -22,10 +24,15 @@ export async function getPostViewCounts(
       and(
         inArray(
           wpPosts.id,
-          ids.map((id) => BigInt(id))
+          ids.map((id) => categoryIdSchema.parse(id))
         ),
         publishedOnly
-          ? and(eq(wpPosts.postType, "post"), eq(wpPosts.postStatus, "publish"))
+          ? and(
+              eq(wpPosts.postType, "post"),
+              eq(wpPosts.postStatus, "publish"),
+              eq(wpPosts.postPassword, ""),
+              lte(wpPosts.postDateGmt, new Date())
+            )
           : undefined
       )
     )
@@ -41,6 +48,12 @@ export async function recordPostView(
   database: DB = db,
   now = Date.now()
 ) {
+  postId = categoryIdSchema.parse(postId)
+  if (
+    !/^[a-f0-9]{64}$/.test(visitorHash) ||
+    !/^[a-f0-9]{64}$/.test(requestHash)
+  )
+    throw new Error("invalid_view_identity")
   return database.transaction(async (tx) => {
     const [post] = await tx
       .select({ id: wpPosts.id })
@@ -49,7 +62,9 @@ export async function recordPostView(
         and(
           eq(wpPosts.id, postId),
           eq(wpPosts.postType, "post"),
-          eq(wpPosts.postStatus, "publish")
+          eq(wpPosts.postStatus, "publish"),
+          eq(wpPosts.postPassword, ""),
+          lte(wpPosts.postDateGmt, new Date())
         )
       )
       .for("update")

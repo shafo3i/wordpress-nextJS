@@ -18,7 +18,7 @@ If the migration has not run, the subscriber screen displays an availability mes
 
 ## Plugin administration and rendering
 
-- Plugin state, settings and subscriber mutations require the administrator role. Editors may review claims but cannot activate plugins, change global plugin configuration or access subscriber lists.
+- Plugin state, settings and subscriber mutations require the administrator role. Editors do not have access to plugin administration, subscriber lists or fact-review actions under the current role policy.
 - Mutations validate slugs and configuration. Plugin state changes are transactional and serialized with a transaction-scoped PostgreSQL advisory lock, keeping installed/active lists consistent.
 - Render hooks belong to an individual initialized runtime. Concurrent requests do not clear or reuse another request's hooks.
 - Ad HTML is sanitized and interpolated values are escaped. Arbitrary scripts and inline event handlers are deliberately unsupported.
@@ -27,7 +27,7 @@ If the migration has not run, the subscriber screen displays an availability mes
 
 ## Fact checking
 
-Use Plugins > Fact Check > Settings. Search the most recent thirty matching titles or enter a post ID to find older articles directly. Administrators and editors can record:
+Use Plugins > Fact Check > Settings. Search the most recent thirty matching titles or enter a post ID to find older articles directly. Administrators can record:
 
 - The specific claim being reviewed.
 - Evidence URLs (HTTPS) and an explanation, including corrections.
@@ -75,3 +75,14 @@ pnpm exec vitest run tests/unit/plugins/persistence.integration.test.ts --maxWor
 ```
 
 They use connection-local temporary tables that shadow the real tables; no real posts, subscriber records or plugin options are changed. They cover concurrent subscription upserts, token expiry/replay, rate limits, review history/invalidation, consistent plugin state and full-archive related-post matching.
+
+## Security pass - 13 November 2026
+
+- Administrative state/configuration mutations and subscriber read/delete services enforce administrator access independently of the UI. Fact-review saves bind reviewer identity to the authenticated administrator rather than trusting supplied authorship. Next authorization redirects propagate outside action error handlers.
+- Partial plugin configuration updates lock the plugin configuration row namespace and merge/write within one transaction. Existing state mutations retain their transaction/advisory lock. Generic installed/active-list setters are private. Slugs, stored state sizes, searches, pagination and settings are validated/bounded. Unknown/prototype identifiers cannot enter the bundled runtime; corrupted active state no longer enables default plugins.
+- Ad HTML is sanitized on save and render, including legacy content. Links/media use permitted HTTP(S), root-relative or fragment URLs; active/file/data/protocol-relative URLs are removed from custom ad HTML. New-window ad links receive sponsored/noopener/noreferrer protections. Scripts, handlers, styles, forms and arbitrary embeds remain unsupported.
+- Subscriber CSV cells neutralize formulas, including leading whitespace, BOM and line-break bypasses. Public signup rejects cross-site Fetch Metadata even without an Origin header. Confirmation delivery uses Next.js after-response work, reducing the membership-related timing difference caused by conditional synchronous SMTP. The callback is not a durable queue; failed/interrupted delivery still relies on the existing resend cooldown/retry path.
+- Confirmation/unsubscribe GET requests remain non-mutating. Their self-contained pages explicitly block scripts/resources, base URLs and framing, use COOP same-origin, prevent MIME sniffing/caching/indexing, and retain the same-origin referrer policy needed for browser POSTs. Missing signing configuration fails with a generic service error. Deactivation suppresses optional welcome mail while existing signed consent/unsubscribe links remain usable.
+- Review history is retained, source/version conflict checks remain, and duplicate evidence links are normalized. No automatic fact verdict, AdSense script execution, arbitrary plugin ZIP installation or remote plugin-code loading was introduced.
+- Verification uses isolated unit and browser fixtures. No live subscriptions, reviews, configuration or SMTP deliveries were changed. No new migration is required for this pass; the earlier newsletter-table migration above remains necessary if that deployment has never run it.
+- Site-wide CSP/COOP/Trusted Types/HSTS and the final cross-module/deployment review remain pending. The new newsletter token-page headers apply only to those self-contained endpoints.

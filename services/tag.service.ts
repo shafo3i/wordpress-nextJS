@@ -1,19 +1,21 @@
+import "server-only";
+import { verifyPostEditor } from "@/lib/authMIddleware";
 import { eq, desc, asc, and, count, sql, inArray, ne, ilike, or } from "drizzle-orm";
 import { DB, db } from "@/db";
 import {
   wpTerms,
   wpTermTaxonomy,
   wpTermRelationships,
-  wpTermmeta,
   createTagSchema,
+  quickUpdateTagSchema,
+  deleteTagsSchema,
+  categoryIdSchema,
+  tagQuerySchema,
   updateTagSchema,
   TagInput,
-  UpdateTagInput,
-  SelectTerm,
-  SelectTermTaxonomy,
 } from "@/db/schema/cms-taxonomy";
-import { postTranslationsTable, termTranslationsTable, languagesTable } from "@/db/schema/cms-languages";
-import { setTermLanguage, getTermLanguage, getTermTranslations } from "./language.service";
+import { termTranslationsTable, languagesTable } from "@/db/schema/cms-languages";
+import { setTermLanguage } from "./language.service";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,7 +60,8 @@ export async function uniqueTagSlug(
       .limit(1);
 
     if (!existing.length) return slug;
-    slug = `${base}-${suffix++}`.slice(0, 200);
+    const ending = `-${suffix++}`;
+    slug = `${base.slice(0, 200 - ending.length)}${ending}`;
   }
 }
 
@@ -120,7 +123,8 @@ export async function syncTagCount(
   termTaxonomyId: bigint | string | number,
   database: DB = db
 ): Promise<bigint> {
-  const taxId = toBigInt(termTaxonomyId);
+  await verifyPostEditor();
+  const taxId = categoryIdSchema.parse(termTaxonomyId);
 
   const [result] = await database
     .select({ total: count() })
@@ -132,7 +136,7 @@ export async function syncTagCount(
   await database
     .update(wpTermTaxonomy)
     .set({ count: total })
-    .where(eq(wpTermTaxonomy.termTaxonomyId, taxId));
+    .where(and(eq(wpTermTaxonomy.termTaxonomyId, taxId), eq(wpTermTaxonomy.taxonomy, "post_tag")));
 
   return total;
 }
@@ -145,7 +149,7 @@ export async function getAllTags(
   options: GetTagsOptions = {},
   database: DB = db
 ): Promise<{ tags: TagItem[]; total: number }> {
-  const { search, language, page, limit, orderBy = "name", order = "asc" } = options;
+  const { search, language, page = 1, limit = 20, orderBy = "name", order = "asc" } = tagQuerySchema.parse(options);
 
   const conditions = [eq(wpTermTaxonomy.taxonomy, "post_tag")];
 
@@ -262,7 +266,7 @@ export async function getAllTags(
         eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
       )
       .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
-      .where(inArray(termTranslationsTable.translationGroupId, groupIds));
+      .where(and(inArray(termTranslationsTable.translationGroupId, groupIds), eq(wpTermTaxonomy.taxonomy, "post_tag")));
 
     for (const item of allGroupTerms) {
       const gid = item.translationGroupId;
@@ -309,7 +313,7 @@ export async function getTagById(
   id: bigint | string | number,
   database: DB = db
 ): Promise<TagItem | null> {
-  const termId = toBigInt(id);
+  const termId = categoryIdSchema.parse(id);
 
   const rows = await database
     .select({
@@ -355,7 +359,7 @@ export async function getTagById(
         eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId)
       )
       .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
-      .where(eq(termTranslationsTable.translationGroupId, tag.translationGroupId));
+      .where(and(eq(termTranslationsTable.translationGroupId, tag.translationGroupId), eq(wpTermTaxonomy.taxonomy, "post_tag")));
 
     translations = trRows.map((r) => ({
       termTaxonomyId: r.termTaxonomyId.toString(),
@@ -422,113 +426,144 @@ export async function getTagBySlug(
 // Tag Mutations
 // ---------------------------------------------------------------------------
 
+async function validateTagLinks(
+  tx: DB,
+  languageCode: string | undefined,
+  sourceId: bigint | undefined,
+  currentTaxId?: bigint
+) {
+  const tags = await tx
+    .select({
+      termId: wpTermTaxonomy.termId,
+      taxId: wpTermTaxonomy.termTaxonomyId,
+      parent: wpTermTaxonomy.parent,
+    })
+    .from(wpTermTaxonomy)
+    .where(eq(wpTermTaxonomy.taxonomy, "post_tag"));
+  const [language] = await tx
+    .select({ code: languagesTable.code })
+    .from(languagesTable)
+    .where(
+      languageCode
+        ? and(
+            eq(languagesTable.code, languageCode),
+            eq(languagesTable.isActive, true)
+          )
+        : and(
+            eq(languagesTable.isDefault, true),
+            eq(languagesTable.isActive, true)
+          )
+    )
+    .limit(1);
+  if (!language)
+    throw new Error("admin.tags.error.language");
+  if (sourceId) {
+    if (
+      sourceId === currentTaxId ||
+      !tags.some((tag) => tag.taxId === sourceId)
+    )
+      throw new Error("admin.tags.error.translation");
+    const translations = await tx
+      .select({
+        taxId: termTranslationsTable.termTaxonomyId,
+        locale: termTranslationsTable.languageCode,
+        group: termTranslationsTable.translationGroupId,
+      })
+      .from(termTranslationsTable);
+    const source = translations.find((item) => item.taxId === sourceId);
+    if (
+      !source ||
+      source.locale === language.code ||
+      translations.some(
+        (item) =>
+          item.group === source.group &&
+          item.locale === language.code &&
+          item.taxId !== currentTaxId
+      )
+    )
+      throw new Error("admin.tags.error.translation");
+  } else if (currentTaxId) {
+    const [current] = await tx
+      .select({ group: termTranslationsTable.translationGroupId })
+      .from(termTranslationsTable)
+      .where(eq(termTranslationsTable.termTaxonomyId, currentTaxId))
+      .limit(1);
+    if (current) {
+      const [duplicate] = await tx
+        .select({ id: termTranslationsTable.termTaxonomyId })
+        .from(termTranslationsTable)
+        .where(
+          and(
+            eq(termTranslationsTable.translationGroupId, current.group),
+            eq(termTranslationsTable.languageCode, language.code),
+            ne(termTranslationsTable.termTaxonomyId, currentTaxId)
+          )
+        )
+        .limit(1);
+      if (duplicate)
+        throw new Error("admin.tags.error.translation");
+    }
+  }
+  return language.code;
+}
+
+async function tagTransaction<T>(database: DB, operation: (tx: DB) => Promise<T>): Promise<T> {
+  return database.transaction(async transaction => {
+    const tx = transaction as unknown as DB;
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:tags'))`);
+    return operation(tx);
+  });
+}
+async function assertExclusiveTag(tx: DB, ids: bigint[]) {
+  const [shared] = await tx.select({ id: wpTermTaxonomy.termId }).from(wpTermTaxonomy)
+    .where(and(inArray(wpTermTaxonomy.termId, ids), ne(wpTermTaxonomy.taxonomy, "post_tag"))).limit(1);
+  if (shared) throw new Error("admin.tags.error.shared");
+}
+
+
 export async function createTag(
   data: CreateTagOptions,
   database: DB = db
 ): Promise<TagItem> {
+  await verifyPostEditor();
   const parsed = createTagSchema.parse(data);
-  const slug = await uniqueTagSlug(parsed.slug || parsed.name, undefined, database);
-
-  const { termId, termTaxonomyId } = await database.transaction(async (tx) => {
-    const insertedTerm = await tx
-      .insert(wpTerms)
-      .values({
-        name: parsed.name,
-        slug,
-        termGroup: BigInt(0),
-      })
-      .returning({ termId: wpTerms.termId });
-
-    const newTermId = insertedTerm[0].termId;
-
-    const insertedTax = await tx
-      .insert(wpTermTaxonomy)
-      .values({
-        termId: newTermId,
-        taxonomy: "post_tag",
-        description: parsed.description || "",
-        parent: BigInt(0),
-        count: BigInt(0),
-      })
-      .returning({ termTaxonomyId: wpTermTaxonomy.termTaxonomyId });
-
-    return { termId: newTermId, termTaxonomyId: insertedTax[0].termTaxonomyId };
+  return tagTransaction(database, async tx => {
+    const language = await validateTagLinks(tx, parsed.languageCode, parsed.sourceTermTaxonomyId);
+    const slug = await uniqueTagSlug(parsed.slug || parsed.name, undefined, tx);
+    const [term] = await tx.insert(wpTerms).values({ name: parsed.name, slug, termGroup: BigInt(0) }).returning({ termId: wpTerms.termId });
+    const [taxonomy] = await tx.insert(wpTermTaxonomy).values({ termId: term.termId, taxonomy: "post_tag", description: parsed.description, parent: BigInt(0), count: BigInt(0) }).returning({ id: wpTermTaxonomy.termTaxonomyId });
+    await setTermLanguage(taxonomy.id, language, parsed.sourceTermTaxonomyId, tx);
+    const created = await getTagById(term.termId, tx);
+    if (!created) throw new Error("admin.tags.error.missing");
+    return created;
   });
-
-  const langCode = data.languageCode || "en";
-  const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
-  await setTermLanguage(termTaxonomyId, langCode, sourceTaxId, database);
-
-  const created = await getTagById(termId, database);
-  if (!created) {
-    throw new Error("Failed to retrieve created tag.");
-  }
-  return created;
 }
 
-export async function updateTag(
-  id: bigint | string | number,
-  data: UpdateTagOptions,
-  database: DB = db
-): Promise<TagItem> {
-  const termId = toBigInt(id);
-  const existing = await getTagById(termId, database);
-  if (!existing) {
-    throw new Error(`Tag with ID ${id} not found.`);
-  }
-
-  const name = data.name !== undefined ? data.name.trim() : existing.name;
-  if (!name) throw new Error("Tag name is required.");
-
-  let slug = existing.slug;
-  if (data.slug !== undefined || data.name !== undefined) {
-    const rawSlug = data.slug !== undefined && data.slug.trim().length > 0 ? data.slug : name;
-    slug = await uniqueTagSlug(rawSlug, termId, database);
-  }
-
-  const description = data.description !== undefined ? data.description.trim() : existing.description;
-
-  await database.transaction(async (tx) => {
-    await tx
-      .update(wpTerms)
-      .set({ name, slug })
-      .where(eq(wpTerms.termId, termId));
-
-    await tx
-      .update(wpTermTaxonomy)
-      .set({ description })
-      .where(and(eq(wpTermTaxonomy.termId, termId), eq(wpTermTaxonomy.taxonomy, "post_tag")));
+export async function updateTag(id: bigint | string | number, data: UpdateTagOptions, database: DB = db): Promise<TagItem> {
+  await verifyPostEditor();
+  const parsed = updateTagSchema.parse({ ...data, termId: id });
+  return tagTransaction(database, async tx => {
+    const existing = await getTagById(parsed.termId, tx);
+    if (!existing) throw new Error("admin.tags.error.missing");
+    await assertExclusiveTag(tx, [parsed.termId]);
+    const taxId = categoryIdSchema.parse(existing.termTaxonomyId);
+    const language = await validateTagLinks(tx, parsed.languageCode || existing.languageCode, parsed.sourceTermTaxonomyId, taxId);
+    const name = parsed.name ?? existing.name;
+    const slug = parsed.slug !== undefined || parsed.name !== undefined ? await uniqueTagSlug(parsed.slug || name, parsed.termId, tx) : existing.slug;
+    await tx.update(wpTerms).set({ name, slug }).where(eq(wpTerms.termId, parsed.termId));
+    await tx.update(wpTermTaxonomy).set({ description: parsed.description ?? existing.description }).where(and(eq(wpTermTaxonomy.termTaxonomyId, taxId), eq(wpTermTaxonomy.taxonomy, "post_tag")));
+    await setTermLanguage(taxId, language, parsed.sourceTermTaxonomyId, tx);
+    const updated = await getTagById(parsed.termId, tx);
+    if (!updated) throw new Error("admin.tags.error.missing");
+    return updated;
   });
-
-  if (data.languageCode) {
-    const sourceTaxId = data.sourceTermTaxonomyId ? toBigInt(data.sourceTermTaxonomyId) : undefined;
-    await setTermLanguage(toBigInt(existing.termTaxonomyId), data.languageCode, sourceTaxId, database);
-  }
-
-  const updated = await getTagById(termId, database);
-  if (!updated) {
-    throw new Error("Failed to retrieve updated tag.");
-  }
-  return updated;
 }
 
-export async function quickUpdateTag(
-  id: bigint | string | number,
-  data: { name: string; slug?: string },
-  database: DB = db
-): Promise<{ id: string; name: string; slug: string }> {
-  const termId = toBigInt(id);
-  const name = data.name.trim();
-  if (!name) throw new Error("Tag name is required.");
-
-  const slug = await uniqueTagSlug(data.slug || name, termId, database);
-
-  await database
-    .update(wpTerms)
-    .set({ name, slug })
-    .where(eq(wpTerms.termId, termId));
-
-  return { id: id.toString(), name, slug };
+export async function quickUpdateTag(id: bigint | string | number, data: { name: string; slug?: string }, database: DB = db): Promise<{ id: string; name: string; slug: string }> {
+  await verifyPostEditor();
+  const parsed = quickUpdateTagSchema.parse({ ...data, id });
+  const updated = await updateTag(parsed.id, { name: parsed.name, slug: parsed.slug }, database);
+  return { id: updated.id, name: updated.name, slug: updated.slug };
 }
 
 export async function deleteTag(
@@ -542,15 +577,18 @@ export async function bulkDeleteTags(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<{ success: boolean; count?: number; error?: string }> {
-  const termIds = ids.map((id) => toBigInt(id)).filter((id) => id > BigInt(0));
+  await verifyPostEditor();
+  const termIds = deleteTagsSchema.parse(ids);
   if (!termIds.length) {
-    return { success: false, error: "Select at least one tag." };
+    return { success: false };
   }
 
-  await database.transaction(async (tx) => {
+  let deletedCount = 0;
+  await tagTransaction(database, async (tx) => {
+    await assertExclusiveTag(tx, termIds);
     // Get taxonomy IDs for these terms
     const taxRows = await tx
-      .select({ termTaxonomyId: wpTermTaxonomy.termTaxonomyId })
+      .select({ termTaxonomyId: wpTermTaxonomy.termTaxonomyId, termId: wpTermTaxonomy.termId })
       .from(wpTermTaxonomy)
       .where(
         and(
@@ -568,10 +606,12 @@ export async function bulkDeleteTags(
         .delete(wpTermTaxonomy)
         .where(inArray(wpTermTaxonomy.termTaxonomyId, taxIds));
     }
-    await tx.delete(wpTerms).where(inArray(wpTerms.termId, termIds));
+    const matchedIds = taxRows.map(row => row.termId);
+    deletedCount = matchedIds.length;
+    if (matchedIds.length) await tx.delete(wpTerms).where(inArray(wpTerms.termId, matchedIds));
   });
 
-  return { success: true, count: termIds.length };
+  return { success: true, count: deletedCount };
 }
 
 // ---------------------------------------------------------------------------

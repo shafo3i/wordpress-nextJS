@@ -1,3 +1,10 @@
+import "server-only"
+import { verifyPostEditor } from "@/lib/authMIddleware"
+import {
+  postAutosaveRequestSchema,
+  autosaveDocumentKey,
+} from "@/db/schema/cms-post-autosave"
+import { renderPostMedia } from "@/lib/post-content-media"
 import { and, desc, eq, like } from "drizzle-orm"
 import { db, type DB } from "@/db"
 import { user } from "@/db/schema/auth-schema"
@@ -12,7 +19,7 @@ import {
 const PREFIX = "_cms_post_autosave:"
 export class PostAutosaveError extends Error {
   constructor(
-    public code: "conflict" | "post_changed" | "not_found",
+    public code: "conflict" | "post_changed" | "not_found" | "forbidden",
     public status: number
   ) {
     super(code)
@@ -27,7 +34,8 @@ export function readPostAutosave(
       JSON.parse(value || "null")
     )
     return parsed.success &&
-      now - new Date(parsed.data.savedAt).getTime() <= AUTOSAVE_TTL_MS
+      now - new Date(parsed.data.savedAt).getTime() <= AUTOSAVE_TTL_MS &&
+      new Date(parsed.data.savedAt).getTime() <= now + 60_000
       ? parsed.data
       : null
   } catch {
@@ -40,6 +48,9 @@ export async function getPostAutosave(
   documentKey: string,
   database: DB = db
 ) {
+  const session = await verifyPostEditor()
+  if (session.user.id !== ownerId) throw new PostAutosaveError("forbidden", 403)
+  documentKey = autosaveDocumentKey.parse(documentKey)
   const [row] = await database
     .select({ value: wpUsermeta.metaValue })
     .from(wpUsermeta)
@@ -59,6 +70,10 @@ export async function savePostAutosave(
   input: PostAutosaveRequest,
   database: DB = db
 ) {
+  const session = await verifyPostEditor()
+  input = postAutosaveRequestSchema.parse(input)
+  if (session.user.id !== ownerId || input.ownerId !== ownerId)
+    throw new PostAutosaveError("forbidden", 403)
   return database.transaction(async (tx) => {
     // Serialize this user's writes without requiring another table or unique constraint.
     await tx
@@ -68,7 +83,10 @@ export async function savePostAutosave(
       .for("update")
     if (input.documentKey.startsWith("post:")) {
       const [post] = await tx
-        .select({ modified: wpPosts.postModifiedGmt })
+        .select({
+          modified: wpPosts.postModifiedGmt,
+          status: wpPosts.postStatus,
+        })
         .from(wpPosts)
         .where(
           and(
@@ -77,6 +95,8 @@ export async function savePostAutosave(
           )
         )
         .limit(1)
+      if (post?.status === "trash" && session.user.role !== "admin")
+        throw new PostAutosaveError("forbidden", 403)
       if (!post) throw new PostAutosaveError("not_found", 404)
       if (
         input.baseModified &&
@@ -108,7 +128,10 @@ export async function savePostAutosave(
     const record: PostAutosaveRecord = {
       documentKey: input.documentKey,
       baseModified: input.baseModified,
-      snapshot: input.snapshot,
+      snapshot: {
+        ...input.snapshot,
+        content: renderPostMedia(input.snapshot.content),
+      },
       version: Math.max(Date.now(), previousVersion + 1),
       savedAt: new Date().toISOString(),
     }
@@ -147,6 +170,11 @@ export async function deletePostAutosave(
   version?: number,
   database: DB = db
 ) {
+  const session = await verifyPostEditor()
+  if (session.user.id !== ownerId) throw new PostAutosaveError("forbidden", 403)
+  documentKey = autosaveDocumentKey.parse(documentKey)
+  if (version !== undefined && (!Number.isSafeInteger(version) || version < 1))
+    throw new PostAutosaveError("conflict", 409)
   await database.transaction(async (tx) => {
     await tx
       .select({ id: user.id })

@@ -1,6 +1,8 @@
+import "server-only";
+import { verifyAdmin, verifyPostEditor } from "@/lib/authMIddleware";
 import { cache } from "react";
-import { eq, desc, asc, and, count, sql, inArray } from "drizzle-orm";
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { eq, lte, asc, and, count, sql, inArray } from "drizzle-orm";
+import { readFileSync, readdirSync, existsSync, lstatSync } from "node:fs";
 import { resolve } from "node:path";
 import { DB, db } from "@/db";
 import {
@@ -9,15 +11,15 @@ import {
     postTranslationsTable,
     termTranslationsTable,
     createLanguageSchema,
+    languageCodeSchema, translationKeySchema, translationBatchSchema, translationQuerySchema, translationGroupSchema,
     updateLanguageSchema,
     createTranslationSchema,
     InsertLanguage,
     SelectLanguage,
-    InsertTranslation,
     SelectTranslation,
 } from "@/db/schema/cms-languages";
 import { wpPosts } from "@/db/schema/cms-posts";
-import { wpTerms, wpTermTaxonomy } from "@/db/schema/cms-taxonomy";
+import { wpTerms, wpTermTaxonomy, categoryIdSchema } from "@/db/schema/cms-taxonomy";
 
 // ---------------------------------------------------------------------------
 // Template File Helpers
@@ -35,7 +37,7 @@ export function getAvailableTemplateLocales(): string[] {
         const dir = getTemplatesDir();
         if (!existsSync(dir)) return [];
         return readdirSync(dir)
-            .filter((file) => file.endsWith(".json"))
+            .filter((file) => file.endsWith(".json") && languageCodeSchema.safeParse(file.slice(0, -5)).success)
             .map((file) => file.replace(/\.json$/, ""));
     } catch {
         return [];
@@ -46,12 +48,15 @@ export function getAvailableTemplateLocales(): string[] {
  * Reads a JSON language template file from `templates/language/[code].json`.
  */
 export function getTemplateTranslations(code: string): Record<string, string> {
-    if (!/^[a-z]{2,3}(?:[-_][a-z0-9]{2,8})*$/i.test(code)) return {};
+    if (!languageCodeSchema.safeParse(code).success) return {};
     try {
         const filePath = resolve(getTemplatesDir(), `${code}.json`);
         if (!existsSync(filePath)) return {};
+        const stat = lstatSync(filePath);
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 5000000) return {};
         const content = readFileSync(filePath, "utf8");
-        return JSON.parse(content) as Record<string, string>;
+        const parsed = translationBatchSchema.safeParse(JSON.parse(content));
+        return parsed.success ? parsed.data : {};
     } catch {
         return {};
     }
@@ -80,7 +85,7 @@ async function read_getDefaultLanguage(database: DB = db): Promise<SelectLanguag
     const [defaultLang] = await database
         .select()
         .from(languagesTable)
-        .where(eq(languagesTable.isDefault, true))
+        .where(and(eq(languagesTable.isDefault, true), eq(languagesTable.isActive, true)))
         .limit(1);
 
     if (defaultLang) return defaultLang;
@@ -89,7 +94,7 @@ async function read_getDefaultLanguage(database: DB = db): Promise<SelectLanguag
     const [fallback] = await database
         .select()
         .from(languagesTable)
-        .where(eq(languagesTable.code, "en"))
+        .where(and(eq(languagesTable.code, "en"), eq(languagesTable.isActive, true)))
         .limit(1);
 
     if (fallback) return fallback;
@@ -97,12 +102,14 @@ async function read_getDefaultLanguage(database: DB = db): Promise<SelectLanguag
     const [first] = await database
         .select()
         .from(languagesTable)
+        .where(eq(languagesTable.isActive, true))
         .limit(1);
 
     return first ?? null;
 }
 
 export async function getLanguageByCode(code: string, database: DB = db): Promise<SelectLanguage | null> {
+    code = languageCodeSchema.parse(code);
     const [lang] = await database
         .select()
         .from(languagesTable)
@@ -112,114 +119,59 @@ export async function getLanguageByCode(code: string, database: DB = db): Promis
     return lang ?? null;
 }
 
-export async function createLanguage(
-    input: InsertLanguage,
-    database: DB = db
-): Promise<SelectLanguage> {
-    const validated = createLanguageSchema.parse(input);
-
-    // If marked as default, unset other defaults
-    if (validated.isDefault) {
-        await database
-            .update(languagesTable)
-            .set({ isDefault: false });
-    } else {
-        // If this is the first language being created, make it default
-        const [existing] = await database
-            .select({ total: count() })
-            .from(languagesTable);
-        if (!existing || existing.total === 0) {
-            validated.isDefault = true;
-        }
-    }
-
-    const [created] = await database
-        .insert(languagesTable)
-        .values({
-            code: validated.code.toLowerCase().trim(),
-            name: validated.name.trim(),
-            nativeName: (validated.nativeName ?? "").trim(),
-            direction: validated.direction ?? "ltr",
-            isDefault: validated.isDefault ?? false,
-            isActive: validated.isActive ?? true,
-            displayOrder: validated.displayOrder ?? 0,
-        })
-        .returning();
-
+export class LanguageMutationError extends Error {
+  constructor(public readonly key: string) { super(key); }
+}
+async function languageTransaction<T>(database: DB, operation: (tx: DB) => Promise<T>): Promise<T> {
+  return database.transaction(async transaction => {
+    const tx = transaction as unknown as DB;
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:languages'))`);
+    return operation(tx);
+  });
+}
+export async function createLanguage(input: InsertLanguage, database: DB = db): Promise<SelectLanguage> {
+  await verifyAdmin();
+  const parsed = createLanguageSchema.parse(input);
+  return languageTransaction(database, async tx => {
+    const [existing] = await tx.select({ total: count() }).from(languagesTable);
+    const isDefault = parsed.isDefault || Number(existing?.total ?? 0) === 0;
+    if (isDefault) await tx.update(languagesTable).set({ isDefault: false });
+    const [created] = await tx.insert(languagesTable).values({ ...parsed, isDefault, isActive: isDefault || parsed.isActive }).returning();
     return created;
+  });
 }
-
-export async function updateLanguage(
-    code: string,
-    input: Partial<InsertLanguage>,
-    database: DB = db
-): Promise<SelectLanguage | null> {
-    const validated = updateLanguageSchema.parse(input);
-
-    if (validated.isDefault) {
-        await database
-            .update(languagesTable)
-            .set({ isDefault: false });
-    }
-
-    const [updated] = await database
-        .update(languagesTable)
-        .set({
-            ...validated,
-            updatedAt: new Date(),
-        })
-        .where(eq(languagesTable.code, code))
-        .returning();
-
+export async function updateLanguage(code: string, input: Partial<InsertLanguage>, database: DB = db): Promise<SelectLanguage | null> {
+  await verifyAdmin();
+  const targetCode = languageCodeSchema.parse(code);
+  const parsed = updateLanguageSchema.parse(input);
+  return languageTransaction(database, async tx => {
+    const current = await getLanguageByCode(targetCode, tx);
+    if (!current) throw new LanguageMutationError("admin.languages.error.missing");
+    if (current.isDefault && (parsed.isDefault === false || parsed.isActive === false))
+      throw new LanguageMutationError("admin.languages.error.default");
+    if (parsed.isDefault) await tx.update(languagesTable).set({ isDefault: false });
+    const [updated] = await tx.update(languagesTable).set({ ...parsed, ...(parsed.isDefault ? { isActive: true } : {}), updatedAt: new Date() }).where(eq(languagesTable.code, targetCode)).returning();
     return updated ?? null;
+  });
 }
-
-export async function deleteLanguage(
-    code: string,
-    database: DB = db
-): Promise<{ success: boolean; message?: string }> {
-    const target = await getLanguageByCode(code, database);
-    if (!target) {
-        return { success: false, message: "Language not found." };
-    }
-
-    if (target.isDefault) {
-        return { success: false, message: "Cannot delete the default language." };
-    }
-
-    const [totalLangs] = await database
-        .select({ total: count() })
-        .from(languagesTable);
-
-    if (totalLangs && totalLangs.total <= 1) {
-        return { success: false, message: "Cannot delete the only configured language." };
-    }
-
-    await database
-        .delete(languagesTable)
-        .where(eq(languagesTable.code, code));
-
+export async function deleteLanguage(code: string, database: DB = db): Promise<{ success: boolean; message?: string }> {
+  await verifyAdmin();
+  const targetCode = languageCodeSchema.parse(code);
+  return languageTransaction(database, async tx => {
+    const target = await getLanguageByCode(targetCode, tx);
+    if (!target) throw new LanguageMutationError("admin.languages.error.missing");
+    if (target.isDefault) throw new LanguageMutationError("admin.languages.error.default");
+    const [posts] = await tx.select({ total: count() }).from(postTranslationsTable).where(eq(postTranslationsTable.languageCode, targetCode));
+    const [terms] = await tx.select({ total: count() }).from(termTranslationsTable).where(eq(termTranslationsTable.languageCode, targetCode));
+    if (Number(posts?.total ?? 0) || Number(terms?.total ?? 0)) throw new LanguageMutationError("admin.languages.error.used");
+    const [total] = await tx.select({ total: count() }).from(languagesTable);
+    if (Number(total?.total ?? 0) <= 1) throw new LanguageMutationError("admin.languages.error.default");
+    await tx.delete(languagesTable).where(eq(languagesTable.code, targetCode));
     return { success: true };
+  });
 }
-
-export async function setDefaultLanguage(
-    code: string,
-    database: DB = db
-): Promise<SelectLanguage | null> {
-    const target = await getLanguageByCode(code, database);
-    if (!target) return null;
-
-    await database
-        .update(languagesTable)
-        .set({ isDefault: false });
-
-    const [updated] = await database
-        .update(languagesTable)
-        .set({ isDefault: true, isActive: true, updatedAt: new Date() })
-        .where(eq(languagesTable.code, code))
-        .returning();
-
-    return updated ?? null;
+export async function setDefaultLanguage(code: string, database: DB = db): Promise<SelectLanguage | null> {
+  return updateLanguage(code, { isDefault: true, isActive: true }, database);
 }
 
 // ---------------------------------------------------------------------------
@@ -233,6 +185,7 @@ export async function getDbTranslations(
     languageCode: string,
     database: DB = db
 ): Promise<Record<string, string>> {
+    languageCode = languageCodeSchema.parse(languageCode);
     const rows = await database
         .select({
             key: translationsTable.key,
@@ -241,9 +194,9 @@ export async function getDbTranslations(
         .from(translationsTable)
         .where(eq(translationsTable.languageCode, languageCode));
 
-    const result: Record<string, string> = {};
+    const result: Record<string, string> = Object.create(null);
     for (const row of rows) {
-        result[row.key] = row.value;
+        if (createTranslationSchema.safeParse({ languageCode, key: row.key, value: row.value }).success) result[row.key] = row.value;
     }
     return result;
 }
@@ -281,69 +234,39 @@ export const getTranslations = cache(async (
 /**
  * Saves or updates a single translation in the database.
  */
-export async function saveTranslation(
-    languageCode: string,
-    key: string,
-    value: string,
-    database: DB = db
-): Promise<SelectTranslation> {
-    const validated = createTranslationSchema.parse({ languageCode, key, value });
-
-    const [result] = await database
-        .insert(translationsTable)
-        .values({
-            languageCode: validated.languageCode,
-            key: validated.key,
-            value: validated.value,
-        })
-        .onConflictDoUpdate({
-            target: [translationsTable.languageCode, translationsTable.key],
-            set: {
-                value: validated.value,
-                updatedAt: new Date(),
-            },
-        })
-        .returning();
-
-    return result;
+async function writeTranslation(languageCode: string, key: string, value: string, database: DB): Promise<SelectTranslation> {
+  const parsed = createTranslationSchema.parse({ languageCode, key, value });
+  const [row] = await database.insert(translationsTable).values(parsed).onConflictDoUpdate({
+    target: [translationsTable.languageCode, translationsTable.key], set: { value: parsed.value, updatedAt: new Date() },
+  }).returning();
+  return row;
 }
-
-/**
- * Saves a batch of translations to the database.
- */
-export async function saveTranslationsBatch(
-    languageCode: string,
-    entries: Record<string, string>,
-    database: DB = db
-): Promise<number> {
-    const keys = Object.keys(entries);
-    if (keys.length === 0) return 0;
-
-    for (const [key, value] of Object.entries(entries)) {
-        await saveTranslation(languageCode, key, value, database);
-    }
-
-    return keys.length;
+export async function saveTranslation(languageCode: string, key: string, value: string, database: DB = db): Promise<SelectTranslation> {
+  await verifyAdmin();
+  const parsed = createTranslationSchema.parse({ languageCode, key, value });
+  return languageTransaction(database, async tx => {
+    if (!await getLanguageByCode(parsed.languageCode, tx)) throw new LanguageMutationError("admin.languages.error.missing");
+    return writeTranslation(parsed.languageCode, parsed.key, parsed.value, tx);
+  });
 }
-
-/**
- * Deletes a translation override from the database, falling back to file template.
- */
-export async function deleteTranslationOverride(
-    languageCode: string,
-    key: string,
-    database: DB = db
-): Promise<boolean> {
-    const result = await database
-        .delete(translationsTable)
-        .where(
-            and(
-                eq(translationsTable.languageCode, languageCode),
-                eq(translationsTable.key, key)
-            )
-        );
-
+export async function saveTranslationsBatch(languageCode: string, entries: Record<string, string>, database: DB = db): Promise<number> {
+  await verifyAdmin();
+  const code = languageCodeSchema.parse(languageCode);
+  const parsed = translationBatchSchema.parse(entries);
+  return languageTransaction(database, async tx => {
+    if (!await getLanguageByCode(code, tx)) throw new LanguageMutationError("admin.languages.error.missing");
+    for (const [key, value] of Object.entries(parsed)) await writeTranslation(code, key, value, tx);
+    return Object.keys(parsed).length;
+  });
+}
+export async function deleteTranslationOverride(languageCode: string, key: string, database: DB = db): Promise<boolean> {
+  await verifyAdmin();
+  const code = languageCodeSchema.parse(languageCode);
+  const parsedKey = translationKeySchema.parse(key);
+  return languageTransaction(database, async tx => {
+    await tx.delete(translationsTable).where(and(eq(translationsTable.languageCode, code), eq(translationsTable.key, parsedKey)));
     return true;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -383,6 +306,9 @@ export async function getTranslationCatalog(
     };
     groups: string[];
 }> {
+    await verifyAdmin();
+    languageCode = languageCodeSchema.parse(languageCode);
+    options = translationQuerySchema.pick({ search: true, group: true, filter: true }).parse(options);
     const baseTemplate = getTemplateTranslations("en");
     const langTemplate = languageCode !== "en" ? getTemplateTranslations(languageCode) : baseTemplate;
     const dbOverrides = await getDbTranslations(languageCode, database);
@@ -497,7 +423,7 @@ export async function getPostLanguage(
             translationGroupId: postTranslationsTable.translationGroupId,
         })
         .from(postTranslationsTable)
-        .where(eq(postTranslationsTable.postId, BigInt(postId)))
+        .where(eq(postTranslationsTable.postId, categoryIdSchema.parse(postId)))
         .limit(1);
 
     return row ?? null;
@@ -507,7 +433,7 @@ export async function getPostTranslations(
     postId: bigint | number | string,
     database: DB = db
 ): Promise<LinkedPostTranslation[]> {
-    const postLang = await getPostLanguage(BigInt(postId), database);
+    const postLang = await getPostLanguage(categoryIdSchema.parse(postId), database);
     if (!postLang) return [];
 
     const rows = await database
@@ -524,38 +450,39 @@ export async function getPostTranslations(
         .from(postTranslationsTable)
         .innerJoin(wpPosts, eq(postTranslationsTable.postId, wpPosts.id))
         .innerJoin(languagesTable, eq(postTranslationsTable.languageCode, languagesTable.code))
-        .where(eq(postTranslationsTable.translationGroupId, postLang.translationGroupId));
+        .where(and(eq(postTranslationsTable.translationGroupId, postLang.translationGroupId), eq(languagesTable.isActive, true), eq(wpPosts.postStatus, "publish"), eq(wpPosts.postPassword, ""), lte(wpPosts.postDateGmt, new Date()), inArray(wpPosts.postType, ["post", "page"])));
 
     return rows;
 }
 
-export async function linkPostTranslation(
-    postId: bigint | number,
-    languageCode: string,
-    translationGroupId: string,
-    database: DB = db
-): Promise<void> {
-    const pid = BigInt(postId);
-    const existing = await getPostLanguage(pid, database);
-
-    if (existing) {
-        await database
-            .update(postTranslationsTable)
-            .set({
-                languageCode,
-                translationGroupId,
-                updatedAt: new Date(),
-            })
-            .where(eq(postTranslationsTable.postId, pid));
-    } else {
-        await database
-            .insert(postTranslationsTable)
-            .values({
-                postId: pid,
-                languageCode,
-                translationGroupId,
-            });
-    }
+async function authorizeContentLink(kind: "post" | "term", id: bigint | number, languageCode: string, database: DB) {
+  const session = await verifyPostEditor();
+  const targetId = categoryIdSchema.parse(id);
+  const code = languageCodeSchema.parse(languageCode);
+  const language = await getLanguageByCode(code, database);
+  if (!language?.isActive) throw new LanguageMutationError("admin.languages.error.missing");
+  const [target] = kind === "post"
+    ? await database.select({ type: wpPosts.postType }).from(wpPosts).where(eq(wpPosts.id, targetId)).limit(1)
+    : await database.select({ type: wpTermTaxonomy.taxonomy }).from(wpTermTaxonomy).where(eq(wpTermTaxonomy.termTaxonomyId, targetId)).limit(1);
+  if (!target || !(kind === "post" ? ["post", "page"] : ["category", "post_tag"]).includes(target.type))
+    throw new LanguageMutationError("admin.languages.error.missing");
+  if (session.user.role !== "admin" && target.type !== (kind === "post" ? "post" : "post_tag")) await verifyAdmin();
+  return { id: targetId, code, type: target.type };
+}
+export async function linkPostTranslation(postId: bigint | number, languageCode: string, translationGroupId: string, database: DB = db): Promise<void> {
+  await verifyPostEditor();
+  const group = translationGroupSchema.parse(translationGroupId);
+  await database.transaction(async transaction => {
+    const tx = transaction as unknown as DB;
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:languages'))`);
+    const target = await authorizeContentLink("post", postId, languageCode, tx);
+    const siblings = await tx.select({ id: postTranslationsTable.postId, code: postTranslationsTable.languageCode, type: wpPosts.postType })
+      .from(postTranslationsTable).innerJoin(wpPosts, eq(wpPosts.id, postTranslationsTable.postId)).where(eq(postTranslationsTable.translationGroupId, group));
+    if (siblings.some(row => row.type !== target.type || (row.id !== target.id && row.code === target.code)))
+      throw new LanguageMutationError("admin.languages.error.group");
+    await tx.insert(postTranslationsTable).values({ postId: target.id, languageCode: target.code, translationGroupId: group })
+      .onConflictDoUpdate({ target: postTranslationsTable.postId, set: { languageCode: target.code, translationGroupId: group, updatedAt: new Date() } });
+  });
 }
 
 export async function setPostLanguage(
@@ -564,7 +491,15 @@ export async function setPostLanguage(
     sourcePostId?: bigint | number,
     database: DB = db
 ): Promise<string> {
-    const pid = BigInt(postId);
+    await verifyPostEditor();
+    languageCode = languageCodeSchema.parse(languageCode);
+    return database.transaction(async transaction => {
+      const tx = transaction as unknown as DB;
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:languages'))`);
+      database = tx;
+    if (sourcePostId !== undefined && categoryIdSchema.parse(sourcePostId) === categoryIdSchema.parse(postId)) throw new LanguageMutationError("admin.languages.error.group");
+    await authorizeContentLink("post", postId, languageCode, database);
+    const pid = categoryIdSchema.parse(postId);
     let groupId: string;
 
     if (sourcePostId) {
@@ -583,6 +518,7 @@ export async function setPostLanguage(
 
     await linkPostTranslation(pid, languageCode, groupId, database);
     return groupId;
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -611,7 +547,7 @@ export async function getTermLanguage(
             translationGroupId: termTranslationsTable.translationGroupId,
         })
         .from(termTranslationsTable)
-        .where(eq(termTranslationsTable.termTaxonomyId, BigInt(termTaxonomyId)))
+        .where(eq(termTranslationsTable.termTaxonomyId, categoryIdSchema.parse(termTaxonomyId)))
         .limit(1);
 
     return row ?? null;
@@ -640,38 +576,25 @@ export async function getTermTranslations(
         .innerJoin(wpTermTaxonomy, eq(termTranslationsTable.termTaxonomyId, wpTermTaxonomy.termTaxonomyId))
         .innerJoin(wpTerms, eq(wpTermTaxonomy.termId, wpTerms.termId))
         .innerJoin(languagesTable, eq(termTranslationsTable.languageCode, languagesTable.code))
-        .where(eq(termTranslationsTable.translationGroupId, termLang.translationGroupId));
+        .where(and(eq(termTranslationsTable.translationGroupId, termLang.translationGroupId), eq(languagesTable.isActive, true)));
 
     return rows;
 }
 
-export async function linkTermTranslation(
-    termTaxonomyId: bigint | number,
-    languageCode: string,
-    translationGroupId: string,
-    database: DB = db
-): Promise<void> {
-    const tid = BigInt(termTaxonomyId);
-    const existing = await getTermLanguage(tid, database);
-
-    if (existing) {
-        await database
-            .update(termTranslationsTable)
-            .set({
-                languageCode,
-                translationGroupId,
-                updatedAt: new Date(),
-            })
-            .where(eq(termTranslationsTable.termTaxonomyId, tid));
-    } else {
-        await database
-            .insert(termTranslationsTable)
-            .values({
-                termTaxonomyId: tid,
-                languageCode,
-                translationGroupId,
-            });
-    }
+export async function linkTermTranslation(termTaxonomyId: bigint | number, languageCode: string, translationGroupId: string, database: DB = db): Promise<void> {
+  await verifyPostEditor();
+  const group = translationGroupSchema.parse(translationGroupId);
+  await database.transaction(async transaction => {
+    const tx = transaction as unknown as DB;
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:languages'))`);
+    const target = await authorizeContentLink("term", termTaxonomyId, languageCode, tx);
+    const siblings = await tx.select({ id: termTranslationsTable.termTaxonomyId, code: termTranslationsTable.languageCode, type: wpTermTaxonomy.taxonomy })
+      .from(termTranslationsTable).innerJoin(wpTermTaxonomy, eq(wpTermTaxonomy.termTaxonomyId, termTranslationsTable.termTaxonomyId)).where(eq(termTranslationsTable.translationGroupId, group));
+    if (siblings.some(row => row.type !== target.type || (row.id !== target.id && row.code === target.code)))
+      throw new LanguageMutationError("admin.languages.error.group");
+    await tx.insert(termTranslationsTable).values({ termTaxonomyId: target.id, languageCode: target.code, translationGroupId: group })
+      .onConflictDoUpdate({ target: termTranslationsTable.termTaxonomyId, set: { languageCode: target.code, translationGroupId: group, updatedAt: new Date() } });
+  });
 }
 
 export async function setTermLanguage(
@@ -680,7 +603,15 @@ export async function setTermLanguage(
     sourceTermTaxonomyId?: bigint | number,
     database: DB = db
 ): Promise<string> {
-    const tid = BigInt(termTaxonomyId);
+    await verifyPostEditor();
+    languageCode = languageCodeSchema.parse(languageCode);
+    return database.transaction(async transaction => {
+      const tx = transaction as unknown as DB;
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:languages'))`);
+      database = tx;
+    if (sourceTermTaxonomyId !== undefined && categoryIdSchema.parse(sourceTermTaxonomyId) === categoryIdSchema.parse(termTaxonomyId)) throw new LanguageMutationError("admin.languages.error.group");
+    await authorizeContentLink("term", termTaxonomyId, languageCode, database);
+    const tid = categoryIdSchema.parse(termTaxonomyId);
     let groupId: string;
 
     if (sourceTermTaxonomyId) {
@@ -699,6 +630,7 @@ export async function setTermLanguage(
 
     await linkTermTranslation(tid, languageCode, groupId, database);
     return groupId;
+    });
 }
 
 

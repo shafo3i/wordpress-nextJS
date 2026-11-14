@@ -1,3 +1,4 @@
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: async () => ({ user: { role: "admin", id: "admin" } }), verifyPostEditor: async () => ({ user: { role: "admin", id: "admin" } }) }));
 vi.mock("server-only", () => ({}))
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { PgDialect } from "drizzle-orm/pg-core"

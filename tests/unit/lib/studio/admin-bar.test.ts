@@ -40,8 +40,14 @@ describe("Homepage admin toolbar", () => {
         siteTitle: "Site",
       })
       const html = renderToStaticMarkup(createElement("div", null, node))
-      expect(html).toContain('href="/admincp/studio/122"')
-      expect(html).toContain('href="/admincp/pages/122/edit"')
+      if (role === "admin") {
+        expect(html).toContain('href="/admincp/studio/122"')
+        expect(html).toContain('href="/admincp/pages/122/edit"')
+      } else {
+        expect(html).toContain('href="/admincp/posts"')
+        expect(html).not.toContain('/admincp/studio/')
+        expect(html).not.toContain('/admincp/pages/')
+      }
       expect(html).toContain("data-public-admin-bar")
     }
   )
