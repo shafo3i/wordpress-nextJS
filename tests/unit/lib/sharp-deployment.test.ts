@@ -51,23 +51,28 @@ describe("Sharp deployment assets", () => {
   })
 
   it("explicitly includes the native libvips dependency used by the pinned Sharp version", () => {
+    const pkg = JSON.parse(
+      readFileSync("node_modules/sharp/package.json", "utf8")
+    )
+    const nativeVersion = pkg.optionalDependencies["@img/sharp-linux-x64"]
+    const libvipsVersion =
+      pkg.optionalDependencies["@img/sharp-libvips-linux-x64"]
+    const installedPackages = new Set([
+      `@img+sharp-linux-x64@${nativeVersion}`,
+      `@img+sharp-libvips-linux-x64@${libvipsVersion}`,
+    ])
     const patterns = nextConfig.outputFileTracingIncludes?.["/*"] || []
     const matches = patterns.map((pattern) =>
       picomatch(pattern.replace(/^\.\//, ""))
     )
     const files = readdirSync("node_modules/.pnpm")
-      .filter((name) => /^@img\+sharp-(?:libvips-)?linux-x64@/.test(name))
+      .filter((name) => installedPackages.has(name))
       .flatMap((name) =>
         filesIn(
           `node_modules/.pnpm/${name}/node_modules/@img/${name.slice(5).split("@")[0]}`
         )
       )
       .filter((file) => matches.some((match) => match(file)))
-    const pkg = JSON.parse(
-      readFileSync("node_modules/sharp/package.json", "utf8")
-    )
-    const libvipsVersion =
-      pkg.optionalDependencies["@img/sharp-libvips-linux-x64"]
     expect(
       files.some(
         (file) =>
@@ -75,8 +80,10 @@ describe("Sharp deployment assets", () => {
           /libvips-cpp\.so\./.test(file)
       )
     ).toBe(true)
-    expect(files.some((file) => file.endsWith("/sharp-linux-x64.node"))).toBe(
-      true
-    )
+    expect(
+      files.some((file) =>
+        file.endsWith(`/sharp-linux-x64-${nativeVersion}.node`)
+      )
+    ).toBe(true)
   })
 })
