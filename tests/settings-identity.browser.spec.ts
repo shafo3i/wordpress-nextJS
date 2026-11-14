@@ -30,6 +30,7 @@ test("newsletter wording stays separate for each language in either admin direct
       (rtl) => window.SettingsIdentityFixture.renderEmail(rtl),
       rtl
     )
+    await expect(page.locator("#email-template-language")).toHaveValue("ar")
     await page.locator("#email-template-language").selectOption("en")
     await page.locator("#email_welcome_subject").fill("Welcome to {{siteName}}")
     await page.locator("#email_welcome_body").fill("Hello {{name}}")
@@ -79,6 +80,8 @@ test("site identity translates independently of admin UI and preserves the defau
       (rtl) => window.SettingsIdentityFixture.render(rtl),
       rtl
     )
+    await expect(page.locator("#identity-language")).toHaveValue("ar")
+    await expect(page.locator("#blogname")).toHaveValue("Default publication")
     await page.locator("#identity-language").selectOption("en")
     await expect(page.locator("#blogname")).toHaveValue("")
     await expect(page.locator("#blogname")).toHaveAttribute("dir", "ltr")

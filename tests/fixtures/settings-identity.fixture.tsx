@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { createRoot } from "react-dom/client"
+import { flushSync } from "react-dom"
 import { SettingsSiteIdentity } from "../../app/(admin)/admincp/settings/_components/settings-site-identity"
 import { SettingsEmailTemplates } from "../../app/(admin)/admincp/settings/_components/settings-email-templates"
 import { localizedSiteOptions } from "../../lib/site-identity"
@@ -56,7 +57,7 @@ function Fixture({ rtl }: { rtl: boolean }) {
 }
 export function render(rtl: boolean) {
   root ??= createRoot(document.getElementById("fixture")!)
-  root.render(<Fixture key={String(rtl)} rtl={rtl} />)
+  flushSync(() => root.render(<Fixture key={String(rtl)} rtl={rtl} />))
 }
 
 function EmailFixture({ rtl }: { rtl: boolean }) {
@@ -98,5 +99,5 @@ function EmailFixture({ rtl }: { rtl: boolean }) {
 }
 export function renderEmail(rtl: boolean) {
   root ??= createRoot(document.getElementById("fixture")!)
-  root.render(<EmailFixture key={String(rtl)} rtl={rtl} />)
+  flushSync(() => root.render(<EmailFixture key={String(rtl)} rtl={rtl} />))
 }
