@@ -7,11 +7,12 @@ import en from "../../templates/language/en.json"
 import ar from "../../templates/language/ar.json"
 
 let root: ReturnType<typeof createRoot>,
-  shouldFail = false
+  shouldFail: boolean | "rate" = false
 const submissions: Record<string, FormDataEntryValue>[] = []
 export const failSave = (fail: boolean) => {
   shouldFail = fail
 }
+export const limitSave = () => { shouldFail = "rate" }
 export const saved = () => submissions
 export function render(locale: "ar" | "en", existing = true) {
   root ??= createRoot(document.getElementById("fixture")!)
@@ -55,6 +56,7 @@ export function render(locale: "ar" | "en", existing = true) {
           },
         ]}
         action={async (form) => {
+          if (shouldFail === "rate") return { success: false, error: "admin.security.rate_limited" }
           if (shouldFail)
             return { success: false, error: "admin.editor.save_failed" }
           submissions.push(Object.fromEntries(form))

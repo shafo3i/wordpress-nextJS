@@ -1,21 +1,25 @@
-import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getAllRedirects } from "@/services/redirect.service";
-import { RedirectManager } from "./_components/redirect-manager";
-import Link from "next/link";
+import {
+  AdminShell,
+  getAdminLanguageContext,
+} from "@/components/admin/admin-shell"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import { getAllRedirects } from "@/services/redirect.service"
+import { RedirectManager } from "./_components/redirect-manager"
+import Link from "next/link"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function RedirectsPage() {
-  await verifyAdminOrEditor();
+  await verifyAdmin()
 
   const [langContext, redirects] = await Promise.all([
     getAdminLanguageContext(),
     getAllRedirects(),
-  ]);
+  ])
 
-  const dict = langContext.dict;
-  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+  const dict = langContext.dict
+  const direction: "rtl" | "ltr" =
+    langContext.direction === "rtl" ? "rtl" : "ltr"
 
   return (
     <AdminShell>
@@ -28,16 +32,15 @@ export default async function RedirectsPage() {
                 href="/admincp/tools"
                 className="text-[13px] text-[#2271b1] hover:underline"
               >
-                {dict["admin.tools.title"] || "Tools"}
+                {dict["admin.tools.title"] || ""}
               </Link>
               <span className="text-[#646970]">/</span>
-              <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-                {dict["admin.tools.redirects_title"] || "301 Redirects Manager"}
+              <h1 className="text-[23px] leading-normal font-normal text-[#1d2327]">
+                {dict["admin.tools.redirects_title"] || ""}
               </h1>
             </div>
-            <p className="text-[13px] text-[#50575e] mt-0.5">
-              {dict["admin.tools.redirects_subtitle"] ||
-                "Manage permanent (301) and temporary (302) URL redirects to protect search rankings and fix broken links."}
+            <p className="mt-0.5 text-[13px] text-[#50575e]">
+              {dict["admin.tools.redirects_subtitle"] || ""}
             </p>
           </div>
         </div>
@@ -46,5 +49,5 @@ export default async function RedirectsPage() {
         <RedirectManager initialRedirects={redirects} dict={dict} />
       </div>
     </AdminShell>
-  );
+  )
 }

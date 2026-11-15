@@ -66,6 +66,7 @@ async function setup(page: Page) {
   await page.clock.install()
   page.on("dialog", (dialog) => dialog.accept())
   let active = true,
+    limited = false,
     account = "editor-a",
     writes = 0
   const records = new Map<string, unknown>()
@@ -91,6 +92,7 @@ async function setup(page: Page) {
         json: { ownerId: account, record: records.get(key) || null },
       })
     }
+    if (limited) return route.fulfill({ status: 429, headers: { "Retry-After": "60" }, json: { error: "admin.security.rate_limited" } })
     const packet = request.postDataJSON()
     if (packet.ownerId !== account)
       return route.fulfill({ status: 403, json: { error: "account_changed" } })
@@ -123,6 +125,7 @@ async function setup(page: Page) {
   return {
     mount,
     records,
+    limitAutosave: () => { limited = true },
     expire: () => {
       active = false
     },
@@ -288,3 +291,25 @@ test("share destinations can be toggled and copying reports actual success", asy
     page.getByRole("link", { name: en["site.share.facebook"], exact: true })
   ).toHaveCount(0)
 })
+
+for (const locale of ["en", "ar"] as const) {
+  test(`rate limiting preserves ${locale} editor content and recovery`, async ({ page }) => {
+    const fixture = await setup(page)
+    await fixture.mount(locale)
+    const dict = locale === "ar" ? ar : en
+    await page.locator('input[name="title"]').fill(`Retained ${locale} title`)
+    await page.locator("#fake-tinymce").fill("<p>Retained unsaved body</p>")
+    await page.clock.runFor(1100)
+    await page.evaluate(() => window.PostEditorFixture.limitSave())
+    await page.getByRole("button", { name: dict["admin.editor.update"], exact: true }).click()
+    await expect(page.getByRole("alert").filter({ hasText: dict["admin.security.rate_limited"] })).toBeVisible()
+    await expect(page.locator('input[name="title"]')).toHaveValue(`Retained ${locale} title`)
+    await expect(page.locator("#fake-tinymce")).toHaveValue("<p>Retained unsaved body</p>")
+    expect(await page.evaluate(() => window.PostEditorFixture.saved().length)).toBe(0)
+    expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(true)
+    fixture.limitAutosave()
+    await page.clock.runFor(31000)
+    await expect(page.locator('input[name="title"]')).toHaveValue(`Retained ${locale} title`)
+    expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(true)
+  })
+}

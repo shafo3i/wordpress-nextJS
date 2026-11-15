@@ -8,6 +8,7 @@ services:
     environment:
       DATABASE_URL: ${APP_DATABASE_URL:?Set the URL pointing to pgbouncer port 6432}
       DB_POOL_MAX: ${DB_POOL_MAX:-2}
+      REDIS_URL: ${REDIS_URL:?Set the private Valkey connection URL}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a private authentication secret}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set a stable private key for encrypted settings}
       BETTER_AUTH_URL: ${NEXT_PUBLIC_APP_URL:?Set the public application URL}

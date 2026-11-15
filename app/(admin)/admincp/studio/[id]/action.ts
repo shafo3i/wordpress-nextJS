@@ -12,8 +12,9 @@ import type { StudioSaveRequest, StudioSaveResult } from "@/lib/studio/types"
 export async function saveStudioDocumentAction(
   input: StudioSaveRequest
 ): Promise<StudioSaveResult> {
+  // Keep framework authentication redirects outside the storage-error boundary.
+  const session = await verifyAdminOrEditor()
   try {
-    const session = await verifyAdminOrEditor()
     if (input.setAsFrontPage && session.user.role !== "admin") {
       return { success: false, error: "studio_forbidden" }
     }

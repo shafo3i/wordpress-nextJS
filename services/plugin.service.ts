@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import {
   retiredPlugins,
@@ -169,7 +170,8 @@ async function changePluginState(
 ) {
   const { verifyPluginAdministrator } =
     await import("@/lib/plugins/authorization")
-  await verifyPluginAdministrator()
+  const rateActor = await verifyPluginAdministrator()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   if (!Array.isArray(slugs) || slugs.length > 9)
     throw new Error("admin.plugins.invalid_config")
   slugs.forEach((slug) => {

@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyPostEditor } from "@/lib/authMIddleware";
 import path from "node:path"
@@ -70,7 +71,8 @@ export async function updateMediaDetails(
   patch: MediaDetailsPatch,
   database: DB = db
 ) {
-  await verifyPostEditor();
+  const rateActor = await verifyPostEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   mediaItemIdSchema.parse(id)
   const data = mediaDetailsPatchSchema.parse(patch)
   await database.transaction(async (tx) => {

@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/rate-limit"
 import { z } from "zod"
 import { newsletterTokenSchema } from "@/db/schema/cms-newsletter"
 import { validUnsubscribeToken } from "@/lib/newsletter/tokens"
@@ -28,7 +29,9 @@ export async function POST(request: Request) {
       )
     await unsubscribeNewsletterSubscriber(id.data)
     return newsletterTokenPage(request, "", "site.newsletter.unsubscribed")
-  } catch {
+  } catch (error) {
+    const limited = rateLimitResponse(error)
+    if (limited) return limited
     return newsletterTokenPage(request, "", "site.newsletter.error", 503)
   }
 }

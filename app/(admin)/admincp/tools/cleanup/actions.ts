@@ -1,48 +1,51 @@
-"use server";
+"use server"
+import { RateLimitError } from "@/lib/rate-limit";
+import { unstable_rethrow } from "next/navigation"
+import { getAdminLanguageContext } from "@/components/admin/admin-shell"
 
-import { revalidatePath } from "next/cache";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { revalidatePath } from "next/cache"
+import { verifyAdmin } from "@/lib/authMIddleware"
 import {
   getDatabaseCleanupStats,
   runDatabaseCleanup,
   type CleanupStats,
-} from "@/services/database-maintenance.service";
+} from "@/services/database-maintenance.service"
 
 export interface DatabaseCleanupResult {
-  cleanedCount: number;
-  vacuumRun: boolean;
-  details: Record<string, number>;
+  cleanedCount: number
+  vacuumRun: boolean
+  details: Record<string, number>
 }
 
 export async function getDatabaseCleanupStatsAction(): Promise<{
-  success: boolean;
-  stats?: CleanupStats;
-  error?: string;
+  success: boolean
+  stats?: CleanupStats
+  error?: string
 }> {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor();
-    const stats = await getDatabaseCleanupStats();
-    return { success: true, stats };
-  } catch (error: any) {
-    console.error("getDatabaseCleanupStatsAction error:", error);
-    return { success: false, error: error?.message || "Failed to fetch cleanup stats" };
+    const stats = await getDatabaseCleanupStats()
+    return { success: true, stats }
+  } catch (error: unknown) {
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return { success: false, error: dict[error instanceof RateLimitError ? error.message : "admin.tools.error.failed"] || "" }
   }
 }
 
-export async function runDatabaseCleanupAction(
-  actions: string[]
-): Promise<{
-  success: boolean;
-  result?: DatabaseCleanupResult;
-  error?: string;
+export async function runDatabaseCleanupAction(actions: string[]): Promise<{
+  success: boolean
+  result?: DatabaseCleanupResult
+  error?: string
 }> {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor();
-    const result = await runDatabaseCleanup(actions);
-    revalidatePath("/admincp/tools/cleanup");
-    return { success: true, result };
-  } catch (error: any) {
-    console.error("runDatabaseCleanupAction error:", error);
-    return { success: false, error: error?.message || "Failed to run database cleanup" };
+    const result = await runDatabaseCleanup(actions)
+    revalidatePath("/admincp/tools/cleanup")
+    return { success: true, result }
+  } catch (error: unknown) {
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return { success: false, error: dict[error instanceof RateLimitError ? error.message : "admin.tools.error.failed"] || "" }
   }
 }

@@ -1,3 +1,8 @@
+vi.mock("server-only", () => ({}))
+vi.mock("@/lib/rate-limit", async (load) => ({
+  ...await load<typeof import("@/lib/rate-limit")>(),
+  checkCmsRateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 1, retryAfter: 0 }),
+}))
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { editorSnapshot } from "../../../../../../fixtures/post-autosave"
 const mocks = vi.hoisted(() => ({
@@ -22,6 +27,7 @@ vi.mock("@/services/post-autosave.service", () => ({
 import { GET, POST } from "@/app/api/admin/posts/autosave/route"
 import { AUTOSAVE_MAX_BYTES } from "@/db/schema/cms-post-autosave"
 import { PostAutosaveError } from "@/services/post-autosave.service"
+import { RateLimitError } from "@/lib/rate-limit"
 const packet = () => ({
   ownerId: "editor-a",
   documentKey: "post:1",
@@ -42,6 +48,13 @@ beforeEach(() => {
   mocks.save.mockResolvedValue({ version: 1 })
 })
 describe("post autosave endpoint", () => {
+  it("returns retry guidance when Valkey denies an autosave", async () => {
+    mocks.save.mockRejectedValue(new RateLimitError(429, 24))
+    const response = await POST(request(packet()))
+    expect(response.status).toBe(429)
+    expect(response.headers.get("Retry-After")).toBe("24")
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
+  })
   it("accepts the configured public origin behind a reverse proxy", async () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://public.example")
     try {

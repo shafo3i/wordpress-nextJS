@@ -99,7 +99,7 @@ export async function getDashboardData() {
       .orderBy(desc(wpComments.commentDate))
       .limit(3),
     // Site Health overview
-    getSiteHealthData().catch(() => null),
+    getSiteHealthData({ includeStorageInventory: false }).catch(() => null),
   ]);
 
   return {

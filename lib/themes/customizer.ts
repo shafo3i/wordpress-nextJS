@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import { customizerSaveSchema } from "@/db/schema/cms-appearance";
@@ -133,7 +134,8 @@ export async function getCustomizerSections(
  * Persist customizer adjustments into wp_options
  */
 export async function saveCustomizerData(stylesheet: string, mods: ThemeMods, identity: {siteTitle:string;siteTagline:string}, activate = false, database: DB = db): Promise<void> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const input = customizerSaveSchema.parse({stylesheet,mods,identity,activate});
   if (!hasTheme(input.stylesheet)) throw new Error("Invalid theme");
   const updates = [

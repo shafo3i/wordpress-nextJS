@@ -1,4 +1,5 @@
 "use server"
+import { RateLimitError } from "@/lib/rate-limit";
 import { newsletterEmailSchema } from "@/db/schema/cms-newsletter"
 
 import { revalidatePath } from "next/cache"
@@ -41,7 +42,8 @@ export async function deleteSubscriberAction(email: string) {
     await removeNewsletterSubscriber(newsletterEmailSchema.parse(email))
     revalidatePath("/admincp/plugins/newsletter")
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     return { success: false, error: "admin.plugins.save_failed" }
   }
 }
@@ -52,7 +54,8 @@ export async function clearSubscribersAction() {
     await clearAllNewsletterSubscribers()
     revalidatePath("/admincp/plugins/newsletter")
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     return { success: false, error: "admin.plugins.save_failed" }
   }
 }

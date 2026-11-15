@@ -1,693 +1,558 @@
-import fs from "node:fs/promises";
-import fsSync from "node:fs";
-import path from "node:path";
-import sharp from "sharp";
-import { db } from "@/db";
-import { wpPosts, wpPostmeta, wpOptions } from "@/db/schema";
-import { eq, and, sql, inArray } from "drizzle-orm";
-
+import { checkCmsRateLimit } from "@/lib/rate-limit";
+import "server-only"
+import fs from "node:fs/promises"
+import path from "node:path"
+import { randomUUID, createHash } from "node:crypto"
+import { hostname } from "node:os"
+import sharp from "sharp"
+import { db } from "@/db"
+import { wpPosts, wpPostmeta, wpOptions } from "@/db/schema"
+import { eq, and, sql, inArray, gt, asc } from "drizzle-orm"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import {
+  mediaRoot,
+  checkedMediaPath,
+  mediaPathParts,
+  prepareMediaDirectory,
+} from "@/lib/media-files"
+import {
+  mediaRegenerateSchema,
+  orphanCleanupSchema,
+  storageInventorySchema,
+} from "@/db/schema/cms-tools"
+import { MAX_MEDIA_IMAGE_PIXELS } from "@/lib/media-upload"
 export interface ImageSizeConfig {
-  name: string;
-  width: number;
-  height: number;
-  crop: boolean;
+  name: string
+  width: number
+  height: number
+  crop: boolean
 }
-
 export const THEME_THUMBNAIL_SIZES: ImageSizeConfig[] = [
   { name: "thumbnail", width: 150, height: 150, crop: true },
   { name: "medium", width: 600, height: 400, crop: false },
   { name: "large", width: 1024, height: 768, crop: false },
   { name: "hero", width: 1200, height: 675, crop: true },
-];
-
+]
 export interface MediaOverviewStats {
-  attachmentCount: number;
-  physicalFilesCount: number;
-  totalDiskUsageBytes: number;
-  uploadsDirWritable: boolean;
-  configuredSizes: ImageSizeConfig[];
+  attachmentCount: number
+  physicalFilesCount: number | null
+  totalDiskUsageBytes: number | null
+  scannedAt?: string | null
+  uploadsDirWritable: boolean
+  configuredSizes: ImageSizeConfig[]
 }
-
 export interface OrphanFileItem {
-  relativePath: string;
-  absolutePath: string;
-  sizeBytes: number;
-  modifiedAt: string;
-  previewUrl: string;
+  relativePath: string
+  sizeBytes: number
+  modifiedAt: string
+  previewUrl: string
 }
-
 export interface OrphanScanResult {
-  totalFiles: number;
-  inUseCount: number;
-  orphanCount: number;
-  reclaimableBytes: number;
-  orphanFiles: OrphanFileItem[];
+  totalFiles: number
+  inUseCount: number
+  orphanCount: number
+  reclaimableBytes: number
+  orphanFiles: OrphanFileItem[]
 }
-
-function getUploadsDir(): string {
-  return path.join(process.cwd(), "public", "uploads");
+async function toolsRoot() {
+  if (
+    (
+      await fs.lstat(path.join(process.cwd(), "public", "uploads"))
+    ).isSymbolicLink()
+  )
+    throw new Error("unsafe_uploads_root")
+  return mediaRoot()
 }
-
-function getQuarantineDir(): string {
-  return path.join(process.cwd(), "public", "uploads", ".quarantine");
-}
-
-/**
- * Recursively retrieves all physical files within a directory, ignoring hidden/quarantine folders.
- */
-async function walkDirectory(dir: string): Promise<string[]> {
-  const results: string[] = [];
-  if (!fsSync.existsSync(dir)) return results;
-
-  const entries = await fs.readdir(dir, { withFileTypes: true });
+async function walk(root: string, relative = ""): Promise<OrphanFileItem[]> {
+  const directory = relative
+    ? path.join(root, ...mediaPathParts(relative))
+    : root
+  const entries = await fs.readdir(directory, { withFileTypes: true })
+  const files: OrphanFileItem[] = []
   for (const entry of entries) {
-    if (entry.name.startsWith(".")) continue; // skip .quarantine and hidden files
-    const fullPath = path.join(dir, entry.name);
+    if (
+      entry.name.startsWith(".") ||
+      entry.isSymbolicLink() ||
+      entry.name === "video-posters"
+    )
+      continue
+    const name = relative ? `${relative}/${entry.name}` : entry.name
     if (entry.isDirectory()) {
-      const nested = await walkDirectory(fullPath);
-      results.push(...nested);
+      if (name.split("/").length >= 16) throw new Error("tools_job_too_large")
+      files.push(...(await walk(root, name)))
     } else if (entry.isFile()) {
-      results.push(fullPath);
+      const filename = await checkedMediaPath(root, name),
+        stat = await fs.stat(filename)
+      files.push({
+        relativePath: name,
+        sizeBytes: stat.size,
+        modifiedAt: stat.mtime.toISOString(),
+        previewUrl: `/uploads/${name.split("/").map(encodeURIComponent).join("/")}`,
+      })
     }
+    if (files.length > 100000) throw new Error("tools_job_too_large")
   }
-  return results;
+  return files
+}
+export async function getStoredStorageInventory() {
+  await verifyAdmin()
+  const [stored] = await db
+    .select({ optionValue: wpOptions.optionValue })
+    .from(wpOptions)
+    .where(eq(wpOptions.optionName, "pressforge_storage_inventory"))
+    .limit(1)
+  if ((stored?.optionValue?.length || 0) > 2048) return null
+  try {
+    const parsed = storageInventorySchema.safeParse(
+      JSON.parse(stored?.optionValue || "null")
+    )
+    return parsed.success && parsed.data.scope === storageScope()
+      ? parsed.data
+      : null
+  } catch {
+    return null
+  }
 }
 
-/**
- * Calculates current media attachment and disk storage stats
- */
-export async function getMediaOverviewStats(): Promise<MediaOverviewStats> {
-  const uploadsDir = getUploadsDir();
+function storageScope() {
+  return createHash("sha256")
+    .update(hostname())
+    .update("\0")
+    .update(path.resolve("public", "uploads"))
+    .digest("hex")
+}
 
-  // 1. Total attachments in DB
-  const [attachmentRows] = await db
+export async function getMediaOverviewStats({
+  scanFiles = false,
+}: { scanFiles?: boolean } = {}): Promise<MediaOverviewStats> {
+  const rateActor = await verifyAdmin()
+  if (scanFiles) await checkCmsRateLimit(rateActor.user.id, "scan");
+  const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(wpPosts)
-    .where(
-      and(
-        eq(wpPosts.postType, "attachment"),
-        sql`${wpPosts.postMimeType} LIKE 'image/%'`
-      )
-    );
-
-  const attachmentCount = attachmentRows?.count || 0;
-
-  // 2. Physical disk files
-  let physicalFilesCount = 0;
-  let totalDiskUsageBytes = 0;
-  let uploadsDirWritable = false;
-
+    .where(eq(wpPosts.postType, "attachment"))
+  let files: OrphanFileItem[] = [],
+    writable = false
+  let inventory: ReturnType<typeof storageInventorySchema.parse> | null = null
+  if (!scanFiles) inventory = await getStoredStorageInventory()
+  let completed = false
   try {
-    if (!fsSync.existsSync(uploadsDir)) {
-      await fs.mkdir(uploadsDir, { recursive: true });
+    const root = await toolsRoot()
+    if (scanFiles) {
+      files = await walk(root)
+      completed = true
     }
-    // Test write permission
-    const testFile = path.join(uploadsDir, `.test_write_${Date.now()}`);
-    await fs.writeFile(testFile, "test");
-    await fs.unlink(testFile);
-    uploadsDirWritable = true;
-
-    const allFiles = await walkDirectory(uploadsDir);
-    physicalFilesCount = allFiles.length;
-
-    for (const filePath of allFiles) {
-      try {
-        const stat = await fs.stat(filePath);
-        totalDiskUsageBytes += stat.size;
-      } catch {
-        // ignore individual stat error
-      }
-    }
-  } catch {
-    uploadsDirWritable = false;
+    await fs.access(root, fs.constants.W_OK)
+    writable = true
+  } catch (error) {
+    if (
+      (error as NodeJS.ErrnoException).code !== "ENOENT" &&
+      (error as NodeJS.ErrnoException).code !== "EACCES"
+    )
+      throw error
   }
-
-  return {
-    attachmentCount,
-    physicalFilesCount,
-    totalDiskUsageBytes,
-    uploadsDirWritable,
-    configuredSizes: THEME_THUMBNAIL_SIZES,
-  };
-}
-
-/**
- * Seeds sample editorial photos into public/uploads and creates real DB attachment records
- * Useful for testing thumbnail regeneration and orphan cleaning on freshly initialized projects.
- */
-export async function seedSampleMedia(): Promise<{ createdCount: number }> {
-  const uploadsDir = getUploadsDir();
-  const yearMonthDir = path.join(uploadsDir, "2026", "10");
-  await fs.mkdir(yearMonthDir, { recursive: true });
-
-  const sampleImages = [
-    {
-      filename: "editorial-financial-district.jpg",
-      title: "Financial District High-Frequency Trade Corridors",
-      color1: "#1e3a8a",
-      color2: "#0284c7",
-      width: 1920,
-      height: 1080,
-    },
-    {
-      filename: "editorial-tech-quantum.jpg",
-      title: "Quantum Neural Processing Lab",
-      color1: "#064e3b",
-      color2: "#10b981",
-      width: 1920,
-      height: 1080,
-    },
-    {
-      filename: "editorial-aerospace-policy.jpg",
-      title: "Commercial Orbital Launch Logistics",
-      color1: "#4c1d95",
-      color2: "#8b5cf6",
-      width: 1920,
-      height: 1080,
-    },
-  ];
-
-  let createdCount = 0;
-
-  for (const img of sampleImages) {
-    const filePath = path.join(yearMonthDir, img.filename);
-    const relPath = `2026/10/${img.filename}`;
-
-    // Create high-res SVG and rasterize to JPG using sharp
-    const svg = `
-      <svg width="${img.width}" height="${img.height}" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="${img.color1}" />
-            <stop offset="100%" stop-color="${img.color2}" />
-          </linearGradient>
-        </defs>
-        <rect width="${img.width}" height="${img.height}" fill="url(#g)" />
-        <text x="100" y="540" font-family="sans-serif" font-size="72" font-weight="bold" fill="#ffffff" opacity="0.9">
-          ${img.title}
-        </text>
-        <text x="100" y="620" font-family="sans-serif" font-size="36" fill="#cbd5e1" opacity="0.8">
-          PressForge Newsroom Editorial Archive • 1920x1080
-        </text>
-      </svg>
-    `;
-
-    await sharp(Buffer.from(svg))
-      .jpeg({ quality: 90 })
-      .toFile(filePath);
-
-    // Insert attachment row into wpPosts
-    const [inserted] = await db
-      .insert(wpPosts)
-      .values({
-        postTitle: img.title,
-        postName: path.parse(img.filename).name,
-        postType: "attachment",
-        postMimeType: "image/jpeg",
-        postStatus: "inherit",
-        guid: `/uploads/${relPath}`,
-        postDate: new Date(),
-        postDateGmt: new Date(),
-        postModified: new Date(),
-        postModifiedGmt: new Date(),
-      })
-      .returning({ id: wpPosts.id });
-
-    if (inserted?.id) {
-      await db.insert(wpPostmeta).values([
-        {
-          postId: inserted.id,
-          metaKey: "_wp_attached_file",
-          metaValue: relPath,
-        },
-        {
-          postId: inserted.id,
-          metaKey: "_wp_attachment_metadata",
-          metaValue: JSON.stringify({
-            width: img.width,
-            height: img.height,
-            file: relPath,
-            sizes: {},
-          }),
-        },
-      ]);
-      createdCount++;
-    }
-  }
-
-  // Also create one genuine orphan file (not referenced anywhere in DB)
-  const orphanFile = path.join(yearMonthDir, "abandoned-draft-diagram.png");
-  const orphanSvg = `
-    <svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-      <rect width="800" height="600" fill="#334155" />
-      <text x="80" y="300" font-family="sans-serif" font-size="36" fill="#f87171">
-        Unreferenced Abandoned Media Draft
-      </text>
-    </svg>
-  `;
-  await sharp(Buffer.from(orphanSvg)).png().toFile(orphanFile);
-
-  return { createdCount };
-}
-
-/**
- * Regenerates responsive thumbnails and modern WebP variants for all or selected image attachments
- */
-export async function regenerateThumbnails(options: {
-  generateWebp?: boolean;
-  onlyMissing?: boolean;
-  attachmentIds?: number[];
-}): Promise<{
-  processed: number;
-  totalSizesGenerated: number;
-  details: Array<{
-    id: number;
-    title: string;
-    sizesCreated: string[];
-    success: boolean;
-    error?: string;
-  }>;
-}> {
-  const uploadsDir = getUploadsDir();
-  const generateWebp = options.generateWebp ?? true;
-  const onlyMissing = options.onlyMissing ?? false;
-
-  let query = db
-    .select({
-      id: wpPosts.id,
-      title: wpPosts.postTitle,
-      guid: wpPosts.guid,
+  if (scanFiles) {
+    if (!completed) throw new Error("storage_scan_unavailable")
+    inventory = storageInventorySchema.parse({
+      scope: storageScope(),
+      fileCount: files.length,
+      totalBytes: files.reduce((sum, file) => sum + file.sizeBytes, 0),
+      scannedAt: new Date().toISOString(),
     })
-    .from(wpPosts)
-    .where(
-      and(
-        eq(wpPosts.postType, "attachment"),
-        sql`${wpPosts.postMimeType} LIKE 'image/%'`
-      )
-    );
-
-  if (options.attachmentIds && options.attachmentIds.length > 0) {
-    query = db
-      .select({
-        id: wpPosts.id,
-        title: wpPosts.postTitle,
-        guid: wpPosts.guid,
+    const optionValue = JSON.stringify(inventory)
+    await db
+      .insert(wpOptions)
+      .values({
+        optionName: "pressforge_storage_inventory",
+        optionValue,
+        autoload: "no",
       })
-      .from(wpPosts)
-      .where(
-        and(
-          eq(wpPosts.postType, "attachment"),
-          inArray(wpPosts.id, options.attachmentIds.map((id) => BigInt(id)))
-        )
-      );
+      .onConflictDoUpdate({
+        target: wpOptions.optionName,
+        set: { optionValue },
+      })
   }
-
-  const attachments = await query;
-  let totalSizesGenerated = 0;
-  const details = [];
-
-  for (const attachment of attachments) {
-    const id = Number(attachment.id);
+  return {
+    attachmentCount: row?.count || 0,
+    physicalFilesCount: inventory?.fileCount ?? null,
+    totalDiskUsageBytes: inventory?.totalBytes ?? null,
+    scannedAt: inventory?.scannedAt ?? null,
+    uploadsDirWritable: writable,
+    configuredSizes: THEME_THUMBNAIL_SIZES,
+  }
+}
+/** Keep old callers explicit: production maintenance must not invent editorial data. */
+export async function seedSampleMedia(): Promise<{ createdCount: number }> {
+  await verifyAdmin()
+  throw new Error("demo_media_disabled")
+}
+export async function regenerateThumbnails(options: {
+  generateWebp?: boolean
+  onlyMissing?: boolean
+  attachmentIds?: number[]
+  afterId?: number
+}): Promise<{
+  processed: number
+  totalSizesGenerated: number
+  nextAfterId?: number
+  details: Array<{
+    id: number
+    title: string
+    sizesCreated: string[]
+    success: boolean
+    error?: string
+  }>
+}> {
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "regenerate");
+  const input = mediaRegenerateSchema.parse(options)
+  const root = await toolsRoot()
+  const conditions = [
+    eq(wpPosts.postType, "attachment"),
+    sql`${wpPosts.postMimeType} LIKE 'image/%'`,
+  ]
+  if (input.attachmentIds)
+    conditions.push(inArray(wpPosts.id, input.attachmentIds.map(BigInt)))
+  if (input.afterId) conditions.push(gt(wpPosts.id, BigInt(input.afterId)))
+  const attachments = await db
+    .select({ id: wpPosts.id, title: wpPosts.postTitle })
+    .from(wpPosts)
+    .where(and(...conditions))
+    .orderBy(asc(wpPosts.id))
+    .limit(26)
+  const details: Array<{
+    id: number
+    title: string
+    sizesCreated: string[]
+    success: boolean
+    error?: string
+  }> = []
+  let totalSizesGenerated = 0
+  for (const attachment of attachments.slice(0, 25)) {
+    const id = Number(attachment.id)
+    if (!Number.isSafeInteger(id)) throw new Error("invalid_attachment")
     try {
-      // Find attached file path from postmeta
-      const metaRows = await db
-        .select({
-          metaKey: wpPostmeta.metaKey,
-          metaValue: wpPostmeta.metaValue,
-        })
+      const meta = await db
+        .select({ key: wpPostmeta.metaKey, value: wpPostmeta.metaValue })
         .from(wpPostmeta)
         .where(
           and(
-            eq(wpPostmeta.postId, BigInt(id)),
-            sql`${wpPostmeta.metaKey} IN ('_wp_attached_file', '_wp_attachment_metadata')`
+            eq(wpPostmeta.postId, attachment.id),
+            inArray(wpPostmeta.metaKey, [
+              "_wp_attached_file",
+              "_wp_attachment_metadata",
+            ])
           )
-        );
-
-      let attachedFileRel: string | null = null;
-      let existingMetadata: any = {};
-
-      for (const row of metaRows) {
-        if (row.metaKey === "_wp_attached_file") attachedFileRel = row.metaValue;
-        if (row.metaKey === "_wp_attachment_metadata" && row.metaValue) {
-          try {
-            existingMetadata = JSON.parse(row.metaValue);
-          } catch {
-            existingMetadata = {};
+        )
+      const file = meta.find((item) => item.key === "_wp_attached_file")?.value
+      if (!file) throw new Error("invalid_media_file")
+      const source = await checkedMediaPath(root, file),
+        sourceStat = await fs.stat(source)
+      if (sourceStat.size > 32 * 1024 * 1024)
+        throw new Error("invalid_media_file")
+      const bytes = await fs.readFile(source),
+        info = await sharp(bytes, {
+          limitInputPixels: MAX_MEDIA_IMAGE_PIXELS,
+        }).metadata()
+      if (
+        !["jpeg", "png", "webp", "avif", "gif"].includes(info.format || "") ||
+        !info.width ||
+        !info.height ||
+        (info.pages || 1) > 1
+      )
+        throw new Error("unsupported_media")
+      const previous = meta.find(
+        (item) => item.key === "_wp_attachment_metadata"
+      )?.value
+      let metadata: Record<string, unknown> = {}
+      try {
+        const raw = JSON.parse(previous || "{}")
+        if (raw && typeof raw === "object" && !Array.isArray(raw))
+          metadata = raw
+      } catch {
+        /* Legacy PHP metadata is not copied into new JSON. */
+      }
+      const sizes: Record<string, unknown> = {}
+      if (
+        metadata.sizes &&
+        typeof metadata.sizes === "object" &&
+        !Array.isArray(metadata.sizes)
+      )
+        for (const [key, value] of Object.entries(metadata.sizes)) {
+          if (
+            value &&
+            typeof value === "object" &&
+            "file" in value &&
+            typeof value.file === "string" &&
+            !/[\\/]/.test(value.file)
+          ) {
+            try {
+              mediaPathParts(value.file)
+              sizes[key] = value
+            } catch {}
           }
         }
-      }
-
-      if (!attachedFileRel && attachment.guid) {
-        // Fallback: extract path from guid e.g. /uploads/2026/10/photo.jpg
-        const match = attachment.guid.match(/\/uploads\/(.+)$/);
-        if (match) attachedFileRel = match[1];
-      }
-
-      if (!attachedFileRel) {
-        details.push({
-          id,
-          title: attachment.title || `Attachment #${id}`,
-          sizesCreated: [],
-          success: false,
-          error: "No source file path found in metadata",
-        });
-        continue;
-      }
-
-      const sourceFullPath = path.join(uploadsDir, attachedFileRel);
-      if (!fsSync.existsSync(sourceFullPath)) {
-        details.push({
-          id,
-          title: attachment.title || `Attachment #${id}`,
-          sizesCreated: [],
-          success: false,
-          error: `Source file missing on disk: ${attachedFileRel}`,
-        });
-        continue;
-      }
-
-      const sourceDir = path.dirname(sourceFullPath);
-      const parsedPath = path.parse(sourceFullPath);
-      const baseName = parsedPath.name;
-      const ext = parsedPath.ext;
-
-      const sourceBuffer = await fs.readFile(sourceFullPath);
-      const imagePipeline = sharp(sourceBuffer);
-      const originalMeta = await imagePipeline.metadata();
-
-      const origWidth = originalMeta.width || 1200;
-      const origHeight = originalMeta.height || 800;
-
-      const updatedSizes: Record<string, any> = existingMetadata.sizes || {};
-      const sizesCreated: string[] = [];
-
+      const sizesCreated: string[] = []
+      const directory = path.posix.dirname(file),
+        stem = path.posix.parse(file).name
       for (const size of THEME_THUMBNAIL_SIZES) {
-        const thumbFilename = `${baseName}-${size.width}x${size.height}${ext}`;
-        const thumbFullPath = path.join(sourceDir, thumbFilename);
-
-        // Skip if onlyMissing and file already exists
-        if (onlyMissing && fsSync.existsSync(thumbFullPath)) {
-          continue;
-        }
-
-        // Generate thumbnail format
-        const thumbInstance = sharp(sourceBuffer);
-        if (size.crop) {
-          thumbInstance.resize({
-            width: size.width,
-            height: size.height,
-            fit: "cover",
-            position: "center",
-          });
-        } else {
-          thumbInstance.resize({
-            width: size.width,
-            height: size.height,
-            fit: "inside",
-            withoutEnlargement: true,
-          });
-        }
-
-        await thumbInstance.toFile(thumbFullPath);
-        sizesCreated.push(`${size.name} (${size.width}x${size.height})`);
-        totalSizesGenerated++;
-
-        updatedSizes[size.name] = {
-          file: thumbFilename,
+        const filename = `${stem}-${size.width}x${size.height}.${info.format === "jpeg" ? "jpg" : info.format}`
+        const relative =
+          directory === "." ? filename : `${directory}/${filename}`
+        const target = await checkedMediaPath(root, relative, true)
+        const resize = {
           width: size.width,
           height: size.height,
-          mimeType: originalMeta.format ? `image/${originalMeta.format}` : "image/jpeg",
-        };
-
-        // Generate WebP variant if requested
-        if (generateWebp) {
-          const webpFilename = `${baseName}-${size.width}x${size.height}.webp`;
-          const webpFullPath = path.join(sourceDir, webpFilename);
-          await sharp(sourceBuffer)
-            .resize({
-              width: size.width,
-              height: size.height,
-              fit: size.crop ? "cover" : "inside",
-              withoutEnlargement: true,
-            })
-            .webp({ quality: 82 })
-            .toFile(webpFullPath);
-
-          sizesCreated.push(`${size.name} [WebP]`);
-          totalSizesGenerated++;
+          fit: size.crop ? ("cover" as const) : ("inside" as const),
+          withoutEnlargement: true,
         }
-      }
-
-      // Update _wp_attachment_metadata in wp_postmeta
-      const newMetadata = {
-        width: origWidth,
-        height: origHeight,
-        file: attachedFileRel,
-        sizes: updatedSizes,
-        image_meta: {
-          created_timestamp: Date.now(),
-        },
-      };
-
-      const existingMetaRow = await db
-        .select({ metaId: wpPostmeta.metaId })
-        .from(wpPostmeta)
-        .where(
-          and(
-            eq(wpPostmeta.postId, BigInt(id)),
-            eq(wpPostmeta.metaKey, "_wp_attachment_metadata")
-          )
-        )
-        .limit(1);
-
-      if (existingMetaRow.length > 0) {
-        await db
-          .update(wpPostmeta)
-          .set({ metaValue: JSON.stringify(newMetadata) })
-          .where(eq(wpPostmeta.metaId, existingMetaRow[0].metaId));
-      } else {
-        await db.insert(wpPostmeta).values({
-          postId: BigInt(id),
-          metaKey: "_wp_attachment_metadata",
-          metaValue: JSON.stringify(newMetadata),
-        });
-      }
-
-      details.push({
-        id,
-        title: attachment.title || `Attachment #${id}`,
-        sizesCreated,
-        success: true,
-      });
-    } catch (err: any) {
-      details.push({
-        id,
-        title: attachment.title || `Attachment #${id}`,
-        sizesCreated: [],
-        success: false,
-        error: err?.message || "Unknown error during thumbnail generation",
-      });
-    }
-  }
-
-  return {
-    processed: attachments.length,
-    totalSizesGenerated,
-    details,
-  };
-}
-
-/**
- * Scans public/uploads for orphaned files not referenced anywhere in the database
- */
-export async function scanOrphanMedia(): Promise<OrphanScanResult> {
-  const uploadsDir = getUploadsDir();
-  const allFiles = await walkDirectory(uploadsDir);
-
-  if (allFiles.length === 0) {
-    return {
-      totalFiles: 0,
-      inUseCount: 0,
-      orphanCount: 0,
-      reclaimableBytes: 0,
-      orphanFiles: [],
-    };
-  }
-
-  // 1. Gather all attached files & metadata sizes from wp_postmeta
-  const metaRows = await db
-    .select({
-      metaKey: wpPostmeta.metaKey,
-      metaValue: wpPostmeta.metaValue,
-    })
-    .from(wpPostmeta)
-    .where(
-      sql`${wpPostmeta.metaKey} IN ('_wp_attached_file', '_wp_attachment_metadata')`
-    );
-
-  const referencedBaseFiles = new Set<string>();
-
-  for (const row of metaRows) {
-    if (row.metaKey === "_wp_attached_file" && row.metaValue) {
-      referencedBaseFiles.add(path.normalize(row.metaValue.trim()));
-      referencedBaseFiles.add(path.basename(row.metaValue.trim()));
-    }
-    if (row.metaKey === "_wp_attachment_metadata" && row.metaValue) {
-      try {
-        const parsed = JSON.parse(row.metaValue);
-        if (parsed.file) {
-          referencedBaseFiles.add(path.normalize(parsed.file));
-          referencedBaseFiles.add(path.basename(parsed.file));
+        let exists = false
+        try {
+          await fs.stat(target)
+          exists = true
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
         }
-        if (parsed.sizes && typeof parsed.sizes === "object") {
-          for (const sizeKey of Object.keys(parsed.sizes)) {
-            const sizeObj = parsed.sizes[sizeKey];
-            if (sizeObj?.file) {
-              referencedBaseFiles.add(path.normalize(sizeObj.file));
-              referencedBaseFiles.add(path.basename(sizeObj.file));
-            }
+        let dimensions: { width?: number; height?: number }
+        if (!input.onlyMissing || !exists) {
+          const image = await sharp(bytes, {
+            limitInputPixels: MAX_MEDIA_IMAGE_PIXELS,
+          })
+            .resize(resize)
+            .toBuffer({ resolveWithObject: true })
+          await fs.writeFile(target, image.data)
+          dimensions = image.info
+          sizesCreated.push(size.name)
+          totalSizesGenerated++
+        } else
+          dimensions = await sharp(target, {
+            limitInputPixels: MAX_MEDIA_IMAGE_PIXELS,
+          }).metadata()
+        sizes[size.name] = {
+          file: filename,
+          width: dimensions.width,
+          height: dimensions.height,
+          mimeType: `image/${info.format}`,
+        }
+        if (input.generateWebp && info.format !== "webp") {
+          const webp =
+            directory === "."
+              ? `${stem}-${size.width}x${size.height}.webp`
+              : `${directory}/${stem}-${size.width}x${size.height}.webp`
+          const destination = await checkedMediaPath(root, webp, true)
+          let hasWebp = false
+          try {
+            await fs.stat(destination)
+            hasWebp = true
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error
+          }
+          if (!input.onlyMissing || !hasWebp) {
+            await fs.writeFile(
+              destination,
+              await sharp(bytes, { limitInputPixels: MAX_MEDIA_IMAGE_PIXELS })
+                .resize(resize)
+                .webp({ quality: 82 })
+                .toBuffer()
+            )
+            totalSizesGenerated++
           }
         }
-      } catch {
-        // ignore JSON parse error
       }
+      const metaValue = JSON.stringify({
+        ...metadata,
+        file,
+        width: info.width,
+        height: info.height,
+        sizes,
+        filesize: sourceStat.size,
+      })
+      await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`SELECT "ID" FROM wp_posts WHERE "ID"=${attachment.id} AND post_type='attachment' FOR UPDATE`
+        )
+        await tx
+          .delete(wpPostmeta)
+          .where(
+            and(
+              eq(wpPostmeta.postId, attachment.id),
+              eq(wpPostmeta.metaKey, "_wp_attachment_metadata")
+            )
+          )
+        await tx.insert(wpPostmeta).values({
+          postId: attachment.id,
+          metaKey: "_wp_attachment_metadata",
+          metaValue,
+        })
+      })
+      details.push({
+        id,
+        title: attachment.title || "",
+        sizesCreated,
+        success: true,
+      })
+    } catch {
+      details.push({
+        id,
+        title: attachment.title || "",
+        sizesCreated: [],
+        success: false,
+        error: "admin.tools.media.file_failed",
+      })
     }
   }
-
-  // 2. Gather image references in posts (post_content, guid)
-  const postsWithImages = await db
-    .select({
-      content: wpPosts.postContent,
-      guid: wpPosts.guid,
-    })
-    .from(wpPosts)
-    .where(sql`${wpPosts.postContent} LIKE '%uploads/%' OR ${wpPosts.guid} LIKE '%uploads/%'`);
-
-  for (const post of postsWithImages) {
-    if (post.guid) {
-      const match = post.guid.match(/\/uploads\/(.+)$/);
-      if (match) {
-        referencedBaseFiles.add(path.normalize(match[1]));
-        referencedBaseFiles.add(path.basename(match[1]));
-      }
-    }
-    if (post.content) {
-      const matches = post.content.match(/\/uploads\/[a-zA-Z0-9_\-\.\/]+/g);
-      if (matches) {
-        for (const m of matches) {
-          const clean = m.replace("/uploads/", "");
-          referencedBaseFiles.add(path.normalize(clean));
-          referencedBaseFiles.add(path.basename(clean));
-        }
-      }
-    }
-  }
-
-  // 3. Compare physical files with DB references
-  const orphanFiles: OrphanFileItem[] = [];
-  let reclaimableBytes = 0;
-  let inUseCount = 0;
-
-  for (const fullPath of allFiles) {
-    const relFromUploads = path.relative(uploadsDir, fullPath).replace(/\\/g, "/");
-    const filename = path.basename(fullPath);
-
-    // Check if filename or relative path is in referenced set
-    // Also handle webp variants of referenced files
-    const baseWithoutWebp = filename.endsWith(".webp")
-      ? filename.replace(/\.webp$/, "")
-      : null;
-
-    let isReferenced =
-      referencedBaseFiles.has(relFromUploads) ||
-      referencedBaseFiles.has(filename);
-
-    if (!isReferenced && baseWithoutWebp) {
-      // If webp version of a referenced image thumbnail
-      for (const ref of referencedBaseFiles) {
-        if (ref.includes(baseWithoutWebp)) {
-          isReferenced = true;
-          break;
-        }
-      }
-    }
-
-    if (isReferenced) {
-      inUseCount++;
-    } else {
-      try {
-        const stat = await fs.stat(fullPath);
-        reclaimableBytes += stat.size;
-        orphanFiles.push({
-          relativePath: relFromUploads,
-          absolutePath: fullPath,
-          sizeBytes: stat.size,
-          modifiedAt: stat.mtime.toISOString(),
-          previewUrl: `/uploads/${relFromUploads}`,
-        });
-      } catch {
-        // ignore stat errors
-      }
-    }
-  }
-
   return {
-    totalFiles: allFiles.length,
-    inUseCount,
-    orphanCount: orphanFiles.length,
-    reclaimableBytes,
-    orphanFiles,
-  };
+    processed: details.length,
+    totalSizesGenerated,
+    details,
+    ...(attachments.length > 25
+      ? { nextAfterId: Number(attachments[24].id) }
+      : {}),
+  }
 }
-
-/**
- * Quarantines or permanently deletes selected orphaned files
- */
+async function scan(): Promise<OrphanScanResult> {
+  let root: string
+  try {
+    root = await toolsRoot()
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT")
+      return {
+        totalFiles: 0,
+        inUseCount: 0,
+        orphanCount: 0,
+        reclaimableBytes: 0,
+        orphanFiles: [],
+      }
+    throw error
+  }
+  const files = await walk(root)
+  const [meta, options, posts] = await Promise.all([
+    db
+      .select({ metaValue: wpPostmeta.metaValue })
+      .from(wpPostmeta)
+      .limit(100001),
+    db
+      .select({ optionValue: wpOptions.optionValue })
+      .from(wpOptions)
+      .limit(100001),
+    db
+      .select({ content: wpPosts.postContent, guid: wpPosts.guid })
+      .from(wpPosts)
+      .limit(100001),
+  ])
+  if ([meta, options, posts].some((rows) => rows.length > 100000))
+    throw new Error("tools_job_too_large")
+  const strings = [
+    ...meta.map((row) => row.metaValue || ""),
+    ...options.map((row) => row.optionValue),
+    ...posts.flatMap((row) => [row.content || "", row.guid || ""]),
+  ]
+  let size = 0
+  const references = strings
+    .map((value) => {
+      size += Buffer.byteLength(value)
+      if (size > 100 * 1024 * 1024) throw new Error("tools_job_too_large")
+      let decoded = value
+      try {
+        decoded = decodeURIComponent(value)
+      } catch {}
+      return `${value}\n${decoded}`.replaceAll("\\/", "/")
+    })
+    .join("\n")
+  const orphans = files.filter((file) => {
+    const name = path.posix.basename(file.relativePath)
+    const originalStem = name.replace(/-\d+x\d+\.[^.]+$/, "")
+    return (
+      !references.includes(file.relativePath) &&
+      !references.includes(name) &&
+      !(originalStem !== name && references.includes(originalStem + "."))
+    )
+  })
+  return {
+    totalFiles: files.length,
+    inUseCount: files.length - orphans.length,
+    orphanCount: orphans.length,
+    reclaimableBytes: orphans.reduce((sum, file) => sum + file.sizeBytes, 0),
+    orphanFiles: orphans.slice(0, 100),
+  }
+}
+export async function scanOrphanMedia(): Promise<OrphanScanResult> {
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "scan");
+  return scan()
+}
 export async function cleanOrphanMedia(
   filePaths: string[],
   action: "quarantine" | "delete"
 ): Promise<{
-  cleanedCount: number;
-  reclaimedBytes: number;
-  actionTaken: "quarantine" | "delete";
+  cleanedCount: number
+  reclaimedBytes: number
+  actionTaken: "quarantine" | "delete"
+  failedCount: number
 }> {
-  const uploadsDir = getUploadsDir();
-  const quarantineDir = getQuarantineDir();
-
-  let cleanedCount = 0;
-  let reclaimedBytes = 0;
-
-  for (const relPath of filePaths) {
-    // Sanitize path to prevent directory traversal
-    const safeRel = path.normalize(relPath).replace(/^(\.\.[\/\\])+/, "");
-    const fullPath = path.join(uploadsDir, safeRel);
-
-    // Security check: path must stay inside uploadsDir
-    if (!fullPath.startsWith(uploadsDir)) continue;
-    if (!fsSync.existsSync(fullPath)) continue;
-
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "cleanup");
+  const input = orphanCleanupSchema.parse({ filePaths, action })
+  const root = await toolsRoot()
+  const requested = [...new Set(input.filePaths)]
+  for (const relative of requested) mediaPathParts(relative)
+  const candidates = new Map(
+    (await scan()).orphanFiles.map((file) => [file.relativePath, file])
+  )
+  const files = await Promise.all(
+    requested.map(async (relative) => {
+      const evidence = candidates.get(relative)
+      if (!evidence) throw new Error("media_in_use")
+      const filename = await checkedMediaPath(root, relative),
+        stat = await fs.stat(filename)
+      if (
+        stat.size !== evidence.sizeBytes ||
+        stat.mtime.toISOString() !== evidence.modifiedAt
+      )
+        throw new Error("media_changed")
+      return { relative, filename, size: stat.size, modified: stat.mtimeMs }
+    })
+  )
+  let cleanedCount = 0,
+    reclaimedBytes = 0,
+    failedCount = 0
+  const batch = randomUUID()
+  let quarantine = ""
+  if (input.action === "quarantine") {
+    quarantine = path.join(root, ".quarantine")
+    await fs.mkdir(quarantine, { recursive: true })
+    if (
+      (await fs.lstat(quarantine)).isSymbolicLink() ||
+      (await fs.realpath(quarantine)) !== quarantine
+    )
+      throw new Error("unsafe_quarantine")
+  }
+  for (const file of files) {
     try {
-      const stat = await fs.stat(fullPath);
-      const fileSize = stat.size;
-
-      if (action === "quarantine") {
-        const targetPath = path.join(quarantineDir, safeRel);
-        await fs.mkdir(path.dirname(targetPath), { recursive: true });
-        await fs.rename(fullPath, targetPath);
+      await checkedMediaPath(root, file.relative)
+      const current = await fs.stat(file.filename)
+      if (current.size !== file.size || current.mtimeMs !== file.modified)
+        throw new Error("media_changed")
+      if (input.action === "quarantine") {
+        const destination = `${batch}/${file.relative}`
+        await prepareMediaDirectory(quarantine, path.posix.dirname(destination))
+        await fs.rename(
+          file.filename,
+          await checkedMediaPath(quarantine, destination, true)
+        )
       } else {
-        await fs.unlink(fullPath);
+        await fs.unlink(file.filename)
+        reclaimedBytes += file.size
       }
-
-      cleanedCount++;
-      reclaimedBytes += fileSize;
-    } catch (err) {
-      console.error(`Error cleaning file ${safeRel}:`, err);
+      cleanedCount++
+    } catch {
+      failedCount++
     }
   }
-
   return {
     cleanedCount,
     reclaimedBytes,
-    actionTaken: action,
-  };
+    failedCount,
+    actionTaken: input.action,
+  }
 }

@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit"
 import { getActivePluginSlugs } from "@/services/plugin.service"
 import { sendEmail, getSmtpSettings } from "@/lib/email"
 import { getEmailLanguage } from "@/lib/email-language"
@@ -25,6 +26,8 @@ export async function sendNewsletterConfirmation(
     ...language,
     url: url.href,
   })
+  await checkCmsRateLimit(email.trim().toLowerCase(), "email-recipient")
+  await checkCmsRateLimit("site", "email-site")
   return sendEmail({ to: email, ...message })
 }
 export async function sendConfirmedNewsletterWelcome(subscriber: {
@@ -67,5 +70,7 @@ export async function sendConfirmedNewsletterWelcome(subscriber: {
   url.searchParams.set("lang", language.code)
   message.html += `<p dir="${language.direction}"><a href="${escapeEmailHtml(url.href)}">${escapeEmailHtml(language.dict["site.newsletter.unsubscribe"])}</a></p>`
   message.text += `\n${language.dict["site.newsletter.unsubscribe"]}: ${url.href}`
+  await checkCmsRateLimit(subscriber.email.trim().toLowerCase(), "email-recipient")
+  await checkCmsRateLimit("site", "email-site")
   return sendEmail({ to: subscriber.email, ...message })
 }

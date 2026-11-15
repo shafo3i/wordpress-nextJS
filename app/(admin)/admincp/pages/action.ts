@@ -1,4 +1,5 @@
 "use server";
+import { RateLimitError } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { ZodError } from "zod";
@@ -9,6 +10,7 @@ import { createPage as createPageService, updatePage as updatePageService, quick
   trashPages, restorePages, deletePages, PageMutationError, type QuickUpdatePageInput } from "@/services/page.service";
 
 function safeErrorKey(error: unknown) {
+  if (error instanceof RateLimitError) return error.message;
   unstable_rethrow(error);
   const key = error instanceof PageMutationError ? error.key : error instanceof ZodError ? "invalid" : "failed";
   return `admin.pages.error.${key}`;

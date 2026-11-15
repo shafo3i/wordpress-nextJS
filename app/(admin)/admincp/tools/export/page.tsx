@@ -1,21 +1,25 @@
-import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getToolsExportData } from "../query";
-import { ExportForm } from "./_components/export-form";
-import Link from "next/link";
+import {
+  AdminShell,
+  getAdminLanguageContext,
+} from "@/components/admin/admin-shell"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import { getToolsExportData } from "../query"
+import { ExportForm } from "./_components/export-form"
+import Link from "next/link"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function ExportPage() {
-  await verifyAdminOrEditor();
+  await verifyAdmin()
 
   const [langContext, toolsData] = await Promise.all([
     getAdminLanguageContext(),
     getToolsExportData(),
-  ]);
+  ])
 
-  const dict = langContext.dict;
-  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+  const dict = langContext.dict
+  const direction: "rtl" | "ltr" =
+    langContext.direction === "rtl" ? "rtl" : "ltr"
 
   return (
     <AdminShell>
@@ -28,25 +32,24 @@ export default async function ExportPage() {
                 href="/admincp/tools"
                 className="text-[13px] text-[#2271b1] hover:underline"
               >
-                {dict["admin.tools.title"] || "Tools"}
+                {dict["admin.tools.title"] || ""}
               </Link>
               <span className="text-[#646970]">/</span>
-              <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-                {dict["admin.tools.export"] || "Export"}
+              <h1 className="text-[23px] leading-normal font-normal text-[#1d2327]">
+                {dict["admin.tools.export"] || ""}
               </h1>
             </div>
-            <p className="text-[13px] text-[#50575e] mt-0.5">
-              {dict["admin.tools.export_page_desc"] ||
-                "Export your content in WordPress WXR (XML), PostgreSQL SQL dump, or JSON format."}
+            <p className="mt-0.5 text-[13px] text-[#50575e]">
+              {dict["admin.tools.export_page_desc"] || ""}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <Link
               href="/admincp/tools/import"
-              className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-1 text-[13px] font-medium text-[#2c3338] hover:border-[#8c8f94] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-1 text-[13px] font-medium text-[#2c3338] transition-colors hover:border-[#8c8f94]"
             >
-              {dict["admin.tools.go_to_import"] || "Go to Import"} →
+              {dict["admin.tools.go_to_import"] || ""} →
             </Link>
           </div>
         </div>
@@ -60,5 +63,5 @@ export default async function ExportPage() {
         />
       </div>
     </AdminShell>
-  );
+  )
 }

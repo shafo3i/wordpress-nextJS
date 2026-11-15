@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/rate-limit"
 import { newsletterTokenSchema } from "@/db/schema/cms-newsletter"
 import { confirmNewsletterSubscriber } from "@/lib/newsletter/db"
 import { sendConfirmedNewsletterWelcome } from "@/lib/newsletter/email"
@@ -34,7 +35,9 @@ export async function POST(request: Request) {
       console.error("Newsletter welcome delivery failed")
     )
     return newsletterTokenPage(request, "", "site.newsletter.confirmed")
-  } catch {
+  } catch (error) {
+    const limited = rateLimitResponse(error)
+    if (limited) return limited
     return newsletterTokenPage(request, "", "site.newsletter.error", 503)
   }
 }

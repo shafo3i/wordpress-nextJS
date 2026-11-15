@@ -1,3 +1,8 @@
+vi.mock("server-only", () => ({}))
+vi.mock("@/lib/rate-limit", async (load) => ({
+  ...await load<typeof import("@/lib/rate-limit")>(),
+  checkCmsRateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 1, retryAfter: 0 }),
+}))
 import en from "@/templates/language/en.json";
 import { beforeEach, expect, it, vi } from "vitest"
 const mocks = vi.hoisted(() => ({

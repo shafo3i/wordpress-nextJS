@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyPostEditor } from "@/lib/authMIddleware";
 import fs from "node:fs/promises";
@@ -9,7 +10,8 @@ import { mediaDeleteIdsSchema } from "@/db/schema/cms-media-details";
 import { checkedMediaPath, mediaRoot, mediaPathParts } from "@/lib/media-files";
 import { MediaUploadError } from "@/lib/media-upload";
 export async function deleteMediaItems(ids: number[], database: DB = db): Promise<{ deletedCount: number; cleanupPending?: number }> {
-  await verifyPostEditor();
+  const rateActor = await verifyPostEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = mediaDeleteIdsSchema.parse(ids).map(BigInt);
   const files = new Set<string>(); let cleanupPending = 0;
   const deletedCount = await database.transaction(async tx => {

@@ -1,4 +1,5 @@
 "use server";
+import { RateLimitError } from "@/lib/rate-limit";
 
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
@@ -43,6 +44,7 @@ async function mutation<T extends object>(
     unstable_rethrow(error);
     const { dict } = await getAdminLanguageContext();
     const key =
+    error instanceof RateLimitError ? error.message :
       error instanceof UserManagementError
         ? error.key
         : error instanceof ZodError

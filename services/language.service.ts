@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdmin, verifyPostEditor } from "@/lib/authMIddleware";
 import { cache } from "react";
@@ -130,7 +131,8 @@ async function languageTransaction<T>(database: DB, operation: (tx: DB) => Promi
   });
 }
 export async function createLanguage(input: InsertLanguage, database: DB = db): Promise<SelectLanguage> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = createLanguageSchema.parse(input);
   return languageTransaction(database, async tx => {
     const [existing] = await tx.select({ total: count() }).from(languagesTable);
@@ -141,7 +143,8 @@ export async function createLanguage(input: InsertLanguage, database: DB = db): 
   });
 }
 export async function updateLanguage(code: string, input: Partial<InsertLanguage>, database: DB = db): Promise<SelectLanguage | null> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const targetCode = languageCodeSchema.parse(code);
   const parsed = updateLanguageSchema.parse(input);
   return languageTransaction(database, async tx => {
@@ -155,7 +158,8 @@ export async function updateLanguage(code: string, input: Partial<InsertLanguage
   });
 }
 export async function deleteLanguage(code: string, database: DB = db): Promise<{ success: boolean; message?: string }> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const targetCode = languageCodeSchema.parse(code);
   return languageTransaction(database, async tx => {
     const target = await getLanguageByCode(targetCode, tx);
@@ -242,7 +246,8 @@ async function writeTranslation(languageCode: string, key: string, value: string
   return row;
 }
 export async function saveTranslation(languageCode: string, key: string, value: string, database: DB = db): Promise<SelectTranslation> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = createTranslationSchema.parse({ languageCode, key, value });
   return languageTransaction(database, async tx => {
     if (!await getLanguageByCode(parsed.languageCode, tx)) throw new LanguageMutationError("admin.languages.error.missing");
@@ -250,7 +255,8 @@ export async function saveTranslation(languageCode: string, key: string, value: 
   });
 }
 export async function saveTranslationsBatch(languageCode: string, entries: Record<string, string>, database: DB = db): Promise<number> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const code = languageCodeSchema.parse(languageCode);
   const parsed = translationBatchSchema.parse(entries);
   return languageTransaction(database, async tx => {
@@ -260,7 +266,8 @@ export async function saveTranslationsBatch(languageCode: string, entries: Recor
   });
 }
 export async function deleteTranslationOverride(languageCode: string, key: string, database: DB = db): Promise<boolean> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const code = languageCodeSchema.parse(languageCode);
   const parsedKey = translationKeySchema.parse(key);
   return languageTransaction(database, async tx => {

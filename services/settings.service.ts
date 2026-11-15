@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { eq, inArray } from "drizzle-orm";
 import { DB, db } from "@/db";
@@ -229,7 +230,8 @@ export async function getSiteMetadata(database: DB = db) {
 /** Validated admin-only boundary; generic option helpers serve other CMS modules. */
 export async function saveAdminSettings(entries: unknown): Promise<void> {
   const { verifyAdmin } = await import("@/lib/authMIddleware");
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const { settingsPatchSchema } = await import("@/db/schema/cms-settings");
   const values = settingsPatchSchema.parse(entries);
   // Signup flags represent one setting; do not leave contradictory legacy values.
@@ -264,6 +266,7 @@ export async function saveAdminSettings(entries: unknown): Promise<void> {
 export async function reserveSettingsTestEmail(): Promise<void> {
   const { verifyAdmin } = await import("@/lib/authMIddleware");
   const session = await verifyAdmin();
+  await checkCmsRateLimit(session.user.id, "email-test");
   const { rateLimit } = await import("@/db/schema/auth-schema");
   const { sql } = await import("drizzle-orm");
   const { randomUUID } = await import("node:crypto");

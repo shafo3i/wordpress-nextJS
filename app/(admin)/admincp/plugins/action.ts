@@ -1,4 +1,5 @@
 "use server"
+import { RateLimitError } from "@/lib/rate-limit";
 
 import { verifyPluginAdministrator } from "@/lib/plugins/authorization"
 import {
@@ -25,7 +26,8 @@ export async function togglePluginAction(slug: string, activate: boolean) {
     revalidatePath("/posts/[slug]", "page")
     revalidatePath("/", "layout")
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     console.error("Failed to toggle plugin:")
     return { error: "admin.plugins.save_failed" }
   }
@@ -47,7 +49,8 @@ export async function installPluginAction(slug: string) {
     await installPlugin(slug)
     revalidatePath("/admincp/plugins")
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     console.error("Failed to install plugin:")
     return { error: "admin.plugins.save_failed" }
   }
@@ -62,7 +65,8 @@ export async function uninstallPluginAction(slug: string) {
     revalidatePath("/posts/[slug]", "page")
     revalidatePath("/", "layout")
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     console.error("Failed to uninstall plugin:")
     return { error: "admin.plugins.save_failed" }
   }
@@ -82,7 +86,8 @@ export async function bulkPluginsAction(
     revalidatePath("/posts/[slug]", "page")
     revalidatePath("/", "layout")
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     console.error("Failed to execute bulk action on plugins:")
     return { error: "admin.plugins.save_failed" }
   }

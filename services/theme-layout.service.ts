@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import { hasTheme } from "@/themes/registry";
@@ -16,7 +17,8 @@ export async function saveThemeLayout(
   input: ThemeLayoutSettings,
   database: Pick<DB, "transaction"> = db
 ) {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   if (!hasTheme(themeSlug)) throw new Error("Invalid theme");
   const patch = themeLayoutSchema.parse(input)
   const fallback = await getHomepageSettings(themeSlug)

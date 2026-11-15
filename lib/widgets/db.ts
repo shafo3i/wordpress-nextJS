@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import { verifyAdmin } from "@/lib/authMIddleware"
 import {
@@ -113,7 +114,8 @@ export async function saveWidgetArea(
   raw: WidgetItem[],
   database: DB = db
 ): Promise<void> {
-  await verifyAdmin()
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const id = widgetAreaIdSchema.parse(areaId)
   const inputs = widgetItemsSchema.parse(raw)
   const languages = await getActiveLanguages()

@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { hashPassword } from "better-auth/crypto";
@@ -318,6 +319,7 @@ export async function createManagedUser(
   database: DB = db
 ) {
   const actor = await verifyAdmin();
+  await checkCmsRateLimit(actor.user.id, "write");
   const data = createManagedUserSchema.parse(input);
   await reserveCredentialAttempt(database, actor.user.id);
   const plainPassword = data.customPassword || generateSecurePassword();
@@ -351,6 +353,7 @@ export async function updateUser(
   database: DB = db
 ) {
   const actor = await verifyAdmin();
+  await checkCmsRateLimit(actor.user.id, "write");
   const data = updateManagedUserSchema.parse(input);
   return userTransaction(database, actor.user.id, async (tx) => {
     const [existing] = await targets([data.id], tx);
@@ -397,6 +400,7 @@ export async function bulkUpdateUsersRole(
   database: DB = db
 ) {
   const actor = await verifyAdmin();
+  await checkCmsRateLimit(actor.user.id, "write");
   const data = userRoleChangeSchema.parse({ userIds, role });
   return userTransaction(database, actor.user.id, async (tx) => {
     const rows = await targets(data.userIds, tx);
@@ -424,6 +428,7 @@ export async function updateUserRole(
 }
 export async function bulkDeleteUsers(userIds: string[], database: DB = db) {
   const actor = await verifyAdmin();
+  await checkCmsRateLimit(actor.user.id, "write");
   const ids = userIdsSchema.parse(userIds);
   return userTransaction(database, actor.user.id, async (tx) => {
     const rows = await targets(ids, tx);
@@ -445,6 +450,7 @@ export async function resetManagedUserPassword(
   database: DB = db
 ) {
   const actor = await verifyAdmin();
+  await checkCmsRateLimit(actor.user.id, "write");
   const data = resetManagedPasswordSchema.parse(input);
   await reserveCredentialAttempt(database, actor.user.id);
   const plainPassword = data.newPassword || generateSecurePassword();
@@ -497,6 +503,7 @@ export async function addCustomRole(
   database: DB = db
 ) {
   const actor = await verifyAdmin();
+  await checkCmsRateLimit(actor.user.id, "write");
   const role = customUserRoleSchema.strict().parse({ value, label });
   return userTransaction(database, actor.user.id, async (tx) => {
     const roles = await readCustomRoles(tx);
@@ -519,6 +526,7 @@ export async function addCustomRole(
 }
 export async function deleteCustomRole(value: string, database: DB = db) {
   const actor = await verifyAdmin();
+  await checkCmsRateLimit(actor.user.id, "write");
   const role = customUserRoleSchema.shape.value.parse(value);
   return userTransaction(database, actor.user.id, async (tx) => {
     if (SYSTEM_USER_ROLES.some((value) => value === role)) fail("system_role");

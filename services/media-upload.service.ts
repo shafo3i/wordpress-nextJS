@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyPostEditor } from "@/lib/authMIddleware";
 import fs from "node:fs/promises";
@@ -14,6 +15,8 @@ import type { MediaItem } from "./media.service";
 type MediaSize = { file: string; width: number; height: number; mimeType: string };
 export async function uploadMediaFile(fileBuffer: Buffer, originalFilename: string, mimeType: string, _authorId?: string, database: DB = db): Promise<MediaItem> {
   const session = await verifyPostEditor();
+  await checkCmsRateLimit(session.user.id, "upload");
+  await checkCmsRateLimit(session.user.id, "upload-bytes", Math.max(1, Math.ceil(fileBuffer.length / 1048576)));
   const policy = validateMediaUpload(originalFilename, mimeType, fileBuffer);
   let bytes = fileBuffer, width: number | undefined, height: number | undefined;
   if (policy.imageFormat) {

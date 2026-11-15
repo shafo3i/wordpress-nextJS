@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/rate-limit"
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
@@ -76,6 +77,8 @@ export async function POST(request: Request) {
     revalidatePath("/", "layout")
     return response({ logo })
   } catch (error) {
+    const limited = rateLimitResponse(error)
+    if (limited) return limited
     return response(
       {
         error:

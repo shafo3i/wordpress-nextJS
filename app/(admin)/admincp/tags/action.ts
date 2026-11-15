@@ -1,4 +1,5 @@
 "use server";
+import { RateLimitError } from "@/lib/rate-limit";
 
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
@@ -22,6 +23,7 @@ async function tagErrorMessage(error: unknown): Promise<string> {
   unstable_rethrow(error);
   const { dict } = await getAdminLanguageContext();
   const key =
+    error instanceof RateLimitError ? error.message :
     error instanceof Error && ["admin.tags.error.language", "admin.tags.error.translation", "admin.tags.error.shared", "admin.tags.error.missing"].includes(error.message)
       ? error.message
       : error instanceof ZodError

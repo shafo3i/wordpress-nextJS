@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import { eq, desc, asc, and, count, sql, inArray } from "drizzle-orm";
@@ -58,6 +59,7 @@ export interface ListCommentsOptions { postId?: Id; approved?: string; search?: 
 
 export async function createComment(data: InsertComment, database: DB = db): Promise<SelectComment> {
   const session = await verifyAdmin();
+  await checkCmsRateLimit(session.user.id, "write");
   const parsed = createCommentSchema.parse(data);
   return commentTransaction(database, async tx => {
     await validateLinks(tx, parsed.commentPostId, parsed.commentParent);
@@ -114,7 +116,8 @@ export async function listComments(options: ListCommentsOptions = {}, database: 
   return { comments, total: Number(totals[0]?.total ?? 0) };
 }
 export async function updateComment(id: Id, data: Partial<InsertCommentOutput>, database: DB = db): Promise<SelectComment | null> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const commentId = commentIdSchema.parse(id);
   const parsed = updateCommentSchema.parse(data);
   return commentTransaction(database, async tx => {
@@ -148,13 +151,15 @@ async function mutateBatch(ids: bigint[], status: string | undefined, tx: DB) {
   return { success: true, count: rows.length };
 }
 export async function bulkUpdateCommentStatus(ids: Id[], status: string, database: DB = db) {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = commentIdsSchema.parse(ids);
   const target = commentStatusSchema.parse(status);
   return commentTransaction(database, tx => mutateBatch(parsed, target, tx));
 }
 export async function bulkDeleteComments(ids: Id[], database: DB = db) {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = commentIdsSchema.parse(ids);
   return commentTransaction(database, tx => mutateBatch(parsed, undefined, tx));
 }
@@ -163,7 +168,8 @@ export async function deleteComment(id: Id, database: DB = db): Promise<boolean>
   return result.count === 1;
 }
 export async function addCommentMeta(data: InsertCommentMeta, database: DB = db): Promise<SelectCommentMeta> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = createCommentMetaSchema.parse(data);
   const [meta] = await database.insert(wpCommentmeta).values(parsed).returning();
   return meta;
@@ -175,7 +181,8 @@ export async function getCommentMeta(commentId: Id, metaKey?: string, database: 
   return database.select().from(wpCommentmeta).where(and(eq(wpCommentmeta.commentId, id), key ? eq(wpCommentmeta.metaKey, key) : undefined)).limit(1000);
 }
 export async function updateCommentMeta(commentId: Id, metaKey: string, metaValue: string, database: DB = db): Promise<SelectCommentMeta> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = createCommentMetaSchema.parse({ commentId, metaKey, metaValue });
   return commentTransaction(database, async tx => {
     const [existing] = await tx.select().from(wpCommentmeta).where(and(eq(wpCommentmeta.commentId, parsed.commentId), eq(wpCommentmeta.metaKey, parsed.metaKey))).limit(1);
@@ -188,7 +195,8 @@ export async function updateCommentMeta(commentId: Id, metaKey: string, metaValu
   });
 }
 export async function deleteCommentMeta(commentId: Id, metaKey?: string, database: DB = db): Promise<boolean> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const id = commentIdSchema.parse(commentId);
   const key = metaKey === undefined ? undefined : createCommentMetaSchema.shape.metaKey.parse(metaKey);
   const rows = await database.delete(wpCommentmeta).where(and(eq(wpCommentmeta.commentId, id), key ? eq(wpCommentmeta.metaKey, key) : undefined)).returning();

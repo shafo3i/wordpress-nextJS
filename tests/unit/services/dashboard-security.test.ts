@@ -108,6 +108,7 @@ describe("Dashboard security", () => {
       return chain
     })
     const result = await getDashboardData()
+    expect(mocks.health).toHaveBeenCalledWith({ includeStorageInventory: false })
     expect(result.recentPosts[0].guid).toBeUndefined()
     expect(result.recentPosts[0].title).toBe("<script>title</script>")
   })

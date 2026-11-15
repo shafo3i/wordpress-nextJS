@@ -363,10 +363,12 @@ export default async function AdminDashboardPage() {
                             : dict["admin.dashboard.storage_warning"]}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#646970]">
-                        {healthData.storage.fileCount}{" "}
-                        {dict["admin.menu.media"]}
-                      </span>
+                      {healthData.storage.fileCount !== null && (
+                        <span className="text-[11px] text-[#646970]">
+                          {healthData.storage.fileCount}{" "}
+                          {dict["admin.menu.media"]}
+                        </span>
+                      )}
                     </div>
 
                     {/* Node Server */}

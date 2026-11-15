@@ -1,9 +1,11 @@
-import { db } from "@/db";
-import { wpPosts, wpTerms, wpTermTaxonomy, user, wpComments } from "@/db/schema";
-import { eq, sql } from "drizzle-orm";
-import { verifyAdmin } from "@/lib/authMIddleware";
+import "server-only"
+import { db } from "@/db"
+import { wpPosts, wpTerms, wpTermTaxonomy, user, wpComments } from "@/db/schema"
+import { eq, sql } from "drizzle-orm"
+import { verifyAdmin } from "@/lib/authMIddleware"
 
 export async function getToolsExportData() {
+  await verifyAdmin()
   const [categories, authors, postCountRes, pageCountRes, commentCountRes] =
     await Promise.all([
       db
@@ -34,10 +36,8 @@ export async function getToolsExportData() {
         .from(wpPosts)
         .where(eq(wpPosts.postType, "page")),
 
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(wpComments),
-    ]);
+      db.select({ count: sql<number>`count(*)::int` }).from(wpComments),
+    ])
 
   return {
     categories,
@@ -48,5 +48,5 @@ export async function getToolsExportData() {
       comments: commentCountRes[0]?.count || 0,
       categories: categories.length,
     },
-  };
+  }
 }

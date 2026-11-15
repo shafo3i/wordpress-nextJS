@@ -1,4 +1,19 @@
-import { and, asc, desc, eq, exists, inArray, count, sql } from "drizzle-orm"
+import "server-only"
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  inArray,
+  count,
+  sql,
+  lte,
+} from "drizzle-orm"
+import {
+  resolveFeaturedVideo,
+  featuredVideoThumbnail,
+} from "@/lib/featured-video"
 import { db, type DB } from "@/db"
 import { isVideoPost } from "@/lib/post-video"
 import { resolveAttachmentImage } from "@/lib/media-images"
@@ -101,6 +116,8 @@ export async function getStudioWidgetContent(
   const conditions = [
     eq(wpPosts.postType, "post"),
     eq(wpPosts.postStatus, "publish"),
+    eq(wpPosts.postPassword, ""),
+    lte(wpPosts.postDateGmt, new Date()),
     eq(postTranslationsTable.languageCode, request.locale),
   ]
   if (categoryIds)
@@ -199,7 +216,11 @@ export async function getStudioWidgetContent(
       .where(
         and(
           inArray(wpPostmeta.postId, ids),
-          inArray(wpPostmeta.metaKey, ["_thumbnail_id", "_is_featured"])
+          inArray(wpPostmeta.metaKey, [
+            "_thumbnail_id",
+            "_is_featured",
+            "_featured_video_url",
+          ])
         )
       ),
   ])
@@ -228,49 +249,64 @@ export async function getStudioWidgetContent(
       resolveAttachmentImage(image.url, undefined).url,
     ])
   )
-  result.items = rows.map((row) => ({
-    id: row.id.toString(),
-    title: contentPlainText(row.title),
-    slug: row.slug,
-    excerpt: contentPlainText(row.excerpt || row.content).slice(0, 400),
-    content: "",
-    hasVideo: isVideoPost({
-      content: row.content,
+  result.items = rows.map((row) => {
+    const video = resolveFeaturedVideo(
+      metadata.find(
+        (meta) => meta.postId === row.id && meta.key === "_featured_video_url"
+      )?.value,
+      row.content
+    )
+    return {
+      id: row.id.toString(),
+      title: contentPlainText(row.title),
+      slug: row.slug,
+      excerpt: contentPlainText(row.excerpt || row.content).slice(0, 400),
+      content: "",
+      hasVideo: isVideoPost({
+        hasVideo: Boolean(video),
+        content: row.content,
+        categories: terms
+          .filter(
+            (term) => term.postId === row.id && term.taxonomy === "category"
+          )
+          .map((term) => term.name),
+        categorySlugs: terms
+          .filter(
+            (term) => term.postId === row.id && term.taxonomy === "category"
+          )
+          .map((term) => term.slug),
+      }),
+      date: row.date,
+      authorName: row.authorName || "",
+      ...(request.sort === "popular"
+        ? { commentCount: Number(row.commentCount || 0) }
+        : {}),
       categories: terms
         .filter(
           (term) => term.postId === row.id && term.taxonomy === "category"
         )
-        .map((term) => term.name),
-      categorySlugs: terms
+        .map((term) => contentPlainText(term.name)),
+      tags: terms
         .filter(
-          (term) => term.postId === row.id && term.taxonomy === "category"
+          (term) => term.postId === row.id && term.taxonomy === "post_tag"
         )
-        .map((term) => term.slug),
-    }),
-    date: row.date,
-    authorName: row.authorName || "",
-    ...(request.sort === "popular"
-      ? { commentCount: Number(row.commentCount || 0) }
-      : {}),
-    categories: terms
-      .filter((term) => term.postId === row.id && term.taxonomy === "category")
-      .map((term) => contentPlainText(term.name)),
-    tags: terms
-      .filter((term) => term.postId === row.id && term.taxonomy === "post_tag")
-      .map((term) => contentPlainText(term.name)),
-    imageUrl:
-      imageMap.get(
-        thumbnails.find((meta) => meta.postId === row.id)?.value || ""
-      ) || "",
-    isFeatured: metadata.some(
-      (meta) =>
-        meta.postId === row.id &&
-        meta.key === "_is_featured" &&
-        meta.value === "1"
-    ),
-    locale: request.locale,
-    direction: result.direction,
-  }))
+        .map((term) => contentPlainText(term.name)),
+      imageUrl:
+        imageMap.get(
+          thumbnails.find((meta) => meta.postId === row.id)?.value || ""
+        ) ||
+        featuredVideoThumbnail(video) ||
+        "",
+      isFeatured: metadata.some(
+        (meta) =>
+          meta.postId === row.id &&
+          meta.key === "_is_featured" &&
+          meta.value === "1"
+      ),
+      locale: request.locale,
+      direction: result.direction,
+    }
+  })
   return result
 }
 

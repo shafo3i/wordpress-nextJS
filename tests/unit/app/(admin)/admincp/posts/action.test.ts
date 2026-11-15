@@ -1,3 +1,8 @@
+vi.mock("server-only", () => ({}))
+vi.mock("@/lib/rate-limit", async (load) => ({
+  ...await load<typeof import("@/lib/rate-limit")>(),
+  checkCmsRateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 1, retryAfter: 0 }),
+}))
 vi.mock("@/components/admin/admin-shell", () => ({
   getAdminLanguageContext: async () => ({
     dict: { "admin.editor.save_failed": "Save failed" },
@@ -32,6 +37,7 @@ import {
   updatePostAction,
 } from "@/app/(admin)/admincp/posts/action"
 import { PostChangedError } from "@/services/post.service"
+import { RateLimitError } from "@/lib/rate-limit"
 const form = () => {
   const value = new FormData()
   value.set("title", "Saved title")
@@ -49,6 +55,11 @@ beforeEach(() => {
   mocks.clear.mockResolvedValue(undefined)
 })
 describe("manual saves acknowledge recovery only after successful writes", () => {
+  it("returns a safe rate-limit notice without deleting the recovery copy", async () => {
+    mocks.update.mockRejectedValue(new RateLimitError(429, 30))
+    expect(await updatePostAction(form())).toEqual({ success: false, error: "admin.security.rate_limited" })
+    expect(mocks.clear).not.toHaveBeenCalled()
+  })
   it("retains recovery data when saving fails", async () => {
     mocks.update.mockRejectedValue(new Error("database failed"))
     expect(await updatePostAction(form())).toEqual({

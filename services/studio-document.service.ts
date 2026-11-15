@@ -1,4 +1,7 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
+import "server-only"
 import { and, eq, inArray, sql } from "drizzle-orm"
+import { verifyAdmin } from "@/lib/authMIddleware"
 import { db, type DB } from "@/db"
 import { wpOptions, wpPostmeta, wpPosts } from "@/db/schema"
 import {
@@ -13,6 +16,8 @@ export async function saveStudioPageData(
   raw: unknown,
   database: DB = db
 ): Promise<Extract<StudioSaveResult, { success: true }>> {
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const input = saveStudioPageSchema.parse(raw)
   const pageId = BigInt(input.pageId)
   const now = new Date()
@@ -26,8 +31,38 @@ export async function saveStudioPageData(
   })
 
   return database.transaction(async (tx) => {
-    // The update both verifies the target type and locks the page until commit.
-    const [page] = await tx
+    // Share the Pages lock so homepage/status changes cannot race its mutations.
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('pressforge:pages'))`
+    )
+    const [existing] = await tx
+      .select({ status: wpPosts.postStatus })
+      .from(wpPosts)
+      .where(and(eq(wpPosts.id, pageId), eq(wpPosts.postType, "page")))
+      .for("update")
+    if (!existing || existing.status === "trash")
+      throw new Error("Studio page does not exist.")
+    const status = input.status ?? existing.status
+    if (input.setAsFrontPage && status !== "publish") {
+      throw new Error("Only published pages can be assigned as the homepage.")
+    }
+    if (status !== "publish") {
+      const options = await tx
+        .select({ name: wpOptions.optionName, value: wpOptions.optionValue })
+        .from(wpOptions)
+        .where(
+          inArray(wpOptions.optionName, ["show_on_front", "page_on_front"])
+        )
+      const settings = new Map(
+        options.map((option) => [option.name, option.value])
+      )
+      if (
+        settings.get("show_on_front") === "page" &&
+        settings.get("page_on_front") === input.pageId
+      )
+        throw new Error("The assigned homepage must remain published.")
+    }
+    await tx
       .update(wpPosts)
       .set({
         postModified: now,
@@ -36,12 +71,6 @@ export async function saveStudioPageData(
         ...(input.status !== undefined ? { postStatus: input.status } : {}),
       })
       .where(and(eq(wpPosts.id, pageId), eq(wpPosts.postType, "page")))
-      .returning({ status: wpPosts.postStatus })
-
-    if (!page) throw new Error("Studio page does not exist.")
-    if (input.setAsFrontPage && page.status !== "publish") {
-      throw new Error("Only published pages can be assigned as the homepage.")
-    }
 
     await tx
       .delete(wpPostmeta)
@@ -81,7 +110,7 @@ export async function saveStudioPageData(
           set: { optionValue: sql`excluded.option_value` },
         })
     }
-    return { success: true as const, document, status: page.status }
+    return { success: true as const, document, status }
   })
 }
 
@@ -90,11 +119,23 @@ export async function setPageStudioMode(
   enabled: boolean,
   database: DB = db
 ): Promise<void> {
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const pageId = BigInt(studioPageIdSchema.parse(String(id)))
   if (typeof enabled !== "boolean")
     throw new Error("Invalid Studio editor mode.")
 
   await database.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext('pressforge:pages'))`
+    )
+    const [existing] = await tx
+      .select({ status: wpPosts.postStatus })
+      .from(wpPosts)
+      .where(and(eq(wpPosts.id, pageId), eq(wpPosts.postType, "page")))
+      .for("update")
+    if (!existing || existing.status === "trash")
+      throw new Error("Studio page does not exist.")
     const [page] = await tx
       .update(wpPosts)
       .set({ postModified: new Date() })

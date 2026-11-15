@@ -1,72 +1,59 @@
-import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin } from "@/lib/authMIddleware";
+import { rateLimitResponse } from "@/lib/rate-limit"
+import { NextRequest, NextResponse } from "next/server"
+import { unstable_rethrow } from "next/navigation"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import { exportFiltersSchema } from "@/db/schema/cms-tools"
 import {
   exportWxrXml,
   exportSqlDump,
   exportJsonArchive,
-  ExportFilters,
-} from "@/services/export.service";
-
-export const dynamic = "force-dynamic";
-
+} from "@/services/export.service"
+import { getAdminLanguageContext } from "@/components/admin/admin-shell"
+export const dynamic = "force-dynamic"
 export async function GET(request: NextRequest) {
-  try {
-    await verifyAdmin();
-
-    const searchParams = request.nextUrl.searchParams;
-    const format = (searchParams.get("format") || "xml").toLowerCase();
-    const content = (searchParams.get("content") || "all") as ExportFilters["content"];
-    const status = searchParams.get("status") || "all";
-    const authorId = searchParams.get("authorId") || "all";
-    const startDate = searchParams.get("startDate") || undefined;
-    const endDate = searchParams.get("endDate") || undefined;
-
-    const filters: ExportFilters = {
-      format: format as any,
-      content,
-      status,
-      authorId,
-      startDate,
-      endDate,
-    };
-
-    const dateStamp = new Date().toISOString().slice(0, 10);
-    let output = "";
-    let contentType = "text/plain";
-    let filename = `pressforge-export-${dateStamp}.txt`;
-
-    if (format === "sql") {
-      output = await exportSqlDump();
-      contentType = "application/sql; charset=utf-8";
-      filename = `pressforge-backup-${dateStamp}.sql`;
-    } else if (format === "json") {
-      output = await exportJsonArchive();
-      contentType = "application/json; charset=utf-8";
-      filename = `pressforge-archive-${dateStamp}.json`;
-    } else {
-      // default: WordPress WXR XML
-      output = await exportWxrXml(filters);
-      contentType = "application/xml; charset=utf-8";
-      filename = `pressforge-wxr-${content || "all"}-${dateStamp}.xml`;
-    }
-
-    return new NextResponse(output, {
-      status: 200,
-      headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${filename}"`,
-        "Cache-Control": "no-store, no-cache, must-revalidate",
-      },
-    });
-  } catch (error: any) {
-    console.error("Export error:", error);
+  await verifyAdmin()
+  const parsed = exportFiltersSchema.safeParse(
+    Object.fromEntries(request.nextUrl.searchParams)
+  )
+  if (!parsed.success)
     return NextResponse.json(
-      { error: error.message || "Failed to generate export file" },
-      { status: 500 }
-    );
+      { error: "invalid_export_filters" },
+      { status: 400, headers: { "Cache-Control": "no-store" } }
+    )
+  try {
+    const filters = parsed.data,
+      date = new Date().toISOString().slice(0, 10)
+    const output =
+      filters.format === "sql"
+        ? await exportSqlDump()
+        : filters.format === "json"
+          ? await exportJsonArchive(filters)
+          : await exportWxrXml(filters)
+    return new NextResponse(output, {
+      headers: {
+        "Content-Type":
+          filters.format === "sql"
+            ? "application/sql; charset=utf-8"
+            : filters.format === "json"
+              ? "application/json; charset=utf-8"
+              : "application/xml; charset=utf-8",
+        "Content-Disposition": `attachment; filename="pressforge-content-${date}.${filters.format}"`,
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+      },
+    })
+  } catch (error) {
+    const limited = rateLimitResponse(error)
+    if (limited) return limited
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return NextResponse.json(
+      { error: dict["admin.tools.error.failed"] || "" },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
+    )
   }
 }
-
 export async function POST(request: NextRequest) {
-  return GET(request);
+  return GET(request)
 }

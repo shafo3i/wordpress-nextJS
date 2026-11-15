@@ -1,1 +1,1 @@
-// Query from the service 
+// Query from the service

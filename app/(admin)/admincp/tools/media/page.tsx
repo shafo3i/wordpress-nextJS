@@ -1,22 +1,30 @@
-import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getMediaOverviewStats } from "@/services/media-tools.service";
-import { MediaToolsView } from "./_components/media-tools-view";
+import {
+  AdminShell,
+  getAdminLanguageContext,
+} from "@/components/admin/admin-shell"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import { getMediaOverviewStats } from "@/services/media-tools.service"
+import { MediaToolsView } from "./_components/media-tools-view"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function MediaToolsPage() {
-  await verifyAdminOrEditor();
+  await verifyAdmin()
 
-  const langContext = await getAdminLanguageContext();
-  const dict = langContext.dict;
-  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+  const langContext = await getAdminLanguageContext()
+  const dict = langContext.dict
+  const direction: "rtl" | "ltr" =
+    langContext.direction === "rtl" ? "rtl" : "ltr"
 
-  const initialStats = await getMediaOverviewStats();
+  const initialStats = await getMediaOverviewStats()
 
   return (
     <AdminShell>
-      <MediaToolsView initialStats={initialStats} dict={dict} direction={direction} />
+      <MediaToolsView
+        initialStats={initialStats}
+        dict={dict}
+        direction={direction}
+      />
     </AdminShell>
-  );
+  )
 }

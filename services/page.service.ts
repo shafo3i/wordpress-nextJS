@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import { createPageSchema, updatePageSchema, quickUpdatePageSchema, pageIdSchema, pageIdsSchema, pageQuerySchema } from "@/db/schema/cms-pages";
@@ -605,6 +606,7 @@ async function savePageMeta(id: bigint, input: ReturnType<typeof createPageSchem
 }
 export async function createPage(raw: CreatePageInput, database: DB = db): Promise<string> {
   const session = await verifyAdmin();
+  await checkCmsRateLimit(session.user.id, "write");
   const input = createPageSchema.parse(raw);
   return database.transaction(async transaction => {
     const tx = transaction as unknown as DB;
@@ -630,7 +632,8 @@ export async function createPage(raw: CreatePageInput, database: DB = db): Promi
   });
 }
 export async function updatePage(id: bigint | string | number, raw: UpdatePageInput, database: DB = db): Promise<void> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const pageId = pageIdSchema.parse(id);
   const input = updatePageSchema.parse(raw);
   if (pageId.toString() !== input.id) throw new PageMutationError("invalid");
@@ -658,7 +661,8 @@ export async function updatePage(id: bigint | string | number, raw: UpdatePageIn
   });
 }
 export async function quickUpdatePage(raw: QuickUpdatePageInput, database: DB = db): Promise<{id:string;title:string;slug:string;status:string;date:string}> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const input = quickUpdatePageSchema.parse(raw);
   return database.transaction(async transaction => {
     const tx = transaction as unknown as DB;
@@ -680,7 +684,8 @@ export async function quickUpdatePage(raw: QuickUpdatePageInput, database: DB = 
   });
 }
 async function changePageStatus(raw: (bigint|string|number)[], status: "trash"|"draft", database: DB) {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const ids = pageIdsSchema.parse(raw);
   await database.transaction(async transaction => {
     const tx = transaction as unknown as DB;
@@ -694,7 +699,8 @@ async function changePageStatus(raw: (bigint|string|number)[], status: "trash"|"
 export async function trashPages(ids: (bigint|string|number)[], database: DB = db): Promise<void> { return changePageStatus(ids, "trash", database); }
 export async function restorePages(ids: (bigint|string|number)[], database: DB = db): Promise<void> { return changePageStatus(ids, "draft", database); }
 export async function deletePages(raw: (bigint|string|number)[], database: DB = db): Promise<void> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const ids = pageIdsSchema.parse(raw);
   await database.transaction(async transaction => {
     const tx = transaction as unknown as DB;

@@ -1,4 +1,5 @@
 "use server";
+import { RateLimitError } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { cookies } from "next/headers";
@@ -12,7 +13,7 @@ async function mutation<T>(operation: () => Promise<T>): Promise<T> {
     unstable_rethrow(error);
     const { dict } = await getAdminLanguageContext();
     const key = error instanceof LanguageMutationError ? error.key : error instanceof ZodError ? "admin.languages.error.invalid" : "admin.languages.error.failed";
-    throw new Error(dict[key] || dict["admin.languages.error.failed"] || "");
+    throw new Error(dict[key] || dict[error instanceof RateLimitError ? error.message : "admin.languages.error.failed"] || "");
   }
 }
 function refresh() { revalidatePath("/", "layout"); }

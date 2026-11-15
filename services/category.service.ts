@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import {
@@ -635,7 +636,8 @@ export async function createCategory(
   data: CreateCategoryOptions,
   database: DB = db
 ): Promise<CategoryItem> {
-  await verifyAdminOrEditor();
+  const rateActor = await verifyAdminOrEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = createCategorySchema.parse(data);
   return categoryTransaction(database, async (tx) => {
     const language = await validateCategoryLinks(
@@ -690,7 +692,8 @@ export async function updateCategory(
   data: UpdateCategoryOptions,
   database: DB = db
 ): Promise<CategoryItem> {
-  await verifyAdminOrEditor();
+  const rateActor = await verifyAdminOrEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = updateCategorySchema.parse({ ...data, termId: id });
   const termId = parsed.termId;
   return categoryTransaction(database, async (tx) => {
@@ -751,7 +754,8 @@ export async function quickUpdateCategory(
   data: { name: string; slug?: string },
   database: DB = db
 ): Promise<{ id: string; name: string; slug: string }> {
-  await verifyAdminOrEditor();
+  const rateActor = await verifyAdminOrEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = quickUpdateCategorySchema.parse({ ...data, id });
   return categoryTransaction(database, async (tx) => {
     const existing = await getCategoryById(parsed.id, tx);
@@ -781,7 +785,8 @@ export async function bulkDeleteCategories(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<{ success: boolean; count?: number; error?: string }> {
-  await verifyAdminOrEditor();
+  const rateActor = await verifyAdminOrEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const termIds = deleteCategoriesSchema.parse(ids);
   return categoryTransaction(database, async (tx) => {
     const taxRows = await tx

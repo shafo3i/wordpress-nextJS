@@ -26,11 +26,16 @@ describe("Studio mutation authorization", () => {
   })
 
   it("does not save a document when the server guard denies access", async () => {
-    const result = await saveStudioDocumentAction({
-      pageId: "1",
-      document: { version: "1.0", pageTemplate: "studio_canvas", elements: [] },
-    })
-    expect(result.success).toBe(false)
+    await expect(
+      saveStudioDocumentAction({
+        pageId: "1",
+        document: {
+          version: "1.0",
+          pageTemplate: "studio_canvas",
+          elements: [],
+        },
+      })
+    ).rejects.toThrow("Unauthorized")
     expect(mocks.save).not.toHaveBeenCalled()
   })
 

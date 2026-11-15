@@ -1,16 +1,20 @@
-import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { SearchReplaceForm } from "./_components/search-replace-form";
-import Link from "next/link";
+import {
+  AdminShell,
+  getAdminLanguageContext,
+} from "@/components/admin/admin-shell"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import { SearchReplaceForm } from "./_components/search-replace-form"
+import Link from "next/link"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function SearchReplacePage() {
-  await verifyAdminOrEditor();
+  await verifyAdmin()
 
-  const langContext = await getAdminLanguageContext();
-  const dict = langContext.dict;
-  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+  const langContext = await getAdminLanguageContext()
+  const dict = langContext.dict
+  const direction: "rtl" | "ltr" =
+    langContext.direction === "rtl" ? "rtl" : "ltr"
 
   return (
     <AdminShell>
@@ -23,16 +27,15 @@ export default async function SearchReplacePage() {
                 href="/admincp/tools"
                 className="text-[13px] text-[#2271b1] hover:underline"
               >
-                {dict["admin.tools.title"] || "Tools"}
+                {dict["admin.tools.title"] || ""}
               </Link>
               <span className="text-[#646970]">/</span>
-              <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-                {dict["admin.tools.search_replace"] || "Search & Replace"}
+              <h1 className="text-[23px] leading-normal font-normal text-[#1d2327]">
+                {dict["admin.tools.search_replace"] || ""}
               </h1>
             </div>
-            <p className="text-[13px] text-[#50575e] mt-0.5">
-              {dict["admin.tools.search_replace_subtitle"] ||
-                "Batch update URLs, domain names, or content across all database tables safely."}
+            <p className="mt-0.5 text-[13px] text-[#50575e]">
+              {dict["admin.tools.search.editorial_subtitle"] || ""}
             </p>
           </div>
         </div>
@@ -41,5 +44,5 @@ export default async function SearchReplacePage() {
         <SearchReplaceForm dict={dict} />
       </div>
     </AdminShell>
-  );
+  )
 }

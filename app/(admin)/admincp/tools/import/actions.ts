@@ -1,49 +1,59 @@
-"use server";
+"use server"
+import { RateLimitError } from "@/lib/rate-limit";
+import { unstable_rethrow } from "next/navigation"
+import { getAdminLanguageContext } from "@/components/admin/admin-shell"
 
-import { revalidatePath } from "next/cache";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { importWxrXml, importJsonArchive, type ImportResult } from "@/services/import.service";
+import { revalidatePath } from "next/cache"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import {
+  importWxrXml,
+  importJsonArchive,
+  type ImportResult,
+} from "@/services/import.service"
 
-export async function importFileAction(
-  formData: FormData
-): Promise<{
-  success: boolean;
-  type?: "xml" | "json";
-  result?: ImportResult;
-  error?: string;
+export async function importFileAction(formData: FormData): Promise<{
+  success: boolean
+  type?: "xml" | "json"
+  result?: ImportResult
+  error?: string
 }> {
+  const session = await verifyAdmin()
   try {
-    const session = await verifyAdminOrEditor();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return { success: false, error: "No file uploaded. Please select an XML or JSON file." };
+    const file = formData.get("file")
+    if (
+      !(file instanceof File) ||
+      file.size < 1 ||
+      file.size > 20 * 1024 * 1024 ||
+      !/\.(xml|json)$/i.test(file.name)
+    ) {
+      const { dict } = await getAdminLanguageContext()
+      return {
+        success: false,
+        error: dict["admin.tools.error.import_file"] || "",
+      }
     }
+    const filename = file.name.toLowerCase()
+    const fileContent = await file.text()
+    const fallbackAuthorId = session.user.id
 
-    const filename = file.name.toLowerCase();
-    const fileContent = await file.text();
-
-    if (!fileContent || fileContent.trim().length === 0) {
-      return { success: false, error: "The uploaded file is empty." };
-    }
-
-    const fallbackAuthorId = session.user.id;
-
-    if (filename.endsWith(".json") || fileContent.trim().startsWith("{")) {
-      const result = await importJsonArchive(fileContent, fallbackAuthorId);
-      revalidatePath("/admincp/posts");
-      revalidatePath("/admincp/pages");
-      revalidatePath("/admincp/tools/import");
-      return { success: result.success, type: "json", result };
+    if (filename.endsWith(".json")) {
+      const result = await importJsonArchive(fileContent, fallbackAuthorId)
+      revalidatePath("/", "layout")
+      revalidatePath("/admincp/posts")
+      revalidatePath("/admincp/pages")
+      revalidatePath("/admincp/tools/import")
+      return { success: result.success, type: "json", result }
     } else {
-      const result = await importWxrXml(fileContent, fallbackAuthorId);
-      revalidatePath("/admincp/posts");
-      revalidatePath("/admincp/pages");
-      revalidatePath("/admincp/tools/import");
-      return { success: result.success, type: "xml", result };
+      const result = await importWxrXml(fileContent, fallbackAuthorId)
+      revalidatePath("/", "layout")
+      revalidatePath("/admincp/posts")
+      revalidatePath("/admincp/pages")
+      revalidatePath("/admincp/tools/import")
+      return { success: result.success, type: "xml", result }
     }
-  } catch (error: any) {
-    console.error("importFileAction error:", error);
-    return { success: false, error: error?.message || "Failed to process import file." };
+  } catch (error: unknown) {
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return { success: false, error: dict[error instanceof RateLimitError ? error.message : "admin.tools.error.failed"] || "" }
   }
 }

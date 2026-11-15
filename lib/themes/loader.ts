@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -54,7 +55,8 @@ export async function getActiveThemeName(): Promise<string> {
  */
 export async function activateTheme(slug: string): Promise<void> {
   const { verifyAdmin } = await import("@/lib/authMIddleware");
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const { themeSlugSchema } = await import("@/db/schema/cms-themes");
   slug = themeSlugSchema.parse(slug);
   const theme = AVAILABLE_THEMES.find((t) => t.slug === slug);

@@ -2,6 +2,7 @@
 
 import { autosaveDocumentKey } from "@/db/schema/cms-post-autosave"
 import { deletePostAutosave } from "@/services/post-autosave.service"
+import { RateLimitError } from "@/lib/rate-limit"
 import { revalidatePath } from "next/cache"
 import { unstable_rethrow } from "next/navigation"
 import { getAdminLanguageContext } from "@/components/admin/admin-shell"
@@ -127,6 +128,7 @@ export async function savePostAction(
       editorRestricted: session.user.role === "editor",
     })
   } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     unstable_rethrow(error)
     return {
       success: false,
@@ -159,6 +161,7 @@ export async function updatePostAction(
         String(formData.get("expectedModifiedAt") || "") || undefined,
     })
   } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     unstable_rethrow(error)
     return {
       success: false,
@@ -234,6 +237,7 @@ export async function quickUpdatePost(
       date: result.post.date,
     }
   } catch (error) {
+    if (error instanceof RateLimitError) return { success: false, error: error.message }
     unstable_rethrow(error)
     return {
       success: false,
@@ -256,6 +260,10 @@ export async function trashPostsAction(ids: string[]) {
 
     return { success: true }
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      const { dict } = await getAdminLanguageContext()
+      return { success: false, error: dict[error.message] || "" }
+    }
     unstable_rethrow(error)
     const { dict } = await getAdminLanguageContext()
     return { success: false, error: dict["admin.editor.save_failed"] || "" }
@@ -273,6 +281,10 @@ export async function restorePostsAction(ids: string[]) {
 
     return { success: true }
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      const { dict } = await getAdminLanguageContext()
+      return { success: false, error: dict[error.message] || "" }
+    }
     unstable_rethrow(error)
     const { dict } = await getAdminLanguageContext()
     return { success: false, error: dict["admin.editor.save_failed"] || "" }
@@ -290,6 +302,10 @@ export async function deletePostsPermanentlyAction(ids: string[]) {
 
     return { success: true }
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      const { dict } = await getAdminLanguageContext()
+      return { success: false, error: dict[error.message] || "" }
+    }
     unstable_rethrow(error)
     const { dict } = await getAdminLanguageContext()
     return { success: false, error: dict["admin.editor.save_failed"] || "" }

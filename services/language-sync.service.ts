@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import { sql } from "drizzle-orm";
@@ -7,7 +8,8 @@ import { getTemplateTranslations } from "./language.service"
 
 /** Additive only: existing database wording remains authoritative. */
 export async function syncMissingTranslations(database: DB = db) {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "sync");
   let languages: { code: string }[] = []
   let added = 0,
     preserved = 0,

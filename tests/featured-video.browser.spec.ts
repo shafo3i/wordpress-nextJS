@@ -82,6 +82,10 @@ for (const locale of ["en", "ar"] as const)
       "src",
       localVideo
     )
+    await expect(page.locator("[data-article-video] video")).toHaveAttribute(
+      "poster",
+      `/api/media/video-thumbnail?src=${encodeURIComponent(localVideo)}`
+    )
     expect(
       await page
         .locator("[data-featured-video-form]")

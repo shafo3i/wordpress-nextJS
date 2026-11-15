@@ -1,31 +1,35 @@
-"use server";
+"use server"
+import { RateLimitError } from "@/lib/rate-limit";
+import { unstable_rethrow } from "next/navigation"
+import { getAdminLanguageContext } from "@/components/admin/admin-shell"
 
-import { revalidatePath } from "next/cache";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
+import { revalidatePath } from "next/cache"
+import { verifyAdmin } from "@/lib/authMIddleware"
 import {
   searchAndReplace,
   type SearchReplaceResult,
-} from "@/services/database-maintenance.service";
+} from "@/services/database-maintenance.service"
 
 export async function runSearchReplaceAction(payload: {
-  search: string;
-  replace: string;
-  dryRun?: boolean;
-  tables?: string[];
+  search: string
+  replace: string
+  dryRun?: boolean
+  tables?: string[]
 }): Promise<{
-  success: boolean;
-  result?: SearchReplaceResult;
-  error?: string;
+  success: boolean
+  result?: SearchReplaceResult
+  error?: string
 }> {
+  await verifyAdmin()
   try {
-    await verifyAdminOrEditor();
-    const result = await searchAndReplace(payload);
-    if (!payload.dryRun) {
-      revalidatePath("/", "layout");
+    const result = await searchAndReplace(payload)
+    if (!result.dryRun) {
+      revalidatePath("/", "layout")
     }
-    return { success: true, result };
-  } catch (error: any) {
-    console.error("runSearchReplaceAction error:", error);
-    return { success: false, error: error?.message || "Failed to execute search and replace" };
+    return { success: true, result }
+  } catch (error: unknown) {
+    unstable_rethrow(error)
+    const { dict } = await getAdminLanguageContext()
+    return { success: false, error: dict[error instanceof RateLimitError ? error.message : "admin.tools.error.failed"] || "" }
   }
 }

@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyPostEditor } from "@/lib/authMIddleware";
 import { eq, desc, asc, and, count, sql, inArray, ne, ilike, or } from "drizzle-orm";
@@ -525,7 +526,8 @@ export async function createTag(
   data: CreateTagOptions,
   database: DB = db
 ): Promise<TagItem> {
-  await verifyPostEditor();
+  const rateActor = await verifyPostEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = createTagSchema.parse(data);
   return tagTransaction(database, async tx => {
     const language = await validateTagLinks(tx, parsed.languageCode, parsed.sourceTermTaxonomyId);
@@ -540,7 +542,8 @@ export async function createTag(
 }
 
 export async function updateTag(id: bigint | string | number, data: UpdateTagOptions, database: DB = db): Promise<TagItem> {
-  await verifyPostEditor();
+  const rateActor = await verifyPostEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = updateTagSchema.parse({ ...data, termId: id });
   return tagTransaction(database, async tx => {
     const existing = await getTagById(parsed.termId, tx);
@@ -560,7 +563,8 @@ export async function updateTag(id: bigint | string | number, data: UpdateTagOpt
 }
 
 export async function quickUpdateTag(id: bigint | string | number, data: { name: string; slug?: string }, database: DB = db): Promise<{ id: string; name: string; slug: string }> {
-  await verifyPostEditor();
+  const rateActor = await verifyPostEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = quickUpdateTagSchema.parse({ ...data, id });
   const updated = await updateTag(parsed.id, { name: parsed.name, slug: parsed.slug }, database);
   return { id: updated.id, name: updated.name, slug: updated.slug };
@@ -577,7 +581,8 @@ export async function bulkDeleteTags(
   ids: (bigint | string | number)[],
   database: DB = db
 ): Promise<{ success: boolean; count?: number; error?: string }> {
-  await verifyPostEditor();
+  const rateActor = await verifyPostEditor();
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const termIds = deleteTagsSchema.parse(ids);
   if (!termIds.length) {
     return { success: false };

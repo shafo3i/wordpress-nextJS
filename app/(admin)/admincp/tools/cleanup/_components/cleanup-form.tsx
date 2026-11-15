@@ -1,171 +1,176 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Trash2, Sparkles, CheckCircle2, AlertCircle, Loader2, RefreshCw } from "lucide-react";
-import type { CleanupStats } from "@/services/database-maintenance.service";
-import { getDatabaseCleanupStatsAction, runDatabaseCleanupAction } from "../actions";
+import { useState } from "react"
+import {
+  Trash2,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+} from "lucide-react"
+import type { CleanupStats } from "@/services/database-maintenance.service"
+import {
+  getDatabaseCleanupStatsAction,
+  runDatabaseCleanupAction,
+} from "../actions"
 
 interface CleanupFormProps {
-  initialStats: CleanupStats;
-  dict: Record<string, string>;
+  initialStats: CleanupStats
+  dict: Record<string, string>
 }
 
 export function CleanupForm({ initialStats, dict }: CleanupFormProps) {
-  const [stats, setStats] = useState<CleanupStats>(initialStats);
-  const [selectedActions, setSelectedActions] = useState<string[]>([
-    "revisions",
-    "auto_drafts",
-    "spam_comments",
-    "orphaned_meta",
-    "orphaned_terms",
-    "transients",
-    "vacuum",
-  ]);
-  const [isCleaning, setIsCleaning] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<CleanupStats>(initialStats)
+  const [selectedActions, setSelectedActions] = useState<string[]>([])
+  const [isCleaning, setIsCleaning] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{
-    cleanedCount: number;
-    vacuumRun: boolean;
-    details: Record<string, number>;
-  } | null>(null);
+    cleanedCount: number
+    vacuumRun: boolean
+    details: Record<string, number>
+  } | null>(null)
 
   const cleanupItems = [
     {
       id: "revisions",
-      title: dict["admin.tools.cleanup_revisions"] || "Post Revisions",
-      desc: dict["admin.tools.cleanup_revisions_desc"] || "Old revisions and historical draft states.",
+      title: dict["admin.tools.cleanup_revisions"] || "",
+      desc: dict["admin.tools.cleanup_revisions_desc"] || "",
       count: stats.revisions,
     },
     {
       id: "auto_drafts",
-      title: dict["admin.tools.cleanup_drafts"] || "Abandoned Auto-Drafts",
-      desc: dict["admin.tools.cleanup_drafts_desc"] || "Unsaved draft posts created by editor sessions.",
+      title: dict["admin.tools.cleanup_drafts"] || "",
+      desc: dict["admin.tools.cleanup.abandoned_drafts_description"] || "",
       count: stats.autoDrafts,
     },
     {
       id: "spam_comments",
-      title: dict["admin.tools.cleanup_comments"] || "Spam & Trashed Comments",
-      desc: dict["admin.tools.cleanup_comments_desc"] || "Comments marked as spam or moved to the trash.",
+      title: dict["admin.tools.cleanup_comments"] || "",
+      desc: dict["admin.tools.cleanup_comments_desc"] || "",
       count: stats.spamComments + stats.trashedComments,
     },
     {
       id: "orphaned_meta",
-      title: dict["admin.tools.cleanup_meta"] || "Orphaned Post Metadata",
-      desc: dict["admin.tools.cleanup_meta_desc"] || "Key/value metadata records where the parent post was deleted.",
+      title: dict["admin.tools.cleanup_meta"] || "",
+      desc: dict["admin.tools.cleanup_meta_desc"] || "",
       count: stats.orphanedPostMeta,
     },
     {
       id: "orphaned_terms",
-      title: dict["admin.tools.cleanup_terms"] || "Orphaned Taxonomy Relationships",
-      desc: dict["admin.tools.cleanup_terms_desc"] || "Category/tag relations pointing to deleted post IDs.",
+      title: dict["admin.tools.cleanup_terms"] || "",
+      desc: dict["admin.tools.cleanup_terms_desc"] || "",
       count: stats.orphanedTermRelationships,
     },
     {
       id: "transients",
-      title: dict["admin.tools.cleanup_transients"] || "Expired Transients in Options",
-      desc: dict["admin.tools.cleanup_transients_desc"] || "Expired temporary cache items stored in wp_options.",
+      title: dict["admin.tools.cleanup_transients"] || "",
+      desc: dict["admin.tools.cleanup_transients_desc"] || "",
       count: stats.expiredTransients,
     },
-  ];
+  ]
 
   const handleToggle = (id: string) => {
     setSelectedActions((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
-    );
-  };
+    )
+  }
 
   const refreshStats = async () => {
-    setIsRefreshing(true);
+    setIsRefreshing(true)
     try {
-      const res = await getDatabaseCleanupStatsAction();
+      const res = await getDatabaseCleanupStatsAction()
       if (res.success && res.stats) {
-        setStats(res.stats);
+        setStats(res.stats)
       }
     } catch {
       // ignore
     } finally {
-      setIsRefreshing(false);
+      setIsRefreshing(false)
     }
-  };
+  }
 
   const handleRunCleanup = async () => {
     if (selectedActions.length === 0) {
-      setError(dict["admin.tools.select_action_error"] || "Please select at least one cleanup action.");
-      return;
+      setError(dict["admin.tools.select_action_error"] || "")
+      return
     }
 
-    setIsCleaning(true);
-    setError(null);
-    setResult(null);
+    setIsCleaning(true)
+    setError(null)
+    setResult(null)
 
     try {
-      const res = await runDatabaseCleanupAction(selectedActions as any);
+      const res = await runDatabaseCleanupAction(selectedActions)
       if (!res.success || !res.result) {
-        throw new Error(res.error || "Failed to execute database cleanup.");
+        throw new Error(res.error || dict["admin.tools.error.failed"])
       }
 
       setResult({
         cleanedCount: res.result.cleanedCount,
         vacuumRun: res.result.vacuumRun,
         details: res.result.details,
-      });
+      })
 
-      const updated = await getDatabaseCleanupStatsAction();
+      if (res.result.details.vacuum_failed)
+        setError(dict["admin.tools.error.vacuum"] || "")
+      const updated = await getDatabaseCleanupStatsAction()
       if (updated.success && updated.stats) {
-        setStats(updated.stats);
+        setStats(updated.stats)
       }
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred during cleanup.");
+    } catch {
+      setError(dict["admin.tools.error.failed"] || "")
     } finally {
-      setIsCleaning(false);
+      setIsCleaning(false)
     }
-  };
+  }
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[3px] border border-[#dcdcde] bg-white p-6 shadow-[0_1px_1px_rgba(0,0,0,0.04)] space-y-6">
+      <div className="space-y-6 rounded-[3px] border border-[#dcdcde] bg-white p-6 shadow-[0_1px_1px_rgba(0,0,0,0.04)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-[16px] font-semibold text-[#1d2327]">
-              {dict["admin.tools.cleanup_title"] || "Database Optimization & Cleanup"}
+              {dict["admin.tools.cleanup_title"] || ""}
             </h2>
-            <p className="text-[13px] text-[#50575e] mt-0.5">
-              {dict["admin.tools.cleanup_subtitle"] ||
-                "Delete accumulated database bloat, orphaned entries, and reclaim disk space with PostgreSQL VACUUM."}
+            <p className="mt-0.5 text-[13px] text-[#50575e]">
+              {dict["admin.tools.cleanup_subtitle"] || ""}
             </p>
           </div>
           <button
             type="button"
             onClick={refreshStats}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2c3338] hover:border-[#8c8f94] cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-[3px] border border-[#c3c4c7] bg-white px-3 py-1.5 text-[12px] font-medium text-[#2c3338] hover:border-[#8c8f94]"
           >
-            <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            {dict["admin.tools.refresh_stats"] || "Refresh Scan"}
+            <RefreshCw
+              className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+            {dict["admin.tools.refresh_stats"] || ""}
           </button>
         </div>
 
         {/* Checklist */}
-        <div className="divide-y divide-[#f0f0f1] border border-[#dcdcde] rounded-[3px] overflow-hidden">
+        <div className="divide-y divide-[#f0f0f1] overflow-hidden rounded-[3px] border border-[#dcdcde]">
           {cleanupItems.map((item) => (
             <div
               key={item.id}
               onClick={() => handleToggle(item.id)}
-              className="flex items-center justify-between p-3.5 hover:bg-[#f6f7f7]/60 cursor-pointer transition-colors"
+              className="flex cursor-pointer items-center justify-between p-3.5 transition-colors hover:bg-[#f6f7f7]/60"
             >
               <div className="flex items-start gap-3">
                 <input
                   type="checkbox"
                   checked={selectedActions.includes(item.id)}
                   onChange={() => {}}
-                  className="rounded text-[#2271b1] focus:ring-[#2271b1] mt-0.5 pointer-events-none"
+                  className="pointer-events-none mt-0.5 rounded text-[#2271b1] focus:ring-[#2271b1]"
                 />
                 <div>
-                  <span className="text-[13px] font-semibold text-[#1d2327] block">
+                  <span className="block text-[13px] font-semibold text-[#1d2327]">
                     {item.title}
                   </span>
-                  <span className="text-[12px] text-[#646970] block mt-0.5">
+                  <span className="mt-0.5 block text-[12px] text-[#646970]">
                     {item.desc}
                   </span>
                 </div>
@@ -173,13 +178,13 @@ export function CleanupForm({ initialStats, dict }: CleanupFormProps) {
 
               <div className="flex-shrink-0">
                 <span
-                  className={`inline-block px-2.5 py-0.5 rounded text-[12px] font-semibold ${
+                  className={`inline-block rounded px-2.5 py-0.5 text-[12px] font-semibold ${
                     item.count > 0
-                      ? "bg-[#fcf0f1] text-[#d63638] border border-[#f5c6cb]"
+                      ? "border border-[#f5c6cb] bg-[#fcf0f1] text-[#d63638]"
                       : "bg-[#f0f0f1] text-[#646970]"
                   }`}
                 >
-                  {item.count} {dict["admin.tools.items"] || "items"}
+                  {item.count} {dict["admin.tools.items"] || ""}
                 </span>
               </div>
             </div>
@@ -188,75 +193,75 @@ export function CleanupForm({ initialStats, dict }: CleanupFormProps) {
           {/* Vacuum Option */}
           <div
             onClick={() => handleToggle("vacuum")}
-            className="flex items-center justify-between p-3.5 bg-[#f0f6fc]/50 hover:bg-[#f0f6fc] cursor-pointer transition-colors"
+            className="flex cursor-pointer items-center justify-between bg-[#f0f6fc]/50 p-3.5 transition-colors hover:bg-[#f0f6fc]"
           >
             <div className="flex items-start gap-3">
               <input
                 type="checkbox"
                 checked={selectedActions.includes("vacuum")}
                 onChange={() => {}}
-                className="rounded text-[#2271b1] focus:ring-[#2271b1] mt-0.5 pointer-events-none"
+                className="pointer-events-none mt-0.5 rounded text-[#2271b1] focus:ring-[#2271b1]"
               />
               <div>
-                <span className="text-[13px] font-semibold text-[#1d2327] flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-[#1d2327]">
                   <Sparkles className="size-3.5 text-[#2271b1]" />
-                  {dict["admin.tools.vacuum_title"] || "Run PostgreSQL VACUUM (ANALYZE)"}
+                  {dict["admin.tools.vacuum_title"] || ""}
                 </span>
-                <span className="text-[12px] text-[#50575e] block mt-0.5">
-                  {dict["admin.tools.vacuum_desc"] ||
-                    "Reclaims physical disk storage and updates query optimizer statistics across all tables."}
+                <span className="mt-0.5 block text-[12px] text-[#50575e]">
+                  {dict["admin.tools.vacuum_desc"] || ""}
                 </span>
               </div>
             </div>
-            <span className="text-[11px] font-medium text-[#2271b1] bg-white border border-[#c5d9ed] px-2 py-0.5 rounded">
-              {dict["admin.tools.recommended"] || "Recommended"}
+            <span className="rounded border border-[#c5d9ed] bg-white px-2 py-0.5 text-[11px] font-medium text-[#2271b1]">
+              {dict["admin.tools.recommended"] || ""}
             </span>
           </div>
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 rounded-[3px] bg-[#fcf0f1] border border-[#d63638] p-3 text-[13px] text-[#d63638]">
-            <AlertCircle className="size-4 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-2 rounded-[3px] border border-[#d63638] bg-[#fcf0f1] p-3 text-[13px] text-[#d63638]">
+            <AlertCircle className="mt-0.5 size-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Result alert */}
         {result && (
-          <div className="rounded-[3px] bg-[#edfaef] border border-[#00a32a] p-4 text-[13px] text-[#1d2327] space-y-2">
-            <div className="flex items-center gap-2 text-[#00a32a] font-semibold text-[14px]">
+          <div className="space-y-2 rounded-[3px] border border-[#00a32a] bg-[#edfaef] p-4 text-[13px] text-[#1d2327]">
+            <div className="flex items-center gap-2 text-[14px] font-semibold text-[#00a32a]">
               <CheckCircle2 className="size-5" />
-              <span>{dict["admin.tools.cleanup_success"] || "Cleanup completed successfully!"}</span>
+              <span>{dict["admin.tools.cleanup_success"] || ""}</span>
             </div>
             <p className="text-[13px] text-[#50575e]">
-              {result.cleanedCount} {dict["admin.tools.records_removed"] || "unneeded database records were deleted."}
-              {result.vacuumRun && ` ${dict["admin.tools.vacuum_success"] || "PostgreSQL VACUUM ANALYZE completed."}`}
+              {result.cleanedCount} {dict["admin.tools.records_removed"] || ""}
+              {result.vacuumRun &&
+                ` ${dict["admin.tools.vacuum_success"] || ""}`}
             </p>
           </div>
         )}
 
         {/* Action Button */}
-        <div className="border-t border-[#f0f0f1] pt-4 flex items-center justify-between">
+        <div className="flex items-center justify-between border-t border-[#f0f0f1] pt-4">
           <button
             type="button"
             disabled={isCleaning}
             onClick={handleRunCleanup}
-            className="inline-flex items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-5 py-2 text-[13px] font-medium text-white hover:bg-[#135e96] transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-5 py-2 text-[13px] font-medium text-white shadow-sm transition-colors hover:bg-[#135e96] disabled:opacity-50"
           >
             {isCleaning ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                {dict["admin.tools.cleaning"] || "Optimizing Database..."}
+                {dict["admin.tools.cleaning"] || ""}
               </>
             ) : (
               <>
                 <Trash2 className="size-4" />
-                {dict["admin.tools.run_cleanup_btn"] || "Run Selected Cleanups"}
+                {dict["admin.tools.run_cleanup_btn"] || ""}
               </>
             )}
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }

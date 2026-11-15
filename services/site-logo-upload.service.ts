@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import sharp from "sharp"
@@ -46,7 +47,8 @@ export async function uploadSiteLogo(
   file: File,
   authorId: string
 ): Promise<SiteLogo> {
-  await verifyAdmin();
+  const rateActor = await verifyAdmin();
+  await checkCmsRateLimit(rateActor.user.id, "logo-upload");
   const buffer = await normalizeSiteLogo(file)
   const item = await uploadMediaFile(
     buffer,

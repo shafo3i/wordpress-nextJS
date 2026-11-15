@@ -1,4 +1,5 @@
 "use server"
+import { RateLimitError } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache"
 import { unstable_rethrow } from "next/navigation"
 import { verifyAdmin } from "@/lib/authMIddleware"
@@ -15,7 +16,7 @@ async function failure(error: unknown) {
   return {
     success: false as const,
     menuId: undefined,
-    error: dict["admin.menus.failed_notice"] || "",
+    error: dict[error instanceof RateLimitError ? error.message : "admin.menus.failed_notice"] || "",
   }
 }
 export async function saveMenuAction(

@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import { verifyPostEditor, verifyAdmin } from "@/lib/authMIddleware"
 import {
@@ -994,6 +995,7 @@ export async function createPost(
   database: DB = db
 ): Promise<string> {
   const session = await verifyPostEditor()
+  await checkCmsRateLimit(session.user.id, "write");
   const parsed = createPostEditorSchema.parse(input)
   if (session.user.role === "editor" && parsed.status === "trash")
     throw new PostPermissionError()
@@ -1107,6 +1109,7 @@ export async function updatePost(
   database: DB = db
 ): Promise<void> {
   const session = await verifyPostEditor()
+  await checkCmsRateLimit(session.user.id, "write");
   const postId = postIdSchema.parse(id)
   const parsed = updatePostEditorSchema.parse(input)
   if (session.user.role === "editor" && parsed.status === "trash")
@@ -1253,7 +1256,8 @@ async function changePostLifecycle(
   mode: "trash" | "restore" | "delete",
   database: DB
 ) {
-  await verifyAdmin()
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const ids = postIdsSchema.parse(raw)
   await database.transaction(async (transaction) => {
     const tx = transaction as unknown as DB

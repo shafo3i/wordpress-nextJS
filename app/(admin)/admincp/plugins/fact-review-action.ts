@@ -1,5 +1,6 @@
 "use server"
 import { revalidatePath } from "next/cache"
+import { RateLimitError } from "@/lib/rate-limit"
 import { verifyAdminOrEditor } from "@/lib/authMIddleware"
 import {
   factPostIdSchema,
@@ -33,7 +34,7 @@ export async function saveFactReviewAction(input: FactReviewInput) {
     return { success: true }
   } catch (error) {
     const code =
-      error instanceof Error && error.message.startsWith("admin.plugins.fact.")
+      error instanceof RateLimitError || (error instanceof Error && error.message.startsWith("admin.plugins.fact."))
         ? error.message
         : "admin.plugins.invalid_config"
     return { success: false, error: code }

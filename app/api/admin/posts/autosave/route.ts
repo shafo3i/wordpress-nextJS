@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/rate-limit"
 import { headers } from "next/headers"
 import { auth } from "@/auth"
 import {
@@ -89,6 +90,8 @@ export async function POST(request: Request) {
       record: await savePostAutosave(session.user.id, parsed.data),
     })
   } catch (error) {
+    const limited = rateLimitResponse(error)
+    if (limited) return limited
     if (error instanceof SyntaxError) return json({ error: "invalid" }, 400)
     if (error instanceof PostAutosaveError)
       return json({ error: error.code }, error.status)

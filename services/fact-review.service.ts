@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import { createHash } from "node:crypto"
 import { and, desc, eq, ilike, or } from "drizzle-orm"
@@ -78,6 +79,7 @@ export async function saveFactReview(
   const { verifyPluginAdministrator } =
     await import("@/lib/plugins/authorization")
   const session = await verifyPluginAdministrator()
+  await checkCmsRateLimit(session.user.id, "write");
   reviewer = { id: session.user.id, name: session.user.name || "" }
   const value = factReviewSchema.parse(input)
   return database.transaction(async (tx) => {

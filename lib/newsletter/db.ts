@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import { and, eq, sql, desc } from "drizzle-orm"
 import { randomBytes, randomUUID } from "node:crypto"
@@ -63,6 +64,7 @@ export async function addNewsletterSubscriber(
   options?: { name?: string; source?: string; locale?: string },
   database: DB = db
 ) {
+  await checkCmsRateLimit("site", "newsletter-request")
   const normalized = email.trim().toLowerCase(),
     token = randomBytes(32).toString("base64url"),
     now = new Date()
@@ -102,6 +104,7 @@ export async function confirmNewsletterSubscriber(
   token: string,
   database: DB = db
 ) {
+  await checkCmsRateLimit("site", "newsletter-token")
   const [row] = await database
     .update(subscribers)
     .set({
@@ -123,6 +126,7 @@ export async function unsubscribeNewsletterSubscriber(
   id: string,
   database: DB = db
 ) {
+  await checkCmsRateLimit("site", "newsletter-token")
   await database
     .update(subscribers)
     .set({
@@ -139,7 +143,8 @@ export async function removeNewsletterSubscriber(
 ) {
   const { verifyPluginAdministrator } =
     await import("@/lib/plugins/authorization")
-  await verifyPluginAdministrator()
+  const rateActor = await verifyPluginAdministrator()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   await database
     .delete(subscribers)
     .where(eq(subscribers.email, newsletterEmailSchema.parse(email)))
@@ -148,6 +153,7 @@ export async function removeNewsletterSubscriber(
 export async function clearAllNewsletterSubscribers(database: DB = db) {
   const { verifyPluginAdministrator } =
     await import("@/lib/plugins/authorization")
-  await verifyPluginAdministrator()
+  const rateActor = await verifyPluginAdministrator()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   await database.delete(subscribers)
 }

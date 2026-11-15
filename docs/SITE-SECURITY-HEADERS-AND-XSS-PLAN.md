@@ -1,5 +1,7 @@
 # Site security headers and XSS work plan
 
+Related rollout: [Sensitive endpoint rate-limiting plan](RATE-LIMITING-SECURITY-PLAN.md). After the remaining module reviews, implement shared quotas for sensitive operations and verify them before the final site-wide security review. Existing partial rate limits are not complete coverage.
+
 Status: planned. Created 11 November 2026. This document records work to do; it does not claim that the site has passed a security audit.
 
 ## Why this is needed
@@ -27,11 +29,11 @@ The current staging URL uses HTTP. Browser traffic, including login requests, ca
 
 These module fixes do not complete the site-wide audit. CSP, COOP, Trusted Types and the deployment header rollout below remain pending.
 
-### Admin module queue (updated 11 November 2026)
+### Admin module queue (updated 15 November 2026)
 
 Continue module by module, reviewing authorization, input validation, data exposure, mutation logic and XSS together. Follow HTML through saving, preview and public rendering in the same module pass; do not defer its XSS review until the header rollout. Permission changes alone do not constitute a full module audit.
 
-Completed passes: Categories; Users and roles; Settings; Dashboard and Profile; Themes manager; Plugins; Tags; Comments; Languages and Translations; Media; Pages; Appearance; Posts. Earlier authentication and Studio work provides existing coverage, but is not a claim that every integration has been audited.
+Completed repository passes: Categories; Users and roles; Settings; Dashboard and Profile; Themes manager; Plugins; Tags; Comments; Languages and Translations; Media; Pages; Appearance; Posts; Tools; Studio integration recheck. Deployed integration and the shared/site-wide security work remain; these passes are not a whole-site security clearance.
 
 Remaining queue, in recommended order:
 
@@ -44,9 +46,9 @@ Remaining queue, in recommended order:
 7. Appearance: Themes manager completed earlier; Customizer, Theme Settings, Menus and Widgets repository pass completed 13 November 2026. See the record below; deployed checks and wider Studio integration remain.
 8. Plugins: repository security pass completed 13 November 2026; see the record below.
 9. Languages and Translations: repository security pass completed 13 November 2026; see the record below.
-10. Tools: imports/exports, redirects, search/replace, media utilities, SEO/feed tools and privileged diagnostics.
+10. Tools: repository pass completed 14 November 2026; see [Tools security and functionality review](TOOLS-SECURITY-REVIEW.md). Deployment integration checks remain.
 11. Dashboard and Profile: repository pass completed 13 November 2026; see the record below.
-12. Studio integration recheck: review the existing Studio security report against current widgets, shared media, rendering and permissions; retain earlier regression coverage.
+12. Studio integration recheck: repository pass completed 15 November 2026 against current widgets, shared media, rendering and permissions. See [Studio security review](STUDIO_SECURITY_REVIEW.md). Deployed integration checks remain.
 
 For each completed pass, record findings, fixes, tests and limitations here. After the module passes, perform the shared rendering/API review and the response-header, CSP, Trusted Types and HTTPS/HSTS rollout below. Verify deployed behavior separately from isolated tests.
 
@@ -252,3 +254,40 @@ Enable a valid TLS certificate in Coolify, redirect HTTP to HTTPS, update public
 - Corrected two regressions in the Posts pass: native URL inputs rejected supported root-relative upload paths, and FormData submitted menuOrder as a string while the authoring schema correctly required a bounded integer. The video control now accepts text with URL keyboard hints and retains the shared supported-video validator. The action converts only integer-shaped menuOrder strings before schema validation; malformed/out-of-range values remain rejected.
 - Renamed the reset control to explain that it clears the explicit choice and uses the first supported video in the article. Regression tests now submit real editor-shaped create/update payloads with no video, a relative MP4 and YouTube, reject malformed menu orders, and check native browser form validity for the reported WhatsApp video path in EN/AR.
 - Verification: 46 focused unit tests and both EN/AR browser checks passed. No live data changes or migration.
+
+### Uploaded video thumbnail correction - 14 November 2026
+
+- Root-relative uploaded featured videos now produce a generated thumbnail URL for public cards and a poster for the native featured player. Existing YouTube thumbnails and selected featured-image priority are preserved. Older uploaded videos are handled lazily without a data migration.
+- A Node route extracts a representative frame with FFmpeg and persists the JPEG under uploads/video-posters, keyed by source path, size and modification time. Repeated requests reuse the file; simultaneous work for the same video is shared. Only validated local upload files are accepted: no remote download, path traversal or symlink access. Extraction uses a shell-free argument array, local protocols/container allowlists, one decoding thread, a 15-second timeout, 512 MB input cap, 2 MB output cap and at most two concurrent jobs per application process.
+- FFmpeg is installed in the runtime Docker stage. Deployment must rebuild the image once for this feature. Existing uploads storage is reused; no seed is needed. Local development also needs FFmpeg on PATH.
+- Verification: 28 focused unit/rendering tests passed, including isolated filesystem cache and hostile-source tests; both EN/AR browser checks passed, including the player poster attribute. TypeScript and scoped lint passed. Decoder invocation is mocked in unit tests; actual frame extraction could not be exercised on this workstation because FFmpeg is absent and Docker Desktop is not running. Confirm the generated JPEG after deploying the rebuilt image. Vimeo/external self-hosted URL poster discovery is not implemented by this local-upload route.
+
+### Tools security pass - 14 November 2026
+
+- Completed the repository review of imports/exports, search-and-replace, cleanup, redirects, media utilities, Site Health and SEO/feed diagnostics. Detailed findings, changed behavior and limitations: [Tools security and functionality review](TOOLS-SECURITY-REVIEW.md).
+- Added direct administrator/service boundaries, bounded schemas and safe errors; fixed unsafe redirect rules/loops and lost-update races; parameterized literal search and structured JSON replacement; made related cleanup transactional; sanitized and validated imports with relational ID mapping; corrected SQL column names, WXR authors/dates/descriptions and archive metadata; protected referenced uploads and quarantine paths; bounded thumbnail batches and corrected diagnostics/feedback/localization.
+- SQL/JSON are editorial exports, not complete backups. Authentication/secrets, DDL and physical media are excluded. Browser imports are limited to 20 MB; large migrations and native database backups require their separate operational paths.
+- Verification: 59 focused Tools tests; full unit suite 989 passed and 19 skipped; both EN/AR Tools browser checks passed; TypeScript/scoped lint/whitespace checks passed. No live import, cleanup, file deletion or deployment. Database/filesystem concurrency and authenticated deployment checks remain; scanners cannot prove files are unused outside current database references.
+- Remaining after this Tools pass: Studio integration recheck (subsequently completed below), shared rate limiting, global response headers/CSP/Trusted Types/COOP/HTTPS-HSTS and final deployed/site-wide review.
+
+### Studio integration recheck — 15 November 2026
+
+- See [Studio security review](STUDIO_SECURITY_REVIEW.md) for findings, regression coverage and limits. Added direct administrator guards/server-only boundaries, coordinated Studio mutations with Pages locks, protected trashed pages and the assigned homepage, and preserved authentication redirects outside the storage-error catch.
+- Studio feeds now apply the same password/future-publication exclusions as public article queries and use the shared featured-video thumbnail resolution while retaining featured-image priority. Existing document shape, layout controls and EN/AR behavior remain covered.
+- Verification: 236 focused unit tests passed; full standalone unit suite **998 passed, 19 skipped across 127 files**. The first full run hit two existing timeouts under concurrent verification load; those tests and the standalone full rerun passed without changing timeout thresholds. **27 isolated browser tests passed**, with 8 live-CMS checks skipped. TypeScript and scoped ESLint passed.
+- No seed/migration or live data change is needed. Tests use isolated adapters/fixtures, not deployed PostgreSQL concurrency or authenticated production navigation. Studio autosave/revisions and optimistic conflict detection remain separate work.
+- Remaining security work: shared rate limiting; global headers/CSP/COOP/Trusted Types/HTTPS-HSTS; final site-wide and deployed review. No package upgrade, email, push or deployment was performed.
+
+### Dashboard navigation performance follow-up — 15 November 2026
+
+- Found that Dashboard rendering awaited the full Site Health recursive upload inventory on every visit. A read-only local probe using the same per-path filesystem checks reached 37,021 files after 15 seconds and had not finished. This is a concrete blocking operation, independent of the separate dev compilation/HMR symptoms.
+- Dashboard now requests health data without the storage inventory. It checks upload-directory access/writability, and unmeasured file counts/sizes are explicitly null rather than invented zeros. The dashboard omits the unmeasured count; the existing Tools → Site Health link still provides the full inventory by default. Administrator authorization remains before diagnostic/database/filesystem work.
+- Four new isolated tests cover a never-resolving inventory, accurate default full reports, non-writable storage and authorization before reads. Dashboard integration verifies it selects the lightweight mode. Focused verification: 39 tests passed; full suite: 1,002 passed and 19 skipped across 128 files. TypeScript and scoped ESLint passed. The user confirmed that the signed-in dashboard opens after the change; a subsequent local trace recorded a Dashboard RSC response of about 1.4 seconds (not a controlled before/after benchmark). No live data mutation, auth/rate-limit change or package update was performed. The separate dev HMR reconnect and file-URL warning are not declared resolved solely by this performance fix.
+
+### Manual storage inventories — 15 November 2026
+
+- Supersedes the earlier automatic full-inventory behavior in Tools. Site Health and Media Tools now load without traversing uploads. Ordinary health refreshes use database diagnostics, directory access/writability and an optional filesystem-capacity query. Capacity describes the whole filesystem, not the uploads folder or a container's quota.
+- Only explicit Scan uploads actions compute file counts and uploads size. The latest successful result and UTC scan timestamp are saved in the existing options table, with autoload disabled and schema-validated reads. A server/path scope prevents showing a development scan as another deployment's inventory; a container identity change can require another manual scan. Malformed, oversized or mismatched saved data never triggers an automatic scan. Scan failures preserve the previous result.
+- Both EN/AR interfaces distinguish an unmeasured inventory from zero files, label saved results as potentially stale, disable duplicate scan interactions and report failures safely. Thumbnail regeneration, cleanup completion and opening the Orphans tab no longer automatically rescan the library; the orphan scan itself has an explicit button.
+- Verification: full isolated unit suite 1,014 passed and 19 skipped across 129 files; both EN/AR manual-storage browser checks passed; TypeScript and scoped ESLint passed. Tests cover manual/default paths, saved result reuse/scope, capacity failure, authorization before reads, preserved snapshots and safe action errors. Browser checks verify page load/recheck/tab selection do not start scans, explicit buttons do, and regeneration does not launch a follow-up inventory.
+- No production scan, live database mutation, schema migration/reseed, dependency change, auth/rate-limit change, push or deployment was performed. Saved scan results use the existing options table and do not need a migration. Deployment filesystem-capacity support and a real manual scan should be verified separately on the target server when wanted.

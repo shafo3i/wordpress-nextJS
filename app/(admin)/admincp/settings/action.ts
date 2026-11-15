@@ -5,6 +5,7 @@ import {
   testEmailSchema,
   testEmailLocaleSchema,
 } from "@/db/schema/cms-settings"
+import { checkCmsRateLimit, RateLimitError } from "@/lib/rate-limit"
 import { revalidatePath } from "next/cache"
 import { verifyAdmin } from "@/lib/authMIddleware"
 import {
@@ -15,12 +16,14 @@ import {
 import { removeSiteLogo, selectSiteLogo } from "@/services/site-logo.service"
 
 export async function selectSettingsLogoAction(attachmentId: string) {
-  await verifyAdmin()
+  const session = await verifyAdmin()
   try {
+    await checkCmsRateLimit(session.user.id, "write")
     const logo = await selectSiteLogo(attachmentId)
     revalidatePath("/", "layout")
     return { success: true as const, logo }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false as const, error: error.message }
     return {
       success: false as const,
       error: "admin.settings.logo.invalid_selection",
@@ -29,12 +32,14 @@ export async function selectSettingsLogoAction(attachmentId: string) {
 }
 
 export async function removeSettingsLogoAction(): Promise<SaveSettingsResult> {
-  await verifyAdmin()
+  const session = await verifyAdmin()
   try {
+    await checkCmsRateLimit(session.user.id, "write")
     await removeSiteLogo()
     revalidatePath("/", "layout")
     return { success: true }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false as const, error: error.message }
     return { success: false, error: "admin.settings.logo.remove_error" }
   }
 }
@@ -67,7 +72,8 @@ export async function saveSettingsAction(
     revalidatePath("/posts/[slug]", "page")
 
     return { success: true, message: "admin.settings.saved_notice" }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false as const, error: error.message }
     console.error("Failed to save settings")
     return {
       success: false,
@@ -95,7 +101,8 @@ export async function sendTestEmailAction(
       return { success: false, error: "admin.settings.test_email_error" }
     }
     return { success: true, message: "admin.settings.test_email_success" }
-  } catch {
+  } catch (error) {
+    if (error instanceof RateLimitError) return { success: false as const, error: error.message }
     return { success: false, error: "admin.settings.test_email_error" }
   }
 }

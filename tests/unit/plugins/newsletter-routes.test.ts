@@ -1,3 +1,8 @@
+vi.mock("@/lib/rate-limit", async (load) => ({
+  ...await load<typeof import("@/lib/rate-limit")>(),
+  checkCmsRateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 1, retryAfter: 0 }),
+}))
+vi.mock("server-only", () => ({}))
 import { beforeEach, describe, it, expect, vi } from "vitest"
 const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
@@ -33,6 +38,7 @@ import {
   POST as unsubscribe,
 } from "@/app/api/newsletter/unsubscribe/route"
 import { unsubscribeToken } from "@/lib/newsletter/tokens"
+import { RateLimitError } from "@/lib/rate-limit"
 const token = "a".repeat(43),
   id = "c83a61a1-f5dd-4c5d-b061-c4c3412cfac3"
 beforeEach(() => {
@@ -151,4 +157,12 @@ it("fails safely when the unsubscribe signing secret is unavailable", async () =
   )
   expect(result.status).toBe(503)
   expect(mocks.unsubscribe).not.toHaveBeenCalled()
+})
+
+it("returns a quota response before delivering welcome email", async () => {
+  mocks.confirm.mockRejectedValueOnce(new RateLimitError(429, 24))
+  const response = await confirm(new Request(`https://site.test/api/newsletter/confirm?token=${token}`, { method: "POST" }))
+  expect(response.status).toBe(429)
+  expect(response.headers.get("Retry-After")).toBe("24")
+  expect(mocks.welcome).not.toHaveBeenCalled()
 })

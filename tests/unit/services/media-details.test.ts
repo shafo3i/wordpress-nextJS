@@ -1,3 +1,7 @@
+vi.mock("@/lib/rate-limit", async (load) => ({
+  ...await load<typeof import("@/lib/rate-limit")>(),
+  checkCmsRateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 1, retryAfter: 0 }),
+}))
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/authMIddleware", () => ({ verifyPostEditor: async () => ({ user: { id: "editor", role: "editor" } }) }));
 import { describe, it, expect, vi } from "vitest"

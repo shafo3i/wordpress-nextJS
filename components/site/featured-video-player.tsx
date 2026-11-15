@@ -1,4 +1,4 @@
-import { featuredVideoUrl } from "@/lib/featured-video"
+import { featuredVideoUrl, featuredVideoThumbnail } from "@/lib/featured-video"
 import { videoEmbedUrl } from "@/lib/post-media"
 
 export function FeaturedVideoPlayer({
@@ -25,6 +25,7 @@ export function FeaturedVideoPlayer({
     <video
       src={safe}
       controls
+      poster={featuredVideoThumbnail(safe) || undefined}
       playsInline
       preload="metadata"
       aria-label={title}

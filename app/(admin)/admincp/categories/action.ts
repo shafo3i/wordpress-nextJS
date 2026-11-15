@@ -1,4 +1,5 @@
 "use server";
+import { RateLimitError } from "@/lib/rate-limit";
 
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
@@ -23,6 +24,7 @@ async function categoryErrorMessage(error: unknown): Promise<string> {
   unstable_rethrow(error);
   const { dict } = await getAdminLanguageContext();
   const key =
+    error instanceof RateLimitError ? error.message :
     error instanceof CategoryMutationError
       ? error.key
       : error instanceof ZodError

@@ -38,5 +38,8 @@ export function featuredVideoThumbnail(value: string | null): string | null {
   const id = safe?.match(
     /^https:\/\/www\.youtube-nocookie\.com\/embed\/([\w-]{11})(?:\?|$)/
   )?.[1]
-  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null
+  if (id) return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+  return safe?.startsWith("/uploads/")
+    ? `/api/media/video-thumbnail?src=${encodeURIComponent(safe)}`
+    : null
 }

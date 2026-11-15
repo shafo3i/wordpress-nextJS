@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import { verifyPostEditor } from "@/lib/authMIddleware"
 import {
@@ -71,6 +72,7 @@ export async function savePostAutosave(
   database: DB = db
 ) {
   const session = await verifyPostEditor()
+  await checkCmsRateLimit(session.user.id, "autosave");
   input = postAutosaveRequestSchema.parse(input)
   if (session.user.id !== ownerId || input.ownerId !== ownerId)
     throw new PostAutosaveError("forbidden", 403)

@@ -1,9 +1,19 @@
+vi.mock("@/lib/rate-limit", async (load) => ({
+  ...await load<typeof import("@/lib/rate-limit")>(),
+  checkCmsRateLimit: vi.fn().mockResolvedValue({ success: true, remaining: 1, retryAfter: 0 }),
+}))
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { DB } from "@/db"
-import { saveStudioPageData } from "@/services/studio-document.service"
+import {
+  saveStudioPageData,
+  setPageStudioMode,
+} from "@/services/studio-document.service"
 import { createStudioElement } from "@/lib/studio/tree-helpers"
 
 vi.mock("@/db", () => ({ db: {} }))
+const authorization = vi.hoisted(() => ({ guard: vi.fn() }))
+vi.mock("server-only", () => ({}))
+vi.mock("@/lib/authMIddleware", () => ({ verifyAdmin: authorization.guard }))
 vi.mock("@/db/schema", () => ({
   wpPosts: { id: "id", postType: "type", postStatus: "status" },
   wpPostmeta: { postId: "postId", metaKey: "metaKey" },
@@ -26,6 +36,7 @@ function databaseHarness({
   missing = false,
   failInsert = false,
   status = "publish",
+  homepage = false,
 } = {}) {
   const metadata = [{ metaKey: "_studio_data", metaValue: "old layout" }]
   const options: unknown[] = []
@@ -34,6 +45,25 @@ function databaseHarness({
       const nextMetadata = [...metadata]
       const nextOptions: unknown[] = []
       const tx = {
+        execute: vi.fn(),
+        select: () => ({
+          from: () => ({
+            where: () => ({
+              for: async () => (missing ? [] : [{ status }]),
+              then: (resolve: (rows: unknown[]) => unknown) =>
+                Promise.resolve(
+                  resolve(
+                    homepage
+                      ? [
+                          { name: "show_on_front", value: "page" },
+                          { name: "page_on_front", value: "1" },
+                        ]
+                      : []
+                  )
+                ),
+            }),
+          }),
+        }),
         update: () => ({
           set: () => ({
             where: () => ({
@@ -76,7 +106,57 @@ function databaseHarness({
 }
 
 describe("Studio save transaction contract", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    authorization.guard.mockResolvedValue({ user: { role: "admin" } })
+  })
+
+  it("denies direct service mutations before database access", async () => {
+    const harness = databaseHarness()
+    authorization.guard.mockRejectedValue(new Error("Unauthorized"))
+    await expect(saveStudioPageData(input, harness.database)).rejects.toThrow(
+      "Unauthorized"
+    )
+    await expect(
+      setPageStudioMode("1", true, harness.database)
+    ).rejects.toThrow("Unauthorized")
+    expect(harness.transaction).not.toHaveBeenCalled()
+  })
+
+  it("cannot revive a trashed page through Studio", async () => {
+    const harness = databaseHarness({ status: "trash" })
+    await expect(saveStudioPageData(input, harness.database)).rejects.toThrow(
+      "does not exist"
+    )
+    expect(harness.metadata[0].metaValue).toBe("old layout")
+    await expect(
+      setPageStudioMode("1", true, harness.database)
+    ).rejects.toThrow("does not exist")
+  })
+
+  it("allows saving an ordinary draft without making it the homepage", async () => {
+    const harness = databaseHarness({ status: "draft" })
+    const result = await saveStudioPageData(
+      { ...input, status: undefined, setAsFrontPage: false },
+      harness.database
+    )
+    expect(result.status).toBe("draft")
+    expect(harness.options).toEqual([])
+    expect(
+      harness.metadata.find((row) => row.metaKey === "_studio_data")?.metaValue
+    ).toContain("studio_canvas")
+  })
+
+  it("cannot unpublish the assigned homepage through Studio", async () => {
+    const harness = databaseHarness({ homepage: true })
+    await expect(
+      saveStudioPageData(
+        { ...input, status: "draft", setAsFrontPage: false },
+        harness.database
+      )
+    ).rejects.toThrow("homepage")
+    expect(harness.metadata[0].metaValue).toBe("old layout")
+  })
 
   it("stores and returns sanitized markup in the same committed document", async () => {
     const harness = databaseHarness()

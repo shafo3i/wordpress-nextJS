@@ -12,6 +12,7 @@ import type { StudioDocumentData } from "@/lib/studio/types"
 import { getStudioDocumentRequests } from "@/lib/studio/content"
 
 vi.mock("@/db", () => ({ db: {} }))
+vi.mock("server-only", () => ({}))
 describe.runIf(process.env.STUDIO_INTEGRATION === "1")(
   "seeded Studio feeds (read-only PostgreSQL)",
   () => {

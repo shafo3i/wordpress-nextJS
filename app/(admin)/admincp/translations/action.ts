@@ -1,4 +1,5 @@
 "use server";
+import { RateLimitError } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { verifyAdmin } from "@/lib/authMIddleware";
@@ -9,7 +10,7 @@ async function mutation<T>(operation: () => Promise<T>): Promise<T> {
   try { return await operation(); } catch (error) {
     unstable_rethrow(error);
     const { dict } = await getAdminLanguageContext();
-    throw new Error(dict["admin.languages.error.failed"] || "");
+    throw new Error(dict[error instanceof RateLimitError ? error.message : "admin.languages.error.failed"] || "");
   }
 }
 function returnUrl(value: FormDataEntryValue | null, code: string) {

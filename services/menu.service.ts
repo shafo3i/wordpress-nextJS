@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import { randomUUID } from "node:crypto"
 import { verifyAdmin } from "@/lib/authMIddleware"
@@ -153,7 +154,8 @@ export async function setNavMenuLocations(
   raw: Record<string, string>,
   database: DB = db
 ): Promise<void> {
-  await verifyAdmin()
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const locations = menuLocationsSchema.parse(raw)
   await database.transaction(async (transaction) => {
     const tx = transaction as unknown as DB
@@ -328,7 +330,8 @@ export async function createMenu(
   raw: string | CreateMenuInput,
   database: DB = db
 ): Promise<string> {
-  await verifyAdmin()
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const input = createMenuSchema.parse(
     typeof raw === "string" ? { name: raw } : raw
   )
@@ -366,7 +369,8 @@ export async function deleteMenu(
   raw: string | number | bigint,
   database: DB = db
 ): Promise<void> {
-  await verifyAdmin()
+  const rateActor = await verifyAdmin()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const id = menuIdSchema.parse(raw)
   await database.transaction(async (transaction) => {
     const tx = transaction as unknown as DB
@@ -414,6 +418,7 @@ export async function saveMenu(
   database: DB = db
 ): Promise<void> {
   const session = await verifyAdmin()
+  await checkCmsRateLimit(session.user.id, "write");
   const input = saveMenuSchema.parse({
     menuId: rawId,
     name,

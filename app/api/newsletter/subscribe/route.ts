@@ -1,3 +1,4 @@
+import { rateLimitResponse } from "@/lib/rate-limit"
 import { after } from "next/server"
 import { getEmailLanguage } from "@/lib/email-language"
 import {
@@ -65,6 +66,8 @@ export async function POST(request: Request) {
       messageKey: "site.newsletter.check_email",
     })
   } catch (error) {
+    const limited = rateLimitResponse(error)
+    if (limited) return limited
     if (error instanceof SyntaxError)
       return json(
         { success: false, error: "site.newsletter.invalid_email" },

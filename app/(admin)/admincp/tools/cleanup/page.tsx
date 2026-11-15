@@ -1,21 +1,25 @@
-import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
-import { verifyAdminOrEditor } from "@/lib/authMIddleware";
-import { getDatabaseCleanupStats } from "@/services/database-maintenance.service";
-import { CleanupForm } from "./_components/cleanup-form";
-import Link from "next/link";
+import {
+  AdminShell,
+  getAdminLanguageContext,
+} from "@/components/admin/admin-shell"
+import { verifyAdmin } from "@/lib/authMIddleware"
+import { getDatabaseCleanupStats } from "@/services/database-maintenance.service"
+import { CleanupForm } from "./_components/cleanup-form"
+import Link from "next/link"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function CleanupPage() {
-  await verifyAdminOrEditor();
+  await verifyAdmin()
 
   const [langContext, stats] = await Promise.all([
     getAdminLanguageContext(),
     getDatabaseCleanupStats(),
-  ]);
+  ])
 
-  const dict = langContext.dict;
-  const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
+  const dict = langContext.dict
+  const direction: "rtl" | "ltr" =
+    langContext.direction === "rtl" ? "rtl" : "ltr"
 
   return (
     <AdminShell>
@@ -28,16 +32,15 @@ export default async function CleanupPage() {
                 href="/admincp/tools"
                 className="text-[13px] text-[#2271b1] hover:underline"
               >
-                {dict["admin.tools.title"] || "Tools"}
+                {dict["admin.tools.title"] || ""}
               </Link>
               <span className="text-[#646970]">/</span>
-              <h1 className="text-[23px] font-normal leading-normal text-[#1d2327]">
-                {dict["admin.tools.cleanup_title"] || "Database Cleanup"}
+              <h1 className="text-[23px] leading-normal font-normal text-[#1d2327]">
+                {dict["admin.tools.cleanup_title"] || ""}
               </h1>
             </div>
-            <p className="text-[13px] text-[#50575e] mt-0.5">
-              {dict["admin.tools.cleanup_subtitle"] ||
-                "Delete accumulated database bloat, orphaned entries, and reclaim disk space."}
+            <p className="mt-0.5 text-[13px] text-[#50575e]">
+              {dict["admin.tools.cleanup_subtitle"] || ""}
             </p>
           </div>
         </div>
@@ -46,5 +49,5 @@ export default async function CleanupPage() {
         <CleanupForm initialStats={stats} dict={dict} />
       </div>
     </AdminShell>
-  );
+  )
 }

@@ -1,3 +1,4 @@
+import { checkCmsRateLimit } from "@/lib/rate-limit";
 import "server-only"
 import {
   pluginSlugSchema,
@@ -113,7 +114,8 @@ export async function savePluginConfig(
 ): Promise<void> {
   const { verifyPluginAdministrator } =
     await import("@/lib/plugins/authorization")
-  await verifyPluginAdministrator()
+  const rateActor = await verifyPluginAdministrator()
+  await checkCmsRateLimit(rateActor.user.id, "write");
   const normalizedSlug = pluginSlugSchema.parse(slug.replace(/_/g, "-"))
   const validated = pluginConfigSchemas[normalizedSlug].parse(config)
   const { sql } = await import("drizzle-orm")
