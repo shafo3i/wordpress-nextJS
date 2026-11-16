@@ -62,3 +62,4 @@ next-env.d.ts
 !/docs/STUDIO_SECURITY_REVIEW.md
 
 !/docs/RATE-LIMITING-SECURITY-PLAN.md
+!/docs/OPTIONAL-S3-MEDIA-STORAGE.md

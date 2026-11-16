@@ -2,9 +2,17 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   async headers() {
+    // Keep same-origin customizer previews and outgoing share/auth popups usable.
+    // More restrictive route-specific policies are applied after this baseline.
+    const baseline = { source: "/:path*", headers: [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
+      { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+    ] }
     // Also protect files served directly by Next's public-file handler in dev
     // or on hosts that do not use deploy/server.mjs.
-    return [{ source: "/uploads/:path*", headers: [
+    return [baseline, { source: "/uploads/:path*", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Content-Security-Policy", value: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox" },
       { key: "Referrer-Policy", value: "no-referrer" },

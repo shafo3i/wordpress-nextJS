@@ -20,6 +20,11 @@
   height: auto;
   margin-inline: auto;
 }
+@media (min-width: 768px) {
+  .logo {
+    max-height: 140px;
+  }
+}
 .nameplate {
   display: inline-block;
   text-decoration: none;

@@ -29,6 +29,16 @@ describe('post videos', () => {
     expect(renderPostMedia('<div class="wp-block-embed__wrapper">https://vimeo.com/12345678</div>')).toContain('<iframe')
     expect(renderPostMedia('[embed]https://vimeo.com/12345678[/embed]')).toContain('<iframe')
   })
+  it('preserves nested editorial media while normalizing supported video sources', () => {
+    const output = renderPostMedia('<div class="wp-block-embed__wrapper"><p><img src="/uploads/photo.jpg" alt="News">https://youtu.be/dQw4w9WgXcQ</p></div><video autoplay><source src="/uploads/movie.mp4"><source src="javascript:bad"></video><audio autoplay src="/uploads/audio.mp3"></audio>')
+    expect(output).toContain('<img src="/uploads/photo.jpg"')
+    expect(output).toContain('https://youtu.be/dQw4w9WgXcQ')
+    expect(output).not.toContain('<iframe')
+    expect(output).toContain('<source src="/uploads/movie.mp4">')
+    expect(output).not.toContain('javascript:')
+    expect(output).not.toContain('autoplay')
+    expect(output.match(/preload="metadata"/g)).toHaveLength(2)
+  })
   it('rejects iframe injection, unsafe protocols, srcdoc and event handlers', () => {
     const output = renderPostMedia('<iframe src="https://evil.test" srcdoc="<script>x</script>"></iframe><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" onload="alert(1)" srcdoc="bad"></iframe><video autoplay src="javascript:alert(1)" onerror="bad()"><source src="data:text/html,bad"></video><script>bad()</script>')
     expect(output).not.toMatch(/evil\.test|srcdoc|onload|onerror|javascript:|data:|<script|autoplay/)
