@@ -16,10 +16,10 @@ export function PostAutosaveNotice({
       className="space-y-2 border border-[#c3c4c7] bg-[#f6f7f7] p-3 text-xs text-[#50575e]"
       aria-live="polite"
     >
-      <p>{dict[`admin.editor.autosave.${autosave.status}`]}</p>
-      <p>{dict["admin.editor.autosave.explanation"]}</p>
-      {autosave.storageFailed && (
-        <p role="alert">{dict["admin.editor.autosave.storage_failed"]}</p>
+      <p>{dict[`admin.editor.autosave.server_${autosave.status}`] || dict[`admin.editor.autosave.${autosave.status}`]}</p>
+      <p>{dict["admin.editor.autosave.server_explanation"]}</p>
+      {autosave.savedAt && (
+        <p>{dict["admin.editor.autosave.last_saved"]} <time dateTime={autosave.savedAt}>{new Date(autosave.savedAt).toLocaleString(locale)}</time></p>
       )}
       {autosave.candidate && (
         <div role="alert" className="space-y-2">

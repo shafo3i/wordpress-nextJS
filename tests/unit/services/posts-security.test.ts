@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { PgDialect } from "drizzle-orm/pg-core"
 import type { SQL } from "drizzle-orm"
 import type { DB } from "@/db"
-import { wpPosts, wpPostmeta } from "@/db/schema"
+import { wpPosts, wpPostmeta, wpUsermeta } from "@/db/schema"
 const mocks = vi.hoisted(() => ({
   guard: vi.fn(),
   admin: vi.fn(),
@@ -36,6 +36,8 @@ import {
   getAllTagOptions,
   getPostMonths,
   uniquePostSlug,
+  saveDraftFromAutosave,
+  getDocumentDraftId,
 } from "@/services/post.service"
 import {
   getPostAutosave,
@@ -99,12 +101,16 @@ function databaseWith(selects: unknown[][], inserted: unknown[][] = []) {
       },
     })),
   }
-  let committed = false
+  let committed = false, depth = 0
   const transaction = vi.fn(async (callback: (tx: unknown) => unknown) => {
-    const result = await callback(tx)
-    committed = true
-    return result
+    depth++
+    try {
+      const result = await callback(tx)
+      if (depth === 1) committed = true
+      return result
+    } finally { depth-- }
   })
+  Object.assign(tx, { transaction })
   const database = { ...tx, transaction } as unknown as DB
   return {
     database,
@@ -130,6 +136,81 @@ beforeEach(() => {
   mocks.language.mockResolvedValue(undefined)
 })
 describe("Posts service boundaries", () => {
+  it("automatically creates a real draft even when the editor's requested status is publish", async () => {
+    const test = databaseWith([[], [], [], [{ modified: existing.modified }]], [[{ id: BigInt(9) }]])
+    const result = await saveDraftFromAutosave("new:12345678-1234-4234-8234-123456789abc", editorSnapshot({ title: "", selectedCategories: [], tagList: [] }), "", test.database)
+    expect(result).toEqual({ postId: "9", modifiedAt: existing.modified.toISOString() })
+    const post = test.writes.find((write) => write.table === wpPosts)?.values as Record<string, unknown>
+    expect(post.postStatus).toBe("draft")
+    expect(post.postAuthor).toBe("staff")
+    expect(post.postTitle).toBe("")
+    expect(test.writes.some((write) => (write.values as Record<string, unknown>)?.metaKey === "_cms_draft_document")).toBe(true)
+  })
+  it("saves a PostgreSQL draft and its recovery version atomically", async () => {
+    const modified = new Date("2026-01-01T00:01:00.000Z")
+    const test = databaseWith([[{ id: "staff" }], [{ modified: existing.modified, status: "draft" }], [], [existing], [existing], [], [{ modified }], []])
+    const record = await savePostAutosave("staff", { ownerId: "staff", documentKey: "post:1", expectedVersion: 0, baseModified: existing.modified.toISOString(), snapshot: editorSnapshot({ selectedCategories: [], tagList: [] }) }, test.database)
+    expect(record.draftPostId).toBe("1")
+    expect(record.baseModified).toBe(modified.toISOString())
+    expect(test.writes.some((write) => write.table === wpPosts)).toBe(true)
+    const recovery = test.writes.find((write) => write.table === wpUsermeta)?.values as Record<string, unknown>
+    expect(JSON.parse(String(recovery.metaValue)).draftPostId).toBe("1")
+    expect(test.committed()).toBe(true)
+  })
+  it("keeps a published article unchanged while saving its edits as a private server copy", async () => {
+    const published = { ...existing, status: "publish" }
+    const test = databaseWith([[{ id: "staff" }], [{ modified: existing.modified, status: "publish" }], [], [published], []])
+    const record = await savePostAutosave("staff", { ownerId: "staff", documentKey: "post:1", expectedVersion: 0, baseModified: existing.modified.toISOString(), snapshot: editorSnapshot() }, test.database)
+    expect(record.draftPostId).toBeUndefined()
+    expect(test.writes.some((write) => write.table === wpPosts)).toBe(false)
+    expect(test.writes.some((write) => write.table === wpUsermeta)).toBe(true)
+  })
+  it("does not overwrite or republish an automatic draft that another tab has published", async () => {
+    const test = databaseWith([[{ ...existing, status: "publish" }]])
+    await expect(createPost({ title: "Old tab", status: "draft" }, test.database, "new:12345678-1234-4234-8234-123456789abc")).rejects.toThrow("post_changed")
+    expect(test.writes).toEqual([])
+  })
+  it("requires the latest source version before manually saving a previously autosaved new draft", async () => {
+    const test = databaseWith([[existing]])
+    await expect(createPost({ title: "Unloaded older tab", status: "publish" }, test.database, "new:12345678-1234-4234-8234-123456789abc")).rejects.toThrow("post_changed")
+    expect(test.writes).toEqual([])
+  })
+  it("does not recreate a removed automatic draft during a manual save", async () => {
+    const test = databaseWith([[]])
+    await expect(createPost({ title: "Removed draft", status: "publish", expectedModified: existing.modified.toISOString() }, test.database, "new:12345678-1234-4234-8234-123456789abc")).rejects.toThrow("post_changed")
+    expect(test.writes).toEqual([])
+  })
+  it("scopes automatic document lookups to the authenticated author", async () => {
+    const test = databaseWith([[]])
+    expect(await getDocumentDraftId("new:12345678-1234-4234-8234-123456789abc", test.database)).toBeUndefined()
+    expect(test.predicates[0].params).toContain("staff")
+    expect(test.predicates[0].sql).toContain("post_author")
+  })
+  it("updates an existing draft without changing it to the selected publish status", async () => {
+    const test = databaseWith([[existing], [existing], [], [{ modified: existing.modified }]])
+    const result = await saveDraftFromAutosave("post:1", editorSnapshot({ selectedCategories: [], tagList: [] }), existing.modified.toISOString(), test.database)
+    expect(result?.postId).toBe("1")
+    expect((test.writes.find((write) => write.table === wpPosts)?.values as Record<string, unknown>).postStatus).toBe("draft")
+  })
+  it("never applies autosaved edits directly to a published post", async () => {
+    const test = databaseWith([[{ ...existing, status: "publish" }]])
+    expect(await saveDraftFromAutosave("post:1", editorSnapshot(), existing.modified.toISOString(), test.database)).toBeNull()
+    expect(test.writes).toEqual([])
+  })
+  it("uses the same automatic draft for the later manual Publish instead of creating a duplicate", async () => {
+    const test = databaseWith([[existing], [existing], [], []])
+    expect(await createPost({ title: "Final title", status: "publish", languageCode: "en", expectedModified: existing.modified.toISOString() }, test.database, "new:12345678-1234-4234-8234-123456789abc")).toBe("1")
+    expect(test.writes.some((write) => write.table === wpPosts && (write.values as Record<string, unknown>)?.postStatus === "publish")).toBe(true)
+    expect(test.tx.insert.mock.calls.filter(([table]) => table === wpPosts)).toHaveLength(0)
+  })
+  it("rejects automatic updates from a stale tab and does not recreate a removed automatic draft", async () => {
+    const stale = databaseWith([[existing]])
+    await expect(saveDraftFromAutosave("post:1", editorSnapshot(), "2025-01-01T00:00:00.000Z", stale.database)).rejects.toThrow("post_changed")
+    expect(stale.writes).toEqual([])
+    const removed = databaseWith([[]])
+    await expect(saveDraftFromAutosave("new:12345678-1234-4234-8234-123456789abc", editorSnapshot(), existing.modified.toISOString(), removed.database)).rejects.toThrow("post_changed")
+    expect(removed.writes).toEqual([])
+  })
   it("requires staff/admin authorization before all protected service calls", async () => {
     mocks.guard.mockRejectedValue(Error("Forbidden"))
     mocks.admin.mockRejectedValue(Error("Forbidden"))
@@ -147,6 +228,8 @@ describe("Posts service boundaries", () => {
       () => getAllTagOptions(test.database),
       () => getPostMonths(test.database),
       () => uniquePostSlug("title", undefined, test.database),
+      () => getDocumentDraftId("new:12345678-1234-4234-8234-123456789abc", test.database),
+      () => saveDraftFromAutosave("post:1", editorSnapshot(), existing.modified.toISOString(), test.database),
     ])
       await expect(run()).rejects.toThrow("Forbidden")
     expect(test.tx.select).not.toHaveBeenCalled()

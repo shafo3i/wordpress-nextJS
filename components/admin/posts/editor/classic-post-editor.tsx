@@ -180,6 +180,7 @@ export function ClassicPostEditor({
       tagList,
       languageCode,
       customSlug,
+      translationOf: translationOfId,
       seo,
     }),
     [
@@ -197,6 +198,7 @@ export function ClassicPostEditor({
       tagList,
       languageCode,
       customSlug,
+      translationOfId,
       seo,
     ]
   )
@@ -305,6 +307,8 @@ export function ClassicPostEditor({
         // A background autosave may have completed while checking the session.
         if (autosave.enabled)
           formData.set("autosaveVersion", String(autosave.version.current))
+        if (autosave.enabled)
+          formData.set("expectedModifiedAt", autosave.sourceModified.current)
         const result = await action(formData)
         if (result && !result.success) {
           setSaveError(result.error)

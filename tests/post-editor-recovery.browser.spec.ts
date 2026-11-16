@@ -67,6 +67,7 @@ async function setup(page: Page) {
   page.on("dialog", (dialog) => dialog.accept())
   let active = true,
     limited = false,
+    draftMode = false,
     account = "editor-a",
     writes = 0
   const records = new Map<string, unknown>()
@@ -98,7 +99,8 @@ async function setup(page: Page) {
       return route.fulfill({ status: 403, json: { error: "account_changed" } })
     const record = {
       documentKey: packet.documentKey,
-      baseModified: packet.baseModified,
+      baseModified: draftMode ? "2026-11-09T12:01:00.000Z" : packet.baseModified,
+      ...(draftMode ? { draftPostId: packet.documentKey.startsWith("new:") ? "2" : "1" } : {}),
       snapshot: packet.snapshot,
       savedAt: new Date().toISOString(),
       version: ++writes,
@@ -107,6 +109,7 @@ async function setup(page: Page) {
     return route.fulfill({ json: { ownerId: account, record } })
   })
   const mount = async (locale: "en" | "ar" = "en", existing = true, status?: "draft" | "publish") => {
+    draftMode = !existing || status === "draft"
     await page.goto("http://editor.test/")
     await page.addScriptTag({ content: bundle })
     const loaded = page.waitForResponse(
@@ -129,6 +132,7 @@ async function setup(page: Page) {
     expire: () => {
       active = false
     },
+    signIn: () => { active = true },
     changeAccount: () => {
       account = "editor-b"
     },
@@ -166,6 +170,26 @@ for (const locale of ["en", "ar"] as const) {
   }
 }
 
+for (const locale of ["en", "ar"] as const) {
+  test(`new draft autosaves to the server and manual publish uses its latest version in ${locale}`, async ({ page }) => {
+    const fixture = await setup(page)
+    await fixture.mount(locale, false)
+    const dict = locale === "ar" ? ar : en
+    await page.locator('input[name="title"]').fill("Server draft")
+    await page.locator("#fake-tinymce").fill("<p>Saved on the server</p>")
+    await page.clock.runFor(31000)
+    await expect(page.getByText(dict["admin.editor.autosave.server_draft_saved"], { exact: true })).toBeVisible()
+    await expect(page.locator("time[datetime]")).toHaveCount(1)
+    expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(false)
+    await page.getByRole("button", { name: dict["admin.editor.publish"], exact: true }).click()
+    await expect.poll(() => page.evaluate(() => window.PostEditorFixture.saved().length)).toBe(1)
+    const saved = await page.evaluate(() => window.PostEditorFixture.saved())
+    expect(saved[0].expectedModifiedAt).toBe("2026-11-09T12:01:00.000Z")
+    expect(saved[0].autosaveVersion).toBe("1")
+    expect(saved[0].status).toBe("publish")
+  })
+}
+
 test("post edits recover after reload, include SEO, and survive failed manual saves", async ({
   page,
 }) => {
@@ -184,7 +208,7 @@ test("post edits recover after reload, include SEO, and survive failed manual sa
           ).length
       )
     )
-    .toBe(1)
+    .toBe(0)
   await page.clock.runFor(31000)
   await expect.poll(fixture.writes).toBeGreaterThan(0)
   expect(
@@ -248,16 +272,13 @@ test("new Arabic post survives expired session without invoking the manual save"
   expect(
     await page.evaluate(() => window.PostEditorFixture.saved().length)
   ).toBe(0)
-  await fixture.mount("ar", false)
-  await page
-    .getByRole("button", {
-      name: ar["admin.editor.autosave.restore"],
-      exact: true,
-    })
-    .click()
   await expect(page.locator("#fake-tinymce")).toHaveValue(
     "<p>Draft retained</p>"
   )
+  expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(false)
+  fixture.signIn()
+  await page.getByRole("button", { name: ar["admin.editor.publish"], exact: true }).click()
+  await expect.poll(() => page.evaluate(() => window.PostEditorFixture.saved().length)).toBe(1)
 })
 
 test("account switches block uploading another account's draft", async ({
@@ -276,7 +297,7 @@ test("account switches block uploading another account's draft", async ({
     await page.evaluate(() =>
       Object.keys(localStorage).some((key) => key.includes("editor-a"))
     )
-  ).toBe(true)
+  ).toBe(false)
 })
 
 test("share destinations can be toggled and copying reports actual success", async ({
@@ -336,10 +357,10 @@ for (const locale of ["en", "ar"] as const) {
     await expect(page.locator('input[name="title"]')).toHaveValue(`Retained ${locale} title`)
     await expect(page.locator("#fake-tinymce")).toHaveValue("<p>Retained unsaved body</p>")
     expect(await page.evaluate(() => window.PostEditorFixture.saved().length)).toBe(0)
-    expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(true)
+    expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(false)
     fixture.limitAutosave()
     await page.clock.runFor(31000)
     await expect(page.locator('input[name="title"]')).toHaveValue(`Retained ${locale} title`)
-    expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(true)
+    expect(await page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("cms:post-recovery:")))).toBe(false)
   })
 }

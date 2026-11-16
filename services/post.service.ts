@@ -7,7 +7,9 @@ import {
   postIdSchema,
   postIdsSchema,
   postQuerySchema,
+  automaticPostDraftSchema,
 } from "@/db/schema/cms-post-editor"
+import { autosaveDocumentKey, type PostEditorSnapshot } from "@/db/schema/cms-post-autosave"
 import { renderPostMedia } from "@/lib/post-content-media"
 import { contentPlainText } from "@/lib/content-text"
 import { featuredVideoUrl } from "@/lib/featured-video"
@@ -177,6 +179,7 @@ export interface TagOption {
 }
 
 export interface CreatePostInput {
+  expectedModified?: string
   editorRestricted?: boolean
   title: string
   content?: string
@@ -992,11 +995,13 @@ export async function getAllTagOptions(
 
 export async function createPost(
   input: CreatePostInput,
-  database: DB = db
+  database: DB = db,
+  documentKey?: string
 ): Promise<string> {
   const session = await verifyPostEditor()
   await checkCmsRateLimit(session.user.id, "write");
   const parsed = createPostEditorSchema.parse(input)
+  if (documentKey && !autosaveDocumentKey.parse(documentKey).startsWith("new:")) throw new PostPermissionError()
   if (session.user.role === "editor" && parsed.status === "trash")
     throw new PostPermissionError()
   return database.transaction(async (transaction) => {
@@ -1004,10 +1009,19 @@ export async function createPost(
     await tx.execute(
       sql`select pg_advisory_xact_lock(hashtext('pressforge:posts'))`
     )
+    if (documentKey) {
+      const draft = await findDocumentDraft(session.user.id, documentKey, tx)
+      if (draft) {
+        if (draft.status !== "draft" || !parsed.expectedModified) throw new PostChangedError("post_changed")
+        await updatePostRecord(draft.id, { ...parsed, slug: parsed.slug || parsed.title, editorRestricted: session.user.role === "editor" }, tx)
+        return draft.id.toString()
+      }
+      if (parsed.expectedModified) throw new PostChangedError("post_changed")
+    }
     await validatePostLinks(parsed, tx)
     const locale = parsed.languageCode || (await getDefaultLanguage(tx))?.code
     if (!locale) throw new Error("invalid_language")
-    return createPostRecord(
+    const id = await createPostRecord(
       {
         ...parsed,
         languageCode: locale,
@@ -1016,6 +1030,61 @@ export async function createPost(
       },
       tx
     )
+    if (documentKey) await tx.insert(wpPostmeta).values({ postId: BigInt(id), metaKey: "_cms_draft_document", metaValue: documentKey })
+    return id
+  })
+}
+
+async function findDocumentDraft(ownerId: string, documentKey: string, database: DB) {
+  const [row] = await database.select({ id: wpPosts.id, status: wpPosts.postStatus, modified: wpPosts.postModifiedGmt })
+    .from(wpPosts).innerJoin(wpPostmeta, eq(wpPostmeta.postId, wpPosts.id))
+    .where(and(eq(wpPosts.postAuthor, ownerId), eq(wpPosts.postType, "post"), eq(wpPostmeta.metaKey, "_cms_draft_document"), eq(wpPostmeta.metaValue, documentKey))).limit(1)
+  return row
+}
+
+export async function getDocumentDraftId(documentKey: string, database: DB = db) {
+  const session = await verifyPostEditor()
+  if (!autosaveDocumentKey.parse(documentKey).startsWith("new:")) throw new PostPermissionError()
+  return (await findDocumentDraft(session.user.id, documentKey, database))?.id.toString()
+}
+
+export async function saveDraftFromAutosave(documentKey: string, snapshot: PostEditorSnapshot, baseModified: string, database: DB = db) {
+  const session = await verifyPostEditor()
+  await checkCmsRateLimit(session.user.id, "write")
+  documentKey = autosaveDocumentKey.parse(documentKey)
+  return database.transaction(async (transaction) => {
+    const tx = transaction as unknown as DB
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:posts'))`)
+    const isNew = documentKey.startsWith("new:")
+    const existing = isNew ? await findDocumentDraft(session.user.id, documentKey, tx)
+      : (await tx.select({ id: wpPosts.id, status: wpPosts.postStatus, modified: wpPosts.postModifiedGmt })
+        .from(wpPosts).where(and(eq(wpPosts.id, BigInt(documentKey.slice(5))), eq(wpPosts.postType, "post"))).limit(1).for("update"))[0]
+    if (existing && existing.status !== "draft") {
+      if (isNew || existing.status === "trash") throw new PostChangedError("post_changed")
+      return null // Published/private/pending posts receive recovery copies only.
+    }
+    if ((existing && (!baseModified || existing.modified.toISOString() !== baseModified)) || (!existing && (!isNew || baseModified))) throw new PostChangedError("post_changed")
+    const input = automaticPostDraftSchema.safeParse({
+      title: snapshot.title, content: snapshot.content, excerpt: snapshot.excerpt,
+      slug: snapshot.customSlug || undefined, status: "draft", postParent: snapshot.postParent,
+      menuOrder: snapshot.menuOrder, featuredImageId: snapshot.featuredImageId,
+      featuredVideoUrl: snapshot.featuredVideoUrl, isFeatured: snapshot.isFeatured,
+      categorySlugs: snapshot.selectedCategories, tags: snapshot.tagList,
+      languageCode: snapshot.languageCode, translationOf: snapshot.translationOf, seo: snapshot.seo,
+    })
+    if (!input.success) return null // Keep incomplete fields in a private server recovery copy.
+    const parsed = input.data
+    let id: string
+    if (existing) {
+      await updatePostRecord(existing.id, { ...parsed, expectedModified: baseModified, editorRestricted: session.user.role === "editor" }, tx)
+      id = existing.id.toString()
+    } else {
+      await validatePostLinks(parsed, tx)
+      id = await createPostRecord({ ...parsed, authorId: session.user.id, editorRestricted: session.user.role === "editor" }, tx)
+      await tx.insert(wpPostmeta).values({ postId: BigInt(id), metaKey: "_cms_draft_document", metaValue: documentKey })
+    }
+    const [saved] = await tx.select({ modified: wpPosts.postModifiedGmt }).from(wpPosts).where(eq(wpPosts.id, BigInt(id))).limit(1)
+    return { postId: id, modifiedAt: saved.modified.toISOString() }
   })
 }
 

@@ -14,6 +14,7 @@ import {
   getPostByIdQuery,
 } from "../query"
 import { savePostAction } from "../action"
+import { getDocumentDraftId } from "@/services/post.service"
 
 export const dynamic = "force-dynamic"
 
@@ -35,6 +36,8 @@ export default async function NewPostPage({ searchParams }: NewPostProps) {
     if (translation_of) params.set("translation_of", translation_of)
     redirect(`/admincp/posts/new?${params}`)
   }
+  const existingDraft = await getDocumentDraftId(`new:${draft}`)
+  if (existingDraft) redirect(`/admincp/posts/${existingDraft}/edit`)
   const langContext = await getAdminLanguageContext()
   const dict = langContext.dict
   const direction: "rtl" | "ltr" =

@@ -121,12 +121,16 @@ export async function savePostAction(
   let postId: string
   try {
     const parsed = parsePostFormData(formData)
-    postId = await createPostService({
+    const input = {
       ...parsed,
       title: parsed.title!,
       authorId: session.user.id,
       editorRestricted: session.user.role === "editor",
-    })
+    }
+    const document = autosaveDocumentKey.safeParse(formData.get("autosaveDocument"))
+    postId = document.success && document.data.startsWith("new:")
+      ? await createPostService(input, undefined, document.data)
+      : await createPostService(input)
   } catch (error) {
     if (error instanceof RateLimitError) return { success: false, error: error.message }
     unstable_rethrow(error)
@@ -135,7 +139,9 @@ export async function savePostAction(
       error:
         error instanceof PostPermissionError
           ? "admin.editor.permission_denied"
-          : "admin.editor.save_failed",
+          : error instanceof PostChangedError
+            ? "admin.editor.post_changed"
+            : "admin.editor.save_failed",
     }
   }
   await clearSavedRecovery(formData, session.user.id)

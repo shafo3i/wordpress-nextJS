@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { categoryIdSchema } from "./cms-taxonomy"
 
 export const AUTOSAVE_MAX_BYTES = 4 * 1024 * 1024
 export const AUTOSAVE_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -30,6 +31,7 @@ export const postEditorSnapshotSchema = z
     tagList: z.array(z.string().max(300)).max(500),
     languageCode: z.string().max(30),
     customSlug: z.string().max(300),
+    translationOf: categoryIdSchema.transform(String).optional(),
     seo: z
       .object({
         seoTitle: z.string().max(10000).optional(),
@@ -57,5 +59,6 @@ export const postAutosaveRecordSchema = postAutosaveRequestSchema
   .extend({
     version: z.number().int().positive(),
     savedAt: z.string().datetime(),
+    draftPostId: categoryIdSchema.transform(String).optional(),
   })
 export type PostAutosaveRecord = z.infer<typeof postAutosaveRecordSchema>

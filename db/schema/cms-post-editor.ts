@@ -72,6 +72,10 @@ export const createPostEditorSchema = z.object({
   date: z.iso.datetime({ offset: true }).optional(),
 })
 export const updatePostEditorSchema = createPostEditorSchema.partial()
+// An unfinished automatic draft may have no title; manual saves still require one.
+export const automaticPostDraftSchema = createPostEditorSchema.extend({
+  title: z.string().trim().max(10_000),
+})
 export const quickPostEditorSchema = updatePostEditorSchema.extend({
   id: postIdSchema.transform(String),
   title: z.string().trim().min(1).max(10_000),

@@ -55,6 +55,14 @@ beforeEach(() => {
   mocks.clear.mockResolvedValue(undefined)
 })
 describe("manual saves acknowledge recovery only after successful writes", () => {
+  it("reports a stale automatic draft without clearing its recovery copy", async () => {
+    const values = form()
+    values.set("autosaveDocument", "new:12345678-1234-4234-8234-123456789abc")
+    mocks.create.mockRejectedValue(new PostChangedError())
+    expect(await savePostAction(values)).toEqual({ success: false, error: "admin.editor.post_changed" })
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ title: "Saved title" }), undefined, "new:12345678-1234-4234-8234-123456789abc")
+    expect(mocks.clear).not.toHaveBeenCalled()
+  })
   it("returns a safe rate-limit notice without deleting the recovery copy", async () => {
     mocks.update.mockRejectedValue(new RateLimitError(429, 30))
     expect(await updatePostAction(form())).toEqual({ success: false, error: "admin.security.rate_limited" })

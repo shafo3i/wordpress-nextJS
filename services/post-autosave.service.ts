@@ -6,7 +6,8 @@ import {
   autosaveDocumentKey,
 } from "@/db/schema/cms-post-autosave"
 import { renderPostMedia } from "@/lib/post-content-media"
-import { and, desc, eq, like } from "drizzle-orm"
+import { and, desc, eq, like, sql } from "drizzle-orm"
+import { saveDraftFromAutosave, PostChangedError } from "@/services/post.service"
 import { db, type DB } from "@/db"
 import { user } from "@/db/schema/auth-schema"
 import { wpPosts, wpUsermeta } from "@/db/schema/cms-posts"
@@ -77,6 +78,8 @@ export async function savePostAutosave(
   if (session.user.id !== ownerId || input.ownerId !== ownerId)
     throw new PostAutosaveError("forbidden", 403)
   return database.transaction(async (tx) => {
+    // Keep the same lock order as manual post writes before locking recovery data.
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:posts'))`)
     // Serialize this user's writes without requiring another table or unique constraint.
     await tx
       .select({ id: user.id })
@@ -127,9 +130,17 @@ export async function savePostAutosave(
     }
     if ((current?.version || 0) !== input.expectedVersion)
       throw new PostAutosaveError("conflict", 409)
+    let draft: Awaited<ReturnType<typeof saveDraftFromAutosave>>
+    try {
+      draft = await saveDraftFromAutosave(input.documentKey, input.snapshot, input.baseModified, tx as unknown as DB)
+    } catch (error) {
+      if (error instanceof PostChangedError) throw new PostAutosaveError("post_changed", 409)
+      throw error
+    }
     const record: PostAutosaveRecord = {
       documentKey: input.documentKey,
-      baseModified: input.baseModified,
+      baseModified: draft?.modifiedAt || input.baseModified,
+      ...(draft ? { draftPostId: draft.postId } : {}),
       snapshot: {
         ...input.snapshot,
         content: renderPostMedia(input.snapshot.content),

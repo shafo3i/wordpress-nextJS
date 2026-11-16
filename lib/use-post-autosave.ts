@@ -18,6 +18,7 @@ type Status =
   | "ready"
   | "saving"
   | "saved"
+  | "draft_saved"
   | "unavailable"
   | "expired"
   | "account_changed"
@@ -45,14 +46,15 @@ export function usePostAutosave({
 }) {
   const [status, setStatus] = useState<Status>("ready")
   const [candidate, setCandidate] = useState<PostAutosaveRecord | null>(null)
-  const [storageFailed, setStorageFailed] = useState(false)
+  const [savedAt, setSavedAt] = useState("")
+  const [draftPostId, setDraftPostId] = useState<string | undefined>()
   const [loaded, setLoaded] = useState(false)
   const [initialSerialized] = useState(() => JSON.stringify(initialSnapshot))
   const latest = useRef(snapshot),
     baseline = useRef(initialSerialized),
     version = useRef(0)
+  const sourceModified = useRef(baseModified)
   const lastRemote = useRef(initialSerialized),
-    localWritten = useRef(""),
     busy = useRef(false),
     recoveryPending = useRef(false)
   const readContentRef = useRef(readContent)
@@ -72,16 +74,8 @@ export function usePostAutosave({
   }
   const manualPaused = useRef(false)
   const pendingWrite = useRef<Promise<PostAutosaveRecord> | null>(null)
-  const clientId = useRef("")
   const selectedLocalKey = useRef<string | null>(null)
   const selectedLocalValue = useRef<string | null>(null)
-  useEffect(() => {
-    clientId.current =
-      crypto.randomUUID?.() ||
-      Array.from(crypto.getRandomValues(new Uint8Array(16)), (value) =>
-        value.toString(16).padStart(2, "0")
-      ).join("")
-  }, [])
   const storageKey = postAutosaveStorageKey(ownerId, documentKey)
   useEffect(() => {
     latest.current = snapshot
@@ -103,34 +97,12 @@ export function usePostAutosave({
     },
   })
 
-  const writeLocal = () => {
-    if (!enabled) return
-    const captured = capture()
-    const serialized = JSON.stringify(captured)
-    if (serialized === baseline.current || serialized === localWritten.current)
-      return
+  const clearLegacyCopy = () => {
     try {
-      const record = {
-        documentKey,
-        baseModified,
-        snapshot: captured,
-        version: Math.max(1, version.current),
-        savedAt: new Date().toISOString(),
-      }
-      localStorage.setItem(
-        `${storageKey}:${clientId.current}`,
-        JSON.stringify(record)
-      )
-      localWritten.current = serialized
-      setStorageFailed(false)
-    } catch {
-      setStorageFailed(true)
-    }
+      if (selectedLocalKey.current && localStorage.getItem(selectedLocalKey.current) === selectedLocalValue.current)
+        localStorage.removeItem(selectedLocalKey.current)
+    } catch { /* A server save must not fail because legacy browser cleanup failed. */ }
   }
-  const writeLocalRef = useRef(writeLocal)
-  useEffect(() => {
-    writeLocalRef.current = writeLocal
-  })
 
   useEffect(() => {
     if (!enabled) return
@@ -152,7 +124,7 @@ export function usePostAutosave({
         if (local && JSON.stringify(local.snapshot) !== baseline.current)
           recoveryPending.current = true
       } catch {
-        setStorageFailed(true)
+        /* Old browser copies are optional migration inputs; no new copies are written. */
       }
       try {
         const response = await fetch(
@@ -185,6 +157,12 @@ export function usePostAutosave({
       }
       if (cancelled) return
       version.current = remote?.version || 0
+      if (remote) {
+        lastRemote.current = JSON.stringify(remote.snapshot)
+        setSavedAt(remote.savedAt)
+        setDraftPostId(remote.draftPostId)
+        if (documentKey.startsWith("new:")) sourceModified.current = remote.baseModified
+      }
       const newest =
         [local, remote]
           .filter((item): item is PostAutosaveRecord => Boolean(item))
@@ -209,7 +187,6 @@ export function usePostAutosave({
   useEffect(() => {
     if (!enabled) return
     const save = async () => {
-      writeLocalRef.current()
       if (
         !loaded ||
         manualPaused.current ||
@@ -220,7 +197,7 @@ export function usePostAutosave({
         return
       const captured = capture()
       const serialized = JSON.stringify(captured)
-      if (serialized === baseline.current || serialized === lastRemote.current)
+      if (serialized === lastRemote.current)
         return
       const parsed = postEditorSnapshotSchema.safeParse(captured)
       if (!parsed.success) {
@@ -233,14 +210,18 @@ export function usePostAutosave({
         pendingWrite.current = mutateAsync({
           ownerId,
           documentKey,
-          baseModified,
+          baseModified: sourceModified.current,
           expectedVersion: version.current,
           snapshot: parsed.data,
         })
         const record = await pendingWrite.current
         version.current = record.version
+        sourceModified.current = record.baseModified
+        setSavedAt(record.savedAt)
+        setDraftPostId(record.draftPostId)
         lastRemote.current = serialized
-        setStatus("saved")
+        clearLegacyCopy()
+        setStatus(record.draftPostId ? "draft_saved" : "saved")
       } catch (error) {
         const code = error instanceof Error ? error.message : "unavailable"
         setStatus(
@@ -261,24 +242,17 @@ export function usePostAutosave({
         pendingWrite.current = null
       }
     }
-    const localTimer = setInterval(() => writeLocalRef.current(), 1000)
     const serverTimer = setInterval(save, 30000)
     const unload = (event: BeforeUnloadEvent) => {
-      writeLocalRef.current()
-      if (JSON.stringify(latest.current) !== baseline.current) {
+      if (JSON.stringify(capture()) !== lastRemote.current) {
         event.preventDefault()
         event.returnValue = ""
       }
     }
-    const hide = () => writeLocalRef.current()
     window.addEventListener("beforeunload", unload)
-    window.addEventListener("pagehide", hide)
     return () => {
-      writeLocalRef.current()
-      clearInterval(localTimer)
       clearInterval(serverTimer)
       window.removeEventListener("beforeunload", unload)
-      window.removeEventListener("pagehide", hide)
     }
   }, [enabled, loaded, ownerId, documentKey, baseModified, mutateAsync])
 
@@ -286,7 +260,9 @@ export function usePostAutosave({
     enabled,
     status,
     candidate,
-    storageFailed,
+    savedAt,
+    draftPostId,
+    sourceModified,
     documentKey,
     version,
     restore: () => {
@@ -301,30 +277,15 @@ export function usePostAutosave({
       setStatus("ready")
       recoveryPending.current = false
       setCandidate(null)
-      try {
-        localStorage.setItem(
-          `${storageKey}:${clientId.current}`,
-          JSON.stringify({
-            documentKey,
-            baseModified,
-            snapshot: latest.current,
-            version: Math.max(1, version.current),
-            savedAt: new Date().toISOString(),
-          })
-        )
-      } catch {
-        setStorageFailed(true)
-      }
     },
     prepareSubmission: async () => {
-      writeLocalRef.current()
       if (!enabled) return true
       if (recoveryPending.current) {
         setStatus("recovery_required")
         return false
       }
-      await pendingWrite.current?.catch(() => undefined)
       manualPaused.current = true
+      await pendingWrite.current?.catch(() => undefined)
       try {
         const response = await fetch("/api/auth/get-session", {
           cache: "no-store",
@@ -352,17 +313,7 @@ export function usePostAutosave({
     acknowledgeSaved: () => {
       baseline.current = JSON.stringify(latest.current)
       lastRemote.current = baseline.current
-      try {
-        localStorage.removeItem(`${storageKey}:${clientId.current}`)
-        if (
-          selectedLocalKey.current &&
-          localStorage.getItem(selectedLocalKey.current) ===
-            selectedLocalValue.current
-        )
-          localStorage.removeItem(selectedLocalKey.current)
-      } catch {
-        /* The server save has already succeeded. */
-      }
+      clearLegacyCopy()
     },
   }
 }
