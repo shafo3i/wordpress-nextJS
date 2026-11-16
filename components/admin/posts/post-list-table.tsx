@@ -86,7 +86,9 @@ export function PostListTable({
         await movePostsToTrash(selectedIds);
         emitNotice({
           type: "success",
-          message: `${selectedIds.length} ${dict["admin.posts.bulk_trash_notice"] || "posts moved to the Trash."}`,
+          message: selectedIds.length === 1
+            ? dict["admin.posts.single_trash_notice"] || ""
+            : (dict["admin.posts.bulk_trash_notice"] || "").replace("{count}", String(selectedIds.length)),
         });
       } else if (bulkAction === "Restore") {
         await restorePosts(selectedIds);
@@ -112,7 +114,7 @@ export function PostListTable({
       await movePostsToTrash([postId]);
       emitNotice({
         type: "success",
-        message: dict["admin.posts.single_trash_notice"] || "1 post moved to the Trash.",
+        message: dict["admin.posts.single_trash_notice"] || "",
       });
       router.refresh();
     });

@@ -24,6 +24,7 @@ import { WidgetWireframeIcon } from "./widget-wireframes";
 import { WidgetsHeader } from "./widgets-header";
 
 interface WidgetsManagerShellProps {
+  categories?: import("@/widgets/types").WidgetAdminFormProps["categories"];
   initialAreas: WidgetArea[];
   availableWidgets: AvailableWidgetDescriptor[];
   dict?: Record<string, string>;
@@ -37,6 +38,7 @@ export function WidgetsManagerShell({
   dict,
   direction = "ltr",
   languages = [],
+  categories = [],
 }: WidgetsManagerShellProps) {
   const [areas, setAreas] = useState<WidgetArea[]>(initialAreas);
   const [openAreaId, setOpenAreaId] = useState<string>(initialAreas[0]?.id || "sidebar_primary");
@@ -618,6 +620,7 @@ export function WidgetsManagerShell({
                                           onChange={(updated) => updateWidget(item.id, updated)}
                                           dict={dict}
                                           direction={direction}
+                                          categories={categories}
                                         />
                                       );
                                     }

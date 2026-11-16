@@ -5,14 +5,15 @@ import { PostThumbnail } from "@/components/site/post-thumbnail";
 import React from "react";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { WidgetCategorySelect } from "../category-select"
+import { WidgetCategoryFeed } from "../category-feed"
 import manifest from "./widget.json";
 import type { WidgetModule, WidgetAdminFormProps, WidgetRenderProps } from "../types";
 import { formatDate, getPostUrl, t } from "@/components/site/utils";
 
-export function RelatedPostsAdminForm({ item, onChange, dict, direction }: WidgetAdminFormProps) {
+export function RelatedPostsAdminForm({ item, onChange, dict, direction, categories }: WidgetAdminFormProps) {
   const isRtl = direction === "rtl";
   const count = item.config?.count || 3;
-  const categoryFilter = item.config?.categoryFilter || "";
   const showThumbnail = item.config?.showThumbnail !== false;
   const showDate = item.config?.showDate !== false;
 
@@ -32,18 +33,7 @@ export function RelatedPostsAdminForm({ item, onChange, dict, direction }: Widge
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
-            {isRtl ? "تصفية حسب قسم معين" : "Category Filter"}
-          </label>
-          <input
-            type="text"
-            value={categoryFilter}
-            placeholder={isRtl ? "مثال: تقنية، اقتصاد" : "e.g. tech, business"}
-            onChange={(e) => onChange({ config: { ...item.config, categoryFilter: e.target.value } })}
-            className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
-          />
-        </div>
+        <WidgetCategorySelect item={item} onChange={onChange} dict={dict} categories={categories} />
         <div>
           <label className="block text-[0.6875rem] font-medium text-[#50575e] mb-1">
             {isRtl ? "عدد المقالات" : "Number of Stories"}
@@ -83,7 +73,7 @@ export function RelatedPostsAdminForm({ item, onChange, dict, direction }: Widge
   );
 }
 
-export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProps) {
+function RelatedPostsContent({ item, theme, posts = [] }: WidgetRenderProps) {
   const isRtl = theme?.direction === "rtl";
   const activeLocale = item.locale && item.locale !== "all" ? item.locale : (theme?.locale || theme?.defaultLocale);
   const localePosts = activeLocale ? posts.filter((p) => !p.locale || p.locale === activeLocale) : posts;
@@ -146,9 +136,14 @@ export function RelatedPostsRender({ item, theme, posts = [] }: WidgetRenderProp
 }
 
 export const relatedPostsWidgetModule: WidgetModule = {
-  manifest: manifest as any,
+  manifest: manifest as WidgetModule["manifest"],
   AdminForm: RelatedPostsAdminForm,
   render: RelatedPostsRender,
 };
 
 export default relatedPostsWidgetModule;
+
+export function RelatedPostsRender(props: WidgetRenderProps) {
+  if (props.item.config?.categoryId) return <WidgetCategoryFeed item={props.item} theme={props.theme} count={Number(props.item.config?.count || 3)}>{(posts) => <RelatedPostsContent {...props} posts={posts} />}</WidgetCategoryFeed>
+  return <RelatedPostsContent {...props} />
+}

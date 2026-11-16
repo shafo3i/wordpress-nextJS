@@ -103,6 +103,11 @@ export const widgetAreaIdSchema = z.enum([
   "footer_3",
   "footer_4",
 ])
+export const widgetPostQuerySchema = z.object({
+  categoryId: categoryIdSchema,
+  locale: languageCodeSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(15).default(5),
+})
 const widgetConfig = z
   .unknown()
   .superRefine((value, context) => {

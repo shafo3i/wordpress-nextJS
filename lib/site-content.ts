@@ -669,12 +669,14 @@ export async function getPublishedPostsByCategory(
           eq(postTranslationsTable.languageCode, languagesTable.code)
         )
         .leftJoin(user, eq(wpPosts.postAuthor, user.id))
-        .where(
-          inArray(
-            wpPosts.id,
-            postIdsQuery.map((r) => r.id)
-          )
-        )
+        .where(and(
+          inArray(wpPosts.id, postIdsQuery.map((r) => r.id)),
+          eq(wpPosts.postType, "post"),
+          eq(wpPosts.postStatus, "publish"),
+          eq(wpPosts.postPassword, ""),
+          lte(wpPosts.postDateGmt, new Date()),
+          eq(postTranslationsTable.languageCode, effectiveLocale)
+        ))
         .orderBy(desc(wpPosts.postDate)),
       getTermData(postIds),
       getPostImageAssets(postIds),

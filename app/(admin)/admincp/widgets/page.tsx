@@ -13,7 +13,7 @@ export default async function WidgetsPage() {
   const dict = langContext.dict;
   const direction: "rtl" | "ltr" = langContext.direction === "rtl" ? "rtl" : "ltr";
 
-  const [{ areas, availableWidgets }, activeLanguages] = await Promise.all([
+  const [{ areas, availableWidgets, categories }, activeLanguages] = await Promise.all([
     getWidgetsQuery(),
     getActiveLanguages().catch(() => []),
   ]);
@@ -23,6 +23,7 @@ export default async function WidgetsPage() {
       <WidgetsManagerShell
         initialAreas={areas}
         availableWidgets={availableWidgets}
+        categories={categories.map((category) => ({ id: category.termTaxonomyId || category.id, name: category.name, languageCode: category.languageCode }))}
         dict={dict}
         direction={direction}
         languages={activeLanguages}

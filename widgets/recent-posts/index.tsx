@@ -3,6 +3,8 @@ import { PostThumbnail } from "@/components/site/post-thumbnail"
 
 import React from "react"
 import Link from "next/link"
+import { WidgetCategorySelect } from "../category-select"
+import { WidgetCategoryFeed } from "../category-feed"
 import manifest from "./widget.json"
 import type {
   WidgetModule,
@@ -24,6 +26,7 @@ export function RecentPostsAdminForm({
   item,
   onChange,
   dict,
+  categories,
 }: WidgetAdminFormProps) {
   return (
     <div className="space-y-3">
@@ -104,29 +107,7 @@ export function RecentPostsAdminForm({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="mb-1 block text-[0.6875rem] font-medium text-[#50575e]">
-            {dict?.["admin.widgets.category_filter"] ||
-              (dict?.direction === "rtl"
-                ? "تصفية حسب التصنيف"
-                : "Filter by Category")}
-          </label>
-          <input
-            type="text"
-            value={item.config?.categoryFilter || ""}
-            placeholder={
-              dict?.direction === "rtl"
-                ? "مثال: سياسة، اقتصاد"
-                : "e.g. politics, business"
-            }
-            onChange={(e) =>
-              onChange({
-                config: { ...item.config, categoryFilter: e.target.value },
-              })
-            }
-            className="h-[30px] w-full rounded-[3px] border border-[#8c8f94] bg-white px-2 text-xs text-[#2c3338]"
-          />
-        </div>
+        <WidgetCategorySelect item={item} onChange={onChange} dict={dict} categories={categories} />
         <div>
           <label className="mb-1 block text-[0.6875rem] font-medium text-[#50575e]">
             {dict?.["admin.widgets.number_of_posts"] || "Number of posts:"}
@@ -145,7 +126,7 @@ export function RecentPostsAdminForm({
   )
 }
 
-export function RecentPostsRender({
+function RecentPostsContent({
   item,
   theme,
   posts = [],
@@ -158,7 +139,9 @@ export function RecentPostsRender({
     ? posts.filter((p) => !p.locale || p.locale === activeLocale)
     : posts
   const pool: ContentItem[] =
-    localePosts.length > 0 ? localePosts : (theme?.breakingPosts ?? [])
+    localePosts.length > 0 || item.config?.categoryId
+      ? localePosts
+      : (theme?.breakingPosts ?? []).filter((post) => !activeLocale || !post.locale || post.locale === activeLocale)
 
   const catFilter = item.config?.categoryFilter?.trim().toLowerCase()
   const filteredPosts = catFilter
@@ -309,3 +292,8 @@ export const recentPostsWidgetModule: WidgetModule = {
 }
 
 export default recentPostsWidgetModule
+
+export function RecentPostsRender(props: WidgetRenderProps) {
+  if (props.item.config?.categoryId) return <WidgetCategoryFeed item={props.item} theme={props.theme} count={Number(props.item.count || 5)}>{(posts) => <RecentPostsContent {...props} posts={posts} />}</WidgetCategoryFeed>
+  return <RecentPostsContent {...props} />
+}

@@ -9,6 +9,7 @@ export function StudioGlobalWidgetControls({
   dict,
   direction = "ltr",
   languages = [],
+  categories = [],
 }: StudioInspectorProps) {
   const s = selectedElement.settings
 
@@ -88,6 +89,7 @@ export function StudioGlobalWidgetControls({
                   }}
                   dict={dict}
                   direction={direction}
+                  categories={categories.map((category) => ({ id: category.id, name: category.name, languageCode: category.locale || undefined }))}
                 />
               )
             }

@@ -53,6 +53,7 @@ export interface WidgetRenderProps {
 }
 
 export interface WidgetAdminFormProps {
+  categories?: { id: string; name: string; languageCode?: string }[];
   item: WidgetItem;
   onChange: (updated: Partial<WidgetItem>) => void;
   dict?: Record<string, string>;
