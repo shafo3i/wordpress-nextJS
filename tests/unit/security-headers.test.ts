@@ -17,6 +17,8 @@ describe("baseline response headers", () => {
       const policy = response.headers.get("content-security-policy-report-only") || ""
       expect(policy).toContain("report-uri /api/security/csp-report")
       expect(policy).toContain("object-src 'none'")
+      expect(policy.split(";").find((part) => part.trim().startsWith("style-src "))).toContain("https://fonts.googleapis.com")
+      expect(policy.split(";").find((part) => part.trim().startsWith("font-src "))).toContain("https://fonts.gstatic.com")
       const script = policy.split(";").find((part) => part.trim().startsWith("script-src ")) || ""
       expect(script).toContain("'self'")
       expect(script).not.toMatch(/unsafe-inline|unsafe-eval|https:;|\*/)

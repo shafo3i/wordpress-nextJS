@@ -55,6 +55,13 @@ beforeEach(() => {
   mocks.clear.mockResolvedValue(undefined)
 })
 describe("manual saves acknowledge recovery only after successful writes", () => {
+  it.each(["0", "", null])("does not attempt recovery deletion before the first autosave (%s)", async (version) => {
+    const values = form()
+    if (version === null) values.delete("autosaveVersion")
+    else values.set("autosaveVersion", version)
+    expect((await updatePostAction(values)).success).toBe(true)
+    expect(mocks.clear).not.toHaveBeenCalled()
+  })
   it("reports a stale automatic draft without clearing its recovery copy", async () => {
     const values = form()
     values.set("autosaveDocument", "new:12345678-1234-4234-8234-123456789abc")

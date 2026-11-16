@@ -102,7 +102,7 @@ async function clearSavedRecovery(
     key.success &&
     (postId ? key.data === `post:${postId}` : key.data.startsWith("new:")) &&
     Number.isSafeInteger(version) &&
-    version >= 0
+    version >= 1
   ) {
     try {
       await deletePostAutosave(ownerId, key.data, version)
