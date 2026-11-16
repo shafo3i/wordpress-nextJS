@@ -143,7 +143,9 @@ export const translationQuerySchema = languageQuerySchema.omit({ status: true })
   locale: languageCodeSchema.optional(), group: z.string().max(255).optional(),
   filter: z.enum(["all", "missing", "overridden"]).optional(),
 });
-export const translationGroupSchema = z.string().min(1).max(64).regex(/^[a-zA-Z0-9_-]+$/);
+// The WordPress importer creates namespaced groups such as wordpress:post:26937.
+// Keep segment characters and the database length bound strict when preserving them.
+export const translationGroupSchema = z.string().min(1).max(64).regex(/^[a-zA-Z0-9_-]+(?::[a-zA-Z0-9_-]+)*$/);
 export const translationReturnUrlSchema = z.string().max(2000).refine(value => {
   if (!value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u0020]/.test(value)) return false;
   try { return new URL(value, "https://translations.invalid").pathname === "/admincp/translations"; } catch { return false; }

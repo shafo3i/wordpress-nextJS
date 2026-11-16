@@ -13,7 +13,7 @@ import { createLanguage, updateLanguage, deleteLanguage, setDefaultLanguage, sav
   getDbTranslations, getPostTranslations, linkPostTranslation, linkTermTranslation, setPostLanguage, setTermLanguage, getTranslationCatalog,
 } from "@/services/language.service";
 import { syncMissingTranslations } from "@/services/language-sync.service";
-import { languageCodeSchema, updateLanguageSchema, translationBatchSchema, translationReturnUrlSchema } from "@/db/schema/cms-languages";
+import { languageCodeSchema, updateLanguageSchema, translationBatchSchema, translationReturnUrlSchema, translationGroupSchema } from "@/db/schema/cms-languages";
 function databaseWith(responses: unknown[][] = []) {
  const writes: { values?: unknown; sql?: string; params?: unknown[] }[] = [];
  const predicates: { sql: string; params: unknown[] }[] = [];
@@ -41,6 +41,23 @@ function databaseWith(responses: unknown[][] = []) {
 }
 beforeEach(() => { vi.clearAllMocks(); mocks.admin.mockResolvedValue({ user: { role: "admin", id: "admin" } }); mocks.editor.mockResolvedValue({ user: { role: "admin", id: "admin" } }); });
 describe("language security", () => {
+ it.each(["wordpress:post:26937", "wordpress:term:12", "wordpress:page:home", "post_1", "group-abc"])("preserves valid imported and native translation groups: %s", (group) => {
+  expect(translationGroupSchema.safeParse(group).success).toBe(true);
+ });
+ it.each(["", ":post", "post:", "post::1", "../post", "post/1", "post 1", "<script>", "a".repeat(65)])("rejects malformed translation group %s", (group) => {
+  expect(translationGroupSchema.safeParse(group).success).toBe(false);
+ });
+ it("can reassign the existing language while saving an imported draft without replacing its group", async () => {
+  const id = BigInt(26937), group = "wordpress:post:26937";
+  const language = { code: "ar", isActive: true };
+  const t = databaseWith([
+    [language], [{ type: "post" }], [{ languageCode: "ar", translationGroupId: group }],
+    [language], [{ type: "post" }], [{ id, code: "ar", type: "post" }],
+  ]);
+  expect(await setPostLanguage(id, "ar", undefined, t.database)).toBe(group);
+  expect(t.writes).toEqual([{ values: { postId: id, languageCode: "ar", translationGroupId: group } }]);
+  expect(t.committed()).toBe(true);
+ });
  it("guards administration, synchronization and catalog access before touching the database", async () => {
   mocks.admin.mockRejectedValue(Error("Forbidden")); const t = databaseWith();
   for (const run of [() => createLanguage({ code: "de", name: "German" }, t.database), () => updateLanguage("de", {}, t.database), () => deleteLanguage("de", t.database), () => setDefaultLanguage("de", t.database), () => saveTranslation("de", "site.test", "Test", t.database), () => saveTranslationsBatch("de", {}, t.database), () => deleteTranslationOverride("de", "site.test", t.database), () => syncMissingTranslations(t.database), () => getTranslationCatalog("de", {}, t.database)]) await expect(run()).rejects.toThrow("Forbidden");

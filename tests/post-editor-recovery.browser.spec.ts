@@ -106,7 +106,7 @@ async function setup(page: Page) {
     records.set(packet.documentKey, record)
     return route.fulfill({ json: { ownerId: account, record } })
   })
-  const mount = async (locale: "en" | "ar" = "en", existing = true) => {
+  const mount = async (locale: "en" | "ar" = "en", existing = true, status?: "draft" | "publish") => {
     await page.goto("http://editor.test/")
     await page.addScriptTag({ content: bundle })
     const loaded = page.waitForResponse(
@@ -115,9 +115,9 @@ async function setup(page: Page) {
         response.request().method() === "GET"
     )
     await page.evaluate(
-      ({ locale, existing }) =>
-        window.PostEditorFixture.render(locale, existing),
-      { locale, existing }
+      ({ locale, existing, status }) =>
+        window.PostEditorFixture.render(locale, existing, status),
+      { locale, existing, status }
     )
     await loaded
     await expect(page.locator("#fake-tinymce")).toBeVisible()
@@ -133,6 +133,36 @@ async function setup(page: Page) {
       account = "editor-b"
     },
     writes: () => writes,
+  }
+}
+
+for (const locale of ["en", "ar"] as const) {
+  for (const intent of ["draft", "publish", "selected-publish"] as const) {
+    test(`existing draft ${intent} keeps its edits and status after failure in ${locale}`, async ({ page }) => {
+      const fixture = await setup(page)
+      await fixture.mount(locale, true, "draft")
+      const dict = locale === "ar" ? ar : en
+      await page.locator("#fake-tinymce").fill("<p>Existing draft edits</p>")
+      if (intent === "selected-publish") {
+        await page.getByText(dict["admin.editor.status_draft"], { exact: true }).locator("..").locator("..").getByRole("button", { name: dict["common.edit"], exact: true }).click()
+        await page.locator('select:has(option[value="publish"])').selectOption("publish")
+        await page.getByRole("button", { name: dict["admin.common.confirm"], exact: true }).click()
+      }
+      await page.evaluate(() => window.PostEditorFixture.failSave(true))
+      const button = page.getByRole("button", {
+        name: dict[intent === "draft" ? "admin.editor.save_draft" : intent === "selected-publish" ? "admin.editor.update" : "admin.editor.publish"], exact: true,
+      })
+      await button.click()
+      await expect(page.getByRole("alert").filter({ hasText: dict["admin.editor.save_failed"] })).toBeVisible()
+      await expect(page.locator('input[type="hidden"][name="status"]')).toHaveValue(intent === "selected-publish" ? "publish" : "draft")
+      await expect(page.locator("#fake-tinymce")).toHaveValue("<p>Existing draft edits</p>")
+      await page.evaluate(() => window.PostEditorFixture.failSave(false))
+      await button.click()
+      await expect.poll(() => page.evaluate(() => document.documentElement.dataset.destination)).toBe("/admincp/posts")
+      const saved = await page.evaluate(() => window.PostEditorFixture.saved())
+      expect(saved.at(-1)?.status).toBe(intent === "draft" ? "draft" : "publish")
+      expect(saved.at(-1)?.content).toContain("Existing draft edits")
+    })
   }
 }
 

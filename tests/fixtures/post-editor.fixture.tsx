@@ -14,7 +14,7 @@ export const failSave = (fail: boolean) => {
 }
 export const limitSave = () => { shouldFail = "rate" }
 export const saved = () => submissions
-export function render(locale: "ar" | "en", existing = true) {
+export function render(locale: "ar" | "en", existing = true, status?: "draft" | "publish") {
   root ??= createRoot(document.getElementById("fixture")!)
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -24,7 +24,7 @@ export function render(locale: "ar" | "en", existing = true) {
     <QueryClientProvider client={client}>
       <AdminSessionMonitor userId="editor-a" dict={dict} />
       <ClassicPostEditor
-        key={`${locale}:${existing}`}
+        key={`${locale}:${existing}:${status || "default"}`}
         autosaveUserId="editor-a"
         uiLocale={locale}
         autosaveDocument="new:12345678-1234-4234-8234-123456789abc"
@@ -32,7 +32,7 @@ export function render(locale: "ar" | "en", existing = true) {
         initialModifiedAt={existing ? "2026-11-09T12:00:00.000Z" : ""}
         initialTitle={existing ? "Stored title" : ""}
         initialContent={existing ? "<p>Stored content</p>" : ""}
-        initialStatus={existing ? "publish" : "draft"}
+        initialStatus={status || (existing ? "publish" : "draft")}
         initialLanguageCode={locale}
         initialPostPassword="existing-password"
         initialCommentStatus="closed"

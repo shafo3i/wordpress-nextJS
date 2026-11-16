@@ -46,7 +46,8 @@ export function MetaBoxPublish({
     setIsEditingStatus(false);
   };
 
-  const publishSubmitValue = isExisting && status !== "draft" ? status : "publish";
+  const isUpdate = isExisting && status !== "draft";
+  const publishSubmitValue = isUpdate ? status : "publish";
 
   return (
     <div className="border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)] text-start">
@@ -67,7 +68,7 @@ export function MetaBoxPublish({
             <button
               className="rounded-[3px] border border-[#2271b1] bg-[#f6f7f7] px-3 py-1 text-xs font-normal text-[#2271b1] hover:border-[#0a4b78] hover:bg-[#f0f0f1] hover:text-[#0a4b78]"
               name="status"
-              onClick={() => onStatusChange("draft")}
+              disabled={isSaving}
               type="submit"
               value="draft"
             >
@@ -245,19 +246,14 @@ export function MetaBoxPublish({
               className="inline-flex items-center rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-[13px] font-medium text-white shadow-[0_1px_0_#135e96] hover:border-[#135e96] hover:bg-[#135e96] disabled:opacity-50"
               disabled={isSaving}
               name="status"
-              onClick={() => {
-                if (!isExisting || status === "draft") {
-                  onStatusChange("publish");
-                }
-              }}
               type="submit"
               value={publishSubmitValue}
             >
               {isSaving
-                ? isExisting
+                ? isUpdate
                   ? (dict?.["admin.editor.updating"] || "Updating...")
                   : (dict?.["admin.editor.publishing"] || "Publishing...")
-                : isExisting
+                : isUpdate
                   ? (dict?.["admin.editor.update"] || "Update")
                   : (dict?.["admin.editor.publish"] || "Publish")}
             </button>

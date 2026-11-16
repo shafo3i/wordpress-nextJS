@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "security-headers.browser.spec.ts",
     "storage-manual.browser.spec.ts",
     "tools-security.browser.spec.ts",
     "mobile-navigation.browser.spec.ts",

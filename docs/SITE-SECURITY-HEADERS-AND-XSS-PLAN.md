@@ -284,6 +284,43 @@ Enable a valid TLS certificate in Coolify, redirect HTTP to HTTPS, update public
 - Dashboard now requests health data without the storage inventory. It checks upload-directory access/writability, and unmeasured file counts/sizes are explicitly null rather than invented zeros. The dashboard omits the unmeasured count; the existing Tools → Site Health link still provides the full inventory by default. Administrator authorization remains before diagnostic/database/filesystem work.
 - Four new isolated tests cover a never-resolving inventory, accurate default full reports, non-writable storage and authorization before reads. Dashboard integration verifies it selects the lightweight mode. Focused verification: 39 tests passed; full suite: 1,002 passed and 19 skipped across 128 files. TypeScript and scoped ESLint passed. The user confirmed that the signed-in dashboard opens after the change; a subsequent local trace recorded a Dashboard RSC response of about 1.4 seconds (not a controlled before/after benchmark). No live data mutation, auth/rate-limit change or package update was performed. The separate dev HMR reconnect and file-URL warning are not declared resolved solely by this performance fix.
 
+### Imported draft saving regression — 16 November 2026
+
+- Read-only inspection of the reported draft confirmed its stored status remains draft and its translation group uses the importer's `wordpress:post:<id>` format. The post fields pass the editor schema. The real language-assignment path reproduced a validation failure because the later translation-group validator rejected the colon separators that the importer writes; the save transaction rolls back. Native new posts use a different format, explaining why creation succeeds.
+- The shared group validator now permits nonempty colon-separated identifier segments while retaining the 64-character bound and strict alphanumeric/underscore/hyphen segment characters. It preserves imported post/term/homepage group identities; no reassignment, migration or reseed is needed. Existing authorization, sibling-language conflict checks and parameterized queries remain intact.
+- Existing drafts now label the primary publishing action Publish rather than Update. Submit buttons carry their requested status without changing the editor's selected status before a save succeeds. Save Draft is disabled while a save is pending. Explicit status selection remains available.
+- Regression coverage includes actual imported-group language assignment, malformed identifiers, existing-draft Save Draft/Publish and explicit Published → Update flows, failure recovery and both EN/AR interfaces. Production post content/status were not modified during investigation; deploy the code fix before retrying the affected draft.
+- Verification: 1,093 unit tests passed (19 skipped), 12 post-editor browser checks passed, TypeScript and scoped ESLint passed. The affected production draft was inspected read-only, not saved or published by the investigation.
+
+### CSP report-only diagnostics — 16 November 2026
+
+The existing Next config now sends `Content-Security-Policy-Report-Only`. It does not enforce a general CSP, generate nonces, force dynamic rendering, alter caching or change startup. Existing enforced upload and newsletter policies stay in place. HSTS and Trusted Types are deferred.
+
+Source inventory for this diagnostic policy:
+
+| Surface | Current behavior / diagnostic allowance |
+| --- | --- |
+| Next.js / React | Same-origin framework bundles; inline bootstrap scripts are expected to report until a nonce/hash approach is reviewed. Development eval/WebSocket activity may report too. |
+| Analytics | `components/site/site-analytics.tsx` loads Google Tag Manager's gtag script plus inline initialization. Only its explicit script host is listed; Google Analytics collection hosts are listed under connect-src. Inline initialization is an expected report. |
+| Article metadata | `components/site/article-structured-data.tsx` renders escaped JSON-LD; verify actual browser behavior separately from executable script handling. |
+| Classic editor | TinyMCE is self-hosted. Editing, generated iframe content and media previews need deployed checks. |
+| Studio / theme layouts | Inline styles are extensively used, so the diagnostic style-src retains unsafe-inline. This is not a completed strict style policy. Same-origin customizer frames are allowed. |
+| Embeds | YouTube, YouTube privacy mode, Vimeo, Google Maps and SoundCloud have explicit frame origins. Dynamic/custom widget URLs outside these hosts will report; they are not automatically trusted or added. |
+| Images / video / audio | Local assets, HTTPS media and required data/blob resources are observed with broad non-script source allowances. Migrated HTTP resources may report and need individual review. |
+| Ads | Arbitrary external ad scripts are not added to the policy. AdSense remains part of its separately proposed integration. |
+
+Reports use the relative `report-uri /api/security/csp-report`, so no domain is baked into an image or bundle. This legacy transport remains widely compatible; it is deprecated in favor of report-to/Reporting-Endpoints. A future modern transport must retain domain portability and privacy checks rather than hardcode a deployment URL.
+
+The small unauthenticated POST endpoint accepts application/csp-report only, caps bodies at 16 KiB, cancels stalled body reads after two seconds, and rejects explicit cross-site browser submissions. The existing Valkey helper allows at most 60 report requests per site per minute, independently of post saves and authentication. Missing Valkey stops report ingestion, not page delivery. Excess reports are dropped with 429; these are diagnostic samples, not a complete security event log. No database schema, report table, dependency or new service is introduced.
+
+Coolify logs receive `CSP report-only violation` with only a validated directive and fixed source/area categories. Submitted document URLs, source files, blocked URLs, query tokens, script samples, IPs and user agents are not logged. Reports are forgeable client input and must never trigger an automatic allowlist change or be treated as proof of compromise. Inspect browser console details during controlled testing to identify the actual offending resource, without copying private URLs or tokens into issue reports.
+
+After deployment, inspect the effective report-only header and test EN/AR home, article, category, login/logout, post save/autosave, media selection, Studio, customizer, video playback and configured analytics. Expected inline-script reports do not mean those scripts were blocked. Review real violations before agreeing the nonce/hash design and enforcing any policy. The isolated browser check proves inline violations are sent while inline/external scripts and same-origin preview frames still work; it does not replace authenticated deployed integration tests.
+
+References: [MDN report-only behavior](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy-Report-Only), [Next.js CSP and nonce rendering requirements](https://nextjs.org/docs/app/guides/content-security-policy).
+
+Verification: 1,078 unit tests passed (19 skipped), the isolated real-browser report-only test passed, and TypeScript/scoped ESLint passed. A read-only HTTPS check also confirmed the preceding four baseline headers on the deployed homepage. The new report-only policy and collector have not been deployed or tested against real production traffic in this pass. No seed or migration is needed.
+
 ### Baseline response headers — 16 November 2026
 
 - Scope: baseline headers only, through the existing `next.config.ts` headers API. No startup, rendering, caching, database, dependency or authentication changes.
