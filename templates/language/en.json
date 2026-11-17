@@ -1,4 +1,8 @@
 {
+  "admin.theme_settings.block.newsroom.name": "Newsroom",
+  "admin.theme_settings.style.newsroom_lead": "Newsroom: centre lead",
+  "admin.theme_settings.style.newsroom_category": "Newsroom: category lead + list",
+  "admin.theme_settings.style.newsroom_strip": "Newsroom: four-card strip",
   "admin.settings.header_logo.title": "Header logo",
   "admin.settings.header_logo.description": "Logo for the site header across all themes and languages. The footer can use its own logo below.",
   "admin.settings.footer_logo.title": "Footer logo",

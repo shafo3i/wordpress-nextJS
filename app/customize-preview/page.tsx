@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { hasTheme } from "@/themes/registry";
+import { hasTheme, getThemeModule } from "@/themes/registry";
 import type { Metadata } from "next"
 import { verifyAdminOrEditor } from "@/lib/authMIddleware"
 import { getCustomizerData } from "@/lib/themes/customizer"
@@ -51,6 +51,7 @@ export default async function CustomizePreviewPage({
     <PreviewHost
       newsletter={newsletter}
       themeSlug={data.themeSlug}
+      sectionStyle={getThemeModule(data.themeSlug).supports?.sectionStyle ?? "minimal"}
       baseTheme={base}
       initialState={{
         mods: data.mods,

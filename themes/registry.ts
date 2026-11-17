@@ -4,11 +4,12 @@ import broadsheet from "./pressforge-broadsheet";
 import magazine from "./pressforge-magazine";
 import midnight from "./pressforge-midnight";
 import longform from "./pressforge-longform";
+import newsroom from "./pressforge-newsroom";
 
 export const DEFAULT_THEME_SLUG = "pressforge-broadsheet";
 
 /** Registration order is the order shown in the admin. */
-export const THEME_MODULES: ThemeModule[] = [broadsheet, magazine, midnight, longform];
+export const THEME_MODULES: ThemeModule[] = [broadsheet, magazine, midnight, longform, newsroom];
 
 const BY_SLUG = new Map<string, ThemeModule>();
 for (const mod of THEME_MODULES) {

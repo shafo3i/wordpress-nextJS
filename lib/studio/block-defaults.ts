@@ -8,6 +8,7 @@ import { generateStudioId } from "./ids"
 const DEFAULT_BLOCK_STYLES: Partial<
   Record<HomepageBlockType, BlockDisplayStyle>
 > = {
+  newsroom: "newsroom_lead",
   lead_story_grid: "lead_story_grid",
   headlines_grid: "headlines_grid",
   recent_posts: "compact_posts",
@@ -52,7 +53,9 @@ export function createDefaultBlockConfig(
     enabled: true,
     categorySlug: defaultCategory,
     postCount:
-      type === "lead_story_grid"
+      type === "newsroom"
+        ? 10
+        : type === "lead_story_grid"
         ? 7
         : type === "headlines_grid"
           ? 9

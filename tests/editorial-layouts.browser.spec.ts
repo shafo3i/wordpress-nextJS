@@ -2,6 +2,44 @@ import { test, expect } from "@playwright/test"
 import { build } from "esbuild"
 import type { HomepageBlockType } from "../lib/themes/homepage-types"
 let files: { path: string; text: string }[]
+for (const locale of ["en", "ar"] as const) {
+  for (const variant of ["lead", "category", "strip"] as const) {
+    test(`Newsroom ${variant} responsive layout (${locale})`, async ({ page }) => {
+      await page.setViewportSize({ width: 1400, height: 1000 })
+      await page.evaluate(({ locale, variant }) => {
+        (window as unknown as { EditorialFixture: { render: (...args: unknown[]) => void } }).EditorialFixture.render("newsroom", locale, 13, `newsroom_${variant}`)
+      }, { locale, variant })
+      const section = page.locator(`[data-newsroom="${variant}"]`)
+      await expect(section.locator("article")).toHaveCount(13)
+      expect(await section.getAttribute("dir")).toBe(locale === "ar" ? "rtl" : "ltr")
+      const lead = section.locator('[data-newsroom-story="1"]')
+      if (variant === "lead") {
+        const middle = (await lead.boundingBox())!
+        const side = (await section.locator('[data-newsroom-story="2"]').boundingBox())!
+        expect(middle.width).toBeGreaterThan(side.width * 1.8)
+        expect(locale === "ar" ? side.x > middle.x : side.x < middle.x).toBe(true)
+      }
+      await page.screenshot({ path: `test-results/newsroom-${variant}-${locale}-desktop.png`, fullPage: true })
+      await page.setViewportSize({ width: 390, height: 844 })
+      await expect(section.locator("article")).toHaveCount(13)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+      if (variant === "lead") {
+        expect((await lead.boundingBox())!.y).toBeLessThan((await section.locator('[data-newsroom-story="2"]').boundingBox())!.y)
+      }
+      await page.screenshot({ path: `test-results/newsroom-${variant}-${locale}-mobile.png`, fullPage: true })
+      if (variant === "lead") {
+        await page.setViewportSize({ width: 1400, height: 1000 })
+        for (const count of [1, 2]) {
+          await page.evaluate(({ locale, count }) => {
+            (window as unknown as { EditorialFixture: { render: (...args: unknown[]) => void } }).EditorialFixture.render("newsroom", locale, count, "newsroom_lead")
+          }, { locale, count })
+          await expect(section.locator("article")).toHaveCount(count)
+          if (count === 1) expect((await lead.boundingBox())!.width).toBeGreaterThan((await section.boundingBox())!.width - 4)
+        }
+      }
+    })
+  }
+}
 test.beforeAll(async () => {
   const result = await build({
     entryPoints: ["tests/fixtures/editorial-layouts.fixture.tsx"],

@@ -13,7 +13,6 @@ import type {
   PreviewState,
   PreviewToCustomizer,
 } from "@/lib/customizer/preview-protocol"
-import { getThemeModule } from "@/themes/registry"
 import { NewsHome } from "@/components/site/templates/news-home"
 import { PostTemplate } from "@/components/site/templates/post-template"
 import { CategoryTemplate } from "@/components/site/templates/category-template"
@@ -24,6 +23,8 @@ import type { NewsletterPresentation } from "@/lib/newsletter/presentation"
 interface PreviewHostProps {
   newsletter?: NewsletterPresentation
   themeSlug: string
+  /** Selected theme capability resolved on the server; stable through hydration. */
+  sectionStyle: FrontEndThemeContext["sectionStyle"]
   /** Locale aware context from the server (dictionary, direction, menus, plugins). */
   baseTheme: FrontEndThemeContext
   initialState: PreviewState
@@ -44,6 +45,7 @@ interface PreviewHostProps {
 /** Lives inside the customizer iframe: renders the real templates and applies state posted by the editor. */
 export function PreviewHost({
   themeSlug,
+  sectionStyle,
   baseTheme,
   initialState,
   posts,
@@ -85,7 +87,7 @@ export function PreviewHost({
     primaryColor: resolveColor(mods, "primaryColor"),
     headerLayout: mods.headerLayout ?? "classic",
     headingFont: getFontKind(mods.headingFontFamily),
-    sectionStyle: getThemeModule(themeSlug).supports?.sectionStyle ?? "minimal",
+    sectionStyle,
     darkMode: Boolean(mods.darkMode),
     footerCopyright: mods.footerCopyright || "",
     mods: { ...mods, footerLogoUrl: baseTheme.mods?.footerLogoUrl || "" },

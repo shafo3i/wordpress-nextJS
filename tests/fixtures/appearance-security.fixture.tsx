@@ -32,6 +32,7 @@ export function render(mode: "html" | "preview", locale: "en" | "ar") {
     root.render(
       <PreviewHost
         themeSlug="pressforge-broadsheet"
+        sectionStyle="classic"
         baseTheme={theme}
         initialState={{
           mods: {},

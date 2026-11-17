@@ -2,6 +2,7 @@
 
 import React from "react"
 import { EditorialCollectionBlock } from "./editorial-collection"
+import { NewsroomBlock } from "./newsroom"
 import { CompactPostsBlock } from "./compact-posts"
 import type { StudioDesign } from "@/db/schema/cms-studio-design"
 import type { ContentItem } from "@/lib/site-content"
@@ -102,6 +103,9 @@ export function renderEditorialBlock({
     !preFiltered && block.featuredOnly
       ? categoryFiltered.filter((post) => post.isFeatured)
       : categoryFiltered
+
+  if (block.displayStyle?.startsWith("newsroom_") || (!block.displayStyle && block.type === "newsroom"))
+    return <NewsroomBlock posts={displayPosts.slice(0, block.postCount || 10)} block={block} theme={theme} design={design} />
 
   if (
     ["lead_story_grid", "headlines_grid"].includes(

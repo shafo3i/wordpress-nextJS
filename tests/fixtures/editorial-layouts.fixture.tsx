@@ -3,14 +3,15 @@ import { renderEditorialBlock } from "../../components/site/blocks/registry"
 import { DEFAULT_THEME } from "../../components/site/utils"
 import type { ContentItem } from "../../lib/site-content"
 import { createDefaultBlockConfig } from "../../lib/studio/block-defaults"
-import type { HomepageBlockType } from "../../lib/themes/homepage-types"
+import type { HomepageBlockType, BlockDisplayStyle } from "../../lib/themes/homepage-types"
 import en from "../../templates/language/en.json"
 import ar from "../../templates/language/ar.json"
 let root: ReturnType<typeof createRoot>
 export function render(
   type: HomepageBlockType | "wire",
   locale: "ar" | "en",
-  count = 9
+  count = 9,
+  displayStyle?: BlockDisplayStyle
 ) {
   root ??= createRoot(document.getElementById("fixture")!)
   document.documentElement.lang = locale
@@ -46,6 +47,7 @@ export function render(
     postCount: count,
     autoplay: false,
     ...(type === "wire" ? { displayStyle: "minimal_text" as const } : {}),
+    ...(displayStyle ? { displayStyle } : {}),
   }
   root.render(
     <main>

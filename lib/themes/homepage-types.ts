@@ -1,6 +1,9 @@
 export type HomepageLayout = "full_width" | "right_sidebar" | "left_sidebar" | "dual_sidebar";
 
 export type BlockDisplayStyle =
+  | "newsroom_lead"
+  | "newsroom_category"
+  | "newsroom_strip"
   | "lead_story_grid"
   | "headlines_grid"
   | "compact_posts"
@@ -26,6 +29,7 @@ export type BlockDisplayStyle =
 export type ImageRatio = "landscape" | "square" | "portrait" | "none";
 
 export type HomepageBlockType =
+  | "newsroom"
   | "lead_story_grid"
   | "headlines_grid"
   | "recent_posts"
@@ -502,5 +506,9 @@ export const DEFAULT_HOMEPAGE_SETTINGS: HomepageSettings =
   THEME_DEFAULT_SETTINGS["ledger-classic"];
 
 export function getThemeDefaultSettings(themeSlug: string): HomepageSettings {
+  if (themeSlug === "pressforge-newsroom") return {
+    layout: "full_width",
+    blocks: [{ id: "newsroom-lead", type: "newsroom", displayStyle: "newsroom_lead", title: "", enabled: true, order: 1, postCount: 10, showAuthor: false, showDate: false, showCategory: false, showExcerpt: true }],
+  };
   return THEME_DEFAULT_SETTINGS[themeSlug] || DEFAULT_HOMEPAGE_SETTINGS;
 }

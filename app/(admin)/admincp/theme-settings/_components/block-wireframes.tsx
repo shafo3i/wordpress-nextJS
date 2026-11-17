@@ -473,6 +473,13 @@ export function BlockWireframeIcon({
   const style = displayStyle || (type as unknown as BlockDisplayStyle);
 
   switch (style) {
+    case "newsroom" as unknown:
+    case "newsroom_lead":
+      return <Broadsheet3ColWireframe className={className} active={active} />;
+    case "newsroom_category":
+      return <LeadSideListWireframe className={className} active={active} />;
+    case "newsroom_strip":
+      return <Grid4Wireframe className={className} active={active} />;
     case "headline_cover":
     case "headline_slider" as unknown:
       return <HeadlineCoverWireframe className={className} active={active} />;

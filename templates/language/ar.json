@@ -1,4 +1,8 @@
 {
+  "admin.theme_settings.block.newsroom.name": "غرفة الأخبار",
+  "admin.theme_settings.style.newsroom_lead": "غرفة الأخبار: خبر رئيسي في الوسط",
+  "admin.theme_settings.style.newsroom_category": "غرفة الأخبار: خبر رئيسي وقائمة",
+  "admin.theme_settings.style.newsroom_strip": "غرفة الأخبار: شريط أربع بطاقات",
   "admin.settings.header_logo.title": "شعار رأس الموقع",
   "admin.settings.header_logo.description": "شعار رأس الموقع في جميع القوالب واللغات. يمكن تحديد شعار منفصل للتذييل أدناه.",
   "admin.settings.footer_logo.title": "شعار التذييل",

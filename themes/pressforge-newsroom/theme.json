@@ -1,0 +1,9 @@
+{
+  "slug": "pressforge-newsroom",
+  "name": "PressForge Newsroom",
+  "description": "A clean rolling-news layout with compact navigation, strong headlines and flexible editorial columns.",
+  "version": "1.0.0",
+  "author": "PressForge Community",
+  "screenshot": "/themes/pressforge-newsroom/screenshot.svg",
+  "tags": "news, editorial, responsive, rtl, custom-header"
+}
