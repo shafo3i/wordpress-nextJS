@@ -155,7 +155,12 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="wp-admin-main"><AdminSessionMonitor userId={context.userId} dict={dict} />{children}</main>
+        <main className="wp-admin-main"><AdminSessionMonitor userId={context.userId} dict={dict} />
+          {context.userRole === "admin" && !langContext.allLanguages.length && <div role="status" className="mb-4 border-s-4 border-[#2271b1] bg-white p-4 text-[13px]">
+            <p>{dict["admin.languages.templates.notice"]}</p>
+            <Link href="/admincp/languages#language-templates" className="text-[#2271b1] underline">{dict["admin.languages.templates.title"]}</Link>
+          </div>}
+          {children}</main>
       </div>
     </div>
   );

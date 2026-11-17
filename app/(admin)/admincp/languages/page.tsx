@@ -1,6 +1,8 @@
 import { languageQuerySchema, languageCodeSchema } from "@/db/schema/cms-languages";
 import { notFound } from "next/navigation";
 import { LanguageSync } from "./_components/language-sync";
+import { LanguageTemplates } from "./_components/language-templates";
+import { getInstallableLanguageTemplates } from "@/services/language-sync.service";
 import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { verifyAdmin } from "@/lib/authMIddleware";
 import { PostListHeader } from "@/components/admin/posts/post-list-header";
@@ -67,6 +69,7 @@ export default async function LanguagesPage({ searchParams }: PageProps) {
                 />
 
                 {session.user.role === "admin" && <LanguageSync dict={dict} />}
+                <LanguageTemplates templates={getInstallableLanguageTemplates()} dict={dict} />
 
                 {/* Create or Edit Form */}
                 {(isAdding || editingLanguage) && (

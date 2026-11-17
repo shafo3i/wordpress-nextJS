@@ -60,3 +60,11 @@ export async function syncLanguageTemplatesAction() {
     return { success: true as const, ...result };
   } catch (error) { unstable_rethrow(error); return { success: false as const }; }
 }
+export async function installLanguageTemplateAction(input: unknown) {
+  await verifyAdmin();
+  try {
+    const { installLanguageTemplate } = await import("@/services/language-sync.service");
+    await installLanguageTemplate(input); refresh();
+    return { success: true as const };
+  } catch (error) { unstable_rethrow(error); return { success: false as const }; }
+}

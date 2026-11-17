@@ -124,6 +124,10 @@ export const updateLanguageSchema = createLanguageSchema.omit({ code: true }).pa
   isDefault: languageBooleanSchema.optional(), isActive: languageBooleanSchema.optional(),
   displayOrder: z.coerce.number().int().min(0).max(10000).optional(),
 });
+export const installLanguageTemplateSchema = z.object({
+  code: languageCodeSchema,
+  isDefault: languageBooleanSchema.default(false),
+});
 export const translationKeySchema = z.string().min(1).max(255).refine(key => !key.split(".").some(part => ["__proto__", "prototype", "constructor"].includes(part)));
 export const translationValueSchema = z.string().min(1).max(20000);
 export const createTranslationSchema = createInsertSchema(translationsTable, {
