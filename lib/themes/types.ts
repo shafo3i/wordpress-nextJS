@@ -167,7 +167,7 @@ export type ThemeMods = {
   headingFont?: "serif" | "sans";
 
   // Header Layout & Components
-  headerLayout?: "classic" | "minimal" | "magazine" | "centered";
+  headerLayout?: "classic" | "minimal" | "magazine" | "centered" | "inline-news";
   stickyHeader?: boolean;
   mastheadPadding?: number;
   navHeight?: number;
@@ -178,6 +178,8 @@ export type ThemeMods = {
   showSearchInNav?: boolean;
   showSocialIconsInHeader?: boolean;
   headerBorderStyle?: "solid" | "double" | "none";
+  inlineHeaderBorderStyle?: "solid" | "double" | "none";
+  inlineHeaderBorderWidth?: number;
 
   // Navigation Bar Styling
   navAlignment?: "left" | "center" | "right" | "between";

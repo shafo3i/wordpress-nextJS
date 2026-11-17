@@ -8,13 +8,16 @@ import ar from "../../templates/language/ar.json"
 let root: ReturnType<typeof createRoot>
 export function render(
   locale: "en" | "ar",
-  layout: "classic" | "magazine" | "minimal" | "centered",
-  showTopBar = true
+  layout: "classic" | "magazine" | "minimal" | "centered" | "inline-news",
+  showTopBar = true,
+  borderStyle: "none" | "solid" | "double" = "solid"
 ) {
   root ||= createRoot(document.getElementById("fixture")!)
   const mods = {
     ...getThemeDefaultMods("pressforge-broadsheet"),
     headerLayout: layout,
+    inlineHeaderBorderStyle: borderStyle,
+    inlineHeaderBorderWidth: 3,
     showTopBar,
     showSearchInNav: true,
     socialFacebook: "https://example.test/facebook",

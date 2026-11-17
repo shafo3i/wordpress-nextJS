@@ -1,4 +1,10 @@
 {
+  "admin.customizer.option.headerLayout.inline-news": "Compact news navigation",
+  "admin.customizer.setting.inlineHeaderBorderStyle": "Compact header border",
+  "admin.customizer.option.inlineHeaderBorderStyle.none": "No border",
+  "admin.customizer.option.inlineHeaderBorderStyle.solid": "Solid",
+  "admin.customizer.option.inlineHeaderBorderStyle.double": "Double",
+  "admin.customizer.setting.inlineHeaderBorderWidth": "Compact header border thickness",
   "language.name": "English",
   "language.native_name": "English",
   "language.direction": "ltr",

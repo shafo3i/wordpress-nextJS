@@ -40,7 +40,7 @@ export type FrontEndThemeContext = {
   siteTagline: string;
   timeZone?: string;
   primaryColor: string;
-  headerLayout: "classic" | "minimal" | "magazine" | "centered";
+  headerLayout: "classic" | "minimal" | "magazine" | "centered" | "inline-news";
   headingFont: "serif" | "sans";
   sectionStyle: "classic" | "magazine" | "terminal" | "minimal";
   /** Slugs of active plugins, used to gate plugin owned UI such as the breaking ticker. */

@@ -21,10 +21,12 @@ export const headerSection: CustomizerSection = {
             { value: "magazine", label: "Magazine Multi-tier", note: "Top ticker bar, brand row, full-bleed navbar" },
             { value: "minimal", label: "Clean Minimalist Navbar", note: "Left logo, inline navigation, right action" },
             { value: "centered", label: "Centered Editorial", note: "Symmetric masthead with balanced side elements" },
+            { value: "inline-news", label: "" },
           ],
         },
         {
           id: "headerBorderStyle",
+          showIf: { id: "headerLayout", notEquals: "inline-news" },
           type: "button-group",
           label: "Header Bottom Rule Style",
           default: "double",
@@ -34,6 +36,15 @@ export const headerSection: CustomizerSection = {
             { value: "solid", label: "Single Thin" },
             { value: "none", label: "Borderless" },
           ],
+        },
+        {
+          id: "inlineHeaderBorderStyle", type: "button-group", label: "", default: "solid", columns: 3,
+          showIf: { id: "headerLayout", equals: "inline-news" },
+          options: [{ value: "none", label: "" }, { value: "solid", label: "" }, { value: "double", label: "" }],
+        },
+        {
+          id: "inlineHeaderBorderWidth", type: "range", label: "", default: 1, min: 1, max: 6, step: 1, unit: "px",
+          showIf: { id: "headerLayout", equals: "inline-news" },
         },
       ],
     },

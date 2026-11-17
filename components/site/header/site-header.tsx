@@ -57,6 +57,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const [navOffset, setNavOffset] = useState(0)
 
   const headerLayout = mods.headerLayout || theme.headerLayout || "classic"
+  const inlineHeader = headerLayout === "inline-news" && Boolean(theme.primaryNav?.length)
   const stickyNavigation =
     mods.stickyHeader !== false && Boolean(theme.primaryNav?.length)
   useEffect(() => {
@@ -76,7 +77,11 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
     measure()
     return () => observer.disconnect()
   }, [headerLayout, stickyNavigation, theme.primaryNav])
-  const borderBottom = RULES[mods.headerBorderStyle || "double"] ?? RULES.double
+  const inlineBorderStyle = mods.inlineHeaderBorderStyle || "solid"
+  const inlineBorderWidth = Math.max(1, Math.min(6, Number(mods.inlineHeaderBorderWidth) || 1))
+  const borderBottom = inlineHeader
+    ? inlineBorderStyle === "none" ? "none" : `${inlineBorderWidth}px ${inlineBorderStyle} var(--theme-header-border)`
+    : RULES[mods.headerBorderStyle || "double"] ?? RULES.double
   const homeHref = localizePath("/", theme.locale, theme.defaultLocale)
 
   const headerStyle: CssVars = {
@@ -90,7 +95,8 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const navStyle: CssVars = {
     backgroundColor: "var(--theme-nav-bg)",
     color: "var(--theme-nav-link)",
-    borderTop: "1px solid var(--theme-header-border)",
+    borderTop: inlineHeader ? "none" : "1px solid var(--theme-header-border)",
+    borderBottom: inlineHeader ? "none" : undefined,
   }
   const titleStyle = (fallbackWeight: string): CssVars => ({
     color: "var(--theme-header-text)",
@@ -247,7 +253,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
       className={[styles.header, stickyClass].join(" ")}
     >
       {renderTopBar()}
-      {hasBrand && (
+      {hasBrand && !inlineHeader && (
         <div className={["theme-container mx-auto", styles.masthead].join(" ")}>
           <div className={styles.brand}>
             {mods.logoUrl ? (
@@ -306,6 +312,10 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               )}
               <span>{t("site.navigation.menu", theme, "")}</span>
             </button>
+            {inlineHeader && hasBrand && <div data-inline-brand className={styles.inlineBrand}>
+              {mods.logoUrl ? <Link href={homeHref}>{renderLogo(96)}</Link> : mods.showSiteTitle !== false &&
+                <Link href={homeHref} style={titleStyle("700")} className={styles.inlineNameplate}>{theme.siteTitle}</Link>}
+            </div>}
             <div
               id={navigationId}
               data-mobile-open={mobileOpen ? "true" : "false"}

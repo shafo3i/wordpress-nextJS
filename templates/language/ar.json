@@ -1,4 +1,10 @@
 {
+  "admin.customizer.option.headerLayout.inline-news": "قائمة أخبار مدمجة",
+  "admin.customizer.setting.inlineHeaderBorderStyle": "إطار الترويسة المدمجة",
+  "admin.customizer.option.inlineHeaderBorderStyle.none": "بدون إطار",
+  "admin.customizer.option.inlineHeaderBorderStyle.solid": "خط متصل",
+  "admin.customizer.option.inlineHeaderBorderStyle.double": "خط مزدوج",
+  "admin.customizer.setting.inlineHeaderBorderWidth": "سُمك إطار الترويسة المدمجة",
   "language.name": "Arabic",
   "language.native_name": "العربية",
   "language.direction": "rtl",

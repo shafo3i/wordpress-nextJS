@@ -4,6 +4,41 @@ import { fileURLToPath } from "node:url"
 import en from "../templates/language/en.json" with { type: "json" }
 import ar from "../templates/language/ar.json" with { type: "json" }
 let files: { path: string; text: string }[]
+
+for (const locale of ["en", "ar"] as const) {
+  test(`inline news header has one brand, working drawer and configurable borders in ${locale}`, async ({ page }) => {
+    const dict = locale === "ar" ? ar : en
+    await page.setContent('<div id="fixture"></div>')
+    await page.addStyleTag({ content: "body{margin:0}*{box-sizing:border-box}.theme-container{max-width:1280px;margin-inline:auto}" })
+    for (const file of files) {
+      if (file.path.endsWith(".css")) await page.addStyleTag({ content: file.text })
+      else await page.addScriptTag({ content: file.text })
+    }
+    for (const borderStyle of ["none", "solid", "double"] as const) {
+      await page.evaluate(({ locale, borderStyle }) => (window as unknown as { MobileNavigationFixture: { render: (locale: string, layout: string, topbar: boolean, border: string) => void } }).MobileNavigationFixture.render(locale, "inline-news", false, borderStyle), { locale, borderStyle })
+      const header = page.locator('header[data-layout="inline-news"]')
+      await expect(header).toBeVisible()
+      expect(await header.evaluate(element => getComputedStyle(element).borderBottomStyle)).toBe(borderStyle)
+      if (borderStyle !== "none") expect(await header.evaluate(element => getComputedStyle(element).borderBottomWidth)).toBe("3px")
+    }
+    const nav = page.locator("[data-site-navigation]")
+    await expect(nav.locator("[data-inline-brand]")).toBeVisible()
+    await expect(page.locator("[data-inline-brand]")).toHaveCount(1)
+    for (const width of [320, 768, 1280]) {
+      await page.setViewportSize({ width, height: 800 })
+      const toggle = nav.getByRole("button", { name: dict["site.navigation.open"], exact: true })
+      await expect(toggle).toBeVisible()
+      await toggle.click()
+      await expect(nav.locator("[data-mobile-open]")).toHaveAttribute("data-mobile-open", "true")
+      await expect(nav.locator("[data-mobile-open] a").first()).toBeVisible()
+      await page.keyboard.press("Escape")
+      await expect(toggle).toBeFocused()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      await expect(nav.getByRole("link", { name: dict["site.search.label"], exact: true })).toBeVisible()
+    }
+    await page.screenshot({ path: `.local/dev-performance/inline-header-${locale}.png` })
+  })
+}
 test.beforeAll(async () => {
   const result = await build({
     entryPoints: [
