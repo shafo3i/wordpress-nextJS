@@ -39,6 +39,8 @@ export function featuredVideoThumbnail(value: string | null): string | null {
     /^https:\/\/www\.youtube-nocookie\.com\/embed\/([\w-]{11})(?:\?|$)/
   )?.[1]
   if (id) return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+  // Our S3 uploader publishes a poster beside every generated video object.
+  if (safe?.startsWith("https://") && /\/pressforge\/[\da-f-]{36}\/\d{4}\/\d{2}\/[^/?#]+\.(?:mp4|webm|ogv|m4v)$/i.test(safe)) return `${safe}.poster.jpg`
   return safe?.startsWith("/uploads/")
     ? `/api/media/video-thumbnail?src=${encodeURIComponent(safe)}`
     : null

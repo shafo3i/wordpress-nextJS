@@ -138,12 +138,36 @@ function staticRules(mods: Mods): Rule[] {
       ],
     },
     // The theme fonts win over component level font-serif / font-sans utilities.
+    {
+      selectors: ["[data-single-article] article.prose"],
+      declarations: ["border-radius: var(--theme-single-content-radius, 16px) !important;"],
+    },
+    {
+      selectors: ["[data-single-article] [data-article-image]", "[data-single-article] [data-article-video]"],
+      declarations: ["border-radius: var(--theme-single-image-radius, 16px) !important;"],
+    },
+    {
+      selectors: ['[data-single-article] [data-newsletter-source="article_footer"]'],
+      declarations: ["border-radius: var(--theme-single-newsletter-radius, 16px) !important;"],
+    },
+    ...(mods.singleContentShadow === false ? [{
+      selectors: ["[data-single-article] article.prose", "[data-single-article] article.prose:hover"],
+      declarations: ["box-shadow: none !important;"],
+    }] : []),
+    ...(mods.singleNewsletterBorder === false ? [{
+      selectors: ['[data-single-article] [data-newsletter-source="article_footer"]'],
+      declarations: ["border-width: 0 !important;"],
+    }] : []),
+    ...(mods.singleNewsletterShadow === false ? [{
+      selectors: ['[data-single-article] [data-newsletter-source="article_footer"]', '[data-single-article] [data-newsletter-source="article_footer"]:hover'],
+      declarations: ["box-shadow: none !important;"],
+    }] : []),
     ...(mods.singleContentBorder === false ? [{
       selectors: ["[data-single-article] article.prose", "[data-single-article] article.prose:hover"],
       declarations: ["border-width: 0 !important;", "box-shadow: none !important;"],
     }] : []),
     ...(mods.singleImageBorder === false ? [{
-      selectors: ["[data-single-article] [data-article-image]"],
+      selectors: ["[data-single-article] [data-article-image]", "[data-single-article] [data-article-video]"],
       declarations: ["border-width: 0 !important;", "box-shadow: none !important;"],
     }] : []),
     ...(mods.singleDividerBorders === false ? [{

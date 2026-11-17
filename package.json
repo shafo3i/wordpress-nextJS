@@ -29,6 +29,7 @@
     "auth:generate": "pnpm dlx @better-auth/cli@latest generate --output ./db/schema/auth-schema.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1170.0",
     "@base-ui/react": "^1.8.0",
     "@tanstack/react-query": "^5.106.1",
     "@tanstack/react-query-devtools": "^5.106.1",

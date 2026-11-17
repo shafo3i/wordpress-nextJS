@@ -19,8 +19,10 @@ import { PostTemplate } from "@/components/site/templates/post-template"
 import { CategoryTemplate } from "@/components/site/templates/category-template"
 import type { CategoryPostsResult } from "@/lib/site-content"
 import { getArchiveSettings } from "@/lib/customizer/archive"
+import type { NewsletterPresentation } from "@/lib/newsletter/presentation"
 
 interface PreviewHostProps {
+  newsletter?: NewsletterPresentation
   themeSlug: string
   /** Locale aware context from the server (dictionary, direction, menus, plugins). */
   baseTheme: FrontEndThemeContext
@@ -51,6 +53,7 @@ export function PreviewHost({
   primarySidebar,
   secondarySidebar,
   footerWidgets,
+  newsletter,
 }: PreviewHostProps) {
   const [state, setState] = useState(initialState)
 
@@ -85,7 +88,7 @@ export function PreviewHost({
     sectionStyle: getThemeModule(themeSlug).supports?.sectionStyle ?? "minimal",
     darkMode: Boolean(mods.darkMode),
     footerCopyright: mods.footerCopyright || "",
-    mods,
+    mods: { ...mods, footerLogoUrl: baseTheme.mods?.footerLogoUrl || "" },
   }
 
   const [lead, ...rest] = posts
@@ -133,6 +136,7 @@ export function PreviewHost({
         />
       ) : (
         <PostTemplate
+          newsletter={newsletter}
           trackViews={false}
           article={lead}
           relatedPosts={rest.slice(0, 3)}

@@ -2,7 +2,7 @@ import { rateLimitResponse } from "@/lib/rate-limit"
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { auth } from "@/auth"
-import { SITE_LOGO_MAX_BYTES } from "@/db/schema/cms-site-logo"
+import { SITE_LOGO_MAX_BYTES, siteLogoTargetSchema } from "@/db/schema/cms-site-logo"
 import { SiteLogoError } from "@/services/site-logo.service"
 import { uploadSiteLogo } from "@/services/site-logo-upload.service"
 
@@ -73,7 +73,9 @@ export async function POST(request: Request) {
     const files = form.getAll("file")
     if (files.length !== 1 || !(files[0] instanceof File))
       throw new SiteLogoError("admin.settings.logo.invalid_file")
-    const logo = await uploadSiteLogo(files[0], userId)
+    const target = siteLogoTargetSchema.safeParse(form.get("target") || "header")
+    if (!target.success) throw new SiteLogoError("admin.settings.logo.invalid_file")
+    const logo = target.data === "header" ? await uploadSiteLogo(files[0], userId) : await uploadSiteLogo(files[0], userId, target.data)
     revalidatePath("/", "layout")
     return response({ logo })
   } catch (error) {

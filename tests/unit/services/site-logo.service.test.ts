@@ -37,6 +37,12 @@ const image = () =>
     .toBuffer()
 
 describe("Site logo validation and persistence", () => {
+  it("stores footer branding independently of the header", async () => {
+    rows([{ url: "/uploads/footer.webp", mime: "image/webp" }], [{ value: "2026/11/footer.webp" }])
+    expect(await selectSiteLogo("42", "footer")).toEqual({ id: "42", url: "/uploads/2026/11/footer.webp" })
+    expect(mocks.set).toHaveBeenCalledWith("footer_logo_id", "42")
+    expect(mocks.set).not.toHaveBeenCalledWith("site_logo_id", expect.anything())
+  })
   it("reuses imported library attachments without uploading a duplicate", async () => {
     rows([{url:"https://old.example/wp-content/uploads/2026/11/logo.png",mime:"image/png"}],[{value:"2026/11/logo.png"}])
     expect(await selectSiteLogo("28004")).toEqual({id:"28004",url:"/uploads/2026/11/logo.png"})

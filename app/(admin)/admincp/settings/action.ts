@@ -1,5 +1,25 @@
 "use server"
 
+export async function saveMediaStorageAction(input: unknown) {
+  await verifyAdmin()
+  try {
+    const { saveMediaStorage } = await import("@/services/media-storage.service")
+    const settings = await saveMediaStorage(input)
+    revalidatePath("/admincp/settings")
+    return { success: true as const, settings }
+  } catch { return { success: false as const } }
+}
+export async function testMediaStorageAction() {
+  await verifyAdmin()
+  try { await (await import("@/services/media-storage.service")).testMediaStorageConnection(); return { success: true as const } }
+  catch { return { success: false as const } }
+}
+export async function retryMediaStorageCleanupAction() {
+  await verifyAdmin()
+  try { const result = await (await import("@/services/media-storage.service")).retryMediaStorageCleanup(); return { success: true as const, ...result } }
+  catch { return { success: false as const } }
+}
+
 import {
   settingsPatchSchema,
   testEmailSchema,
@@ -14,12 +34,14 @@ import {
   type SettingsMap,
 } from "@/services/settings.service"
 import { removeSiteLogo, selectSiteLogo } from "@/services/site-logo.service"
+import { siteLogoTargetSchema } from "@/db/schema/cms-site-logo"
 
-export async function selectSettingsLogoAction(attachmentId: string) {
+export async function selectSettingsLogoAction(attachmentId: string, target: "header" | "footer" = "header") {
   const session = await verifyAdmin()
   try {
     await checkCmsRateLimit(session.user.id, "write")
-    const logo = await selectSiteLogo(attachmentId)
+    const location = siteLogoTargetSchema.parse(target)
+    const logo = location === "header" ? await selectSiteLogo(attachmentId) : await selectSiteLogo(attachmentId, location)
     revalidatePath("/", "layout")
     return { success: true as const, logo }
   } catch (error) {
@@ -31,11 +53,13 @@ export async function selectSettingsLogoAction(attachmentId: string) {
   }
 }
 
-export async function removeSettingsLogoAction(): Promise<SaveSettingsResult> {
+export async function removeSettingsLogoAction(target: "header" | "footer" = "header"): Promise<SaveSettingsResult> {
   const session = await verifyAdmin()
   try {
     await checkCmsRateLimit(session.user.id, "write")
-    await removeSiteLogo()
+    const location = siteLogoTargetSchema.parse(target)
+    if (location === "header") await removeSiteLogo()
+    else await removeSiteLogo(location)
     revalidatePath("/", "layout")
     return { success: true }
   } catch (error) {
@@ -58,6 +82,7 @@ export async function saveSettingsAction(
       values.home = values.siteurl
     if (!values.smtp_pass) delete values.smtp_pass
     delete values.site_logo_id // Branding has its own mutation; stale form state cannot overwrite it.
+    delete values.footer_logo_id
     const parsed = settingsPatchSchema.safeParse(values)
     if (!parsed.success)
       return { success: false, error: "admin.settings.invalid_values" }

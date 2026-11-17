@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db, type DB } from "@/db";
-import { wpPosts, wpPostmeta } from "@/db/schema";
+import { wpPosts, wpPostmeta, wpOptions } from "@/db/schema";
 import { mediaDeleteIdsSchema } from "@/db/schema/cms-media-details";
 import { checkedMediaPath, mediaRoot, mediaPathParts } from "@/lib/media-files";
 import { MediaUploadError } from "@/lib/media-upload";
@@ -14,6 +14,13 @@ export async function deleteMediaItems(ids: number[], database: DB = db): Promis
   await checkCmsRateLimit(rateActor.user.id, "write");
   const parsed = mediaDeleteIdsSchema.parse(ids).map(BigInt);
   const files = new Set<string>(); let cleanupPending = 0;
+  const remoteFiles: { storage: unknown; url: string; id: string }[] = [];
+  const remoteUrls = (item: { storage: unknown; url: string }) => {
+    const storage = item.storage as { publicBaseUrl?: unknown; objects?: unknown };
+    if (typeof storage.publicBaseUrl !== "string" || !Array.isArray(storage.objects) || storage.objects.length > 64) return [item.url];
+    const base = storage.publicBaseUrl.replace(/\/$/, "");
+    return [item.url, ...storage.objects.filter((key): key is string => typeof key === "string" && key.length < 2048).map(key => `${base}/${key.split("/").map(encodeURIComponent).join("/")}`)];
+  };
   const deletedCount = await database.transaction(async tx => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext('pressforge:media'))`);
     const attachments = await tx.select({ id: wpPosts.id }).from(wpPosts)
@@ -26,6 +33,16 @@ export async function deleteMediaItems(ids: number[], database: DB = db): Promis
       const values = metas.filter(row => row.id === attachment.id);
       const original = values.find(row => row.key === "_wp_attached_file")?.value;
       if (!original) continue;
+      if (original.startsWith("https://")) {
+        try {
+          const raw = values.find(row => row.key === "_wp_attachment_metadata")?.value || "{}";
+          if (raw.length > 100000) throw new Error();
+          const metadata = JSON.parse(raw);
+          if (metadata.storage?.provider !== "s3") throw new Error();
+          remoteFiles.push({ storage: metadata.storage, url: original, id: attachment.id.toString() });
+        } catch { cleanupPending++; }
+        continue;
+      }
       try { mediaPathParts(original); } catch { cleanupPending++; continue; }
       const paths = new Set([original]);
       const rawMetadata = values.find(row => row.key === "_wp_attachment_metadata")?.value;
@@ -54,12 +71,15 @@ export async function deleteMediaItems(ids: number[], database: DB = db): Promis
       } catch { cleanupPending++; }
       byAttachment.set(attachment.id.toString(), { original, paths });
     }
-    const candidates = [...new Set([...byAttachment.values()].flatMap(item => [...item.paths]))];
+    const candidates = [...new Set([...byAttachment.values()].flatMap(item => [...item.paths]).concat(remoteFiles.flatMap(remoteUrls)))];
     const shared = candidates.length ? await tx.select({ file: wpPostmeta.metaValue }).from(wpPostmeta)
       .innerJoin(wpPosts, eq(wpPosts.id, wpPostmeta.postId))
       .where(and(eq(wpPosts.postType, "attachment"), notInArray(wpPosts.id, parsed), eq(wpPostmeta.metaKey, "_wp_attached_file"), inArray(wpPostmeta.metaValue, candidates))) : [];
     const references = new Set(shared.map(row => row.file));
+    for (let i = remoteFiles.length - 1; i >= 0; i--) if (remoteUrls(remoteFiles[i]).some(url => references.has(url))) remoteFiles.splice(i, 1);
     for (const item of byAttachment.values()) if (!references.has(item.original)) for (const file of item.paths) if (!references.has(file)) files.add(file);
+    // Keep a durable cleanup intent in existing settings if the object store is unavailable after commit.
+    for (const item of remoteFiles) await tx.insert(wpOptions).values({ optionName: `cms_media_cleanup_${item.id}`, optionValue: JSON.stringify(item), autoload: "no" });
     // Never delete metadata by raw caller IDs before establishing attachment ownership.
     await tx.delete(wpPostmeta).where(inArray(wpPostmeta.postId, parsed));
     const removed = await tx.delete(wpPosts).where(and(inArray(wpPosts.id, parsed), eq(wpPosts.postType, "attachment"))).returning({ id: wpPosts.id });
@@ -67,6 +87,10 @@ export async function deleteMediaItems(ids: number[], database: DB = db): Promis
     return removed.length;
   });
   // Commit the database first: failed DB writes must never remove physical files.
+  for (const item of remoteFiles) try {
+    await (await import("./media-object-storage.service")).deleteS3MediaObjects(item.storage, item.url, database);
+    await database.delete(wpOptions).where(eq(wpOptions.optionName, `cms_media_cleanup_${item.id}`));
+  } catch { cleanupPending++; }
   if (files.size) {
     let root: string | undefined;
     try { root = await mediaRoot(); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") cleanupPending += files.size; }

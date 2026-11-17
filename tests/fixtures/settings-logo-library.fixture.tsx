@@ -6,13 +6,13 @@ import {
 } from "../../app/(admin)/admincp/settings/_components/settings-logo"
 import en from "../../templates/language/en.json"
 import ar from "../../templates/language/ar.json"
-function Logo({ locale }: { locale: "en" | "ar" }) {
-  const controller = useSettingsLogo("")
+function Logo({ locale, target }: { locale: "en" | "ar"; target: "header" | "footer" }) {
+  const controller = useSettingsLogo("", undefined, target)
   return (
     <SettingsLogo controller={controller} dict={locale === "ar" ? ar : en} />
   )
 }
-export function render(locale: "en" | "ar") {
+export function render(locale: "en" | "ar", target: "header" | "footer" = "header") {
   document.documentElement.lang = locale
   document.documentElement.dir = locale === "ar" ? "rtl" : "ltr"
   createRoot(document.getElementById("fixture")!).render(
@@ -21,7 +21,7 @@ export function render(locale: "en" | "ar") {
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <Logo locale={locale} />
+      <Logo locale={locale} target={target} />
     </QueryClientProvider>
   )
 }

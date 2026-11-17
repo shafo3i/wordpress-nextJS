@@ -315,7 +315,7 @@ export function PostTemplate({
             </article>
           </div>
         )}
-        {newsletter && (
+        {newsletter && mods.singleShowNewsletter !== false && (
           <NewsletterBlock
             source="article_footer"
             title={

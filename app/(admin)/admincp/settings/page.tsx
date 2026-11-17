@@ -9,19 +9,22 @@ import {
   getSettingsQuery,
   getSettingsPagesQuery,
   getSettingsLogoQuery,
+  getSettingsStorageQuery,
 } from "./query"
 import { SettingsForm } from "./_components/settings-form"
+import { SettingsMediaStorage } from "./_components/settings-media-storage"
 
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
   await verifyAdmin()
 
-  const [langContext, settings, pages, logo] = await Promise.all([
+  const [langContext, settings, pages, logo, storage] = await Promise.all([
     getAdminLanguageContext(),
     getSettingsQuery(),
     getSettingsPagesQuery(),
     getSettingsLogoQuery(),
+    getSettingsStorageQuery(),
   ])
 
   const dict = langContext.dict
@@ -70,6 +73,7 @@ export default async function SettingsPage() {
         {/* Settings Form */}
         <SettingsForm
           initialSettings={settings}
+          storagePanel={<SettingsMediaStorage initialSettings={storage} dict={dict} />}
           languages={langContext.allLanguages.map((language) => ({
             code: language.code,
             name: language.name,
@@ -86,6 +90,7 @@ export default async function SettingsPage() {
             ]),
           ].filter(Boolean)}
           initialLogoUrl={logo.url}
+          initialFooterLogoUrl={logo.footerUrl}
           pages={pages}
           dict={dict}
           direction={direction}

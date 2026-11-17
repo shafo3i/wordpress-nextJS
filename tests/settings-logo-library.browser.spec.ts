@@ -27,7 +27,7 @@ test.beforeAll(async () => {
               args.path === "next/navigation"
                 ? "export const useRouter=()=>({refresh(){}})"
                 : args.path === "../action"
-                  ? "export async function selectSettingsLogoAction(id){window.selectedLogoId=id;return {success:true,logo:{id,url:window.mediaItem.url}}};export async function removeSettingsLogoAction(){return {success:true}}"
+                  ? "export async function selectSettingsLogoAction(id,target='header'){window.selectedLogoId=id;window.selectedLogoTarget=target;return {success:true,logo:{id,url:window.mediaItem.url}}};export async function removeSettingsLogoAction(){return {success:true}}"
                   : "export async function fetchMediaItemsAction(){return {success:true,data:{items:[window.mediaItem],total:1,page:1,totalPages:1}}};export async function fetchMediaItemAction(){return {success:true,item:window.mediaItem}};export async function updateMediaAction(){return {success:true,item:window.mediaItem}};export async function uploadMediaAction(){throw new Error('Upload not expected')}",
             loader: "js",
           }))
@@ -38,7 +38,8 @@ test.beforeAll(async () => {
   bundle = result.outputFiles[0].text
 })
 for (const locale of ["en", "ar"] as const)
-  test(`select existing logo (${locale})`, async ({ page }) => {
+  for (const target of ["header", "footer"] as const)
+  test(`select existing ${target} logo (${locale})`, async ({ page }) => {
     const dict = locale === "ar" ? ar : en
     await page.route("http://logo.test/**", (route) =>
       route.request().url().endsWith("logo.png")
@@ -74,13 +75,13 @@ for (const locale of ["en", "ar"] as const)
     })
     await page.addScriptTag({ content: bundle })
     await page.evaluate(
-      (locale) =>
+      ({ locale, target }) =>
         (
           window as unknown as {
-            LogoLibraryFixture: { render: (locale: string) => void }
+            LogoLibraryFixture: { render: (locale: string, target: string) => void }
           }
-        ).LogoLibraryFixture.render(locale),
-      locale
+        ).LogoLibraryFixture.render(locale, target),
+      { locale, target }
     )
     await page
       .getByRole("button", {
@@ -112,6 +113,7 @@ for (const locale of ["en", "ar"] as const)
         () => (window as unknown as { selectedLogoId: string }).selectedLogoId
       )
     ).toBe("28004")
+    expect(await page.evaluate(() => (window as unknown as { selectedLogoTarget: string }).selectedLogoTarget)).toBe(target)
     await expect(
       page.getByRole("button", {
         name: dict["admin.settings.logo.select_library"],

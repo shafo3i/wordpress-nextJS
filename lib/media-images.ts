@@ -66,7 +66,8 @@ export function resolveAttachmentImage(
   const imported = guid.includes("/wp-content/uploads/")
     ? `/uploads/${guid.split("/wp-content/uploads/")[1]}`
     : guid
-  const url = uploadPath(file) || safeMediaUrl(imported) || ""
+  const remoteFile = file?.startsWith("https://") ? safeMediaUrl(file) : undefined
+  const url = remoteFile || uploadPath(file) || safeMediaUrl(imported) || ""
   let metadata: { width?: unknown; height?: unknown; sizes?: unknown } = {}
   try {
     const parsed: unknown = JSON.parse(rawMetadata || "{}")
@@ -96,8 +97,8 @@ export function resolveAttachmentImage(
       const w = dimension(size?.width),
         h = dimension(size?.height),
         path =
-          typeof size?.file === "string"
-            ? uploadPath(folder + size.file)
+          typeof size?.file === "string" && !/[\\/?#]/.test(size.file) && !size.file.startsWith(".") && !/%2e|%2f|%5c/i.test(size.file)
+            ? remoteFile ? new URL(encodeURIComponent(size.file), remoteFile).href : uploadPath(folder + size.file)
             : undefined
       if (path && w && h && Math.abs(w / h - width / height) < 0.03)
         candidates.set(w, path)

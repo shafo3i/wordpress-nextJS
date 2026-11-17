@@ -1,4 +1,9 @@
 import { z } from "zod"
+export const siteLogoTargetSchema = z.enum(["header", "footer"])
+export type SiteLogoTarget = z.infer<typeof siteLogoTargetSchema>
+export function siteLogoOptionName(target: SiteLogoTarget) {
+  return siteLogoTargetSchema.parse(target) === "footer" ? "footer_logo_id" : "site_logo_id"
+}
 
 export const siteLogoIdSchema = z
   .string()

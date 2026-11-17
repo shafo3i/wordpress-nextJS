@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { MediaItem, MediaListResult } from "@/services/media.service";
 import { AttachmentDetailsModal } from "./attachment-details-modal";
+import { MediaUploadDestination } from "@/components/admin/media-upload-destination";
 import {
   fetchMediaItemsAction,
   uploadMediaAction,
@@ -48,6 +49,7 @@ function MediaLibraryPanel({ initialData, dict, direction, uploadInitiallyOpen }
 
   // Uploading state
   const [isUploading, setIsUploading] = useState(false);
+  const [destination, setDestination] = useState<"local" | "s3">("local");
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +97,7 @@ function MediaLibraryPanel({ initialData, dict, direction, uploadInitiallyOpen }
 
     try {
       const formData = new FormData();
+      formData.set("destination", destination);
       for (let i = 0; i < files.length; i++) {
         formData.append("file", files[i]);
       }
@@ -233,6 +236,7 @@ function MediaLibraryPanel({ initialData, dict, direction, uploadInitiallyOpen }
           className="bg-white border-2 border-dashed border-[#c3c4c7] rounded p-8 text-center space-y-3 relative transition-all"
         >
           <Upload className="w-10 h-10 text-[#2271b1] mx-auto opacity-80" />
+          <MediaUploadDestination value={destination} onChange={setDestination} disabled={isUploading} dict={dict} />
           <h3 className="text-base font-bold text-[#1d2327]">
             {dict["admin.media.dropzone_text"] || ""}
           </h3>

@@ -30,6 +30,8 @@ export function mapMediaAttachment(
     ? file.slice(0, file.lastIndexOf("/") + 1)
     : ""
   const thumbnail = thumb ? resolveAttachmentImage("", folder + thumb).url : ""
+  const videoPoster = row.mimeType.startsWith("video/") && metadata.storage && typeof metadata.storage === "object" && (metadata.storage as { provider?: unknown }).provider === "s3"
+    ? `${asset.url}.poster.jpg` : ""
   const bytes = Number(metadata.filesize || metadata.fileSize || 0)
   let filename = file.split("/").pop() || ""
   if (!filename)
@@ -44,7 +46,7 @@ export function mapMediaAttachment(
     title: row.title || "",
     filename,
     url: asset.url,
-    thumbnailUrl: thumbnail || asset.url,
+    thumbnailUrl: thumbnail || videoPoster || asset.url,
     mimeType: row.mimeType,
     sizeBytes: Number.isSafeInteger(bytes) && bytes > 0 ? bytes : 0,
     width: asset.width,

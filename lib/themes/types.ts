@@ -42,9 +42,17 @@ export type ThemeModule = {
 };
 
 export type ThemeMods = {
+  footerLogoUrl?: string;
   singleContentBorder?: boolean;
   singleImageBorder?: boolean;
   singleDividerBorders?: boolean;
+  singleContentRadius?: number;
+  singleImageRadius?: number;
+  singleContentShadow?: boolean;
+  singleShowNewsletter?: boolean;
+  singleNewsletterBorder?: boolean;
+  singleNewsletterRadius?: number;
+  singleNewsletterShadow?: boolean;
   archiveContentBorder?: boolean;
   archiveDividerBorders?: boolean;
   singleShowViews?: boolean;

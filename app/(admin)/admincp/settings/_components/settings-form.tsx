@@ -5,7 +5,7 @@ import {
   SettingsSiteIdentity,
   type SettingsIdentityLanguage,
 } from "./settings-site-identity"
-import { useState, useTransition } from "react"
+import { useState, useTransition, type ReactNode } from "react"
 import { saveSettingsAction, sendTestEmailAction } from "../action"
 import type { SettingsMap } from "@/services/settings.service"
 import { MediaSelectModal } from "@/components/admin/media-select-modal"
@@ -33,21 +33,25 @@ export function SettingsForm({
   effectiveSiteUrl = "",
   timeZones = [],
   initialLogoUrl = "",
+  initialFooterLogoUrl = "",
   pages = [],
   dict = {},
   direction = "ltr",
+  storagePanel,
 }: {
   initialSettings: SettingsMap
   languages?: SettingsIdentityLanguage[]
   effectiveSiteUrl?: string
   timeZones?: string[]
   initialLogoUrl?: string
+  initialFooterLogoUrl?: string
   pages?: { id: string; title: string }[]
   dict?: Record<string, string>
   direction?: "rtl" | "ltr"
+  storagePanel?: ReactNode
 }) {
   const [activeTab, setActiveTab] = useState<
-    "general" | "seo" | "social" | "analytics" | "email"
+    "general" | "seo" | "social" | "analytics" | "email" | "storage"
   >("general")
   const [settings, setSettings] = useState<SettingsMap>(initialSettings)
   const [notice, setNotice] = useState<{
@@ -56,6 +60,7 @@ export function SettingsForm({
   } | null>(null)
   const [isPending, startTransition] = useTransition()
   const logo = useSettingsLogo(initialLogoUrl, () => setNotice(null))
+  const footerLogo = useSettingsLogo(initialFooterLogoUrl, () => setNotice(null), "footer")
 
   // SMTP Test Email state
   const [emailLocale, setEmailLocale] = useState(
@@ -115,12 +120,13 @@ export function SettingsForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (logo.mutation.isPending) return
+    if (logo.mutation.isPending || footerLogo.mutation.isPending) return
     setNotice(null)
 
     startTransition(async () => {
       try {
         await logo.savePending()
+        await footerLogo.savePending()
         const changes = Object.fromEntries(
           Object.entries(settings).filter(
             ([key, value]) => initialSettings[key] !== value
@@ -150,6 +156,7 @@ export function SettingsForm({
   }
 
   const tabs = [
+    ...(storagePanel ? [{ id: "storage" as const, label: dict["admin.storage.title"], icon: ImageIcon }] : []),
     {
       id: "general" as const,
       label: dict["admin.settings.tab_general"],
@@ -228,7 +235,7 @@ export function SettingsForm({
         })}
       </div>
 
-      <form
+      {activeTab === "storage" ? storagePanel : <form
         onSubmit={handleSubmit}
         className="rounded-[3px] border border-[#c3c4c7] bg-white p-6 shadow-[0_1px_1px_rgba(0,0,0,0.04)]"
       >
@@ -238,6 +245,7 @@ export function SettingsForm({
         {activeTab === "general" && (
           <div className="space-y-6">
             <SettingsLogo controller={logo} dict={dict} busy={isPending} />
+            <SettingsLogo controller={footerLogo} dict={dict} busy={isPending} />
             <div>
               <h2 className="text-[16px] font-semibold text-[#1d2327]">
                 {dict["admin.settings.general_heading"]}
@@ -1328,15 +1336,15 @@ export function SettingsForm({
         <div className="mt-8 border-t border-[#dcdcde] pt-5">
           <button
             type="submit"
-            disabled={isPending || logo.mutation.isPending}
+            disabled={isPending || logo.mutation.isPending || footerLogo.mutation.isPending}
             className="inline-flex items-center gap-2 rounded-[3px] border border-[#2271b1] bg-[#2271b1] px-4 py-1.5 text-[13px] font-medium text-white shadow-sm hover:border-[#135e96] hover:bg-[#135e96] focus:outline-none disabled:opacity-50"
           >
-            {isPending || logo.mutation.isPending
+            {isPending || logo.mutation.isPending || footerLogo.mutation.isPending
               ? dict["admin.common.saving"]
               : dict["admin.settings.save_changes"]}
           </button>
         </div>
-      </form>
+      </form>}
 
       {/* Media Library Selector Modal */}
       <MediaSelectModal

@@ -8,6 +8,7 @@ import { unstable_rethrow } from "next/navigation";
 import { verifyPostEditor } from "@/lib/authMIddleware";
 import { getAdminLanguageContext } from "@/components/admin/admin-shell";
 import { MAX_MEDIA_UPLOAD_BYTES, MAX_MEDIA_UPLOAD_FILES, MediaUploadError, validateMediaUpload } from "@/lib/media-upload";
+import { mediaUploadDestinationSchema } from "@/db/schema/cms-media-storage";
 async function message(key: string) { const { dict } = await getAdminLanguageContext(); return dict[key] || dict["admin.media.error_failed"] || ""; }
 async function failure(error: unknown) {
   unstable_rethrow(error);
@@ -24,6 +25,7 @@ export async function uploadMediaAction(formData: FormData): Promise<{ success: 
   const uploaded: MediaItem[] = [];
   try {
     const files = formData.getAll("file");
+    const destination = mediaUploadDestinationSchema.parse(formData.get("destination") || undefined);
     if (!files.length || files.length > MAX_MEDIA_UPLOAD_FILES || files.some(file => !(file instanceof File) || !file.size) || files.reduce((sum, file) => sum + (file instanceof File ? file.size : 0), 0) > MAX_MEDIA_UPLOAD_BYTES)
       throw new MediaUploadError("admin.media.invalid_upload");
     // Preflight every file's policy before writing any member of the batch.
@@ -32,7 +34,7 @@ export async function uploadMediaAction(formData: FormData): Promise<{ success: 
       const file = entry as File, bytes = Buffer.from(await file.arrayBuffer());
       validateMediaUpload(file.name, file.type, bytes); pending.push({ file, bytes });
     }
-    for (const { file, bytes } of pending) uploaded.push(await uploadMediaFile(bytes, file.name, file.type, session.user.id));
+    for (const { file, bytes } of pending) uploaded.push(destination === "local" ? await uploadMediaFile(bytes, file.name, file.type, session.user.id) : await uploadMediaFile(bytes, file.name, file.type, session.user.id, undefined, destination));
     revalidatePath("/admincp/media"); return { success: true, items: uploaded };
   } catch (error) {
     unstable_rethrow(error);

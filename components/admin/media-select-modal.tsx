@@ -18,6 +18,7 @@ import {
 import type { MediaItem } from "@/services/media.service";
 import { fetchMediaItemsAction, uploadMediaAction } from "@/app/(admin)/admincp/media/actions";
 import { MAX_MEDIA_UPLOAD_BYTES } from "@/lib/media-upload";
+import { MediaUploadDestination } from "./media-upload-destination";
 
 interface MediaSelectModalProps {
   isOpen: boolean;
@@ -48,6 +49,7 @@ export function MediaSelectModal({
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [destination, setDestination] = useState<"local" | "s3">("local");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,6 +83,7 @@ export function MediaSelectModal({
 
     try {
       const formData = new FormData();
+      formData.set("destination", destination);
       for (let i = 0; i < files.length; i++) {
         formData.append("file", files[i]);
       }
@@ -199,6 +202,7 @@ export function MediaSelectModal({
                     {dict["admin.media.choose_from_computer"]}
                   </p>
                 </div>
+                <MediaUploadDestination value={destination} onChange={setDestination} disabled={isUploading} dict={dict} />
                 <input
                   ref={fileInputRef}
                   type="file"

@@ -25,8 +25,9 @@ beforeEach(() => {
   mocks.auth.mockResolvedValue({ user: { id: "admin", role: "admin" } })
   mocks.upload.mockResolvedValue({ id: "900", url: "/uploads/logo.webp" })
 })
-function request(files = 1, origin = "http://localhost:3000") {
+function request(files = 1, origin = "http://localhost:3000", target?: string) {
   const data = new FormData()
+  if (target) data.set("target", target)
   for (let index = 0; index < files; index++)
     data.append("file", new File(["image"], "logo.png", { type: "image/png" }))
   return new Request("http://localhost:3000/api/admin/settings/logo", {
@@ -36,6 +37,13 @@ function request(files = 1, origin = "http://localhost:3000") {
   })
 }
 describe("Settings logo upload endpoint", () => {
+  it("routes footer uploads separately and rejects arbitrary option targets", async () => {
+    expect((await POST(request(1, "http://localhost:3000", "footer"))).status).toBe(200)
+    expect(mocks.upload).toHaveBeenCalledWith(expect.any(File), "admin", "footer")
+    mocks.upload.mockClear()
+    expect((await POST(request(1, "http://localhost:3000", "smtp_pass"))).status).toBe(400)
+    expect(mocks.upload).not.toHaveBeenCalled()
+  })
   it("denies editors access to site identity changes", async () => {
     mocks.auth.mockResolvedValue({ user: { id: "editor", role: "editor" } })
     expect((await POST(request())).status).toBe(403)

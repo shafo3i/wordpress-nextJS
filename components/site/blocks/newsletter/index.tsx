@@ -67,7 +67,7 @@ export function NewsletterBlock({
   }
 
   return (
-    <section data-studio-card
+    <section data-studio-card data-newsletter-source={source}
       className={`${compact ? "p-4" : "p-8"} theme-widget rounded-2xl border border-[var(--theme-widget-border,var(--theme-border))] bg-[var(--theme-widget-bg,var(--theme-surface))] text-center text-[var(--theme-widget-text,var(--theme-text))] shadow-sm`}
     >
       <Mail aria-hidden="true" className="mx-auto size-6" />

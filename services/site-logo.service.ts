@@ -4,7 +4,7 @@ import { db } from "@/db"
 import { wpPosts, wpOptions, wpPostmeta } from "@/db/schema"
 import { resolveAttachmentImage } from "@/lib/media-images"
 import { setOption } from "./settings.service"
-import { siteLogoIdSchema } from "@/db/schema/cms-site-logo"
+import { siteLogoIdSchema, siteLogoOptionName, type SiteLogoTarget } from "@/db/schema/cms-site-logo"
 
 export interface SiteLogo {
   id: string
@@ -12,11 +12,11 @@ export interface SiteLogo {
 }
 export class SiteLogoError extends Error {}
 
-async function read_getGlobalSiteLogo(): Promise<SiteLogo | null> {
+async function read_getGlobalSiteLogo(target: SiteLogoTarget = "header"): Promise<SiteLogo | null> {
   const [option] = await db
     .select({ value: wpOptions.optionValue })
     .from(wpOptions)
-    .where(eq(wpOptions.optionName, "site_logo_id"))
+    .where(eq(wpOptions.optionName, siteLogoOptionName(target)))
     .limit(1)
   // Absent global configuration preserves a legacy theme logo until Settings is used.
   if (!option) return null
@@ -49,17 +49,18 @@ async function getLogoAttachmentUrl(id: string): Promise<string> {
   return resolveAttachmentImage(attachment.url, file?.value || undefined).url
 }
 
-export async function selectSiteLogo(attachmentId: string): Promise<SiteLogo> {
+export async function selectSiteLogo(attachmentId: string, target: SiteLogoTarget = "header"): Promise<SiteLogo> {
+  const option = siteLogoOptionName(target)
   const id = siteLogoIdSchema.parse(attachmentId)
   if (!id) throw new SiteLogoError("admin.settings.logo.invalid_selection")
   const url = await getLogoAttachmentUrl(id)
   if (!url) throw new SiteLogoError("admin.settings.logo.invalid_selection")
-  await setOption("site_logo_id", id)
+  await setOption(option, id)
   return { id, url }
 }
 
-export async function removeSiteLogo(): Promise<void> {
-  await setOption("site_logo_id", "")
+export async function removeSiteLogo(target: SiteLogoTarget = "header"): Promise<void> {
+  await setOption(siteLogoOptionName(target), "")
 }
 
 export const getGlobalSiteLogo = cache(read_getGlobalSiteLogo)

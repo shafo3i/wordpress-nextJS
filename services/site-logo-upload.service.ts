@@ -9,6 +9,8 @@ import { SiteLogoError, type SiteLogo } from "./site-logo.service"
 import {
   SITE_LOGO_MAX_BYTES,
   siteLogoIdSchema,
+  siteLogoOptionName,
+  type SiteLogoTarget,
 } from "@/db/schema/cms-site-logo"
 
 export async function normalizeSiteLogo(file: File): Promise<Buffer> {
@@ -45,9 +47,11 @@ export async function normalizeSiteLogo(file: File): Promise<Buffer> {
 
 export async function uploadSiteLogo(
   file: File,
-  authorId: string
+  authorId: string,
+  target: SiteLogoTarget = "header"
 ): Promise<SiteLogo> {
   const rateActor = await verifyAdmin();
+  const option = siteLogoOptionName(target);
   await checkCmsRateLimit(rateActor.user.id, "logo-upload");
   const buffer = await normalizeSiteLogo(file)
   const item = await uploadMediaFile(
@@ -57,6 +61,6 @@ export async function uploadSiteLogo(
     authorId
   )
   const id = siteLogoIdSchema.parse(String(item.id))
-  await setOption("site_logo_id", id)
+  await setOption(option, id)
   return { id, url: item.url }
 }

@@ -3,10 +3,16 @@ import { getAllSettings, type SettingsMap } from "@/services/settings.service"
 import { getAllParentPageOptions } from "@/services/page.service"
 import { getCustomizerData } from "@/lib/themes/customizer"
 
+export async function getSettingsStorageQuery() {
+  await verifyAdmin()
+  const { getMediaStorageAdminView } = await import("@/services/media-storage.service")
+  return getMediaStorageAdminView()
+}
+
 export async function getSettingsLogoQuery() {
   await verifyAdmin()
   const { mods } = await getCustomizerData()
-  return { url: mods.logoUrl || "" }
+  return { url: mods.logoUrl || "", footerUrl: mods.footerLogoUrl || "" }
 }
 
 export async function getSettingsQuery(): Promise<SettingsMap> {

@@ -62,10 +62,11 @@ export async function getCustomizerData(
       console.error(`Failed to parse theme_mods_${slug}:`, e)
     }
   }
-  const globalLogo = await getGlobalSiteLogo()
+  const [globalLogo, footerLogo] = await Promise.all([getGlobalSiteLogo(), getGlobalSiteLogo("footer")])
   const mods: ThemeMods = {
     ...resolveMods(slug, stored),
     ...(globalLogo ? { logoUrl: globalLogo.url } : {}),
+    footerLogoUrl: footerLogo?.url || "",
   }
 
   // Load primary nav items for live preview

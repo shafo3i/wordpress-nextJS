@@ -6,13 +6,15 @@ import { useRouter } from "next/navigation"
 import {
   SITE_LOGO_ACCEPT,
   SITE_LOGO_MAX_BYTES,
+  type SiteLogoTarget,
 } from "@/db/schema/cms-site-logo"
 import { removeSettingsLogoAction, selectSettingsLogoAction } from "../action"
 import { MediaSelectModal } from "@/components/admin/media-select-modal"
 
 export function useSettingsLogo(
   initialUrl: string,
-  onSelectionChange?: () => void
+  onSelectionChange?: () => void,
+  target: SiteLogoTarget = "header"
 ) {
   const [url, setUrl] = useState(initialUrl)
   const [file, setFile] = useState<File | null>(null)
@@ -20,12 +22,12 @@ export function useSettingsLogo(
   const mutation = useMutation({
     mutationFn: async (file: File | null | { attachmentId: string }) => {
       if (file && !(file instanceof File)) {
-        const result = await selectSettingsLogoAction(file.attachmentId)
+        const result = target === "header" ? await selectSettingsLogoAction(file.attachmentId) : await selectSettingsLogoAction(file.attachmentId, target)
         if (!result.success) throw new Error(result.error)
         return result.logo.url
       }
       if (!file) {
-        const result = await removeSettingsLogoAction()
+        const result = target === "header" ? await removeSettingsLogoAction() : await removeSettingsLogoAction(target)
         if (!result.success) throw new Error(result.error)
         return ""
       }
@@ -33,6 +35,7 @@ export function useSettingsLogo(
         throw new Error("admin.settings.logo.invalid_file")
       const data = new FormData()
       data.set("file", file)
+      data.set("target", target)
       const response = await fetch("/api/admin/settings/logo", {
         method: "POST",
         credentials: "same-origin",
@@ -50,6 +53,7 @@ export function useSettingsLogo(
     },
   })
   return {
+    target,
     url,
     file,
     mutation,
@@ -73,7 +77,7 @@ export function SettingsLogo({
   dict: Record<string, string>
   busy?: boolean
 }) {
-  const { url, file, mutation, chooseFile } = controller
+  const { url, file, mutation, chooseFile, target } = controller
   const [libraryOpen, setLibraryOpen] = useState(false)
   return (
     <fieldset
@@ -81,13 +85,13 @@ export function SettingsLogo({
       className="space-y-3 border-b border-[#c3c4c7] pb-6"
     >
       <legend className="text-[16px] font-semibold text-[#1d2327]">
-        {dict["admin.settings.logo.title"]}
+        {dict[target === "footer" ? "admin.settings.footer_logo.title" : "admin.settings.header_logo.title"]}
       </legend>
       <p className="text-[12px] text-[#646970]">
-        {dict["admin.settings.logo.description"]}
+        {dict[target === "footer" ? "admin.settings.footer_logo.description" : "admin.settings.header_logo.description"]}
       </p>
       {url && (
-        <div className="inline-block rounded border border-[#c3c4c7] bg-[#f0f0f1] p-4">
+        <div className={`inline-block rounded border border-[#c3c4c7] p-4 ${target === "footer" ? "bg-[#1d2327]" : "bg-[#f0f0f1]"}`}>
           <img
             src={url}
             alt={dict["admin.settings.logo.preview"]}

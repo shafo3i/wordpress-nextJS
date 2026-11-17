@@ -12,6 +12,7 @@ import { getStudioCategories } from "@/services/studio-content.service"
 import { getHomepageSettings } from "@/lib/themes/homepage-blocks"
 import { getAllWidgetAreas } from "@/lib/widgets/db"
 import { PreviewHost } from "./preview-host"
+import { getArticleNewsletter } from "@/lib/newsletter/presentation"
 
 export const dynamic = "force-dynamic"
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -36,6 +37,7 @@ export default async function CustomizePreviewPage({
   ])
 
   const area = (id: string) => widgetAreas.find((a) => a.id === id)?.items ?? []
+  const newsletter = await getArticleNewsletter(base.locale || base.defaultLocale || "en")
   const categories = await getStudioCategories()
   const category =
     categories.find(
@@ -47,6 +49,7 @@ export default async function CustomizePreviewPage({
 
   return (
     <PreviewHost
+      newsletter={newsletter}
       themeSlug={data.themeSlug}
       baseTheme={base}
       initialState={{
