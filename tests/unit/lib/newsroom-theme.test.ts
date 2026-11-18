@@ -25,6 +25,15 @@ const posts: ContentItem[] = Array.from({ length: 13 }, (_, i) => ({
   imageUrl: "",
 }))
 describe("Newsroom theme and editorial presentations", () => {
+  it("uses full story cards for all six side-column posts", () => {
+    const html = renderToStaticMarkup(renderEditorialBlock({
+      block: { ...createDefaultBlockConfig("newsroom"), postCount: 7 },
+      posts,
+      theme: DEFAULT_THEME,
+    }))
+    expect(html.match(/<article/g)).toHaveLength(7)
+    expect(html).not.toContain('data-studio-divider="top"')
+  })
   it("registers an independent theme with a full-width, empty-title default", () => {
     expect(getThemeModule("pressforge-newsroom").manifest.slug).toBe(
       "pressforge-newsroom"

@@ -3,6 +3,7 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "local-fonts.browser.spec.ts",
     "article-presentation.browser.spec.ts",
     "media-storage.browser.spec.ts",
     "language-install.browser.spec.ts",

@@ -1,6 +1,6 @@
 "use client"
 import { createContext, useContext, type ReactNode } from "react"
-import { getGoogleFontsUrl } from "@/lib/customizer/fonts"
+import { getLocalFontStylesheets } from "@/lib/customizer/fonts"
 import type { StudioDesign } from "@/db/schema/cms-studio-design"
 import {
   studioDesignPresentation,
@@ -38,14 +38,14 @@ export function StudioDesignSurface({
   const { style, attributes } = studioDesignPresentation(
     studioDesignForDevice(design, previewDevice)
   )
-  const fontUrl = getGoogleFontsUrl(
+  const fontStylesheets = getLocalFontStylesheets(
     Object.values(design?.typography || {}).flatMap((devices) =>
       Object.values(devices || {}).map((values) => values?.family)
     )
   )
   return (
     <div className={styles.design} style={style} {...attributes}>
-      {fontUrl && <link rel="stylesheet" href={fontUrl} />}
+      {fontStylesheets.map(href => <link key={href} rel="stylesheet" href={href} precedence="fonts" />)}
       {children}
     </div>
   )

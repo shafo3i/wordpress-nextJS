@@ -124,7 +124,7 @@ export function NewsroomBlock({ posts, block, theme, design }: Props) {
           )}
           {!!end.length && (
             <div className={styles.end}>
-              {end.map((post, i) => card(post, i < 2 ? "story" : "compact"))}
+              {end.map((post) => card(post, "story"))}
             </div>
           )}
         </div>

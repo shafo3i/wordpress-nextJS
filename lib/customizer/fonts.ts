@@ -7,8 +7,8 @@ export interface FontDef {
   kind: FontKind;
   /** CSS font-family stack. */
   stack: string;
-  /** Google Fonts `family=` query value; omit for system fonts. */
-  google?: string;
+  /** Bundled WOFF2 family; omitted for system fonts. */
+  local?: boolean;
   heading: boolean;
   body: boolean;
   /** Writing system the font is designed for. Latin fonts are used for LTR, Arabic fonts for RTL. */
@@ -22,7 +22,7 @@ export const FONTS: FontDef[] = [
     note: "Classic Broadsheet Serif",
     kind: "serif",
     stack: "'Playfair Display', Georgia, serif",
-    google: "Playfair+Display:ital,wght@0,400..900;1,400..900",
+    local: true,
     heading: true,
     body: false,
     script: "latin",
@@ -33,7 +33,7 @@ export const FONTS: FontDef[] = [
     note: "Warm Literary Editorial Serif",
     kind: "serif",
     stack: "'Merriweather', Georgia, serif",
-    google: "Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700",
+    local: true,
     heading: true,
     body: false,
     script: "latin",
@@ -54,7 +54,7 @@ export const FONTS: FontDef[] = [
     note: "Longform Editorial",
     kind: "serif",
     stack: "'Source Serif 4', Georgia, serif",
-    google: "Source+Serif+4:ital,opsz,wght@0,8..60,400..900;1,8..60,400..900",
+    local: true,
     heading: false,
     body: true,
     script: "latin",
@@ -65,7 +65,7 @@ export const FONTS: FontDef[] = [
     note: "Literary Serif",
     kind: "serif",
     stack: "'Lora', Georgia, serif",
-    google: "Lora:ital,wght@0,400..700;1,400..700",
+    local: true,
     heading: false,
     body: true,
     script: "latin",
@@ -76,7 +76,7 @@ export const FONTS: FontDef[] = [
     note: "Clean High-Legibility Sans",
     kind: "sans",
     stack: "'Inter', -apple-system, sans-serif",
-    google: "Inter:wght@300..900",
+    local: true,
     heading: true,
     body: true,
     script: "latin",
@@ -87,7 +87,7 @@ export const FONTS: FontDef[] = [
     note: "Dynamic Digital News Sans",
     kind: "sans",
     stack: "'Roboto', -apple-system, sans-serif",
-    google: "Roboto:ital,wght@0,300..900;1,300..900",
+    local: true,
     heading: true,
     body: true,
     script: "latin",
@@ -98,7 +98,7 @@ export const FONTS: FontDef[] = [
     note: "Bold Magazine Display Sans",
     kind: "sans",
     stack: "'Montserrat', -apple-system, sans-serif",
-    google: "Montserrat:ital,wght@0,400..900;1,400..900",
+    local: true,
     heading: true,
     body: false,
     script: "latin",
@@ -109,7 +109,7 @@ export const FONTS: FontDef[] = [
     note: "Condensed Impact Wire Sans",
     kind: "sans",
     stack: "'Oswald', sans-serif",
-    google: "Oswald:wght@300..700",
+    local: true,
     heading: true,
     body: false,
     script: "latin",
@@ -120,19 +120,19 @@ export const FONTS: FontDef[] = [
     note: "Neutral Sans",
     kind: "sans",
     stack: "'Open Sans', -apple-system, sans-serif",
-    google: "Open+Sans:ital,wght@0,300..800;1,300..800",
+    local: true,
     heading: false,
     body: true,
     script: "latin",
   },
-  { id: "cairo", label: "Cairo", note: "Modern geometric Arabic sans", kind: "sans", stack: "'Cairo', 'Segoe UI', Tahoma, sans-serif", google: "Cairo:wght@300..900", heading: true, body: true, script: "arabic" },
-  { id: "tajawal", label: "Tajawal", note: "Clean Arabic UI sans", kind: "sans", stack: "'Tajawal', 'Segoe UI', Tahoma, sans-serif", google: "Tajawal:wght@300;400;500;700;800", heading: true, body: true, script: "arabic" },
-  { id: "almarai", label: "Almarai", note: "Rounded readable Arabic sans", kind: "sans", stack: "'Almarai', 'Segoe UI', Tahoma, sans-serif", google: "Almarai:wght@300;400;700;800", heading: true, body: true, script: "arabic" },
-  { id: "noto_kufi_arabic", label: "Noto Kufi Arabic", note: "Bold Kufi display", kind: "sans", stack: "'Noto Kufi Arabic', 'Segoe UI', Tahoma, sans-serif", google: "Noto+Kufi+Arabic:wght@300..900", heading: true, body: true, script: "arabic" },
-  { id: "ibm_plex_arabic", label: "IBM Plex Sans Arabic", note: "Neutral technical Arabic sans", kind: "sans", stack: "'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif", google: "IBM+Plex+Sans+Arabic:wght@300;400;500;600;700", heading: true, body: true, script: "arabic" },
-  { id: "noto_naskh_arabic", label: "Noto Naskh Arabic", note: "Traditional Naskh serif for long reading", kind: "serif", stack: "'Noto Naskh Arabic', 'Traditional Arabic', serif", google: "Noto+Naskh+Arabic:wght@400..700", heading: true, body: true, script: "arabic" },
-  { id: "amiri", label: "Amiri", note: "Classical Arabic book serif", kind: "serif", stack: "'Amiri', 'Traditional Arabic', serif", google: "Amiri:ital,wght@0,400;0,700;1,400;1,700", heading: true, body: true, script: "arabic" },
-  { id: "el_messiri", label: "El Messiri", note: "Distinctive Arabic display", kind: "sans", stack: "'El Messiri', 'Segoe UI', Tahoma, sans-serif", google: "El+Messiri:wght@400..700", heading: true, body: false, script: "arabic" },
+  { id: "cairo", label: "Cairo", note: "Modern geometric Arabic sans", kind: "sans", stack: "'Cairo', 'Segoe UI', Tahoma, sans-serif", local: true, heading: true, body: true, script: "arabic" },
+  { id: "tajawal", label: "Tajawal", note: "Clean Arabic UI sans", kind: "sans", stack: "'Tajawal', 'Segoe UI', Tahoma, sans-serif", local: true, heading: true, body: true, script: "arabic" },
+  { id: "almarai", label: "Almarai", note: "Rounded readable Arabic sans", kind: "sans", stack: "'Almarai', 'Segoe UI', Tahoma, sans-serif", local: true, heading: true, body: true, script: "arabic" },
+  { id: "noto_kufi_arabic", label: "Noto Kufi Arabic", note: "Bold Kufi display", kind: "sans", stack: "'Noto Kufi Arabic', 'Segoe UI', Tahoma, sans-serif", local: true, heading: true, body: true, script: "arabic" },
+  { id: "ibm_plex_arabic", label: "IBM Plex Sans Arabic", note: "Neutral technical Arabic sans", kind: "sans", stack: "'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif", local: true, heading: true, body: true, script: "arabic" },
+  { id: "noto_naskh_arabic", label: "Noto Naskh Arabic", note: "Traditional Naskh serif for long reading", kind: "serif", stack: "'Noto Naskh Arabic', 'Traditional Arabic', serif", local: true, heading: true, body: true, script: "arabic" },
+  { id: "amiri", label: "Amiri", note: "Classical Arabic book serif", kind: "serif", stack: "'Amiri', 'Traditional Arabic', serif", local: true, heading: true, body: true, script: "arabic" },
+  { id: "el_messiri", label: "El Messiri", note: "Distinctive Arabic display", kind: "sans", stack: "'El Messiri', 'Segoe UI', Tahoma, sans-serif", local: true, heading: true, body: false, script: "arabic" },
 ];
 
 const FONT_BY_ID = new Map(FONTS.map((f) => [f.id, f]));
@@ -150,11 +150,13 @@ export const BODY_FONTS = LATIN_FONTS.filter((f) => f.body);
 /** Default Arabic font when a theme doesn't choose one. */
 export const DEFAULT_ARABIC_FONT = "cairo";
 
-/** Google Fonts stylesheet containing only the given fonts (unknown or system fonts are skipped). */
-export function getGoogleFontsUrl(ids: Array<string | undefined>): string | null {
-  const families = Array.from(new Set(ids.map((id) => getFont(id)?.google).filter((g): g is string => Boolean(g))));
-  if (families.length === 0) return null;
-  return `https://fonts.googleapis.com/css2?${families.map((f) => `family=${f}`).join("&")}&display=swap`;
+/** Base UI families share their assets with the theme font catalog. */
+export const BASE_FONT_STYLESHEETS = ["/fonts/inter/font.css", "/fonts/geist_mono/font.css"] as const;
+
+/** Resolve known font ids only; never turn arbitrary settings into asset paths. */
+export function getLocalFontStylesheets(ids: Array<string | undefined>): string[] {
+  return Array.from(new Set(ids.filter((id): id is string => Boolean(getFont(id)?.local))))
+    .map(id => "/fonts/" + id + "/font.css");
 }
 export function getFont(id?: string): FontDef | undefined {
   return id ? FONT_BY_ID.get(id) : undefined;

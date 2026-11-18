@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
-import { Geist_Mono, Inter } from "next/font/google"
+import { BASE_FONT_STYLESHEETS } from "@/lib/customizer/fonts"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toast"
 import { getSiteMetadata } from "@/services/settings.service"
 import { getActiveFaviconUrl } from "@/lib/themes/customizer"
@@ -11,13 +10,6 @@ import { headers, cookies } from "next/headers"
 import { SiteAnalytics } from "@/components/site/site-analytics"
 import { getPublicLanguageContext } from "@/lib/public-language"
 import { getSeoSite } from "@/lib/seo/data"
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
 
 export async function generateMetadata(): Promise<Metadata> {
   const [metadata, favicon] = await Promise.all([
@@ -59,13 +51,11 @@ export default async function RootLayout({
           : publicLanguage.direction
       }
       suppressHydrationWarning
-      className={cn(
-        "antialiased",
-        fontMono.variable,
-        "font-sans",
-        inter.variable
-      )}
+      className="antialiased font-sans"
     >
+      <head>
+        {BASE_FONT_STYLESHEETS.map(href => <link key={href} rel="stylesheet" href={href} precedence="fonts" />)}
+      </head>
       <body>
         <ThemeProvider>
           <TanStackProvider>{children}</TanStackProvider>
