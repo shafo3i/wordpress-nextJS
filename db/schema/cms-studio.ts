@@ -96,6 +96,7 @@ const studioBlockSchema: z.ZodType<HomepageBlock> = z.object({
   subtitles: z.record(z.string(), z.string().max(100_000)).optional(),
   linkText: z.string().max(100_000).optional(),
   linkHref: linkSchema.optional(),
+  showCategoryLink: z.boolean().optional(),
   showColumnHeaders: z.boolean().optional(),
   col1Title: z.string().max(100_000).optional(),
   col2Title: z.string().max(100_000).optional(),

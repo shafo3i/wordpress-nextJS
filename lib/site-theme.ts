@@ -39,6 +39,8 @@ export type FrontEndThemeContext = {
   siteUrl?: string;
   siteTagline: string;
   timeZone?: string;
+  /** Server snapshot avoids date/time-zone hydration differences in the masthead. */
+  headerDate?: string;
   primaryColor: string;
   headerLayout: "classic" | "minimal" | "magazine" | "centered" | "inline-news";
   headingFont: "serif" | "sans";
@@ -168,6 +170,7 @@ export async function getFrontEndThemeContext(options?: {
     siteUrl: siteBaseUrl(siteOptions),
     siteTagline: identity.blogdescription,
     timeZone: siteOptions.timezone_string || "UTC",
+    headerDate: new Date().toISOString(),
     primaryColor: resolveColor(mods, "primaryColor"),
     headerLayout: mods.headerLayout ?? "classic",
     headingFont: getFontKind(mods.headingFontFamily),

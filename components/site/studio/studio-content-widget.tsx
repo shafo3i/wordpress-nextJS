@@ -74,6 +74,7 @@ function ResolvedContent({
             isDefaultLocale: result.locale === theme.defaultLocale,
           },
           preFiltered: true,
+          resolvedCategory: result.category,
           design: element.settings.design,
         })}
       </div>

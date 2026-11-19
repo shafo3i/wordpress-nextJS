@@ -183,6 +183,9 @@ export type ThemeMods = {
   showTopBar?: boolean;
   topBarTickerText?: string;
   showDateInHeader?: boolean;
+  showMastheadDetails?: boolean;
+  showMastheadStatement?: boolean;
+  showMastheadLanguages?: boolean;
   showSearchInNav?: boolean;
   showSocialIconsInHeader?: boolean;
   headerBorderStyle?: "solid" | "double" | "none";

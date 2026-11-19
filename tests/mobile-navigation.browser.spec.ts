@@ -4,6 +4,42 @@ import { fileURLToPath } from "node:url"
 import en from "../templates/language/en.json" with { type: "json" }
 import ar from "../templates/language/ar.json" with { type: "json" }
 let files: { path: string; text: string }[]
+for (const locale of ["en", "ar"] as const) {
+  test(`balanced masthead keeps the logo centred and utilities responsive (${locale})`, async ({ page }) => {
+    await page.route("https://images.test/brand.svg", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="100"><rect width="240" height="100" fill="#173e40"/><text x="120" y="57" fill="white" font-size="22" text-anchor="middle">NEWSROOM</text></svg>' }))
+    await page.setContent('<div id="fixture"></div>')
+    await page.addStyleTag({ content: "body{margin:0;font-family:Arial}*{box-sizing:border-box}.theme-container{max-width:1280px;margin-inline:auto}.sticky{position:sticky}#fixture{min-height:1800px}" })
+    for (const file of files) {
+      if (file.path.endsWith(".css")) await page.addStyleTag({ content: file.text })
+      else await page.addScriptTag({ content: file.text })
+    }
+    const render = async (details: boolean) => page.evaluate(({ locale, details }) => {
+      (window as unknown as { MobileNavigationFixture: { render: (...args: unknown[]) => void } }).MobileNavigationFixture.render(locale, "classic", true, "solid", details, true)
+    }, { locale, details })
+    await page.setViewportSize({ width: 1400, height: 800 })
+    await render(true)
+    const header = page.locator('header[data-masthead-details="true"]')
+    await expect(header.locator("[data-masthead-publication] p")).toBeVisible()
+    await expect(header.locator("time")).toHaveAttribute("datetime", "2026-11-19T12:00:00.000Z")
+    await expect(header.locator('[data-masthead-utilities] a[hreflang]')).toHaveCount(2)
+    await expect(header.locator('a[href="https://example.test/facebook"]')).toHaveCount(1)
+    await expect(header.locator('a[href*="cms-admin"],a[href*="register"]')).toHaveCount(0)
+    const image = (await header.locator("img").boundingBox())!
+    expect(Math.abs(image.x + image.width / 2 - 700)).toBeLessThan(2)
+    await header.screenshot({ path: `test-results/masthead-${locale}-desktop.png` })
+    await page.setViewportSize({ width: 320, height: 800 })
+    await expect(header.locator("[data-masthead-publication]")).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    const dict = locale === "ar" ? ar : en
+    await expect(header.locator("[data-site-navigation]").getByRole("link", { name: dict["site.search.label"], exact: true })).toBeVisible()
+    await header.screenshot({ path: `test-results/masthead-${locale}-mobile.png` })
+    await page.evaluate(() => window.scrollTo(0, 400))
+    await expect.poll(async () => Math.abs((await header.locator("[data-site-navigation]").boundingBox())!.y)).toBeLessThan(2)
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await render(false)
+    await expect(page.locator("[data-masthead-publication]")).toHaveCount(0)
+  })
+}
 
 for (const locale of ["en", "ar"] as const) {
   test(`inline news header has one brand, working drawer and configurable borders in ${locale}`, async ({ page }) => {
@@ -189,11 +225,13 @@ for (const locale of ["en", "ar"] as const)
               render: (
                 locale: "en" | "ar",
                 layout: "classic",
-                showTopBar: boolean
+                showTopBar: boolean,
+                border: string,
+                details: boolean
               ) => void
             }
           }
-        ).MobileNavigationFixture.render(locale, "classic", false),
+        ).MobileNavigationFixture.render(locale, "classic", false, "solid", false),
       locale
     )
     const navigation = page.locator("[data-site-navigation]")

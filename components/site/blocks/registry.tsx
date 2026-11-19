@@ -8,6 +8,7 @@ import type { StudioDesign } from "@/db/schema/cms-studio-design"
 import type { ContentItem } from "@/lib/site-content"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
 import type { HomepageBlock } from "@/lib/themes/homepage-types"
+import { getCategoryUrl } from "@/components/site/utils"
 
 // Modular block imports
 import { MagazineBentoBlock } from "./bento"
@@ -65,12 +66,14 @@ export function renderEditorialBlock({
   theme,
   preFiltered = false,
   design,
+  resolvedCategory,
 }: {
   block: HomepageBlock
   posts: ContentItem[]
   theme: FrontEndThemeContext
   preFiltered?: boolean
   design?: StudioDesign
+  resolvedCategory?: { slug: string } | null
 }): React.ReactNode {
   if (!rawBlock.enabled) return null
 
@@ -81,12 +84,21 @@ export function renderEditorialBlock({
     (rawBlock.subtitles && rawBlock.subtitles[activeLocale]) ||
     rawBlock.subtitle
 
+  const categorySlug = resolvedCategory !== undefined
+    ? resolvedCategory?.slug
+    : rawBlock.categoryId ? undefined : rawBlock.categorySlug
+  const autoCategoryHref = rawBlock.showCategoryLink !== false && localizedTitle.trim() && categorySlug && categorySlug !== "all"
+    ? getCategoryUrl(encodeURIComponent(categorySlug), theme)
+    : undefined
+  const sectionHref = rawBlock.linkHref || autoCategoryHref
+  const sectionLinkText = rawBlock.linkText || (autoCategoryHref ? theme.dict?.["site.read_more"] : undefined)
+
   const block: HomepageBlock = {
     ...rawBlock,
     title: rawBlock.showTitle === false ? "" : localizedTitle,
     subtitle: rawBlock.showTitle === false ? undefined : localizedSubtitle,
-    linkText: rawBlock.showTitle === false ? undefined : rawBlock.linkText,
-    linkHref: rawBlock.showTitle === false ? undefined : rawBlock.linkHref,
+    linkText: rawBlock.showTitle === false ? undefined : sectionLinkText,
+    linkHref: rawBlock.showTitle === false ? undefined : sectionHref,
   }
 
   // Filter posts by category if specified

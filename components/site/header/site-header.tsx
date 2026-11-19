@@ -14,6 +14,7 @@ import {
   t,
 } from "@/components/site/utils"
 import { SocialLinks } from "@/components/site/social-links"
+import { MastheadPublication, MastheadUtilities } from "./masthead-details"
 
 type CssVars = CSSProperties
 
@@ -58,6 +59,8 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
 
   const headerLayout = mods.headerLayout || theme.headerLayout || "classic"
   const inlineHeader = headerLayout === "inline-news" && Boolean(theme.primaryNav?.length)
+  const hasBrand = Boolean(mods.logoUrl || mods.showSiteTitle !== false || (mods.showTagline !== false && theme.siteTagline))
+  const mastheadDetails = hasBrand && !inlineHeader && mods.showMastheadDetails !== false
   const stickyNavigation =
     mods.stickyHeader !== false && Boolean(theme.primaryNav?.length)
   useEffect(() => {
@@ -117,7 +120,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
     ) : null
 
   const showSocialsInNav =
-    mods.showTopBar === false && mods.showSocialIconsInHeader !== false
+    !mastheadDetails && mods.showTopBar === false && mods.showSocialIconsInHeader !== false
 
   const renderSearchIcon = () =>
     (mods.showSearchInNav !== false || showSocialsInNav) && (
@@ -152,6 +155,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
     const tickerUrl = latestBreaking
       ? getPostUrl(latestBreaking.slug, theme)
       : undefined
+    if (mastheadDetails && !(showTicker && tickerText)) return null
 
     return (
       <div
@@ -189,7 +193,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
           ) : (
             <span />
           )}
-          <div
+          {!mastheadDetails && <div
             className={["flex items-center gap-3", styles.topbarUtilities].join(
               " "
             )}
@@ -199,7 +203,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
             )}
             {mods.showDateInHeader !== false && (
               <span className="hidden flex-shrink-0 font-mono text-[0.6875rem] opacity-75 sm:inline">
-                {formatDate(new Date(), theme.locale, theme.timeZone)}
+                {formatDate(theme.headerDate || new Date(), theme.locale, theme.timeZone)}
               </span>
             )}
             {theme.languages && theme.languages.length > 1 && (
@@ -225,7 +229,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
                 ))}
               </div>
             )}
-          </div>
+          </div>}
         </div>
       </div>
     )
@@ -239,22 +243,19 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
         : mods.navAlignment === "between"
           ? "space-between"
           : "flex-start"
-  const hasBrand = Boolean(
-    mods.logoUrl ||
-    mods.showSiteTitle !== false ||
-    (mods.showTagline !== false && theme.siteTagline)
-  )
   return (
     <header
       dir={theme.direction}
       ref={headerRef}
       data-layout={headerLayout}
+      data-masthead-details={mastheadDetails ? "true" : undefined}
       style={headerStyle}
       className={[styles.header, stickyClass].join(" ")}
     >
       {renderTopBar()}
       {hasBrand && !inlineHeader && (
         <div className={["theme-container mx-auto", styles.masthead].join(" ")}>
+          {mastheadDetails && <MastheadPublication theme={theme} />}
           <div className={styles.brand}>
             {mods.logoUrl ? (
               <Link href={homeHref}>
@@ -271,12 +272,13 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
                 </Link>
               )
             )}
-            {mods.showTagline !== false && theme.siteTagline && (
+            {!mastheadDetails && mods.showTagline !== false && theme.siteTagline && (
               <p style={taglineStyle} className={styles.tagline}>
                 {theme.siteTagline}
               </p>
             )}
           </div>
+          {mastheadDetails && <MastheadUtilities theme={theme} />}
         </div>
       )}
       {theme.primaryNav?.length > 0 && (

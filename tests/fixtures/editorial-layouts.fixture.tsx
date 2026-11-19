@@ -11,7 +11,8 @@ export function render(
   type: HomepageBlockType | "wire",
   locale: "ar" | "en",
   count = 9,
-  displayStyle?: BlockDisplayStyle
+  displayStyle?: BlockDisplayStyle,
+  categoryLink?: boolean
 ) {
   root ??= createRoot(document.getElementById("fixture")!)
   document.documentElement.lang = locale
@@ -48,6 +49,7 @@ export function render(
     autoplay: false,
     ...(type === "wire" ? { displayStyle: "minimal_text" as const } : {}),
     ...(displayStyle ? { displayStyle } : {}),
+    ...(categoryLink !== undefined ? { title: locale === "ar" ? "الأخبار" : "News", categorySlug: "news", showCategoryLink: categoryLink } : {}),
   }
   root.render(
     <main>
@@ -58,6 +60,7 @@ export function render(
           ...DEFAULT_THEME,
           dict: locale === "ar" ? ar : en,
           locale,
+          ...(categoryLink !== undefined ? { defaultLocale: "ar" } : {}),
           direction: locale === "ar" ? "rtl" : "ltr",
         },
         preFiltered: true,

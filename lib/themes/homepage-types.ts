@@ -82,6 +82,7 @@ export type HomepageBlock = {
   subtitles?: Record<string, string>;
   linkText?: string;
   linkHref?: string;
+  showCategoryLink?: boolean;
   showColumnHeaders?: boolean;
   col1Title?: string;
   col2Title?: string;

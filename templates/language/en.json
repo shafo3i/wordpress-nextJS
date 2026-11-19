@@ -1,4 +1,11 @@
 {
+  "admin.customizer.setting.showMastheadDetails": "Show balanced masthead details",
+  "admin.customizer.setting.showMastheadDetails_desc": "Place publication information, languages and social profiles beside the centred logo. Search stays in navigation. Does not apply to the compact inline header.",
+  "admin.customizer.setting.showMastheadStatement": "Show publication statement",
+  "admin.customizer.setting.showMastheadStatement_desc": "Uses the translated site tagline from Site Identity. The global Show Tagline control must also be enabled.",
+  "admin.customizer.setting.showMastheadLanguages": "Show languages beside the logo",
+  "admin.studio.content.show_category_link": "Show category Read more link",
+  "admin.studio.content.category_link_help": "Links to the selected category beside the section title. Hidden for All categories. Leave the link label empty to use the translated Read more label.",
   "admin.theme_settings.block.newsroom.name": "Newsroom",
   "admin.theme_settings.style.newsroom_lead": "Newsroom: centre lead",
   "admin.theme_settings.style.newsroom_category": "Newsroom: category lead + list",

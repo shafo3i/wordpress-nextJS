@@ -26,6 +26,8 @@ export function CompactPostsBlock({
       <ThemeSectionHeader
         title={block.title}
         subtitle={block.subtitle}
+        linkText={block.linkText}
+        linkHref={block.linkHref}
         theme={theme}
       />
       <div className={styles.items}>

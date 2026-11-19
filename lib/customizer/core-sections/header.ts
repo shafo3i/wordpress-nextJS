@@ -49,6 +49,14 @@ export const headerSection: CustomizerSection = {
       ],
     },
     {
+      id: "masthead_details",
+      settings: [
+        { id: "showMastheadDetails", type: "toggle", label: "", default: true, showIf: { id: "headerLayout", notEquals: "inline-news" } },
+        { id: "showMastheadStatement", type: "toggle", label: "", default: true, showIf: { id: "showMastheadDetails", equals: true } },
+        { id: "showMastheadLanguages", type: "toggle", label: "", default: true, showIf: { id: "showMastheadDetails", equals: true } },
+      ],
+    },
+    {
       id: "topbar",
       settings: [
         { id: "showTopBar", type: "toggle", label: "Show Top Utility / Breaking Bar", default: true },

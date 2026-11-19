@@ -1,4 +1,11 @@
 {
+  "admin.customizer.setting.showMastheadDetails": "إظهار تفاصيل الترويسة المتوازنة",
+  "admin.customizer.setting.showMastheadDetails_desc": "يعرض معلومات الصحيفة واللغات وحسابات التواصل بجانب الشعار في الوسط. يبقى البحث في قائمة التنقل. لا ينطبق على الرأس المدمج.",
+  "admin.customizer.setting.showMastheadStatement": "إظهار نبذة الصحيفة",
+  "admin.customizer.setting.showMastheadStatement_desc": "تستخدم وصف الموقع المترجم من هوية الموقع. يجب أيضاً تفعيل خيار إظهار وصف الموقع العام.",
+  "admin.customizer.setting.showMastheadLanguages": "إظهار اللغات بجانب الشعار",
+  "admin.studio.content.show_category_link": "إظهار رابط المزيد للتصنيف",
+  "admin.studio.content.category_link_help": "يربط بالتصنيف المحدد بجانب عنوان القسم، ويُخفى عند اختيار جميع التصنيفات. اترك نص الرابط فارغاً لاستخدام عبارة المزيد المترجمة.",
   "admin.theme_settings.block.newsroom.name": "غرفة الأخبار",
   "admin.theme_settings.style.newsroom_lead": "غرفة الأخبار: خبر رئيسي في الوسط",
   "admin.theme_settings.style.newsroom_category": "غرفة الأخبار: خبر رئيسي وقائمة",

@@ -3,6 +3,25 @@ import { build } from "esbuild"
 import type { HomepageBlockType } from "../lib/themes/homepage-types"
 let files: { path: string; text: string }[]
 for (const locale of ["en", "ar"] as const) {
+  test(`section category link follows language and can be hidden (${locale})`, async ({ page }) => {
+    // This esbuild fixture has no Tailwind build; supply the existing header layout utilities.
+    await page.addStyleTag({ content: ".flex{display:flex}.justify-between{justify-content:space-between}.items-baseline{align-items:baseline}" })
+    await page.evaluate(locale => {
+      (window as unknown as { EditorialFixture: { render: (...args: unknown[]) => void } }).EditorialFixture.render("category_grid", locale, 6, "grid_3", true)
+    }, locale)
+    const heading = page.locator("[data-studio-section-heading]")
+    const link = heading.getByRole("link")
+    await expect(link).toHaveAttribute("href", locale === "ar" ? "/category/news" : "/en/category/news")
+    const titleBox = (await heading.locator("h2").boundingBox())!
+    const linkBox = (await link.boundingBox())!
+    expect(locale === "ar" ? titleBox.x > linkBox.x : titleBox.x < linkBox.x).toBe(true)
+    await page.evaluate(locale => {
+      (window as unknown as { EditorialFixture: { render: (...args: unknown[]) => void } }).EditorialFixture.render("category_grid", locale, 6, "grid_3", false)
+    }, locale)
+    await expect(heading.getByRole("link")).toHaveCount(0)
+  })
+}
+for (const locale of ["en", "ar"] as const) {
   for (const variant of ["lead", "category", "strip"] as const) {
     test(`Newsroom ${variant} responsive layout (${locale})`, async ({ page }) => {
       await page.setViewportSize({ width: 1400, height: 1000 })

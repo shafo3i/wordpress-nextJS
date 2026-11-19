@@ -315,6 +315,11 @@ export function StudioEditorialControls({
           </div>
 
           {/* Header Link Label */}
+          <label className="flex cursor-pointer items-center gap-2 text-slate-700">
+            <input type="checkbox" checked={blockConfig.showCategoryLink !== false} onChange={e => updateBlockField({ showCategoryLink: e.target.checked })} />
+            <span>{t("admin.studio.content.show_category_link")}</span>
+          </label>
+          <p className="text-[11px] text-slate-500">{t("admin.studio.content.category_link_help")}</p>
           <div className="space-y-1.5">
             <label className="block font-semibold text-slate-700">
               {t("admin.theme_settings.link_text")}

@@ -10,7 +10,9 @@ export function render(
   locale: "en" | "ar",
   layout: "classic" | "magazine" | "minimal" | "centered" | "inline-news",
   showTopBar = true,
-  borderStyle: "none" | "solid" | "double" = "solid"
+  borderStyle: "none" | "solid" | "double" = "solid",
+  details = true,
+  withLogo = false
 ) {
   root ||= createRoot(document.getElementById("fixture")!)
   const mods = {
@@ -19,6 +21,8 @@ export function render(
     inlineHeaderBorderStyle: borderStyle,
     inlineHeaderBorderWidth: 3,
     showTopBar,
+    showMastheadDetails: details,
+    logoUrl: withLogo ? "https://images.test/brand.svg" : "",
     showSearchInNav: true,
     socialFacebook: "https://example.test/facebook",
     socialX: "https://example.test/x",
@@ -42,6 +46,8 @@ export function render(
       key={`${locale}:${layout}:${showTopBar}`}
       theme={{
         ...DEFAULT_THEME,
+        headerDate: "2026-11-19T12:00:00.000Z",
+        timeZone: "UTC",
         mods,
         headerLayout: layout,
         dict: locale === "ar" ? ar : en,
