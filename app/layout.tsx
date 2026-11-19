@@ -57,13 +57,13 @@ export default async function RootLayout({
         {BASE_FONT_STYLESHEETS.map(href => <link key={href} rel="stylesheet" href={href} precedence="fonts" />)}
       </head>
       <body>
-        <ThemeProvider>
+        <ThemeProvider nonce={requestHeaders.get("x-nonce") || undefined}>
           <TanStackProvider>{children}</TanStackProvider>
         </ThemeProvider>
         <Toaster />
         {!/^\/(?:admincp|cms-login|cms-admin|forgot-password|password-reset|magic-link|email-otp|verify-email|email-verified|verify-2fa)(?:\/|$)/.test(
           requestHeaders.get("x-cms-pathname") || "/"
-        ) && <SiteAnalytics measurementId={site.options.google_analytics_id} />}
+        ) && <SiteAnalytics measurementId={site.options.google_analytics_id} nonce={requestHeaders.get("x-nonce") || undefined} />}
       </body>
     </html>
   )

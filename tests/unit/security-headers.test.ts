@@ -14,14 +14,8 @@ describe("baseline response headers", () => {
       expect(response.headers.get("x-frame-options")).toBe("SAMEORIGIN")
       expect(response.headers.get("cross-origin-opener-policy")).toBe("same-origin-allow-popups")
       expect(response.headers.has("content-security-policy")).toBe(false)
-      const policy = response.headers.get("content-security-policy-report-only") || ""
-      expect(policy).toContain("report-uri /api/security/csp-report")
-      expect(policy).toContain("object-src 'none'")
-      expect(policy.split(";").find((part) => part.trim().startsWith("style-src "))).toContain("https://fonts.googleapis.com")
-      expect(policy.split(";").find((part) => part.trim().startsWith("font-src "))).toContain("https://fonts.gstatic.com")
-      const script = policy.split(";").find((part) => part.trim().startsWith("script-src ")) || ""
-      expect(script).toContain("'self'")
-      expect(script).not.toMatch(/unsafe-inline|unsafe-eval|https:;|\*/)
+      // The proxy owns the per-request nonce policy; config must not append a stale second one.
+      expect(response.headers.has("content-security-policy-report-only")).toBe(false)
       expect(response.headers.has("strict-transport-security")).toBe(false)
     },
   )

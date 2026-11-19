@@ -2,25 +2,7 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   async headers() {
-    // Diagnostic only: inline Next/analytics scripts will report until a separately
-    // reviewed nonce/hash rollout. Do not copy this into the enforcing CSP header.
-    const reportPolicy = [
-      "default-src 'self'",
-      "script-src 'self' https://www.googletagmanager.com",
-      "script-src-attr 'none'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' https: data: blob:",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      "media-src 'self' https: blob:",
-      "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com",
-      "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://maps.google.com https://www.google.com https://w.soundcloud.com",
-      "worker-src 'self' blob:",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "frame-ancestors 'self'",
-      "report-uri /api/security/csp-report",
-    ].join("; ")
+    // Per-response nonce CSP diagnostics are owned by proxy.ts, avoiding two policies.
     // Keep same-origin customizer previews and outgoing share/auth popups usable.
     // More restrictive route-specific policies are applied after this baseline.
     const baseline = { source: "/:path*", headers: [
@@ -28,7 +10,6 @@ const nextConfig: NextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "X-Frame-Options", value: "SAMEORIGIN" },
       { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
-      { key: "Content-Security-Policy-Report-Only", value: reportPolicy },
     ] }
     // Also protect files served directly by Next's public-file handler in dev
     // or on hosts that do not use deploy/server.mjs.

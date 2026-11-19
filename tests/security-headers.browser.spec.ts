@@ -3,8 +3,9 @@ import { createServer } from "node:http"
 import type { AddressInfo } from "node:net"
 import nextConfig from "../next.config"
 import { build } from "esbuild"
+import { buildReportOnlyCsp, createCspNonce } from "../lib/security/csp"
 
-test("CSP diagnostics report inline scripts without blocking scripts or previews", async ({ page }) => {
+test("nonce CSP permits trusted scripts and reports unapproved inline scripts without blocking previews", async ({ page }) => {
   const rules = await nextConfig.headers!()
   const headers = Object.fromEntries(rules.find((rule) => rule.source === "/:path*")!.headers.map(({ key, value }) => [key, value]))
   const reports: string[] = []
@@ -19,16 +20,18 @@ test("CSP diagnostics report inline scripts without blocking scripts or previews
       response.writeHead(200, { "Content-Type": "text/javascript" }).end("window.externalScriptRan=true")
       return
     }
-    response.writeHead(200, { ...headers, "Content-Type": "text/html" })
+    const nonce = createCspNonce()
+    response.writeHead(200, { ...headers, "Content-Security-Policy-Report-Only": buildReportOnlyCsp(nonce), "Content-Type": "text/html" })
     response.end(request.url === "/preview"
       ? "<!doctype html><p>Preview ready</p>"
-      : '<!doctype html><script src="/fixture.js"></script><script>window.inlineScriptRan=true</script><iframe title="Preview" src="/preview"></iframe>')
+      : `<!doctype html><script nonce="${nonce}" src="/fixture.js"></script><script nonce="${nonce}">window.inlineScriptRan=true</script><script>window.unapprovedScriptRan=true</script><iframe title="Preview" src="/preview"></iframe>`)
   })
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve))
   try {
     await page.goto(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`)
     expect(await page.evaluate(() => (window as unknown as { inlineScriptRan: boolean }).inlineScriptRan)).toBe(true)
     expect(await page.evaluate(() => (window as unknown as { externalScriptRan: boolean }).externalScriptRan)).toBe(true)
+    expect(await page.evaluate(() => (window as unknown as { unapprovedScriptRan: boolean }).unapprovedScriptRan)).toBe(true)
     await expect(page.frameLocator('iframe[title="Preview"]').getByText("Preview ready")).toBeVisible()
     await expect.poll(() => reports.some((body) => {
       const report = JSON.parse(body)["csp-report"]

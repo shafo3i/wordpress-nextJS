@@ -1,9 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server"
+import { buildReportOnlyCsp, createCspNonce, isCspPagePath } from "@/lib/security/csp"
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const next = () => {
     const headers = new Headers(request.headers)
+    // Never let callers select a nonce or override Next's internal CSP input.
+    headers.delete("x-nonce")
+    headers.delete("content-security-policy")
+    headers.delete("content-security-policy-report-only")
+    const nonce = isCspPagePath(pathname) ? createCspNonce() : undefined
+    const policy = nonce ? buildReportOnlyCsp(nonce, process.env.NODE_ENV === "development") : undefined
+    if (nonce && policy) {
+      headers.set("x-nonce", nonce)
+      // Request-side CSP lets Next attach this nonce to its bootstrap/stream scripts.
+      // This is internal renderer input, not an enforcing browser response header.
+      headers.set("content-security-policy", policy)
+    }
     headers.set("x-cms-pathname", pathname)
     const hint =
       request.nextUrl.searchParams.get("lang") || pathname.split("/")[1] || ""
@@ -24,6 +37,11 @@ export async function proxy(request: NextRequest) {
         : ""
     )
     const response = NextResponse.next({ request: { headers } })
+    if (policy) {
+      response.headers.set("Content-Security-Policy-Report-Only", policy)
+      // A nonce-bearing document and its policy must never be shared between visitors.
+      response.headers.set("Cache-Control", "private, no-store, max-age=0")
+    }
     // Remember explicit public language navigation, independently of admin_lang.
     const segment = pathname.split("/")[1] || ""
     const authPath =
