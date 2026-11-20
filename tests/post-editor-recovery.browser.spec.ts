@@ -110,7 +110,7 @@ async function setup(page: Page) {
   })
   const mount = async (locale: "en" | "ar" = "en", existing = true, status?: "draft" | "publish") => {
     draftMode = !existing || status === "draft"
-    await page.goto("http://editor.test/")
+    await page.goto(existing ? "http://editor.test/" : "http://editor.test/admincp/posts/new?lang=en#editor")
     await page.addScriptTag({ content: bundle })
     const loaded = page.waitForResponse(
       (response) =>
@@ -173,7 +173,13 @@ for (const locale of ["en", "ar"] as const) {
 for (const locale of ["en", "ar"] as const) {
   test(`new draft autosaves to the server and manual publish uses its latest version in ${locale}`, async ({ page }) => {
     const fixture = await setup(page)
+    let navigations = 0
+    page.on("request", request => { if (request.isNavigationRequest()) navigations++ })
     await fixture.mount(locale, false)
+    await expect.poll(() => new URL(page.url()).searchParams.get("draft")).toBe("12345678-1234-4234-8234-123456789abc")
+    expect(new URL(page.url()).searchParams.get("lang")).toBe("en")
+    expect(new URL(page.url()).hash).toBe("#editor")
+    expect(navigations).toBe(1)
     const dict = locale === "ar" ? ar : en
     await page.locator('input[name="title"]').fill("Server draft")
     await page.locator("#fake-tinymce").fill("<p>Saved on the server</p>")

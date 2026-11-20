@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition, useRef, useMemo, useCallback } from "react"
+import { useState, useTransition, useRef, useMemo, useCallback, useEffect } from "react"
 import { renderPostMedia } from "@/lib/post-content-media"
 import { usePostAutosave } from "@/lib/use-post-autosave"
 import type { PostEditorSnapshot } from "@/db/schema/cms-post-autosave"
@@ -127,6 +127,15 @@ export function ClassicPostEditor({
   direction = "ltr",
 }: ClassicPostEditorProps) {
   const router = useRouter()
+  useEffect(() => {
+    if (postId || !autosaveDocument.startsWith("new:")) return
+    const url = new URL(window.location.href)
+    const draft = autosaveDocument.slice(4)
+    if (url.searchParams.get("draft") === draft) return
+    url.searchParams.set("draft", draft)
+    // Preserve recovery across reloads without a second server navigation.
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash)
+  }, [postId, autosaveDocument])
   const [title, setTitle] = useState(initialTitle)
   const [isStudioBuilder, setIsStudioBuilder] = useState(initialIsStudioBuilder)
   const [isLaunchingStudio, setIsLaunchingStudio] = useState(false)

@@ -29,13 +29,10 @@ interface NewPostProps {
 export default async function NewPostPage({ searchParams }: NewPostProps) {
   const session = await verifyAdminOrEditor()
 
-  const { lang, translation_of, draft } = await searchParams
-  if (!draft || !autosaveDocumentKey.safeParse(`new:${draft}`).success) {
-    const params = new URLSearchParams({ draft: randomUUID() })
-    if (lang) params.set("lang", lang)
-    if (translation_of) params.set("translation_of", translation_of)
-    redirect(`/admincp/posts/new?${params}`)
-  }
+  const { lang, translation_of, draft: requestedDraft } = await searchParams
+  const draft = requestedDraft && autosaveDocumentKey.safeParse(`new:${requestedDraft}`).success
+    ? requestedDraft
+    : randomUUID()
   const existingDraft = await getDocumentDraftId(`new:${draft}`)
   if (existingDraft) redirect(`/admincp/posts/${existingDraft}/edit`)
   const langContext = await getAdminLanguageContext()
