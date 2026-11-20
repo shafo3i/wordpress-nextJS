@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { wpComments, wpOptions } from "@/db/schema";
-import { Home, MessageSquare, Plus, ShieldCheck, Globe, User, LogOut } from "lucide-react";
+import { Home, MessageSquare, Plus, ShieldCheck, Globe, User } from "lucide-react";
+import { AdminSignOut } from "./admin-sign-out";
 import { AdminNav } from "./admin-nav";
 import {
   getLanguageByCode,
@@ -140,9 +141,7 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
           {context.userRole === "admin" ? <Link className="wp-admin-user-link" href="/admincp/profile">
             <User className="size-4" /> {dict["admin.menu.howdy"] || "Howdy"}, {context.userName || "—"}
           </Link> : <span>{context.userName}</span>}
-          <Link className="wp-admin-user-link" href="/cms-login">
-            <LogOut className="size-4" /> {dict["admin.menu.logout"] || "Log Out"}
-          </Link>
+          <AdminSignOut dict={dict} />
         </div>
       </header>
 
