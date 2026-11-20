@@ -38,7 +38,7 @@ async function readReport(request: Request) {
 }
 
 // Reports are unauthenticated, untrusted diagnostics, never proof of an attack.
-// Fixed categories keep private paths, query tokens and script samples out of logs.
+// Never log query strings, fragments, script samples or arbitrary resource URLs.
 export async function POST(request: Request) {
   if (request.headers.get("sec-fetch-site") === "cross-site") return response(403)
   if (request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !== "application/csp-report") return response(415)
@@ -55,11 +55,31 @@ export async function POST(request: Request) {
     if (!directives.has(directive) || typeof blocked !== "string" || blocked.length > 4096) return response(400)
     let source = ["inline", "eval"].includes(blocked) ? blocked : "other"
     let area = "unknown"
+    const details: Record<string, string | number> = {}
     try {
       const document = new URL(report["document-uri"])
       if (["http:", "https:"].includes(document.protocol)) {
         area = /^\/admincp(?:\/|$)/.test(document.pathname) ? "admin"
           : /^\/studio(?:\/|$)/.test(document.pathname) ? "studio" : "public"
+        // Keep the page useful for diagnosis; redact opaque IDs and long path tokens.
+        details.page = document.pathname.split("/").map(segment =>
+          segment.length > 100 || /^[a-f0-9-]{32,}$/i.test(segment) || /%40|@/i.test(segment)
+            ? "[redacted]" : segment
+        ).join("/").slice(0, 512)
+        const staticScript = (value: unknown) => {
+          if (typeof value !== "string" || value.length > 4096) return undefined
+          try {
+            const resource = new URL(value, document)
+            return resource.origin === document.origin &&
+              /^\/(?:_next\/static\/|cdn-cgi\/scripts\/)[A-Za-z0-9_./-]+\.m?js$/.test(resource.pathname) &&
+              resource.pathname.length <= 512
+              ? resource.pathname : undefined
+          } catch { return undefined }
+        }
+        const blockedScript = staticScript(blocked)
+        const sourceFile = staticScript(report["source-file"])
+        if (blockedScript) details.blockedScript = blockedScript
+        if (sourceFile) details.sourceFile = sourceFile
         const url = new URL(blocked, document)
         if (["http:", "https:"].includes(url.protocol)) source = url.origin === document.origin ? "same-origin" : "cross-origin"
         else if (["data:", "blob:"].includes(url.protocol)) source = url.protocol.slice(0, -1)
@@ -67,7 +87,11 @@ export async function POST(request: Request) {
     } catch { /* Invalid URLs remain fixed unknown/other categories. */ }
     // Special CSP keywords are not relative resource paths.
     if (["inline", "eval"].includes(blocked)) source = blocked
-    console.warn("CSP report-only violation", { directive, source, area })
+    for (const [key, field] of [["line", "line-number"], ["column", "column-number"]]) {
+      const value = report[field]
+      if (Number.isSafeInteger(value) && value > 0 && value <= 10_000_000) details[key] = value
+    }
+    console.warn("CSP report-only violation", { directive, source, area, ...details })
     return response(204)
   } catch (error) {
     return response(error instanceof RangeError ? 413 : error instanceof DOMException && error.name === "TimeoutError" ? 408 : 400)

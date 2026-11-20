@@ -18,13 +18,37 @@ const report = {
 beforeEach(() => { vi.clearAllMocks(); vi.mocked(enforceRateLimit).mockResolvedValue({ success: true, remaining: 1, retryAfter: 0 }) })
 
 describe("CSP diagnostic report boundary", () => {
-  it("logs only fixed categories, never submitted URLs, samples or tokens", async () => {
+  it("logs page paths but never query strings, external URLs, samples or tokens", async () => {
     const response = await POST(request(JSON.stringify(report)))
     expect(response.status).toBe(204)
     expect(response.headers.get("cache-control")).toBe("no-store")
-    expect(log).toHaveBeenCalledWith("CSP report-only violation", { directive: "script-src-elem", source: "inline", area: "admin" })
-    expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret|evil|token|password|\/posts/)
+    expect(log).toHaveBeenCalledWith("CSP report-only violation", { directive: "script-src-elem", source: "inline", area: "admin", page: "/admincp/posts/12/edit" })
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret|evil|token|password/)
     expect(enforceRateLimit).toHaveBeenCalledWith({ namespace: "csp-report", identifier: "site", max: 60, window: 60 })
+  })
+  it("identifies same-origin static scripts and validated source positions", async () => {
+    const input = { "csp-report": { ...report["csp-report"],
+      "blocked-uri": "https://site.test/_next/static/chunks/app.js?secret=1#private",
+      "source-file": "https://site.test/cdn-cgi/scripts/loader.js?secret=2",
+      "line-number": 12, "column-number": 7,
+    } }
+    expect((await POST(request(JSON.stringify(input)))).status).toBe(204)
+    expect(log).toHaveBeenCalledWith("CSP report-only violation", expect.objectContaining({
+      page: "/admincp/posts/12/edit", blockedScript: "/_next/static/chunks/app.js",
+      sourceFile: "/cdn-cgi/scripts/loader.js", line: 12, column: 7,
+    }))
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret|private|https:/)
+  })
+  it("does not log arbitrary script paths or invalid positions", async () => {
+    const input = { "csp-report": { ...report["csp-report"], "blocked-uri": "https://site.test/api/auth/secret", "line-number": "secret", "column-number": -1 } }
+    await POST(request(JSON.stringify(input)))
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(/secret|blockedScript|sourceFile|column|line/)
+  })
+  it("redacts opaque page IDs and drops query strings and fragments", async () => {
+    const input = { "csp-report": { ...report["csp-report"], "document-uri": "https://site.test/admincp/posts/12345678-1234-4234-8234-123456789abc?draft=secret#password" } }
+    await POST(request(JSON.stringify(input)))
+    expect(log).toHaveBeenCalledWith("CSP report-only violation", expect.objectContaining({ page: "/admincp/posts/[redacted]" }))
+    expect(JSON.stringify(log.mock.calls)).not.toMatch(/12345678|secret|password/)
   })
   it.each(["https://evil.test/private?secret=1", "data:text/plain,secret", "blob:https://site.test/secret"])("does not log the blocked URL %s", async (url) => {
     const input = structuredClone(report); input["csp-report"]["blocked-uri"] = url
