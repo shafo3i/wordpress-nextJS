@@ -4,6 +4,26 @@ import { fileURLToPath } from "node:url"
 import en from "../templates/language/en.json" with { type: "json" }
 import ar from "../templates/language/ar.json" with { type: "json" }
 let files: { path: string; text: string }[]
+test("compact logo uses its natural width and text-only hover uses the configured colour", async ({ page }) => {
+  await page.route("https://images.test/brand.svg", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="80"><rect width="40" height="80" fill="navy"/></svg>' }))
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.setContent('<div id="fixture"></div>')
+  for (const file of files) {
+    if (file.path.endsWith(".css")) await page.addStyleTag({ content: file.text })
+    else await page.addScriptTag({ content: file.text })
+  }
+  await page.evaluate(() => (window as unknown as { MobileNavigationFixture: { render: (...args: unknown[]) => void } }).MobileNavigationFixture.render("en", "inline-news", false, "solid", true, true, { inlineTitleLanguages: "en", navHoverStyle: "text", navActiveStyle: "none", navLinkColor: "#111111", navLinkHoverColor: "#be123c" }))
+  const image = page.locator("[data-inline-brand] img")
+  await expect(image).toBeVisible()
+  const bounds = (await image.boundingBox())!
+  expect(bounds.width / bounds.height).toBeCloseTo(0.5, 1)
+  const link = page.locator('[data-mobile-open] a').first()
+  await page.mouse.move(0, 0)
+  await expect.poll(() => link.evaluate(element => getComputedStyle(element).color)).toBe("rgb(17, 17, 17)")
+  await link.hover()
+  await expect.poll(() => link.evaluate(element => getComputedStyle(element).color)).toBe("rgb(190, 18, 60)")
+  expect(await link.evaluate(element => getComputedStyle(element).boxShadow)).toBe("none")
+})
 for (const locale of ["en", "ar"] as const) {
   test(`navbar title respects language selection and independent link styles (${locale})`, async ({ page }) => {
     await page.route("https://images.test/brand.svg", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="navy"/></svg>' }))

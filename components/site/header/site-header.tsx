@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { getActiveNavigationId } from "./navigation"
 import styles from "./header.module.css"
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react"
-import { Search, Home, Menu, X } from "lucide-react"
+import { Search, Menu, X } from "lucide-react"
 import type { FrontEndThemeContext } from "@/lib/site-theme"
 import {
   formatDate,
@@ -110,13 +110,17 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const taglineStyle: CssVars = { color: "var(--theme-muted)" }
   const stickyClass = stickyNavigation ? "sticky z-40" : ""
 
-  const renderLogo = (fallbackWidth: number, className = "", decorative = false, onError?: () => void) =>
+  const renderLogo = (fallbackWidth: number, className = "", decorative = false, onError?: () => void, compact = false) =>
     mods.logoUrl ? (
       <img
         src={mods.logoUrl}
         alt={decorative ? "" : theme.siteTitle}
         onError={onError}
-        style={{ width: `${mods.logoWidth || fallbackWidth}px` }}
+        style={compact ? {
+          width: "auto",
+          height: "calc(var(--theme-nav-height, 56px) - 12px)",
+          maxWidth: `${mods.logoWidth || fallbackWidth}px`,
+        } : { width: `${mods.logoWidth || fallbackWidth}px` }}
         className={[styles.logo, className].join(" ")}
       />
     ) : null
@@ -318,7 +322,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
             </button>
             {inlineHeader && hasBrand && <div data-inline-brand className={styles.inlineBrand}>
               {mods.logoUrl && failedInlineLogo !== mods.logoUrl ? <Link href={homeHref} aria-label={theme.siteTitle}>
-                {renderLogo(96, "", Boolean(mods.inlineTitleLanguages?.split(",").includes(theme.locale || theme.defaultLocale || "")), () => setFailedInlineLogo(mods.logoUrl))}
+                {renderLogo(96, "", Boolean(mods.inlineTitleLanguages?.split(",").includes(theme.locale || theme.defaultLocale || "")), () => setFailedInlineLogo(mods.logoUrl), true)}
                 {mods.inlineTitleLanguages?.split(",").includes(theme.locale || theme.defaultLocale || "") && <span data-inline-title className={styles.inlineNameplate}>{theme.siteTitle}</span>}
               </Link> : (mods.showSiteTitle !== false || Boolean(mods.logoUrl && failedInlineLogo === mods.logoUrl)) &&
                 <Link href={homeHref} style={titleStyle("700")} className={styles.inlineNameplate}>{theme.siteTitle}</Link>}
@@ -350,9 +354,6 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
                     textTransform: mods.navUppercase ? "uppercase" : "none",
                   }}
                 >
-                  {item.url === homeHref && (
-                    <Home size={12} aria-hidden="true" />
-                  )}
                   {item.title}
                 </Link>
               ))}
