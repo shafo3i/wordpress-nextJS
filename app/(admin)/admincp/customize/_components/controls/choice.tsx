@@ -8,6 +8,20 @@ import { INPUT_CLASS, HINT_CLASS, optionClass } from "./styles";
 /** Option values are strings in the UI; numeric settings are converted back on change. */
 const toStored = (raw: string, numeric?: boolean): SettingValue => (numeric ? Number(raw) : raw);
 
+export function LanguageListControl({ setting, label, resolved, onChange }: ControlProps) {
+  const selected = String(resolved || "").split(",").filter(Boolean);
+  return <Field label={label} description={setting.description}>
+    <div className="space-y-2">
+      {setting.options?.map(option => <label key={option.value} className="flex items-center gap-2 text-[12px]">
+        <input type="checkbox" checked={selected.includes(option.value)} onChange={event =>
+          onChange((event.target.checked ? [...selected, option.value] : selected.filter(code => code !== option.value)).join(","))
+        } />
+        {option.label}
+      </label>)}
+    </div>
+  </Field>;
+}
+
 export function SelectControl({ setting, label, resolved, onChange }: ControlProps) {
   return (
     <Field label={label} description={setting.description}>

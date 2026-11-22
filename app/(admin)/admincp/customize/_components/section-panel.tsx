@@ -23,6 +23,7 @@ export interface SectionPanelProps {
   onChange: (setting: SettingDef, value: SettingValue) => void;
   onApplyPalette: (palette: Palette) => void;
   dict?: Record<string, string>;
+  languages?: { code: string; name: string; nativeName?: string | null }[];
 }
 
 export function SectionPanel({
@@ -36,6 +37,7 @@ export function SectionPanel({
   onChange,
   onApplyPalette,
   dict,
+  languages = [],
 }: SectionPanelProps) {
   const Icon = SECTION_ICONS[section.icon ?? ""] ?? FALLBACK_SECTION_ICON;
   const t = (key: string, fallback: string) => translate(dict, key, fallback);
@@ -72,6 +74,7 @@ export function SectionPanel({
             const boxed = visible.every((setting) => setting.type === "color");
             const controls = visible.map((raw) => {
               const setting = localizeSetting(raw, dict);
+              if (setting.type === "language-list") setting.options = languages.map(language => ({ value: language.code, label: language.nativeName || language.name }));
               const Control = CONTROL_REGISTRY[setting.type];
               return (
                 <Control

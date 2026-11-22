@@ -101,6 +101,10 @@ const MAX_TEXT_LENGTH = 2000;
 /** Coerces one submitted value to what the setting accepts, or undefined to drop it. */
 function sanitizeValue(setting: SettingDef, value: unknown): SettingValue {
   switch (setting.type) {
+    case "language-list":
+      return typeof value === "string" && value.length <= MAX_TEXT_LENGTH &&
+        /^(?:[a-zA-Z]{2,8}(?:-[a-zA-Z0-9]{1,8})*(?:,[a-zA-Z]{2,8}(?:-[a-zA-Z0-9]{1,8})*)*)?$/.test(value)
+        ? [...new Set(value.split(",").filter(Boolean))].join(",") : undefined;
     case "toggle":
       return typeof value === "boolean" ? value : value === "true" ? true : value === "false" ? false : undefined;
     case "range": {

@@ -6,6 +6,7 @@ export type ControlType =
   | "color"
   | "toggle"
   | "select"
+  | "language-list"
   | "button-group"
   | "radio-cards"
   | "range"

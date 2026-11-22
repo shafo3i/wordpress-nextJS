@@ -38,6 +38,10 @@ export const navigationSection: CustomizerSection = {
           ],
         },
         { id: "navUppercase", type: "toggle", label: "UPPERCASE Menu Links", default: false },
+        ...["navHoverStyle", "navActiveStyle"].map(id => ({
+          id, type: "select" as const, label: "", default: "inherit",
+          options: ["inherit", "underline", "background", "outline", "text", "none"].map(value => ({ value, label: "" })),
+        })),
         { id: "showSearchInNav", type: "toggle", label: "Show Search Icon in Nav", default: true },
       ],
     },

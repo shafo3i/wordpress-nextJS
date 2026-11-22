@@ -63,7 +63,7 @@ Large videos may later use short-lived signed direct uploads to avoid buffering 
 
 ## Configure Wasabi
 
-Open Settings → Media storage. Supply the HTTPS service endpoint, matching region, bucket, optional prefix and public delivery base URL. For example, an endpoint of `https://s3.eu-central-1.wasabisys.com` with bucket `news-media` can use delivery base `https://s3.eu-central-1.wasabisys.com/news-media`. A CDN/custom delivery hostname may be used instead. The prefix is appended automatically; do not include it twice.
+Open Settings → Media storage. Supply the HTTPS service endpoint, matching region, bucket, optional prefix and public delivery base URL. For example, an endpoint of `https://s3.eu-west-1.wasabisys.com` with bucket `news-media` can use delivery base `https://s3.eu-central-1.wasabisys.com/news-media`. A CDN/custom delivery hostname may be used instead. The prefix is appended automatically; do not include it twice.
 
 Use dedicated credentials restricted to this bucket/prefix. Writes and deletions require authenticated `s3:PutObject`/`s3:DeleteObject` permissions. The saved connection check uses `HeadBucket`, which requires bucket access (`s3:ListBucket`). That check verifies connectivity/access, not upload or anonymous delivery permissions. Configure anonymous `GetObject` only for published object paths, or provide public CDN delivery. Never grant anonymous writes or bucket listing. Wasabi may restrict public-access configuration depending on the account; configure this through Wasabi rather than the CMS. See [Wasabi public access](https://docs.wasabi.com/docs/defining-public-access-for-folders-and-files) and [AWS SDK S3 operations](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html).
 

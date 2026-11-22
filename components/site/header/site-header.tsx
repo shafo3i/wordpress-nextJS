@@ -56,6 +56,7 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const headerRef = useRef<HTMLElement>(null)
   const navRef = useRef<HTMLElement>(null)
   const [navOffset, setNavOffset] = useState(0)
+  const [failedInlineLogo, setFailedInlineLogo] = useState<string>()
 
   const headerLayout = mods.headerLayout || theme.headerLayout || "classic"
   const inlineHeader = headerLayout === "inline-news" && Boolean(theme.primaryNav?.length)
@@ -109,11 +110,12 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
   const taglineStyle: CssVars = { color: "var(--theme-muted)" }
   const stickyClass = stickyNavigation ? "sticky z-40" : ""
 
-  const renderLogo = (fallbackWidth: number, className = "") =>
+  const renderLogo = (fallbackWidth: number, className = "", decorative = false, onError?: () => void) =>
     mods.logoUrl ? (
       <img
         src={mods.logoUrl}
-        alt={theme.siteTitle}
+        alt={decorative ? "" : theme.siteTitle}
+        onError={onError}
         style={{ width: `${mods.logoWidth || fallbackWidth}px` }}
         className={[styles.logo, className].join(" ")}
       />
@@ -315,7 +317,10 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               <span>{t("site.navigation.menu", theme, "")}</span>
             </button>
             {inlineHeader && hasBrand && <div data-inline-brand className={styles.inlineBrand}>
-              {mods.logoUrl ? <Link href={homeHref}>{renderLogo(96)}</Link> : mods.showSiteTitle !== false &&
+              {mods.logoUrl && failedInlineLogo !== mods.logoUrl ? <Link href={homeHref} aria-label={theme.siteTitle}>
+                {renderLogo(96, "", Boolean(mods.inlineTitleLanguages?.split(",").includes(theme.locale || theme.defaultLocale || "")), () => setFailedInlineLogo(mods.logoUrl))}
+                {mods.inlineTitleLanguages?.split(",").includes(theme.locale || theme.defaultLocale || "") && <span data-inline-title className={styles.inlineNameplate}>{theme.siteTitle}</span>}
+              </Link> : (mods.showSiteTitle !== false || Boolean(mods.logoUrl && failedInlineLogo === mods.logoUrl)) &&
                 <Link href={homeHref} style={titleStyle("700")} className={styles.inlineNameplate}>{theme.siteTitle}</Link>}
             </div>}
             <div
@@ -323,6 +328,8 @@ export function SiteHeader({ theme }: { theme: FrontEndThemeContext }) {
               data-mobile-open={mobileOpen ? "true" : "false"}
               className={styles.links}
               data-style={mods.navStyle || "classic-text"}
+              data-hover-style={mods.navHoverStyle || "inherit"}
+              data-active-style={mods.navActiveStyle || "inherit"}
               style={{
                 justifyContent:
                   justify === "space-between" ? justify : `safe ${justify}`,

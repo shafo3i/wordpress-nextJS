@@ -191,6 +191,9 @@ export type ThemeMods = {
   headerBorderStyle?: "solid" | "double" | "none";
   inlineHeaderBorderStyle?: "solid" | "double" | "none";
   inlineHeaderBorderWidth?: number;
+  inlineTitleLanguages?: string;
+  navHoverStyle?: "inherit" | "underline" | "background" | "outline" | "text" | "none";
+  navActiveStyle?: "inherit" | "underline" | "background" | "outline" | "text" | "none";
 
   // Navigation Bar Styling
   navAlignment?: "left" | "center" | "right" | "between";

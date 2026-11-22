@@ -94,6 +94,7 @@ export function CustomizerShell({
                 onChange={customizer.setValue}
                 onApplyPalette={customizer.applyPalette}
                 dict={dict}
+                languages={languages}
               />
             ))}
           </div>

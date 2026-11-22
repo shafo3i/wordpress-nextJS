@@ -5,6 +5,7 @@ import { getThemeDefaultMods } from "../../lib/customizer/resolve"
 import { buildThemeCss } from "../../lib/customizer/css"
 import en from "../../templates/language/en.json"
 import ar from "../../templates/language/ar.json"
+import type { ThemeMods } from "../../lib/themes/types"
 let root: ReturnType<typeof createRoot>
 export function render(
   locale: "en" | "ar",
@@ -12,7 +13,8 @@ export function render(
   showTopBar = true,
   borderStyle: "none" | "solid" | "double" = "solid",
   details = true,
-  withLogo = false
+  withLogo = false,
+  overrides: ThemeMods = {}
 ) {
   root ||= createRoot(document.getElementById("fixture")!)
   const mods = {
@@ -29,6 +31,7 @@ export function render(
     socialInstagram: "https://example.test/instagram",
     socialYoutube: "https://example.test/youtube",
     socialLinkedin: "https://example.test/linkedin",
+    ...overrides,
   }
   let css = document.getElementById("theme-css")
   if (!css) {

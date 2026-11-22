@@ -5,6 +5,61 @@ import en from "../templates/language/en.json" with { type: "json" }
 import ar from "../templates/language/ar.json" with { type: "json" }
 let files: { path: string; text: string }[]
 for (const locale of ["en", "ar"] as const) {
+  test(`navbar title respects language selection and independent link styles (${locale})`, async ({ page }) => {
+    await page.route("https://images.test/brand.svg", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="navy"/></svg>' }))
+    await page.setContent('<div id="fixture"></div>')
+    await page.addStyleTag({ content: "body{margin:0}*{box-sizing:border-box}.theme-container{max-width:1280px;margin-inline:auto}" })
+    for (const file of files) {
+      if (file.path.endsWith(".css")) await page.addStyleTag({ content: file.text })
+      else await page.addScriptTag({ content: file.text })
+    }
+    const render = (languages: string, hover = "outline", active = "background") => page.evaluate(({ locale, languages, hover, active }) => {
+      (window as unknown as { MobileNavigationFixture: { render: (...args: unknown[]) => void } }).MobileNavigationFixture.render(locale, "inline-news", false, "solid", true, true, { inlineTitleLanguages: languages, navHoverStyle: hover, navActiveStyle: active })
+    }, { locale, languages, hover, active })
+    await render("en")
+    const brand = page.locator("[data-inline-brand]")
+    await expect(brand.locator("[data-inline-title]")).toHaveCount(locale === "en" ? 1 : 0)
+    await expect(brand.getByRole("link")).toHaveAttribute("aria-label", locale === "en" ? "Newsroom" : "غرفة الأخبار")
+    await render("en,ar")
+    await expect(brand.locator("[data-inline-title]")).toBeVisible()
+    const links = page.locator("[data-mobile-open]")
+    await expect(links).toHaveAttribute("data-hover-style", "outline")
+    await expect(links).toHaveAttribute("data-active-style", "background")
+    const link = links.locator("a").first()
+    await link.hover()
+    expect(await link.evaluate(element => getComputedStyle(element).boxShadow)).not.toBe("none")
+    await link.evaluate(element => { element.setAttribute("aria-current", "page") })
+    expect(await link.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)")
+    for (const width of [320, 768, 1440]) {
+      await page.setViewportSize({ width, height: 800 })
+      await expect(brand.locator("[data-inline-title]")).toBeVisible()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      await page.locator("header").screenshot({ path: `test-results/nav-title-${locale}-${width}.png` })
+    }
+    await render("", "none", "none")
+    await expect(brand.locator("[data-inline-title]")).toHaveCount(0)
+    await brand.locator("img").evaluate(image => image.dispatchEvent(new Event("error")))
+    await expect(brand.locator("img")).toHaveCount(0)
+    await expect(brand.getByRole("link")).toHaveText(locale === "en" ? "Newsroom" : "غرفة الأخبار")
+  })
+}
+test("open inline menu has an opaque backing when navigation background is transparent", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 800 })
+  await page.setContent('<div id="fixture"></div><main style="height:800px">Article content underneath the menu</main>')
+  for (const file of files) {
+    if (file.path.endsWith(".css")) await page.addStyleTag({ content: file.text })
+    else await page.addScriptTag({ content: file.text })
+  }
+  await page.evaluate(() => (window as unknown as { MobileNavigationFixture: { render: (...args: unknown[]) => void } }).MobileNavigationFixture.render("en", "inline-news", false, "solid", true, false, { navBarBg: "transparent" }))
+  await page.getByRole("button", { name: en["site.navigation.open"], exact: true }).click()
+  const drawer = page.locator('[data-mobile-open="true"]')
+  await expect(drawer).toBeVisible()
+  expect(await drawer.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)")
+  await page.setViewportSize({ width: 420, height: 800 })
+  await expect(drawer).toBeVisible()
+  expect(await drawer.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)")
+})
+for (const locale of ["en", "ar"] as const) {
   test(`balanced masthead keeps the logo centred and utilities responsive (${locale})`, async ({ page }) => {
     await page.route("https://images.test/brand.svg", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="100"><rect width="240" height="100" fill="#173e40"/><text x="120" y="57" fill="white" font-size="22" text-anchor="middle">NEWSROOM</text></svg>' }))
     await page.setContent('<div id="fixture"></div>')

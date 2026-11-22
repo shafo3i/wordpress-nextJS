@@ -42,6 +42,7 @@ export const headerSection: CustomizerSection = {
           showIf: { id: "headerLayout", equals: "inline-news" },
           options: [{ value: "none", label: "" }, { value: "solid", label: "" }, { value: "double", label: "" }],
         },
+        { id: "inlineTitleLanguages", type: "language-list", label: "", default: "", showIf: { id: "headerLayout", equals: "inline-news" } },
         {
           id: "inlineHeaderBorderWidth", type: "range", label: "", default: 1, min: 1, max: 6, step: 1, unit: "px",
           showIf: { id: "headerLayout", equals: "inline-news" },
