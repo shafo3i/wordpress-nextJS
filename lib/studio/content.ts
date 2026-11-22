@@ -76,8 +76,11 @@ export function getStudioElementContentRequest(
   if (
     element.widgetType.startsWith("block_") &&
     element.settings.blockConfig?.enabled
-  )
+  ) {
+    const block = element.settings.blockConfig
+    if (block.displayStyle === "category_column" && !block.categoryId && (!block.categorySlug || block.categorySlug === "all")) return undefined
     return getStudioContentRequest(element.settings.blockConfig, locale)
+  }
   if (
     (element.widgetType.startsWith("widget_") ||
       element.widgetType === "sidebar") &&

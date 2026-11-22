@@ -61,6 +61,7 @@ const studioBlockSchema: z.ZodType<HomepageBlock> = z.object({
   displayStyle: z
     .enum([
       "newsroom_lead",
+      "category_column",
       "newsroom_category",
       "newsroom_strip",
       "lead_story_grid",

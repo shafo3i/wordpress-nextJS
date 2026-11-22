@@ -3,6 +3,7 @@
 import React from "react"
 import { EditorialCollectionBlock } from "./editorial-collection"
 import { NewsroomBlock } from "./newsroom"
+import { CategoryColumnBlock } from "./category-column"
 import { CompactPostsBlock } from "./compact-posts"
 import type { StudioDesign } from "@/db/schema/cms-studio-design"
 import type { ContentItem } from "@/lib/site-content"
@@ -73,13 +74,14 @@ export function renderEditorialBlock({
   theme: FrontEndThemeContext
   preFiltered?: boolean
   design?: StudioDesign
-  resolvedCategory?: { slug: string } | null
+  resolvedCategory?: { slug: string; name?: string } | null
 }): React.ReactNode {
   if (!rawBlock.enabled) return null
 
   const activeLocale = theme.locale || theme.defaultLocale || "en"
   const localizedTitle =
-    (rawBlock.titles && rawBlock.titles[activeLocale]) || rawBlock.title || ""
+    (rawBlock.titles && rawBlock.titles[activeLocale]) || rawBlock.title ||
+    (rawBlock.displayStyle === "category_column" ? resolvedCategory?.name : "") || ""
   const localizedSubtitle =
     (rawBlock.subtitles && rawBlock.subtitles[activeLocale]) ||
     rawBlock.subtitle
@@ -115,6 +117,9 @@ export function renderEditorialBlock({
     !preFiltered && block.featuredOnly
       ? categoryFiltered.filter((post) => post.isFeatured)
       : categoryFiltered
+
+  if (block.displayStyle === "category_column")
+    return <CategoryColumnBlock posts={displayPosts.slice(0, block.postCount || 5)} block={block} theme={theme} />
 
   if (block.displayStyle?.startsWith("newsroom_") || (!block.displayStyle && block.type === "newsroom"))
     return <NewsroomBlock posts={displayPosts.slice(0, block.postCount || 10)} block={block} theme={theme} design={design} />

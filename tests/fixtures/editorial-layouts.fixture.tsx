@@ -6,7 +6,27 @@ import { createDefaultBlockConfig } from "../../lib/studio/block-defaults"
 import type { HomepageBlockType, BlockDisplayStyle } from "../../lib/themes/homepage-types"
 import en from "../../templates/language/en.json"
 import ar from "../../templates/language/ar.json"
+import { buildThemeCss } from "../../lib/customizer/css"
+export function loadThemeCss() {
+  const style = document.createElement("style")
+  style.textContent = buildThemeCss({})
+  document.head.append(style)
+}
 let root: ReturnType<typeof createRoot>
+export function renderCategoryColumns(locale: "en" | "ar") {
+  root ??= createRoot(document.getElementById("fixture")!)
+  document.documentElement.dir = locale === "ar" ? "rtl" : "ltr"
+  const theme = { ...DEFAULT_THEME, locale, defaultLocale: "ar", direction: locale === "ar" ? "rtl" as const : "ltr" as const, dict: locale === "ar" ? ar : en }
+  root.render(<div className="category-columns-fixture">
+    {["world", "region", "news", "culture"].map((slug, column) => {
+      const posts: ContentItem[] = Array.from({ length: 5 }, (_, index) => ({
+        id: `${column}-${index}`, slug: `${slug}-${index}`, title: `${slug} story ${index}`, categories: [slug], tags: [],
+        imageUrl: `https://images.test/${column}-${index}.svg`, date: new Date("2026-11-22"), excerpt: "", content: "", authorName: "",
+      }))
+      return <div key={slug}>{renderEditorialBlock({ block: { ...createDefaultBlockConfig("news_list"), displayStyle: "category_column", categorySlug: slug, postCount: 5 }, posts, preFiltered: true, theme, resolvedCategory: { slug, name: slug } })}</div>
+    })}
+  </div>)
+}
 export function render(
   type: HomepageBlockType | "wire",
   locale: "ar" | "en",
@@ -52,7 +72,7 @@ export function render(
     ...(categoryLink !== undefined ? { title: locale === "ar" ? "الأخبار" : "News", categorySlug: "news", showCategoryLink: categoryLink } : {}),
   }
   root.render(
-    <main>
+    <main data-fixture-style={displayStyle || type}>
       {renderEditorialBlock({
         block,
         posts,

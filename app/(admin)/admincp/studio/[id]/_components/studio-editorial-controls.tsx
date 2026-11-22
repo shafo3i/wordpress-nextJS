@@ -451,6 +451,7 @@ export function StudioEditorialControls({
                       },
                       { id: "newsroom_lead", renderIcon: (active: boolean) => <Broadsheet3ColWireframe active={active} className="h-5 w-8" /> },
                       { id: "newsroom_category", renderIcon: (active: boolean) => <LeadSideListWireframe active={active} className="h-5 w-8" /> },
+                      { id: "category_column", renderIcon: (active: boolean) => <LeadSideListWireframe active={active} className="h-5 w-8" /> },
                       { id: "newsroom_strip", renderIcon: (active: boolean) => <Grid4Wireframe active={active} className="h-5 w-8" /> },
                       {
                         id: "headlines_grid",

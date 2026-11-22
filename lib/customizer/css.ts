@@ -196,6 +196,16 @@ function staticRules(mods: Mods): Rule[] {
       declarations: ["font-family: var(--font-theme-site-title), serif;", "zoom: var(--theme-site-title-scale, 1);"],
     },
     {
+      // Older blocks wrap the heading in a link; newer blocks put the link inside it.
+      selectors: [
+        "[data-studio-title] a:hover", "[data-studio-title] a:focus-visible",
+        "[data-studio-title]:has(a:hover)", "[data-studio-title]:has(a:focus-visible)",
+        "a:hover [data-studio-title]", "a:focus-visible [data-studio-title]",
+        "a[data-studio-title]:hover", "a[data-studio-title]:focus-visible",
+      ],
+      declarations: ["text-decoration-line: underline;", "text-underline-offset: 0.14em;", "text-decoration-thickness: from-font;"],
+    },
+    {
       selectors: [".theme-nav-link"],
       declarations: ["font-family: var(--font-theme-nav), sans-serif;", "font-size: var(--theme-nav-size, 0.8rem);"],
     },

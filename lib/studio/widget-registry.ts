@@ -35,6 +35,7 @@ export const STUDIO_WIDGET_REGISTRY = {
 >
 
 export const STUDIO_EDITORIAL_TYPES = [
+  "category_column",
   "newsroom",
   "lead_story_grid",
   "headlines_grid",

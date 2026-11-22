@@ -3,6 +3,48 @@ import { build } from "esbuild"
 import type { HomepageBlockType } from "../lib/themes/homepage-types"
 let files: { path: string; text: string }[]
 for (const locale of ["en", "ar"] as const) {
+  test(`independent category columns show the lead, thumbnails, headlines and correct More links (${locale})`, async ({ page }) => {
+    await page.addStyleTag({ content: ".category-columns-fixture{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}.flex{display:flex}.justify-between{justify-content:space-between}@media(max-width:767px){.category-columns-fixture{grid-template-columns:1fr}}" })
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    await page.evaluate(locale => (window as unknown as { EditorialFixture: { renderCategoryColumns: (locale: string) => void } }).EditorialFixture.renderCategoryColumns(locale), locale)
+    const columns = page.locator("[data-category-column]")
+    await expect(columns).toHaveCount(4)
+    for (const [index, slug] of ["world", "region", "news", "culture"].entries()) {
+      const column = columns.nth(index)
+      await expect(column.locator("article")).toHaveCount(5)
+      await expect(column.locator("[data-studio-image]")).toHaveCount(3)
+      await expect(column.locator("[data-studio-section-heading] a")).toHaveAttribute("href", `${locale === "en" ? "/en" : ""}/category/${slug}`)
+      await expect(column.locator("h2")).toHaveText(slug)
+      for (const heading of await column.locator("[data-studio-title]").allTextContents()) expect(heading).toContain(slug)
+    }
+    const first = (await columns.nth(0).boundingBox())!, second = (await columns.nth(1).boundingBox())!
+    expect(locale === "ar" ? first.x > second.x : first.x < second.x).toBe(true)
+    await page.screenshot({ path: `test-results/category-columns-${locale}.png`, fullPage: true })
+    await page.setViewportSize({ width: 375, height: 800 })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    expect((await columns.nth(1).boundingBox())!.y).toBeGreaterThan((await columns.nth(0).boundingBox())!.y)
+  })
+}
+for (const locale of ["en", "ar"] as const) {
+  test(`article titles share hover and keyboard underlines across blocks (${locale})`, async ({ page }) => {
+    await page.evaluate(() => (window as unknown as { EditorialFixture: { loadThemeCss: () => void } }).EditorialFixture.loadThemeCss())
+    for (const displayStyle of ["compact_posts", "dual_columns", "numbered_strip", "split_cover", "grid_3", "newsroom_lead"]) {
+      await page.evaluate(({ locale, displayStyle }) => (window as unknown as { EditorialFixture: { render: (...args: unknown[]) => void } }).EditorialFixture.render("news_list", locale, 9, displayStyle), { locale, displayStyle })
+      await expect(page.locator("main[data-fixture-style]")).toHaveAttribute("data-fixture-style", displayStyle)
+      const title = page.locator("[data-studio-title]").first()
+      const child = title.locator("a").first()
+      const link = await child.count() ? child : title.locator("xpath=ancestor-or-self::a[1]")
+      await link.hover()
+      await expect.poll(() => title.evaluate(element => getComputedStyle(element).textDecorationLine)).toContain("underline")
+      await page.mouse.move(0, 0)
+      await link.blur()
+      await page.keyboard.press("Tab")
+      await link.focus()
+      await expect.poll(() => title.evaluate(element => getComputedStyle(element).textDecorationLine)).toContain("underline")
+    }
+  })
+}
+for (const locale of ["en", "ar"] as const) {
   test(`section category link follows language and can be hidden (${locale})`, async ({ page }) => {
     // This esbuild fixture has no Tailwind build; supply the existing header layout utilities.
     await page.addStyleTag({ content: ".flex{display:flex}.justify-between{justify-content:space-between}.items-baseline{align-items:baseline}" })

@@ -476,6 +476,7 @@ export function BlockWireframeIcon({
     case "newsroom" as unknown:
     case "newsroom_lead":
       return <Broadsheet3ColWireframe className={className} active={active} />;
+    case "category_column":
     case "newsroom_category":
       return <LeadSideListWireframe className={className} active={active} />;
     case "newsroom_strip":

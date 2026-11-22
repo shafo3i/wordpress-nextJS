@@ -8,6 +8,7 @@ test("compact logo uses its natural width and text-only hover uses the configure
   await page.route("https://images.test/brand.svg", route => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="80"><rect width="40" height="80" fill="navy"/></svg>' }))
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.setContent('<div id="fixture"></div>')
+  await page.addStyleTag({ content: "body{font-family:serif;font-size:20px;line-height:1.8}" })
   for (const file of files) {
     if (file.path.endsWith(".css")) await page.addStyleTag({ content: file.text })
     else await page.addScriptTag({ content: file.text })
@@ -17,6 +18,9 @@ test("compact logo uses its natural width and text-only hover uses the configure
   await expect(image).toBeVisible()
   const bounds = (await image.boundingBox())!
   expect(bounds.width / bounds.height).toBeCloseTo(0.5, 1)
+  const titleBounds = (await page.locator("[data-inline-title]").boundingBox())!
+  const navBounds = (await page.locator("[data-site-navigation]").boundingBox())!
+  expect(Math.abs(titleBounds.y + titleBounds.height / 2 - (navBounds.y + navBounds.height / 2))).toBeLessThan(1)
   const link = page.locator('[data-mobile-open] a').first()
   await page.mouse.move(0, 0)
   await expect.poll(() => link.evaluate(element => getComputedStyle(element).color)).toBe("rgb(17, 17, 17)")

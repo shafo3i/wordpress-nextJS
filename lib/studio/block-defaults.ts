@@ -8,6 +8,7 @@ import { generateStudioId } from "./ids"
 const DEFAULT_BLOCK_STYLES: Partial<
   Record<HomepageBlockType, BlockDisplayStyle>
 > = {
+  category_column: "category_column",
   newsroom: "newsroom_lead",
   lead_story_grid: "lead_story_grid",
   headlines_grid: "headlines_grid",
@@ -42,16 +43,16 @@ export function createDefaultBlockConfig(
     displayStyle: DEFAULT_BLOCK_STYLES[type],
     featuredOnly: false,
     imageRatio: "landscape",
-    showExcerpt: !["headline_slider", "recent_posts", "popular_posts"].includes(
+    showExcerpt: !["category_column", "headline_slider", "recent_posts", "popular_posts"].includes(
       type
     ),
-    showAuthor: !["headline_slider", "recent_posts", "popular_posts"].includes(
+    showAuthor: !["category_column", "headline_slider", "recent_posts", "popular_posts"].includes(
       type
     ),
     showDate: true,
     showCategory: true,
     enabled: true,
-    categorySlug: defaultCategory,
+    categorySlug: type === "category_column" && defaultCategory === "all" ? "" : defaultCategory,
     postCount:
       type === "newsroom"
         ? 10
@@ -64,6 +65,7 @@ export function createDefaultBlockConfig(
               type === "hero_slider" ||
               type === "featured_hero_slider" ||
               type === "compact_numbered_grid"
+              || type === "category_column"
             ? 5
             : type === "broadsheet_3col" ||
                 type === "dual_category_columns" ||

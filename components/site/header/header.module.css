@@ -283,14 +283,17 @@
   display: none;
 }
 .inlineBrand {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
   flex: 0 1 auto;
   min-width: 0;
   max-width: 30%;
 }
 .inlineBrand a {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-height: 44px;
+  min-height: max(44px, var(--theme-nav-height, 56px));
   text-decoration: none;
   gap: 8px;
   color: inherit;
@@ -306,6 +309,7 @@
   line-height: 1.1;
   overflow-wrap: anywhere;
   min-width: 0;
+  align-self: center;
 }
 .header[data-layout="inline-news"] .utility {
   margin-inline-start: auto;

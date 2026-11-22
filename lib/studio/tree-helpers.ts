@@ -280,7 +280,20 @@ export function createStarterTemplateElements(
     | "broadsheet_home"
     | "editorial_portal"
     | "landing_showcase"
+    | "category_columns"
 ): StudioElement[] {
+  if (templateId === "category_columns") {
+    const section = createStudioContainerFromPreset("25_25_25_25")
+    for (const column of section.elements) {
+      const widget = createStudioElement("block_category_column")
+      widget.settings.blockConfig = {
+        ...widget.settings.blockConfig!, displayStyle: "category_column",
+        categorySlug: "", postCount: 5, showAuthor: false, showExcerpt: false,
+      }
+      column.elements.push(widget)
+    }
+    return [section]
+  }
   if (templateId === "magazine_home") {
     const heroSec = createStudioContainerFromPreset("100")
     heroSec.elements[0].elements.push(

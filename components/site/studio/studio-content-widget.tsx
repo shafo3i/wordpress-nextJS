@@ -167,6 +167,9 @@ function LiveContent(props: StudioWidgetProps) {
 }
 
 export function StudioContentWidget(props: StudioWidgetProps) {
+  const block = props.element.settings.blockConfig
+  if (block?.displayStyle === "category_column" && !block.categoryId && (!block.categorySlug || block.categorySlug === "all"))
+    return props.isEditor ? <p role="status" className="text-xs text-theme-muted">{props.dict?.["admin.studio.content.choose_column_category"] || ""}</p> : null
   if (props.liveContent) return <LiveContent {...props} />
   const request = getStudioElementContentRequest(
     props.element,

@@ -453,6 +453,7 @@ export function StudioShell({
             <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
               {(
                 [
+                  { id: "category_columns", titleKey: "admin.studio.template.category_columns", descKey: "admin.studio.template.category_columns_desc" },
                   {
                     id: "magazine_home",
                     titleKey: "admin.studio.template.magazine_home",

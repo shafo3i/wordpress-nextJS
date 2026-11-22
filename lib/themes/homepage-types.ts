@@ -1,6 +1,7 @@
 export type HomepageLayout = "full_width" | "right_sidebar" | "left_sidebar" | "dual_sidebar";
 
 export type BlockDisplayStyle =
+  | "category_column"
   | "newsroom_lead"
   | "newsroom_category"
   | "newsroom_strip"
@@ -29,6 +30,7 @@ export type BlockDisplayStyle =
 export type ImageRatio = "landscape" | "square" | "portrait" | "none";
 
 export type HomepageBlockType =
+  | "category_column"
   | "newsroom"
   | "lead_story_grid"
   | "headlines_grid"

@@ -1,4 +1,10 @@
 {
+  "admin.theme_settings.block.category_column.name": "Category column",
+  "admin.theme_settings.block.category_column.description": "One category with a lead image, thumbnail stories and headlines. Add one to each column or use the four-column template.",
+  "admin.studio.template.category_columns": "Four category columns",
+  "admin.studio.template.category_columns_desc": "Four independent category feeds. Select a category in each column; headings and More links follow that category.",
+  "admin.theme_settings.style.category_column": "Category column",
+  "admin.studio.content.choose_column_category": "Select a category for this column in Content settings.",
   "admin.customizer.setting.inlineTitleLanguages": "Show site title beside the navbar logo",
   "admin.customizer.setting.inlineTitleLanguages_desc": "Select the languages that show the translated site title next to the logo in the compact inline header. Leave all unchecked for logo only. Other title locations are unchanged.",
   "admin.customizer.setting.navHoverStyle": "Menu hover style",

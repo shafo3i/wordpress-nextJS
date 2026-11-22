@@ -1,4 +1,10 @@
 {
+  "admin.theme_settings.block.category_column.name": "عمود تصنيف",
+  "admin.theme_settings.block.category_column.description": "تصنيف واحد بصورة رئيسية وأخبار مصغرة وعناوين. أضف كتلة لكل عمود أو استخدم قالب الأعمدة الأربعة.",
+  "admin.studio.template.category_columns": "أربعة أعمدة للتصنيفات",
+  "admin.studio.template.category_columns_desc": "أربعة أعمدة بمصادر مستقلة. اختر تصنيفًا لكل عمود لعرض عنوانه ورابط المزيد تلقائيًا.",
+  "admin.theme_settings.style.category_column": "عمود تصنيف",
+  "admin.studio.content.choose_column_category": "اختر تصنيف هذا العمود من إعدادات المحتوى.",
   "admin.customizer.setting.inlineTitleLanguages": "إظهار اسم الموقع بجانب شعار شريط التنقل",
   "admin.customizer.setting.inlineTitleLanguages_desc": "اختر اللغات التي يظهر فيها اسم الموقع المترجم بجانب الشعار في الترويسة المدمجة. اترك الخيارات دون تحديد لإظهار الشعار فقط. لا يؤثر ذلك على مواضع العنوان الأخرى.",
   "admin.customizer.setting.navHoverStyle": "نمط عناصر القائمة عند التمرير بالمؤشر",
