@@ -50,6 +50,7 @@ export type HomepageBlockType =
   | "opinion"
   | "newsletter"
   | "multimedia"
+  | "video_player"
   | "breaking_ticker"
   | "dual_category_columns"
   | "compact_numbered_grid"
@@ -58,6 +59,7 @@ export type HomepageBlockType =
   | "hero"; // backwards compatibility alias for big_lead_side_list
 
 export type HomepageBlock = {
+  mediaUrl?: string;
   id: string;
   type: HomepageBlockType;
   title: string;

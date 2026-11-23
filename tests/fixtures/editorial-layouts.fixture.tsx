@@ -13,6 +13,11 @@ export function loadThemeCss() {
   document.head.append(style)
 }
 let root: ReturnType<typeof createRoot>
+export function renderPlayer(type: "multimedia" | "video_player", locale: "en" | "ar", mediaUrl: string) {
+  root ??= createRoot(document.getElementById("fixture")!)
+  document.documentElement.dir = locale === "ar" ? "rtl" : "ltr"
+  root.render(renderEditorialBlock({ block: { ...createDefaultBlockConfig(type), mediaUrl, titles: { en: "Player", ar: "مشغل" } }, posts: [], theme: { ...DEFAULT_THEME, locale, dict: locale === "ar" ? ar : en } }))
+}
 export function renderCategoryColumns(locale: "en" | "ar") {
   root ??= createRoot(document.getElementById("fixture")!)
   document.documentElement.dir = locale === "ar" ? "rtl" : "ltr"

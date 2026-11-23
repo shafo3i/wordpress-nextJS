@@ -1,7 +1,98 @@
 import { test, expect } from "@playwright/test"
 import { build } from "esbuild"
 import type { HomepageBlockType } from "../lib/themes/homepage-types"
+import en from "../templates/language/en.json" with { type: "json" }
+import ar from "../templates/language/ar.json" with { type: "json" }
 let files: { path: string; text: string }[]
+for (const locale of ["en", "ar"] as const) {
+  test(`custom player plays real media and supports keyboard controls (${locale})`, async ({ page }) => {
+    const dict = locale === "en" ? en : ar
+    const encoded = await page.evaluate(async () => {
+      const canvas = document.createElement("canvas")
+      canvas.width = 640; canvas.height = 360
+      const ctx = canvas.getContext("2d")!
+      const stream = canvas.captureStream(20)
+      const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp8" })
+      const chunks: BlobPart[] = []
+      recorder.ondataavailable = event => chunks.push(event.data)
+      const done = new Promise<string>(resolve => { recorder.onstop = async () => {
+        const bytes = new Uint8Array(await new Blob(chunks).arrayBuffer())
+        resolve(btoa(Array.from(bytes, value => String.fromCharCode(value)).join("")))
+      } })
+      recorder.start()
+      const draw = setInterval(() => { ctx.fillStyle = "#182b35"; ctx.fillRect(0, 0, 640, 360); ctx.fillStyle = "#c5dbd4"; ctx.fillRect((Date.now() / 10) % 540, 130, 100, 100) }, 50)
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      clearInterval(draw); recorder.stop(); stream.getTracks().forEach(track => track.stop())
+      return done
+    })
+    await page.route("https://media.test/clip.webm", route => route.fulfill({ contentType: "video/webm", body: Buffer.from(encoded, "base64") }))
+    await page.evaluate(locale => (window as unknown as { EditorialFixture: { renderPlayer: (type: string, locale: string, url: string) => void } }).EditorialFixture.renderPlayer("video_player", locale, "https://media.test/clip.webm"), locale)
+    const player = page.locator("[data-video-player]")
+    await player.getByRole("button", { name: dict["site.video.play"], exact: true }).first().click()
+    await expect.poll(() => player.locator("video").evaluate(video => !(video as HTMLVideoElement).paused)).toBe(true)
+    await player.getByRole("button", { name: dict["site.video.pause"], exact: true }).click()
+    await expect.poll(() => player.locator("video").evaluate(video => (video as HTMLVideoElement).paused)).toBe(true)
+    await player.focus(); await page.keyboard.press("k")
+    await expect.poll(() => player.locator("video").evaluate(video => !(video as HTMLVideoElement).paused)).toBe(true)
+    await page.keyboard.press("k")
+    await player.getByRole("button", { name: dict["site.video.fullscreen"], exact: true }).click()
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement))).toBe(true)
+    await player.getByRole("button", { name: dict["site.video.exit_fullscreen"], exact: true }).click()
+    for (const width of [320, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      expect(await player.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      if (width === 320) await page.screenshot({ path: `test-results/custom-video-${locale}-mobile.png` })
+    }
+    await page.setViewportSize({ width: 900, height: 650 })
+    await page.screenshot({ path: `test-results/custom-video-${locale}.png` })
+  })
+}
+test("self-hosted video exposes working custom controls and graceful errors", async ({ page }) => {
+  await page.evaluate(() => (window as unknown as { EditorialFixture: { renderPlayer: (type: string, locale: string, url: string) => void } }).EditorialFixture.renderPlayer("video_player", "en", "https://media.test/movie.mp4"))
+  const player = page.locator("[data-video-player]")
+  await expect(player).toBeVisible()
+  await expect(player.getByRole("button", { name: "Play", exact: true }).first()).toBeVisible()
+  await expect(player.getByRole("slider", { name: "Seek" })).toBeVisible()
+  await player.getByRole("button", { name: "Mute", exact: true }).click()
+  await expect.poll(() => player.locator("video").evaluate(video => (video as HTMLVideoElement).muted)).toBe(true)
+  await player.getByLabel("Playback speed").selectOption("1.5")
+  await expect.poll(() => player.locator("video").evaluate(video => (video as HTMLVideoElement).playbackRate)).toBe(1.5)
+  // Generated MediaRecorder clips lack seek indexes. Supply deterministic media
+  // metadata here to test the slider/skip interaction independently of codecs.
+  await player.locator("video").evaluate(element => {
+    const video = element as HTMLVideoElement
+    let time = 0
+    Object.defineProperty(video, "duration", { configurable: true, value: 120 })
+    Object.defineProperty(video, "currentTime", { configurable: true, get: () => time, set: value => { time = value; video.dispatchEvent(new Event("timeupdate")) } })
+    video.dispatchEvent(new Event("durationchange"))
+  })
+  await player.getByRole("slider", { name: "Seek" }).focus()
+  await page.keyboard.press("End")
+  await expect.poll(() => player.locator("video").evaluate(video => (video as HTMLVideoElement).currentTime)).toBe(120)
+  await player.getByRole("button", { name: "Back 10 seconds" }).click()
+  await expect.poll(() => player.locator("video").evaluate(video => (video as HTMLVideoElement).currentTime)).toBe(110)
+  await player.locator("video").evaluate(video => video.dispatchEvent(new Event("error")))
+  await expect(player.getByRole("alert")).toContainText("could not be loaded")
+  await expect(player.getByRole("button", { name: "Retry" })).toBeVisible()
+})
+for (const locale of ["en", "ar"] as const) {
+  test(`standalone media players use safe sources and fit mobile (${locale})`, async ({ page }) => {
+    await page.addStyleTag({ content: ".w-full{width:100%}.aspect-video{aspect-ratio:16/9}" })
+    await page.setViewportSize({ width: 375, height: 800 })
+    const render = (type: string, mediaUrl: string) => page.evaluate(({ type, locale, mediaUrl }) => (window as unknown as { EditorialFixture: { renderPlayer: (type: string, locale: string, mediaUrl: string) => void } }).EditorialFixture.renderPlayer(type, locale, mediaUrl), { type, locale, mediaUrl })
+    await render("multimedia", "/uploads/audio.mp3")
+    await expect(page.locator("audio")).toHaveAttribute("controls", "")
+    await expect(page.locator("h2")).toHaveText(locale === "ar" ? "مشغل" : "Player")
+    await render("video_player", "/uploads/movie.mp4")
+    await expect(page.locator("video")).toHaveAttribute("src", "/uploads/movie.mp4")
+    await render("video_player", "https://youtu.be/4vOhXPaGsH0")
+    await expect(page.locator("iframe")).toHaveAttribute("src", "https://www.youtube-nocookie.com/embed/4vOhXPaGsH0")
+    await expect(page.locator("iframe")).toHaveAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation")
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await render("video_player", "https://evil.test/embed/123")
+    await expect(page.locator("iframe, video, audio")).toHaveCount(0)
+  })
+}
 for (const locale of ["en", "ar"] as const) {
   test(`independent category columns show the lead, thumbnails, headlines and correct More links (${locale})`, async ({ page }) => {
     await page.addStyleTag({ content: ".category-columns-fixture{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}.flex{display:flex}.justify-between{justify-content:space-between}@media(max-width:767px){.category-columns-fixture{grid-template-columns:1fr}}" })

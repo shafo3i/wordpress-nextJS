@@ -27,7 +27,7 @@ interface MediaSelectModalProps {
   title?: string;
   selectButtonText?: string;
   dict?: Record<string, string>;
-  mediaType?: "image" | "all" | "video";
+  mediaType?: "image" | "all" | "video" | "audio";
   canEditDetails?: boolean;
 }
 

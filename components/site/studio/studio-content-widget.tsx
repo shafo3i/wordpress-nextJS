@@ -168,8 +168,47 @@ function LiveContent(props: StudioWidgetProps) {
 
 export function StudioContentWidget(props: StudioWidgetProps) {
   const block = props.element.settings.blockConfig
-  if (block?.displayStyle === "category_column" && !block.categoryId && (!block.categorySlug || block.categorySlug === "all"))
-    return props.isEditor ? <p role="status" className="text-xs text-theme-muted">{props.dict?.["admin.studio.content.choose_column_category"] || ""}</p> : null
+  if (block && ["multimedia", "video_player"].includes(block.type)) {
+    if (!block.enabled) return null
+    if (!block.mediaUrl && props.isEditor)
+      return (
+        <p role="status">
+          {props.dict?.["admin.studio.media.choose_source"] || ""}
+        </p>
+      )
+    const locale =
+      props.contentLocale ||
+      props.theme.locale ||
+      props.theme.defaultLocale ||
+      ""
+    const sourceLocale = props.pageLocale || props.theme.defaultLocale || locale
+    const title = getStudioBlockTitle(block, locale, sourceLocale)
+    const subtitle =
+      block.subtitles?.[locale] ??
+      (locale === sourceLocale ? block.subtitle : "")
+    return renderEditorialBlock({
+      block: {
+        ...block,
+        title,
+        titles: { ...block.titles, [locale]: title },
+        subtitle,
+        subtitles: { ...block.subtitles, [locale]: subtitle || "" },
+      },
+      posts: [],
+      theme: { ...props.theme, locale },
+      design: props.element.settings.design,
+    })
+  }
+  if (
+    block?.displayStyle === "category_column" &&
+    !block.categoryId &&
+    (!block.categorySlug || block.categorySlug === "all")
+  )
+    return props.isEditor ? (
+      <p role="status" className="text-xs text-theme-muted">
+        {props.dict?.["admin.studio.content.choose_column_category"] || ""}
+      </p>
+    ) : null
   if (props.liveContent) return <LiveContent {...props} />
   const request = getStudioElementContentRequest(
     props.element,

@@ -634,8 +634,9 @@ export function renderEditorialBlock({
       )
 
     case "multimedia":
+    case "video_player":
       return (
-        <MultimediaBlock key={block.id} title={block.title} theme={theme} />
+        <MultimediaBlock key={block.id} block={block} dict={theme.dict} label={theme.dict?.[`admin.theme_settings.block.${block.type}.name`] || ""} />
       )
 
     case "newsletter":

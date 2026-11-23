@@ -538,6 +538,7 @@ export function BlockWireframeIcon({
     case "opinion" as unknown:
       return <OpinionWireframe className={className} active={active} />;
     case "multimedia" as unknown:
+    case "video_player" as unknown:
       return <MultimediaWireframe className={className} active={active} />;
     case "newsletter" as unknown:
       return <NewsletterWireframe className={className} active={active} />;

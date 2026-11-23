@@ -26,6 +26,7 @@ for (const locale of ["en", "ar"] as const)
       ],
       bundle: true,
       write: false,
+      outdir: "tests/.featured-video-bundle",
       format: "iife",
       platform: "browser",
       globalName: "FeaturedFixture",
@@ -52,7 +53,10 @@ for (const locale of ["en", "ar"] as const)
       ],
     })
     await page.goto("http://featured.test/")
-    await page.addScriptTag({ content: bundle.outputFiles[0].text })
+    for (const file of bundle.outputFiles) {
+      if (file.path.endsWith(".css")) await page.addStyleTag({ content: file.text })
+      else await page.addScriptTag({ content: file.text })
+    }
     await page.evaluate(
       (locale) =>
         (

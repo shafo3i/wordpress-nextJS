@@ -1,12 +1,15 @@
 import { featuredVideoUrl, featuredVideoThumbnail } from "@/lib/featured-video"
 import { videoEmbedUrl } from "@/lib/post-media"
+import { LocalVideoPlayer } from "./video-player"
 
 export function FeaturedVideoPlayer({
   url,
   title,
+  dict = {},
 }: {
   url: string
   title: string
+  dict?: Record<string, string>
 }) {
   const safe = featuredVideoUrl(url)
   if (!safe) return null
@@ -22,14 +25,12 @@ export function FeaturedVideoPlayer({
       referrerPolicy="strict-origin-when-cross-origin"
     />
   ) : (
-    <video
-      src={safe}
-      controls
+    <LocalVideoPlayer
+      key={safe}
+      url={safe}
       poster={featuredVideoThumbnail(safe) || undefined}
-      playsInline
-      preload="metadata"
-      aria-label={title}
-      className="aspect-video w-full bg-black"
+      title={title}
+      dict={dict}
     />
   )
 }

@@ -1,5 +1,12 @@
 # Studio security pass — 5 November 2026
 
+## Standalone media players — 23 November 2026
+
+- Studio's former Multimedia placeholder is now an Audio player; Video player is a separate draggable block. Each has localized titles/descriptions and a media-library selector or URL field. No post-feed request is required. Existing empty audio blocks remain empty until a source is selected.
+- Sources are validated at the Studio save boundary and again at render time. Local relative files and HTTPS media files are supported. Video embeds are canonicalized through the shared YouTube/Vimeo resolver; arbitrary iframe hosts, markup, script/data URLs and credential-bearing URLs are rejected. Text uses React escaping; no raw HTML renderer is involved. Native playback controls remain enabled, without autoplay. Existing upload authentication, validation and limits are reused.
+- No database migration, additional table, package or CSP expansion is required. Tests use isolated rendering and browser fixtures; actual playback availability still depends on valid files, browser codec support and storage permissions.
+- Self-hosted/Wasabi video blocks and featured-video players use custom EN/AR controls: playback, seeking, skip, volume, speed, fullscreen and optional browser picture-in-picture. Native controls remain the fallback before hydration or when player translations are unavailable. YouTube/Vimeo embeds retain their provider interfaces. Playback errors are handled without exposing internal details; no extra scripts or media proxy are introduced.
+
 ## Integration recheck — 15 November 2026
 
 The sections below this recheck are the historical 5 November report, including its dependency versions and audit counts. Those counts are not a current dependency audit.

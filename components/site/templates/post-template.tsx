@@ -245,6 +245,7 @@ export function PostTemplate({
             <FeaturedVideoPlayer
               url={article.featuredVideoUrl}
               title={article.title}
+              dict={theme.dict}
             />
           </div>
         )}

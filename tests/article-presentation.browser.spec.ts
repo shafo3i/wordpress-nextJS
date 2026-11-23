@@ -2,18 +2,21 @@ import { test, expect } from "@playwright/test"
 import { build } from "esbuild"
 import type { ThemeMods } from "../lib/themes/types"
 let bundle: string
+let css: string
 test.beforeAll(async () => {
-  const result = await build({ entryPoints: ["tests/fixtures/article-presentation.fixture.tsx"], bundle: true, write: false, platform: "browser", format: "iife", globalName: "ArticleFixture", plugins: [{ name: "article-fixture", setup(builder) {
+  const result = await build({ entryPoints: ["tests/fixtures/article-presentation.fixture.tsx"], bundle: true, write: false, outdir: "tests/.article-bundle", platform: "browser", format: "iife", globalName: "ArticleFixture", plugins: [{ name: "article-fixture", setup(builder) {
     builder.onResolve({ filter: /^@\/components\/site\/(header\/site-header|footer\/site-footer|sidebar\/sidebar-renderer|post-views|article-share|content-image)$/ }, ({ path }) => ({ path, namespace: "fixture" }))
     builder.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path }) => ({ loader: "js", resolveDir: process.cwd(), contents: path.endsWith("content-image") ? "import {createElement} from 'react';export const ContentImage=({src,alt})=>createElement('img',{src,alt})" : "export const SiteHeader=()=>null;export const SiteFooter=()=>null;export const SidebarWidgetRenderer=()=>null;export const PostViews=()=>null;export const ArticleShare=()=>null;" }))
   } }] })
-  bundle = result.outputFiles[0].text
+  bundle = result.outputFiles.find(file => file.path.endsWith(".js"))!.text
+  css = result.outputFiles.find(file => file.path.endsWith(".css"))?.text || ""
 })
 for (const locale of ["en", "ar"] as const) {
   test(`article borders, corners and newsletter visibility follow settings in ${locale}`, async ({ page }) => {
     await page.route("**/*", route => route.abort())
-    await page.setContent('<div id="fixture"></div>')
+    await page.setContent('<base href="https://article.test/"><div id="fixture"></div>')
     await page.addStyleTag({ content: "*{box-sizing:border-box}article.prose,[data-article-image],[data-newsletter-source]{border:1px solid gray;border-radius:16px;box-shadow:0 1px 3px gray}" })
+    await page.addStyleTag({ content: css })
     await page.addScriptTag({ content: bundle })
     const render = async (mods: ThemeMods) => page.evaluate(({ locale, mods }) => (window as unknown as { ArticleFixture: { render: (locale: string, mods: ThemeMods) => void } }).ArticleFixture.render(locale, mods), { locale, mods })
     for (const singleLayout of ["sidebar-left", "sidebar-right", "full-container", "centered"] as const) {

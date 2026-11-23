@@ -78,6 +78,7 @@ export function getStudioElementContentRequest(
     element.settings.blockConfig?.enabled
   ) {
     const block = element.settings.blockConfig
+    if (["multimedia", "video_player"].includes(block.type)) return undefined
     if (block.displayStyle === "category_column" && !block.categoryId && (!block.categorySlug || block.categorySlug === "all")) return undefined
     return getStudioContentRequest(element.settings.blockConfig, locale)
   }

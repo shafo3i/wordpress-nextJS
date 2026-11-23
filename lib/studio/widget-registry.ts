@@ -59,6 +59,7 @@ export const STUDIO_EDITORIAL_TYPES = [
   "trending",
   "opinion",
   "multimedia",
+  "video_player",
   "newsletter",
   "hero",
 ] as const satisfies readonly HomepageBlockType[]

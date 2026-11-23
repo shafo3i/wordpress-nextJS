@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { StudioPlayerControls } from "./studio-player-controls"
 import {
   getStudioCategoryOptions,
   resolveStudioCategorySelection,
@@ -186,6 +187,7 @@ export function StudioEditorialControls({
             />
           </div>
 
+          {["multimedia", "video_player"].includes(blockConfig.type) ? <StudioPlayerControls block={blockConfig} onChange={updateBlockField} dict={dict} /> : <>
           {/* Filter by Category & Featured Posts Toggle */}
           <div className="space-y-2">
             <p className="text-xs text-slate-500">
@@ -729,6 +731,7 @@ export function StudioEditorialControls({
               </label>
             ))}
           </div>
+          </>}
         </div>
       )}
       {/* GLOBAL WIDGET CONTROLS */}

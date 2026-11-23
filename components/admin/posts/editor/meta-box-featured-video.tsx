@@ -99,6 +99,7 @@ export function MetaBoxFeaturedVideo({
             <FeaturedVideoPlayer
               url={selected}
               title={dict["admin.editor.featured_video"] || ""}
+              dict={dict}
             />
           )}
         </div>
