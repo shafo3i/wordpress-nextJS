@@ -24,6 +24,7 @@ type SubItem = {
 
 type NavItem = {
   href: string;
+  landingHref?: string;
   label: string;
   key?: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -51,6 +52,7 @@ const navItems: NavItem[] = [
   },
   {
     href: "/admincp/podcasts",
+    landingHref: "/admincp/podcasts/shows",
     label: "",
     key: "admin.podcasts.title",
     icon: FileText,
@@ -171,7 +173,7 @@ export function AdminNav({ dict = {}, userRole }: { dict?: Record<string, string
                 ? "bg-[#2271b1] text-white"
                 : "text-[#f0f0f1] hover:bg-[#191e23] hover:text-[#72aee6]"
                 }`}
-              href={item.href}
+              href={item.landingHref || item.href}
             >
               <Icon className={`size-4 ${isActive ? "text-white" : "text-[#a7aaad]"}`} />
               <span>{itemLabel}</span>
