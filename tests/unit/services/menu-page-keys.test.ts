@@ -4,6 +4,8 @@ vi.mock("@/components/admin/admin-shell",()=>({AdminShell:()=>null,getAdminLangu
 vi.mock("@/lib/authMIddleware",()=>({verifyAdminOrEditor:async()=>({user:{role:"admin"}})}));
 vi.mock("@/app/(admin)/admincp/menus/query",()=>({getMenus:async()=>[{id:"7581",name:"Menu",slug:"menu"}],getMenu:async(id:string)=>({id,name:"Menu",slug:"menu",items:[],locations:[]}),getMenuAvailableItems:async()=>({pages:[],categories:[],posts:[]})}));
 vi.mock("@/app/(admin)/admincp/menus/_components",()=>({MenuSelectorBar:()=>null,MenuManagerShell:()=>null}));
+// Keep this component-identity test independent of server-only language/DB code.
+vi.mock("@/services/language.service",()=>({getDefaultLanguage:async()=>({code:"en"}),getTranslations:async()=>({"site.podcasts.title":"Podcasts"})}));
 import MenusPage from "@/app/(admin)/admincp/menus/page";
 function assertSiblingKeys(node:ReactNode){
  if(!isValidElement<{children?:ReactNode}>(node))return;
