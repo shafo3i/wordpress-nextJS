@@ -3,6 +3,10 @@ import { defineConfig } from "@playwright/test"
 export default defineConfig({
   testDir: "./tests",
   testMatch: [
+    "podcast-menu.browser.spec.ts",
+    "podcast-public.browser.spec.ts",
+    "podcast-episodes.browser.spec.ts",
+    "podcast-shows.browser.spec.ts",
     "admin-sign-out.browser.spec.ts",
     "local-fonts.browser.spec.ts",
     "article-presentation.browser.spec.ts",

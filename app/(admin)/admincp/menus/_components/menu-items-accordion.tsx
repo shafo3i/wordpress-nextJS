@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
+import { MenuPodcastsPanel, type PodcastMenuLink } from "./menu-podcasts-panel";
 
 interface MenuItemsAccordionProps {
   pages: { id: string; title: string; slug: string; language?: string }[];
   categories: { id: string; name: string; slug: string; language?: string }[];
   posts?: { id: string; title: string; slug: string; language?: string }[];
+  podcastDirectory?: PodcastMenuLink;
   onAddItems: (items: { title: string; url: string }[]) => void;
   dict: Record<string, string>;
   direction?: "rtl" | "ltr";
@@ -16,6 +18,7 @@ export function MenuItemsAccordion({
   pages,
   categories,
   posts = [],
+  podcastDirectory,
   onAddItems,
   dict,
   direction = "ltr",
@@ -271,6 +274,8 @@ export function MenuItemsAccordion({
           )}
         </div>
       )}
+
+      {podcastDirectory && <MenuPodcastsPanel directory={podcastDirectory} onAddItems={onAddItems} dict={dict} direction={direction} />}
 
       {/* 4. CUSTOM LINKS ACCORDION */}
       <div className="rounded-[3px] border border-[#c3c4c7] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.04)]">

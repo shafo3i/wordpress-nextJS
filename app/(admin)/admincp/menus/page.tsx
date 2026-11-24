@@ -2,6 +2,8 @@ import { AdminShell, getAdminLanguageContext } from "@/components/admin/admin-sh
 import { verifyAdminOrEditor } from "@/lib/authMIddleware";
 import { getMenus, getMenu, getMenuAvailableItems } from "./query";
 import { MenuSelectorBar, MenuManagerShell } from "./_components";
+import { getDefaultLanguage, getTranslations } from "@/services/language.service";
+import { localizePath } from "@/components/site/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +27,13 @@ export default async function MenusPage({ searchParams }: MenusPageProps) {
   const allMenus = await getMenus({ language: currentLanguage });
   const activeMenuId = menuParam || (allMenus[0]?.id ?? null);
   const currentMenu = activeMenuId ? await getMenu(activeMenuId) : null;
+  const defaultLanguage = await getDefaultLanguage();
+  const menuLanguage = currentMenu?.language || defaultLanguage?.code;
+  const menuDict = menuLanguage ? await getTranslations(menuLanguage) : dict;
+  const podcastDirectory = {
+    title: menuDict["site.podcasts.title"] || dict["site.podcasts.title"] || "",
+    url: localizePath("/podcasts", menuLanguage, defaultLanguage?.code),
+  };
 
   // Fetch available items (pages, categories, posts)
   const availableItems = await getMenuAvailableItems({
@@ -62,6 +71,7 @@ export default async function MenusPage({ searchParams }: MenusPageProps) {
             pages={availableItems.pages}
             categories={availableItems.categories}
             posts={availableItems.posts}
+            podcastDirectory={podcastDirectory}
             languages={langContext.allLanguages}
             dict={dict}
             direction={direction}

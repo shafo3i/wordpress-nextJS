@@ -206,7 +206,7 @@ export function MediaSelectModal({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept={mediaType === "video" ? "video/mp4,video/webm,video/ogg,video/x-m4v" : mediaType === "image" ? "image/jpeg,image/png,image/webp,image/gif,image/avif" : "image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/ogg,audio/*,application/pdf"}
+                  accept={mediaType === "video" ? "video/mp4,video/webm,video/ogg,video/x-m4v" : mediaType === "audio" ? "audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,audio/ogg,audio/flac" : mediaType === "image" ? "image/jpeg,image/png,image/webp,image/gif,image/avif" : "image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/ogg,audio/*,application/pdf"}
                   onChange={(e) => handleFileUpload(e.target.files)}
                   className="hidden"
                 />

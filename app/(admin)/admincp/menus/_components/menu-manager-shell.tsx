@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MenuItem } from "@/lib/menus/types";
 import { MenuItemsAccordion } from "./menu-items-accordion";
 import { MenuStructureEditor } from "./menu-structure-editor";
+import type { PodcastMenuLink } from "./menu-podcasts-panel";
 
 interface MenuManagerShellProps {
   menu: { id: string; name: string; slug: string; language?: string };
@@ -12,6 +13,7 @@ interface MenuManagerShellProps {
   pages: { id: string; title: string; slug: string; language?: string }[];
   categories: { id: string; name: string; slug: string; language?: string }[];
   posts?: { id: string; title: string; slug: string; language?: string }[];
+  podcastDirectory?: PodcastMenuLink;
   languages?: { code: string; name: string; nativeName?: string; isDefault?: boolean }[];
   dict: Record<string, string>;
   direction?: "rtl" | "ltr";
@@ -24,6 +26,7 @@ export function MenuManagerShell({
   pages,
   categories,
   posts = [],
+  podcastDirectory,
   languages = [],
   dict,
   direction = "ltr",
@@ -58,6 +61,7 @@ export function MenuManagerShell({
         pages={pages}
         categories={categories}
         posts={posts}
+        podcastDirectory={podcastDirectory}
         onAddItems={handleAddItems}
         dict={dict}
         direction={direction}

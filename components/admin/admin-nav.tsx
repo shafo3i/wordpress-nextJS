@@ -50,6 +50,17 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    href: "/admincp/podcasts",
+    label: "",
+    key: "admin.podcasts.title",
+    icon: FileText,
+    subItems: [
+      { href: "/admincp/podcasts/shows", label: "", key: "admin.podcasts.shows" },
+      { href: "/admincp/podcasts/episodes", label: "", key: "admin.podcasts.episodes" },
+      { href: "/admincp/podcasts/episodes/new", label: "", key: "admin.podcasts.add_episode" },
+    ],
+  },
+  {
     href: "/admincp/media",
     label: "Media",
     key: "admin.menu.media",
@@ -144,7 +155,7 @@ export function AdminNav({ dict = {}, userRole }: { dict?: Record<string, string
 
   return (
     <nav aria-label="Administrator navigation" className="py-2 ">
-      {navItems.filter(item => userRole === "editor" ? (item.href === "/admincp/posts" || item.href === "/admincp/media") : item.href !== "/admincp/users" || userRole === "admin").map((item) => {
+      {navItems.filter(item => item.href !== "/admincp/podcasts" || userRole === "admin").filter(item => userRole === "editor" ? (item.href === "/admincp/posts" || item.href === "/admincp/media") : item.href !== "/admincp/users" || userRole === "admin").map((item) => {
         const Icon = item.icon;
         const isExact = pathname === item.href;
         const isSubActive =
