@@ -42,6 +42,18 @@ export function LocalVideoPlayer({
   const [fullscreen, setFullscreen] = useState(false)
   const t = (key: string) => dict[`site.video.${key}`] || ""
   useEffect(() => {
+    const element = video.current
+    const source = featuredVideoUrl(url)
+    // Restore after React's development setup/cleanup check as well as URL changes.
+    if (element && source) element.setAttribute("src", source)
+    return () => {
+      if (!element) return
+      element.pause()
+      element.removeAttribute("src")
+      element.load()
+    }
+  }, [url])
+  useEffect(() => {
     const change = () =>
       setFullscreen(document.fullscreenElement === wrapper.current)
     document.addEventListener("fullscreenchange", change)
@@ -122,7 +134,7 @@ export function LocalVideoPlayer({
         poster={poster}
         controls={!enhanced}
         playsInline
-        preload="metadata"
+        preload="none"
         aria-label={title || t("player")}
         onClick={() => void toggle()}
         onPlay={() => setPlaying(true)}
@@ -156,7 +168,6 @@ export function LocalVideoPlayer({
       />
       {enhanced && (
         <>
-          {title && <div className={styles.heading}>{title}</div>}
           {!playing && !failed && (
             <button
               type="button"

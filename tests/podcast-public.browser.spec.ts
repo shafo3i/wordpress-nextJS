@@ -161,10 +161,24 @@ for (const locale of ["en", "ar"] as const)
       .click()
     await expect(page.locator("audio")).toHaveCount(0)
     await expect(page.locator("video")).toHaveCount(1)
+    await expect(page.locator("video")).toHaveAttribute("aria-label", "Episode")
+    await expect(page.locator("video")).toHaveAttribute("preload", "none")
+    await page.evaluate(() => {
+      const element = document.querySelector("video")!
+      const calls: string[] = []
+      element.pause = () => { calls.push("pause") }
+      element.load = () => { calls.push(element.hasAttribute("src") ? "load-source" : "load-empty") }
+      ;(window as unknown as { releasedVideo: { element: HTMLVideoElement; calls: string[] } }).releasedVideo = { element, calls }
+    })
+    await expect(page.getByText("Episode", { exact: true })).toHaveCount(0)
     await page
       .getByRole("button", { name: dict["site.podcasts.listen"], exact: true })
       .click()
     await expect(page.locator("video")).toHaveCount(0)
+    expect(await page.evaluate(() => {
+      const { element, calls } = (window as unknown as { releasedVideo: { element: HTMLVideoElement; calls: string[] } }).releasedVideo
+      return { source: element.getAttribute("src"), calls }
+    })).toEqual({ source: null, calls: ["pause", "load-empty"] })
     await expect(page.locator("audio")).toHaveCount(1)
     await page.evaluate(
       (locale) =>

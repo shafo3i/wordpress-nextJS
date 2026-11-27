@@ -6,7 +6,6 @@
 .player button:disabled { opacity: .4; cursor: default; }
 .player button:focus-visible, .player input:focus-visible, .player select:focus-visible, .player:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
 .player svg { width: 20px; height: 20px; }
-.heading { position: absolute; inset: 0 0 auto; padding: 16px; font-size: 14px; font-weight: 600; line-height: 1.5; text-shadow: 0 1px 3px #000; background: linear-gradient(#0009, transparent); pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .player .bigPlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 72px; height: 72px; border-radius: 50%; border: 1px solid #ffffff70; background: #111a; backdrop-filter: blur(8px); }
 .bigPlay svg { width: 28px; height: 28px; margin-left: 3px; }
 .controls { position: absolute; inset: auto 0 0; padding: 24px 12px 8px; background: linear-gradient(transparent, #000c 40%, #000e); }
@@ -27,5 +26,5 @@
 .error p { margin: 0; }
 .error button { gap: 8px; }
 .message { position: absolute; top: 35%; left: 50%; transform: translateX(-50%); background: #090b10e6; padding: 8px 12px; text-align: center; font-size: 12px; }
-@media (max-width: 520px) { .volume, .pip { display: none !important; } .controls { padding: 16px 8px 4px; } .row { gap: 0; } .heading { padding: 8px 12px; font-size: 12px; } .player .bigPlay { width: 56px; height: 56px; } }
+@media (max-width: 520px) { .volume, .pip { display: none !important; } .controls { padding: 16px 8px 4px; } .row { gap: 0; } .player .bigPlay { width: 56px; height: 56px; } }
 @media (max-width: 360px) { .skip { display: none !important; } }
